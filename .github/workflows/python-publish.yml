@@ -184,12 +184,16 @@ jobs:
                   repository-url: https://test.pypi.org/legacy/
                   user: __token__
                   password: ${{ env.TEST_PYPI_TOKEN }}
+                  verbose: true
+                  skip-existing: true
 
             - name: Publish to TestPyPI (trusted publishing)
               if: ${{ inputs.environment == 'test' && env.TEST_PYPI_TOKEN == '' }}
               uses: pypa/gh-action-pypi-publish@release/v1
               with:
                   repository-url: https://test.pypi.org/legacy/
+                  verbose: true
+                  skip-existing: true
 
             - name: Publish to PyPI (token)
               if: ${{ inputs.environment == 'production' && inputs.allow-production && env.PYPI_TOKEN != '' }}
