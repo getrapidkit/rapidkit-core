@@ -1,0 +1,43 @@
+{
+  "checked_at": "2025-12-23T20:41:18.819579+00:00",
+  "description": "Lean module layout blueprint (v3)",
+  "extra_directories": [
+    "scripts"
+  ],
+  "extra_files": [
+    "scripts/run_demo.py",
+    "templates/base/api_keys_health.py.j2"
+  ],
+  "missing_directories": [],
+  "missing_files": [],
+  "module": "free/auth/api_keys",
+  "parity": {
+    "fastapi": {
+      "declared": true,
+      "has_config": true,
+      "has_health": true,
+      "has_metadata": true,
+      "has_tests": true,
+      "issues": [],
+      "plugin": true,
+      "status": "ok"
+    },
+    "nestjs": {
+      "declared": true,
+      "has_config": true,
+      "has_health": true,
+      "has_metadata": true,
+      "has_tests": true,
+      "issues": [],
+      "plugin": true,
+      "status": "ok"
+    }
+  },
+  "parity_checked_at": "2025-12-07T20:54:32.622855+00:00",
+  "parity_valid": true,
+  "spec_version": 4,
+  "structure_tree_hash": "20a65bd6a741c01fe7b3d63ee2a9448d0f5a21ea6bd82ead92f170a24f6c80f1",
+  "structure_valid": true,
+  "tree_hash": "20a65bd6a741c01fe7b3d63ee2a9448d0f5a21ea6bd82ead92f170a24f6c80f1",
+  "valid": true
+}

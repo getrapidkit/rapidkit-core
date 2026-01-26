@@ -1,0 +1,192 @@
+name: passwordless
+description: Passwordless authentication flows (magic links, OTP) for RapidKit
+version: 0.1.0
+access: free
+status: stable
+category: auth
+tags:
+- auth
+generated_from_config: true
+depends_on:
+- free/essentials/settings
+profile_inherits:
+  fastapi.standard: fastapi
+  fastapi.ddd: fastapi
+  nestjs.standard: nestjs
+config_sources:
+- config/base.yaml
+- config/snippets.yaml
+generation:
+  vendor:
+    root: .rapidkit/vendor
+    files:
+    - template: templates/base/passwordless.py.j2
+      relative: src/modules/free/auth/passwordless/passwordless.py
+    - template: templates/base/passwordless_types.py.j2
+      relative: src/modules/free/auth/passwordless/passwordless_types.py
+    - template: templates/base/passwordless_health.py.j2
+      relative: src/health/passwordless.py
+    - template: templates/vendor/nestjs/configuration.js.j2
+      relative: nestjs/configuration.js
+  variants:
+    fastapi: &fastapi_variant
+      root: .
+      context:
+        framework: fastapi
+        module_class_name: Passwordless
+      files:
+      - template: templates/variants/fastapi/passwordless.py.j2
+        output: src/modules/free/auth/passwordless/passwordless.py
+      - template: templates/base/passwordless_types.py.j2
+        output: src/modules/free/auth/passwordless/passwordless_types.py
+      - template: templates/base/passwordless_health.py.j2
+        output: src/health/passwordless.py
+      - template: templates/variants/fastapi/passwordless_routes.py.j2
+        output: src/modules/free/auth/passwordless/routers/passwordless.py
+      - template: templates/variants/fastapi/passwordless_config.yaml.j2
+        output: config/passwordless.yaml
+      - template: templates/tests/integration/test_passwordless_integration.j2
+        output: tests/modules/integration/auth/passwordless/test_passwordless_integration.py
+      - template: templates/variants/fastapi/tests/test_passwordless_e2e.py
+        output: tests/modules/e2e/free/auth/passwordless/test_passwordless_e2e.py
+    fastapi.standard: *fastapi_variant
+    fastapi.ddd: *fastapi_variant
+    nestjs: &nestjs_variant
+      root: .
+      context:
+        framework: nestjs
+        vendor_configuration_relative: nestjs/configuration.js
+        module_class_name: Passwordless
+        module_kebab: passwordless
+      files:
+      - template: templates/variants/nestjs/configuration.ts.j2
+        output: src/modules/free/auth/passwordless/configuration.ts
+      - template: templates/variants/nestjs/passwordless.service.ts.j2
+        output: src/modules/free/auth/passwordless/passwordless.service.ts
+      - template: templates/variants/nestjs/passwordless.module.ts.j2
+        output: src/modules/free/auth/passwordless/passwordless.module.ts
+      - template: templates/variants/nestjs/passwordless.controller.ts.j2
+        output: src/modules/free/auth/passwordless/passwordless.controller.ts
+      - template: templates/variants/nestjs/index.ts.j2
+        output: src/modules/free/auth/passwordless/index.ts
+      - template: templates/variants/nestjs/validation.ts.j2
+        output: src/modules/free/auth/passwordless/config/passwordless.validation.ts
+      - template: templates/variants/nestjs/passwordless.health.ts.j2
+        output: src/modules/free/auth/passwordless/passwordless.health.ts
+      - template: templates/variants/nestjs/passwordless.routes.ts.j2
+        output: src/modules/free/auth/passwordless/passwordless.routes.ts
+      - template: templates/variants/nestjs/passwordless.spec.ts.j2
+        output: test/passwordless/passwordless.spec.ts
+      - template: templates/variants/nestjs/tests/passwordless.e2e-spec.ts
+        output: tests/modules/e2e/free/auth/passwordless/passwordless.e2e-spec.ts
+    nestjs.standard: *nestjs_variant
+  snippets:
+    enabled: true
+    config: config/snippets.yaml
+    default: []
+compatibility:
+  python: '>=3.9,<4.0'
+  frameworks:
+  - fastapi
+  - nestjs
+  os:
+  - linux
+  - darwin
+  - windows
+testing:
+  coverage_min: 85
+  integration_tests: false
+  e2e_tests: false
+  unit_tests:
+  - tests/modules/free/auth/passwordless/test_passwordless_cli_entry.py
+  - tests/modules/free/auth/passwordless/test_passwordless_generate.py
+  - tests/modules/free/auth/passwordless/test_passwordless_generator.py
+  - tests/modules/free/auth/passwordless/test_passwordless_runtime.py
+  fixtures: []
+documentation:
+  changelog: docs/changelog.md
+  readme: README.md
+  overview: docs/overview.md
+  usage: docs/usage.md
+  advanced: docs/advanced.md
+  migration: docs/migration.md
+  troubleshooting: docs/troubleshooting.md
+  api_docs: null
+  examples: []
+support:
+  issues: https://github.com/getrapidkit/core/issues
+  discussions: https://github.com/getrapidkit/core/discussions
+  documentation: https://docs.rapidkit.top/modules/passwordless
+changelog:
+- version: 0.1.0
+  date: '2025-12-14'
+  notes: See docs/changelog.md
+validation:
+  pre_install:
+  - check_python_version
+  post_install:
+  - validate_generated_code
+rollback:
+  strategy: uninstall
+  backup_path: .rapidkit/backups/
+  max_backups: 3
+performance:
+  lazy_loading: true
+  caching:
+    templates: true
+    ttl: 300
+tier: free
+capabilities:
+- passwordless_token_runtime
+- passwordless_router_scaffold
+- passwordless_delivery_hooks
+signature:
+  signature: ae/N80GBbm0ccR9WKUgbXFDL96Kbn9QfBowWiPsC2Kww2/w4xysjnxuCayCUvoTll7Xr8d8s3Ssaa6kJDFihDA==
+  signer_id: c7eb213b1ac6d8c6
+  signature_version: v1
+signer_id: null
+signature_version: null
+file_hashes:
+  templates/variants/nestjs/tests/passwordless.e2e-spec.ts: sha256:834cdc2edaf0b0692524870c61386f33e8c6bbf955ce2ffc940ff611eecd1a1c
+  templates/variants/fastapi/tests/test_passwordless_e2e.py: sha256:1b3c28c32dd12e56724c0eac3567bc68f237622d3911950c6ee36eeb93070e09
+  scripts/run_demo.py: sha256:829ad887b30c85d95f5dceea2c190d4f6aa9a65307625e52947e104a220195ef
+  README.md: sha256:764f9d23a216a34dfbd5ae183fe691303bd7b1bd1c6f32f878bfc52c4133aa8c
+  __init__.py: sha256:c0a79f77aa712f7b53aa02c1fcc0c03a61b4a8139496393b73626da30b6ed52e
+  config/base.yaml: sha256:ebb2e53f9b2c17e8a70dd5bc375f6083b5ebf5d74555d22f5f88227d39379a95
+  config/snippets.yaml: sha256:3f0a5badcda1a04eaf3c775fdefcb31e0bb309ec80cb80aa1c62b379840f353a
+  docs/README.md: sha256:77bb75f15da712381ea898f8438e2097d301aa149f2e08141131513bb4aa168b
+  docs/advanced.md: sha256:d7fc74dbaebce4fab3541af6f48dbf8082ea9aab60efd9333a2e5c3de2f36844
+  docs/changelog.md: sha256:c9a544572e18dffd46be5b295ede9965177b333d08fe5d4f12f1c59a3b22c1e3
+  docs/migration.md: sha256:bfcec837b7e1712606737192dd4913e1f9c3197d69031e35806111af92cb16f3
+  docs/overview.md: sha256:d319d6a76729cf43e9c59ee594c6829f3dc9da91194a3b0da057cbaa2434e98b
+  docs/troubleshooting.md: sha256:6037a590a2fbe88b76262adfdd8d4d9970ba3903ad0440e67ce9b3f91f499a7e
+  docs/usage.md: sha256:12f4ac765cd001269a4bc2354e228ab02cab4844c256808d1dbcc7304786cbe4
+  frameworks/__init__.py: sha256:88c1f9ddef4ab594def046dd81605d5d072aff59ae6b739a28174efab6a93f39
+  frameworks/fastapi.py: sha256:a56d8e32a48f9118bc1e7a9fe4e54413deed0388e8f91fabd64d5dd61d1e16ea
+  frameworks/nestjs.py: sha256:bf7ef122cd8046e265620ac417e4c78fe89d3824d8afb057e222faa584dca695
+  generate.py: sha256:377f8dd87d3fcf3fa5d4c000f3059afa2f4777cce6fba48a799dcf0d6ab49f5b
+  module.verify.json: sha256:cb5a603abe9b404b66d45af08f5550557e7c932c10b4f8cf7f2347596cc3ab3c
+  overrides.py: sha256:58b32d998740c8da4ef6551fd9cd2d530266195a6663282bc13873f91f73208c
+  templates/base/passwordless.py.j2: sha256:f27390d3b47d7c8d415fd21876d3c79f1babc7441d23ec9cce60cc200e4bff02
+  templates/base/passwordless_health.py.j2: sha256:eda8fe3dd385569e2ad486e035a7631cc2d24e10842786264390ad52a2c730dc
+  templates/base/passwordless_types.py.j2: sha256:733df3a2a16f60cd1aa0d58b33873faa2c2aba6b7629e0d4a28bc629f7635d25
+  templates/snippets/env.snippet.j2: sha256:7a1f66942350c20ae1be2e19d56a69601ccd4457a41ff110fee205ac0c1d68c7
+  templates/snippets/passwordless.snippet.j2: sha256:fc16a06e58f97ee0a524547f9ffdde5c950add32f8da135872b2a8adda050654
+  templates/snippets/settings_fields.snippet.j2: sha256:bafe7a6cedb8ffc9498e9321351319da7eefb80c484583fed63107306d628af6
+  templates/snippets/settings_fields_nestjs.snippet.j2: sha256:c5cc2d4f02865b7a98c7f3db95c67836575d2063579cea3c8e75a6bfcdd70e98
+  templates/tests/__init__.py: sha256:bc5d997511339f73216fe0bc2895bdf7f94ff62fa0b84b4231eacadd7d851225
+  templates/tests/integration/test_passwordless_integration.j2: sha256:fc3fe16deffd827b53f1dfbaf6069cc234a624a5c5c2aa80456739b56d6c023e
+  templates/variants/fastapi/passwordless.py.j2: sha256:76f1b370890195275d7a2121a2dbd711fda86724dcca1a787fa39a5465d49fcb
+  templates/variants/fastapi/passwordless_config.yaml.j2: sha256:2ea2eb71b984b64b56ad2ca57f20983d9dd08242aefbada6d63a8f016e2e3e29
+  templates/variants/fastapi/passwordless_health.py.j2: sha256:049a341e34e5bff34b474f64c0c824eae42144758fd1c47be6e6d9c4ec53d841
+  templates/variants/fastapi/passwordless_routes.py.j2: sha256:55686a01b9632536ccd67360e978ae0d42eee2ac4a117eda2506cc9d6333ecd4
+  templates/variants/nestjs/configuration.ts.j2: sha256:a5be58b5b8679588ecb3ae123d75d0138e11e2a094313307e99779988c33e62b
+  templates/variants/nestjs/index.ts.j2: sha256:8aeac0c6888c55be079d36595a01ef66ae78064ca750edb79c30030718aa513f
+  templates/variants/nestjs/passwordless.controller.ts.j2: sha256:8c82108f8db5ff8845aa246d2ec8f80c444ce6a7334318a12afd540901922479
+  templates/variants/nestjs/passwordless.health.ts.j2: sha256:0e2b299480f92d8787e6dd8046bd23047149ff0f7916c3bb55182c8d4104d826
+  templates/variants/nestjs/passwordless.module.ts.j2: sha256:01d08f365d833eb0c9bcff4970bed1f542bcb11fe3fceed0836a3e82ca642f14
+  templates/variants/nestjs/passwordless.routes.ts.j2: sha256:e22c6c90ec9838f9b46d3d0d8be7cde300302bb1057c9b95b11a6d3ee9616c0d
+  templates/variants/nestjs/passwordless.service.ts.j2: sha256:623b3e0132af5fe24f85118fc75e163b8d616785b6dfa4301d9d940d198c2e01
+  templates/variants/nestjs/passwordless.spec.ts.j2: sha256:2c98dc035477648ea44e6bfb467096967711cc415b60b64993e7d903ae1b9e53
+  templates/variants/nestjs/validation.ts.j2: sha256:1c7eca9038325fe1b962e5e96271df7c95bbaf5c8738b067981d5af2f4fd0de3
+  templates/vendor/nestjs/configuration.js.j2: sha256:9a681351a187d99dca0f2f5967c29d0ec579068ec75f27abcc3c431f5b1a3842

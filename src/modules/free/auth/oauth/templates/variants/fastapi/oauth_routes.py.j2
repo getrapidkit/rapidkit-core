@@ -1,0 +1,8 @@
+"""FastAPI router re-exports for OAuth module."""
+
+from __future__ import annotations
+
+from src.modules.free.auth.oauth.oauth import create_router, get_runtime
+
+
+__all__ = ["create_router", "get_runtime"]

@@ -1,0 +1,50 @@
+"""Shared type definitions for {{ module_title }}."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Dict, List, Sequence, Union
+
+PolicyValue = Union[str, Sequence[str], None]
+HeaderMap = Dict[str, str]
+
+
+@dataclass(slots=True)
+class {{ module_class_name }}Config:
+    """Declarative configuration for {{ module_title }} middleware."""
+
+    enabled: bool = True
+    strict_transport_security: bool = True
+    strict_transport_security_max_age: int = 63072000
+    strict_transport_security_include_subdomains: bool = True
+    strict_transport_security_preload: bool = True
+    content_security_policy: str | None = None
+    content_security_policy_report_only: bool = False
+    referrer_policy: str = "strict-origin-when-cross-origin"
+    x_content_type_options: str | bool = "nosniff"
+    x_frame_options: str = "DENY"
+    x_xss_protection: bool = False
+    cross_origin_embedder_policy: str | None = "require-corp"
+    cross_origin_opener_policy: str | None = "same-origin"
+    cross_origin_resource_policy: str | None = "same-origin"
+    permissions_policy: Dict[str, PolicyValue] = field(default_factory=dict)
+    expect_ct: str | None = None
+    x_dns_prefetch_control: str | None = "off"
+    x_download_options: str | None = "noopen"
+    additional_headers: Dict[str, str] = field(default_factory=dict)
+
+
+@dataclass(slots=True)
+class {{ module_class_name }}Metrics:
+    """Runtime metrics captured for health reporting."""
+
+    enabled: bool
+    header_count: int
+    missing: List[str] = field(default_factory=list)
+
+    def as_dict(self) -> Dict[str, object]:
+        return {
+            "enabled": self.enabled,
+            "header_count": self.header_count,
+            "missing": list(self.missing),
+        }

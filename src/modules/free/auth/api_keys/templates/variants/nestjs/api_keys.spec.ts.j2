@@ -1,0 +1,15 @@
+import { Test } from "@nestjs/testing";
+
+import { {{ module_class_name }}Module } from "../../src/modules/{{ module_slug }}/{{ module_kebab }}.module";
+import { {{ module_class_name }}Service } from "../../src/modules/{{ module_slug }}/{{ module_kebab }}.service";
+
+describe("{{ module_class_name }}Module", () => {
+  it("registers the service", async () => {
+    const moduleRef = await Test.createTestingModule({
+      imports: [{{ module_class_name }}Module],
+    }).compile();
+
+    const service = moduleRef.get({{ module_class_name }}Service);
+    expect(service).toBeDefined();
+  });
+});

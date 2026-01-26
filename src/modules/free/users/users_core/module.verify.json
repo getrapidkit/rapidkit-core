@@ -1,0 +1,51 @@
+{
+  "checked_at": "2025-12-24T15:09:20.076823+00:00",
+  "description": "Lean module layout blueprint (v3)",
+  "extra_directories": [
+    "scripts"
+  ],
+  "extra_files": [
+    "scripts/run_demo.py",
+    "templates/base/__init__.py.j2",
+    "templates/base/users_core_dto.py.j2",
+    "templates/base/users_core_errors.py.j2",
+    "templates/base/users_core_health.py.j2",
+    "templates/base/users_core_in_memory_repository.py.j2",
+    "templates/base/users_core_models.py.j2",
+    "templates/base/users_core_repository.py.j2",
+    "templates/base/users_core_service.py.j2",
+    "templates/base/users_core_settings.py.j2"
+  ],
+  "missing_directories": [],
+  "missing_files": [],
+  "module": "free/users/users_core",
+  "parity": {
+    "fastapi": {
+      "declared": true,
+      "has_config": true,
+      "has_health": true,
+      "has_metadata": true,
+      "has_tests": true,
+      "issues": [],
+      "plugin": true,
+      "status": "ok"
+    },
+    "nestjs": {
+      "declared": true,
+      "has_config": true,
+      "has_health": true,
+      "has_metadata": true,
+      "has_tests": true,
+      "issues": [],
+      "plugin": true,
+      "status": "ok"
+    }
+  },
+  "parity_checked_at": "2025-11-09T20:55:36.979297+00:00",
+  "parity_valid": true,
+  "spec_version": 4,
+  "structure_tree_hash": "058f5a56fa101d768974fd3c3bae4674acf3d9610ab17feee649929d14d0bb65",
+  "structure_valid": true,
+  "tree_hash": "058f5a56fa101d768974fd3c3bae4674acf3d9610ab17feee649929d14d0bb65",
+  "valid": true
+}

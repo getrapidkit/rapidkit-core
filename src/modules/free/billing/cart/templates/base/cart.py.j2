@@ -1,0 +1,502 @@
+"""Runtime implementation for the {{ module_title }} module."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from decimal import Decimal
+from typing import Any, Dict, Iterable, List, Mapping, MutableMapping, Optional, Protocol, Sequence
+
+from {{ module_import_base }}.types.cart import (
+    CartItem,
+    CartMetrics,
+    CartSnapshot,
+    CartTotals,
+    DecimalLike,
+    DiscountApplication,
+    ensure_decimal,
+    format_decimal,
+    quantize_amount,
+)
+
+MODULE_NAME = "{{ module_name }}"
+MODULE_TITLE = "{{ module_title }}"
+
+
+class CartError(RuntimeError):
+    """Base error type for Cart operations."""
+
+
+class CartValidationError(CartError):
+    """Raised when a cart operation violates invariants."""
+
+
+class CartItemNotFoundError(CartError):
+    """Raised when attempting to mutate an item that does not exist."""
+
+
+@dataclass(slots=True)
+class DiscountRule:
+    """Configuration for a discount rule."""
+
+    code: str
+    description: str = ""
+    percentage: Optional[Decimal] = None
+    amount: Optional[Decimal] = None
+    applies_to: Sequence[str] | None = None
+    minimum_subtotal: Decimal = Decimal("0")
+
+    @classmethod
+    def from_mapping(cls, payload: Mapping[str, Any]) -> "DiscountRule":
+        code = str(payload.get("code", "")).strip()
+        if not code:
+            raise CartValidationError("Discount rules require a non-empty code")
+        percentage_raw = payload.get("percentage")
+        amount_raw = payload.get("amount")
+        percentage = ensure_decimal(percentage_raw, allow_negative=False) if percentage_raw is not None else None
+        amount = ensure_decimal(amount_raw, allow_negative=False) if amount_raw is not None else None
+        applies = payload.get("applies_to")
+        sequence: Sequence[str] | None
+        if isinstance(applies, Sequence) and not isinstance(applies, (str, bytes)):
+            sequence = [str(item) for item in applies]
+        else:
+            sequence = None
+        minimum = ensure_decimal(payload.get("minimum_subtotal", "0"), allow_negative=False)
+        return cls(
+            code=code,
+            description=str(payload.get("description", "")),
+            percentage=percentage,
+            amount=amount,
+            applies_to=sequence,
+            minimum_subtotal=minimum,
+        )
+
+
+@dataclass(slots=True)
+class CartConfig:
+    """Runtime configuration for {{ module_title }}."""
+
+    currency: str = "USD"
+    tax_rate: Decimal = Decimal("0")
+    apply_tax_before_discounts: bool = False
+    default_discount_code: Optional[str] = None
+    auto_apply_default_discount: bool = False
+    max_unique_items: int = 100
+    metadata: Dict[str, Any] = field(default_factory=dict)
+    discount_rules: Dict[str, DiscountRule] = field(default_factory=dict)
+
+    @classmethod
+    def from_mapping(cls, config: Mapping[str, Any] | None) -> "CartConfig":
+        if config is None:
+            config = {}
+        defaults = config.get("defaults") if isinstance(config, Mapping) else None
+        source: Mapping[str, Any]
+        if isinstance(defaults, Mapping):
+            source = defaults
+        elif isinstance(config, Mapping):
+            source = config
+        else:
+            source = {}
+
+        currency = str(source.get("currency", "USD")).upper()
+        tax_rate = ensure_decimal(source.get("tax_rate", "0"), allow_negative=False)
+        apply_tax_before_discounts = bool(source.get("apply_tax_before_discounts", False))
+        default_discount = source.get("default_discount_code")
+        auto_apply_default_discount = bool(source.get("auto_apply_default_discount", False))
+        max_unique_items = int(source.get("max_unique_items", 100) or 100)
+        metadata = dict(source.get("metadata", {})) if isinstance(source.get("metadata"), Mapping) else {}
+
+        rules_payload: Iterable[Mapping[str, Any]] = []
+        if isinstance(config, Mapping):
+            candidate_rules = config.get("discount_rules")
+            if isinstance(candidate_rules, list):
+                rules_payload = [rule for rule in candidate_rules if isinstance(rule, Mapping)]
+        discount_rules: Dict[str, DiscountRule] = {}
+        for rule_payload in rules_payload:
+            rule = DiscountRule.from_mapping(rule_payload)
+            discount_rules[rule.code] = rule
+
+        return cls(
+            currency=currency,
+            tax_rate=tax_rate,
+            apply_tax_before_discounts=apply_tax_before_discounts,
+            default_discount_code=str(default_discount) if default_discount else None,
+            auto_apply_default_discount=auto_apply_default_discount,
+            max_unique_items=max(1, max_unique_items),
+            metadata=metadata,
+            discount_rules=discount_rules,
+        )
+
+
+class CartStore(Protocol):
+    """Persistence contract for cart snapshots."""
+
+    def get(self, cart_id: str) -> Optional[CartSnapshot]:
+        ...
+
+    def set(self, snapshot: CartSnapshot) -> None:
+        ...
+
+    def delete(self, cart_id: str) -> None:
+        ...
+
+    def list_ids(self) -> Iterable[str]:
+        ...
+
+
+class InMemoryCartStore(CartStore):
+    """Simple in-memory store suitable for single-process workloads."""
+
+    def __init__(self) -> None:
+        self._storage: Dict[str, CartSnapshot] = {}
+
+    def get(self, cart_id: str) -> Optional[CartSnapshot]:
+        snapshot = self._storage.get(cart_id)
+        return snapshot.clone() if snapshot else None
+
+    def set(self, snapshot: CartSnapshot) -> None:
+        self._storage[snapshot.cart_id] = snapshot.clone()
+
+    def delete(self, cart_id: str) -> None:
+        self._storage.pop(cart_id, None)
+
+    def list_ids(self) -> Iterable[str]:
+        return list(self._storage.keys())
+
+
+class DiscountRuleEvaluator(Protocol):
+    """Custom discount strategy contract."""
+
+    def __call__(
+        self,
+        *,
+        rule: DiscountRule,
+        items: Sequence[CartItem],
+        subtotal: Decimal,
+    ) -> Optional[DiscountApplication]:
+        ...
+
+
+class CartService:
+    """Primary facade exposing {{ module_title }} capabilities."""
+
+    def __init__(
+        self,
+        config: CartConfig | Mapping[str, Any] | None = None,
+        *,
+        store: CartStore | None = None,
+    ) -> None:
+        if isinstance(config, CartConfig):
+            self.config = config
+        else:
+            self.config = CartConfig.from_mapping(config)
+        self._store = store or InMemoryCartStore()
+        self._evaluators: List[DiscountRuleEvaluator] = []
+
+    # ------------------------------------------------------------------
+    # Public API
+    # ------------------------------------------------------------------
+    def get_cart(self, cart_id: str) -> CartSnapshot:
+        snapshot = self._store.get(cart_id)
+        if snapshot is None:
+            snapshot = self._initial_snapshot(cart_id)
+            self._store.set(snapshot)
+        return snapshot.clone()
+
+    def list_carts(self) -> List[str]:
+        return sorted(self._store.list_ids())
+
+    def clear(self, cart_id: str, *, preserve_discounts: bool = False) -> CartSnapshot:
+        snapshot = self._ensure_snapshot(cart_id)
+        discount_codes = list(snapshot.discount_codes) if preserve_discounts else []
+        fresh = snapshot.clone(items=[], discount_codes=discount_codes)
+        return self._persist(fresh)
+
+    def add_item(
+        self,
+        cart_id: str,
+        *,
+        sku: str,
+        name: str,
+        unit_price: DecimalLike,
+        quantity: int = 1,
+        currency: Optional[str] = None,
+        metadata: Optional[Mapping[str, Any]] = None,
+    ) -> CartSnapshot:
+        if not sku:
+            raise CartValidationError("Item SKU cannot be empty")
+        if quantity <= 0:
+            raise CartValidationError("Quantity must be greater than zero")
+        snapshot = self._ensure_snapshot(cart_id)
+        items = {item.sku: item for item in snapshot.items}
+        if len(items) >= self.config.max_unique_items and sku not in items:
+            raise CartValidationError("Maximum unique items exceeded")
+
+        chosen_currency = self._coerce_currency(snapshot, currency or self.config.currency)
+        unit_price_decimal = quantize_amount(unit_price)
+
+        existing = items.get(sku)
+        if existing:
+            if existing.currency != chosen_currency:
+                raise CartValidationError("Currency mismatch for existing item")
+            new_quantity = existing.quantity + quantity
+            items[sku] = existing.clone(
+                name=name or existing.name,
+                quantity=new_quantity,
+                unit_price=unit_price_decimal,
+                metadata={**existing.metadata, **(metadata or {})},
+            )
+        else:
+            items[sku] = CartItem(
+                sku=sku,
+                name=name,
+                quantity=quantity,
+                unit_price=unit_price_decimal,
+                currency=chosen_currency,
+                metadata=dict(metadata or {}),
+            )
+
+        updated = snapshot.clone(items=list(items.values()))
+        updated.metadata.setdefault("currency", chosen_currency)
+        return self._persist(updated)
+
+    def update_item(
+        self,
+        cart_id: str,
+        *,
+        sku: str,
+        quantity: Optional[int] = None,
+        unit_price: Optional[DecimalLike] = None,
+        metadata: Optional[Mapping[str, Any]] = None,
+    ) -> CartSnapshot:
+        snapshot = self._ensure_snapshot(cart_id)
+        items = {item.sku: item for item in snapshot.items}
+        if sku not in items:
+            raise CartItemNotFoundError(f"Item '{sku}' not found")
+
+        item = items[sku]
+        new_quantity = quantity if quantity is not None else item.quantity
+        if new_quantity < 0:
+            raise CartValidationError("Quantity cannot be negative")
+        if new_quantity == 0:
+            del items[sku]
+        else:
+            updated_item = item.clone(
+                quantity=new_quantity,
+                unit_price=quantize_amount(unit_price) if unit_price is not None else item.unit_price,
+                metadata={**item.metadata, **(metadata or {})} if metadata else dict(item.metadata),
+            )
+            items[sku] = updated_item
+
+        updated = snapshot.clone(items=list(items.values()))
+        return self._persist(updated)
+
+    def remove_item(self, cart_id: str, *, sku: str) -> CartSnapshot:
+        snapshot = self._ensure_snapshot(cart_id)
+        items = [item for item in snapshot.items if item.sku != sku]
+        if len(items) == len(snapshot.items):
+            raise CartItemNotFoundError(f"Item '{sku}' not found")
+        updated = snapshot.clone(items=items)
+        return self._persist(updated)
+
+    def replace_items(self, cart_id: str, items: Sequence[CartItem]) -> CartSnapshot:
+        snapshot = self._ensure_snapshot(cart_id)
+        if len(items) > self.config.max_unique_items:
+            raise CartValidationError("Maximum unique items exceeded")
+        for item in items:
+            if item.quantity <= 0:
+                raise CartValidationError("Quantities must be positive")
+        updated = snapshot.clone(items=[item.clone() for item in items])
+        if items:
+            updated.metadata["currency"] = items[0].currency
+        return self._persist(updated)
+
+    def apply_discount(self, cart_id: str, code: str, *, force: bool = False) -> CartSnapshot:
+        if not code:
+            raise CartValidationError("Discount code cannot be empty")
+        snapshot = self._ensure_snapshot(cart_id)
+        codes = list(snapshot.discount_codes)
+        if code not in codes:
+            rule = self.config.discount_rules.get(code)
+            if rule is None and not force:
+                raise CartValidationError(f"Unknown discount code '{code}'")
+            codes.append(code)
+        updated = snapshot.clone(discount_codes=codes)
+        return self._persist(updated)
+
+    def remove_discount(self, cart_id: str, code: str) -> CartSnapshot:
+        snapshot = self._ensure_snapshot(cart_id)
+        codes = [existing for existing in snapshot.discount_codes if existing != code]
+        if len(codes) == len(snapshot.discount_codes):
+            raise CartValidationError(f"Discount '{code}' not applied")
+        updated = snapshot.clone(discount_codes=codes)
+        return self._persist(updated)
+
+    def inspect(self) -> Dict[str, Any]:
+        ids = list(self._store.list_ids())
+        snapshots = [self._store.get(cart_id) for cart_id in ids]
+        present = [snapshot for snapshot in snapshots if snapshot is not None]
+        total_carts = len(present)
+        empty_carts = sum(1 for snapshot in present if not snapshot.items)
+        total_items = sum(snapshot.totals.item_count for snapshot in present)
+        active_discounts = sum(len(snapshot.discount_codes) for snapshot in present)
+        active_carts = total_carts - empty_carts
+        metrics = CartMetrics(
+            total_carts=total_carts,
+            active_carts=active_carts,
+            empty_carts=empty_carts,
+            total_items=total_items,
+            active_discounts=active_discounts,
+            currency=self.config.currency,
+        )
+        return {
+            "module": MODULE_NAME,
+            "updated_at": datetime.now(timezone.utc).isoformat(),
+            "metrics": metrics.to_dict(),
+            "configuration": {
+                "currency": self.config.currency,
+                "tax_rate": format_decimal(self.config.tax_rate),
+                "default_discount_code": self.config.default_discount_code,
+                "max_unique_items": self.config.max_unique_items,
+            },
+        }
+
+    def register_discount_strategy(self, evaluator: DiscountRuleEvaluator) -> None:
+        self._evaluators.append(evaluator)
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+    def _ensure_snapshot(self, cart_id: str) -> CartSnapshot:
+        snapshot = self._store.get(cart_id)
+        if snapshot is None:
+            snapshot = self._initial_snapshot(cart_id)
+            self._store.set(snapshot)
+        return snapshot.clone()
+
+    def _initial_snapshot(self, cart_id: str) -> CartSnapshot:
+        snapshot = CartSnapshot(
+            cart_id=cart_id,
+            items=[],
+            totals=self._empty_totals(),
+            discount_codes=[],
+            metadata=dict(self.config.metadata),
+            updated_at=datetime.now(timezone.utc),
+        )
+        if self.config.auto_apply_default_discount and self.config.default_discount_code:
+            snapshot.discount_codes.append(self.config.default_discount_code)
+        return self._recalculate(snapshot)
+
+    def _empty_totals(self) -> CartTotals:
+        zero = quantize_amount("0")
+        return CartTotals(
+            currency=self.config.currency,
+            subtotal=zero,
+            discount_total=zero,
+            tax_total=zero,
+            grand_total=zero,
+            item_count=0,
+            requires_payment=False,
+            discounts=[],
+        )
+
+    def _persist(self, snapshot: CartSnapshot) -> CartSnapshot:
+        recalculated = self._recalculate(snapshot)
+        self._store.set(recalculated)
+        return recalculated.clone()
+
+    def _coerce_currency(self, snapshot: CartSnapshot, candidate: str) -> str:
+        candidate_currency = str(candidate).upper()
+        if not candidate_currency:
+            raise CartValidationError("Currency cannot be empty")
+        existing_currency = snapshot.metadata.get("currency")
+        if existing_currency and existing_currency != candidate_currency:
+            raise CartValidationError("Mismatched cart currency")
+        return candidate_currency
+
+    def _recalculate(self, snapshot: CartSnapshot) -> CartSnapshot:
+        currency = snapshot.metadata.get("currency") or self.config.currency
+        items = [item.clone(currency=currency) for item in snapshot.items]
+        subtotal = quantize_amount(sum(item.subtotal() for item in items))
+        discounts = self._resolve_discounts(snapshot.discount_codes, items, subtotal)
+        discount_total = quantize_amount(sum(discount.amount for discount in discounts))
+        taxable_base = subtotal if self.config.apply_tax_before_discounts else quantize_amount(subtotal - discount_total)
+        tax_total = quantize_amount(taxable_base * self.config.tax_rate)
+        grand_total = quantize_amount(taxable_base + tax_total)
+        totals = CartTotals(
+            currency=currency,
+            subtotal=subtotal,
+            discount_total=discount_total,
+            tax_total=tax_total,
+            grand_total=grand_total,
+            item_count=sum(item.quantity for item in items),
+            requires_payment=grand_total > 0,
+            discounts=discounts,
+        )
+        return snapshot.clone(
+            items=items,
+            totals=totals,
+            updated_at=datetime.now(timezone.utc),
+        )
+
+    def _resolve_discounts(
+        self,
+        codes: Sequence[str],
+        items: Sequence[CartItem],
+        subtotal: Decimal,
+    ) -> List[DiscountApplication]:
+        applications: List[DiscountApplication] = []
+        for code in codes:
+            rule = self.config.discount_rules.get(code)
+            if not rule:
+                continue
+            application = self._apply_rule(rule, items, subtotal)
+            if application and application.amount > 0:
+                applications.append(application)
+        return applications
+
+    def _apply_rule(
+        self,
+        rule: DiscountRule,
+        items: Sequence[CartItem],
+        subtotal: Decimal,
+    ) -> Optional[DiscountApplication]:
+        for evaluator in self._evaluators:
+            candidate = evaluator(rule=rule, items=items, subtotal=subtotal)
+            if candidate is not None:
+                return candidate
+
+        if subtotal < rule.minimum_subtotal:
+            return None
+
+        eligible_items = (
+            [item for item in items if item.sku in rule.applies_to]
+            if rule.applies_to
+            else list(items)
+        )
+        eligible_subtotal = quantize_amount(sum(item.subtotal() for item in eligible_items))
+        if eligible_subtotal <= 0:
+            return None
+
+        amount = Decimal("0")
+        if rule.percentage is not None:
+            amount = quantize_amount(eligible_subtotal * rule.percentage)
+        elif rule.amount is not None:
+            amount = quantize_amount(rule.amount)
+        if amount <= 0:
+            return None
+        amount = min(amount, subtotal)
+        return DiscountApplication(code=rule.code, amount=amount, description=rule.description)
+
+
+__all__ = [
+    "CartError",
+    "CartValidationError",
+    "CartItemNotFoundError",
+    "DiscountRule",
+    "CartConfig",
+    "CartStore",
+    "InMemoryCartStore",
+    "DiscountRuleEvaluator",
+    "CartService",
+]

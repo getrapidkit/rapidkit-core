@@ -1,0 +1,76 @@
+import { registerAs } from "@nestjs/config";
+
+type PasswordlessConfiguration = {
+  tokenTtlSeconds: number;
+  tokenLength: number;
+  resendCooldownSeconds: number;
+  maxAttempts: number;
+  deliveryMethods: string[];
+  magicLinkBaseUrl: string;
+};
+
+type PasswordlessDefaults = {
+  token_ttl_seconds?: number;
+  token_length?: number;
+  resend_cooldown_seconds?: number;
+  max_attempts?: number;
+  delivery_methods?: string[];
+  magic_link_base_url?: string;
+};
+
+const DEFAULTS_RAW: unknown = {{ module_defaults | default({}) | tojson(indent=2) }};
+const DEFAULTS: PasswordlessDefaults = (DEFAULTS_RAW ?? {}) as PasswordlessDefaults;
+
+const parseInteger = (value: string | undefined, fallback: number): number => {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    return fallback;
+  }
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const parseDeliveryMethods = (value: string | undefined, fallback: string[]): string[] => {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    return fallback;
+  }
+  try {
+    const parsed = JSON.parse(value);
+    if (Array.isArray(parsed)) {
+      return parsed
+        .filter((item) => typeof item === "string" && item.trim().length > 0)
+        .map((item) => item.toLowerCase());
+    }
+  } catch {
+    // ignore malformed overrides and fall back to defaults
+  }
+  return fallback;
+};
+
+export default registerAs("passwordless", (): PasswordlessConfiguration => {
+  const defaults = DEFAULTS ?? {};
+  return {
+    tokenTtlSeconds: parseInteger(
+      process.env.PASSWORDLESS_TOKEN_TTL_SECONDS,
+      defaults.token_ttl_seconds ?? 900,
+    ),
+    tokenLength: parseInteger(
+      process.env.PASSWORDLESS_TOKEN_LENGTH,
+      defaults.token_length ?? 8,
+    ),
+    resendCooldownSeconds: parseInteger(
+      process.env.PASSWORDLESS_RESEND_COOLDOWN_SECONDS,
+      defaults.resend_cooldown_seconds ?? 60,
+    ),
+    maxAttempts: parseInteger(
+      process.env.PASSWORDLESS_MAX_ATTEMPTS,
+      defaults.max_attempts ?? 5,
+    ),
+    deliveryMethods: parseDeliveryMethods(
+      process.env.PASSWORDLESS_DELIVERY_METHODS,
+      (defaults.delivery_methods ?? []).map((method: string) => method.toLowerCase()),
+    ),
+    magicLinkBaseUrl:
+      process.env.PASSWORDLESS_MAGIC_LINK_BASE_URL ??
+      (defaults.magic_link_base_url ?? "https://example.com/auth/passwordless"),
+  };
+});

@@ -1,0 +1,104 @@
+import { DynamicModule, Module, Provider } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+
+import {
+  EmailConfig,
+  EmailService,
+  NotificationManager,
+  NotificationsModuleOptions,
+  TemplateOptions,
+  NOTIFICATIONS_EMAIL_CONFIG,
+  NOTIFICATIONS_EMAIL_SERVICE,
+  NOTIFICATIONS_EMAIL_TRANSPORT,
+  NOTIFICATIONS_PROVIDER_OVERRIDES,
+  NOTIFICATIONS_TEMPLATE_OPTIONS,
+} from './notifications.service';
+import { {{ module_class_name }}Controller } from './notifications.controller';
+
+const DEFAULT_NOTIFICATIONS_CONFIG = {
+  host: 'smtp.example.com',
+  port: 587,
+  username: 'mailer',
+  password: 'secret',
+  fromEmail: 'noreply@example.com',
+  useTls: true,
+  timeout: 30,
+} as const satisfies EmailConfig;
+
+const DEFAULT_TEMPLATE_OPTIONS: TemplateOptions = {
+  cache: true,
+  autoReload: false,
+};
+
+@Module({
+  imports: [ConfigModule],
+  controllers: [{{ module_class_name }}Controller],
+  providers: [
+    {
+      provide: NOTIFICATIONS_EMAIL_CONFIG,
+      useFactory: (configService: ConfigService): EmailConfig => ({
+        host: (configService.get('notifications.email.host') as string | undefined) ?? DEFAULT_NOTIFICATIONS_CONFIG.host,
+        port: Number((configService.get('notifications.email.port') as number | string | undefined) ?? DEFAULT_NOTIFICATIONS_CONFIG.port),
+        username: (configService.get('notifications.email.username') as string | undefined) ?? DEFAULT_NOTIFICATIONS_CONFIG.username,
+        password: (configService.get('notifications.email.password') as string | undefined) ?? DEFAULT_NOTIFICATIONS_CONFIG.password,
+        fromEmail:
+          (configService.get('notifications.email.from_email') as string | undefined) ??
+          DEFAULT_NOTIFICATIONS_CONFIG.fromEmail,
+        fromName: configService.get('notifications.email.from_name') as string | undefined,
+        replyTo: configService.get('notifications.email.reply_to') as string | undefined,
+        useTls: Boolean((configService.get('notifications.email.use_tls') as boolean | string | undefined) ?? DEFAULT_NOTIFICATIONS_CONFIG.useTls),
+        timeout: Number((configService.get('notifications.email.timeout') as number | string | undefined) ?? DEFAULT_NOTIFICATIONS_CONFIG.timeout),
+        templateDirectory: configService.get('notifications.templates.directory') as string | undefined,
+      }),
+      inject: [ConfigService],
+    },
+    { provide: NOTIFICATIONS_TEMPLATE_OPTIONS, useValue: DEFAULT_TEMPLATE_OPTIONS },
+    { provide: NOTIFICATIONS_PROVIDER_OVERRIDES, useValue: {} },
+    EmailService,
+    { provide: NOTIFICATIONS_EMAIL_SERVICE, useExisting: EmailService },
+    NotificationManager,
+  ],
+  exports: [
+    EmailService,
+    NotificationManager,
+    NOTIFICATIONS_EMAIL_CONFIG,
+    NOTIFICATIONS_TEMPLATE_OPTIONS,
+    NOTIFICATIONS_PROVIDER_OVERRIDES,
+    NOTIFICATIONS_EMAIL_SERVICE,
+  ],
+})
+export class {{ module_class_name }}Module {
+  static register(options: NotificationsModuleOptions = {}): DynamicModule {
+    const providers: Provider[] = [];
+
+    if (options.email) {
+      providers.push({ provide: NOTIFICATIONS_EMAIL_CONFIG, useValue: options.email });
+    }
+
+    if (options.templateOptions) {
+      providers.push({ provide: NOTIFICATIONS_TEMPLATE_OPTIONS, useValue: options.templateOptions });
+    }
+
+    if (options.providerOverrides) {
+      providers.push({ provide: NOTIFICATIONS_PROVIDER_OVERRIDES, useValue: options.providerOverrides });
+    }
+
+    if (options.transport) {
+      providers.push({ provide: NOTIFICATIONS_EMAIL_TRANSPORT, useValue: options.transport });
+    }
+
+    return {
+      module: {{ module_class_name }}Module,
+      providers,
+      exports: [
+        EmailService,
+        NotificationManager,
+        NOTIFICATIONS_EMAIL_CONFIG,
+        NOTIFICATIONS_TEMPLATE_OPTIONS,
+        NOTIFICATIONS_PROVIDER_OVERRIDES,
+        NOTIFICATIONS_EMAIL_SERVICE,
+        NOTIFICATIONS_EMAIL_TRANSPORT,
+      ],
+    };
+  }
+}

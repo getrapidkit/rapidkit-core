@@ -1,0 +1,105 @@
+"""Health check helpers for {{ module_class_name }}."""
+
+from __future__ import annotations
+
+from datetime import datetime, timezone
+import sys
+from types import ModuleType
+from typing import Any, Mapping
+
+try:
+    from fastapi import APIRouter, status
+    from fastapi.responses import JSONResponse
+
+    _FASTAPI_AVAILABLE = True
+except ImportError:  # pragma: no cover - FastAPI optional for vendor runtime
+    APIRouter = None  # type: ignore[assignment]
+    status = None  # type: ignore[assignment]
+    JSONResponse = None  # type: ignore[assignment]
+    _FASTAPI_AVAILABLE = False
+
+try:
+    from ..business.storage import {{ module_class_name }}, StorageConfig  # type: ignore[import]
+except ImportError:  # pragma: no cover - fallback for isolated execution
+    _runtime_module: ModuleType | None = next(
+        (
+            module
+            for module in sys.modules.values()
+            if isinstance(module, ModuleType)
+            and hasattr(module, "{{ module_class_name }}")
+            and hasattr(module, "StorageConfig")
+        ),
+        None,
+    )
+    if _runtime_module is None:  # pragma: no cover - defensive guard
+        raise
+
+    {{ module_class_name }} = getattr(_runtime_module, "{{ module_class_name }}")  # type: ignore[assignment]
+    StorageConfig = getattr(_runtime_module, "StorageConfig")  # type: ignore[assignment]
+
+
+async def health_check(config: StorageConfig | None = None) -> Mapping[str, object]:
+    """Perform async health check using the configured adapter."""
+
+    storage = {{ module_class_name }}(config)
+    return await storage.health_check()
+
+
+DEFAULT_HEALTH_PREFIX = "/api/health/module/storage"
+
+
+def _normalise_prefix(prefix: str) -> str:
+    if not prefix:
+        return ""
+    if not prefix.startswith("/"):
+        prefix = "/" + prefix
+    return prefix.rstrip("/")
+
+
+def build_health_router(prefix: str = DEFAULT_HEALTH_PREFIX) -> Any:
+    """Create a FastAPI router that exposes the storage health endpoint."""
+
+    if not _FASTAPI_AVAILABLE:
+        raise RuntimeError("FastAPI must be installed to build storage health routers")
+
+    router = APIRouter(prefix=_normalise_prefix(prefix), tags=["health"])
+
+    @router.get("", status_code=status.HTTP_200_OK)
+    async def storage_health_check() -> Any:  # pragma: no cover - exercised in integration tests
+        payload = await health_check()
+        payload = {
+            "module": payload.get("module", "storage"),
+            "status": payload.get("status", "unknown"),
+            "checked_at": datetime.now(timezone.utc).isoformat(),
+            "adapter": payload.get("adapter", {}),
+            **payload,
+        }
+        if payload.get("status") not in {"healthy", "ok"} and JSONResponse is not None:
+            return JSONResponse(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, content=payload)
+        return payload
+
+    return router
+
+
+def register_storage_health(app: Any, prefix: str = DEFAULT_HEALTH_PREFIX) -> None:
+    """Attach the storage health router to the given FastAPI application."""
+
+    if not _FASTAPI_AVAILABLE:
+        raise RuntimeError("FastAPI must be installed to register storage health routes")
+
+    app.include_router(build_health_router(prefix=prefix))
+
+
+if _FASTAPI_AVAILABLE:
+    router = build_health_router()
+else:  # pragma: no cover
+    router = None
+
+
+__all__ = [
+    "health_check",
+    "build_health_router",
+    "register_storage_health",
+    "router",
+    "DEFAULT_HEALTH_PREFIX",
+]

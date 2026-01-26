@@ -1,0 +1,83 @@
+{% include "templates/base/oauth.py.j2" %}
+
+from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.responses import RedirectResponse
+
+_runtime: Optional[OAuthRuntime] = None
+
+
+def get_runtime() -> OAuthRuntime:
+	global _runtime
+	if _runtime is None:
+		_runtime = OAuthRuntime(load_oauth_settings())
+	return _runtime
+
+
+def create_router() -> APIRouter:
+	"""Expose OAuth authorization, metadata, and feature endpoints."""
+
+	router = APIRouter(prefix="/oauth", tags=["oauth"])
+
+	@router.get("/metadata", response_model=Dict[str, Any])
+	def get_metadata() -> Dict[str, Any]:
+		return describe_oauth()
+
+	@router.get("/features", response_model=Dict[str, Any])
+	def get_features() -> Dict[str, Any]:
+		return {"features": list_oauth_features()}
+
+	@router.get("/providers", response_model=Dict[str, Dict[str, Any]])
+	def list_providers(runtime: OAuthRuntime = Depends(get_runtime)) -> Dict[str, Dict[str, Any]]:
+		metadata = describe_oauth(runtime.settings)
+		providers = metadata.get("providers", {})
+		return {str(name): dict(payload) for name, payload in providers.items()}
+
+	@router.get("/{provider}/authorize", status_code=status.HTTP_307_TEMPORARY_REDIRECT)
+	async def authorize(
+		provider: str,
+		request: Request,
+		runtime: OAuthRuntime = Depends(get_runtime),
+	) -> RedirectResponse:
+		redirect_override = request.query_params.get("redirect_uri")
+		metadata = {
+			"ip": request.client.host if request.client else None,
+			"user_agent": request.headers.get("user-agent"),
+		}
+		try:
+			url = runtime.build_authorize_url(
+				provider,
+				redirect_override=redirect_override,
+				metadata=metadata,
+			)
+		except KeyError as exc:
+			raise HTTPException(
+				status_code=status.HTTP_404_NOT_FOUND,
+				detail=f"Unknown OAuth provider '{provider}'",
+			) from exc
+
+		return RedirectResponse(url)
+
+	@router.get("/{provider}/callback")
+	async def callback(
+		provider: str,
+		state: str,
+		runtime: OAuthRuntime = Depends(get_runtime),
+	) -> Dict[str, Any]:
+		try:
+			metadata = runtime.validate_callback(provider, state)
+		except ValueError as exc:
+			raise HTTPException(
+				status_code=status.HTTP_400_BAD_REQUEST,
+				detail=str(exc),
+			) from exc
+
+		return {
+			"provider": provider,
+			"state": state,
+			"metadata": metadata,
+		}
+
+	return router
+
+
+__all__.extend(["get_runtime", "create_router"])

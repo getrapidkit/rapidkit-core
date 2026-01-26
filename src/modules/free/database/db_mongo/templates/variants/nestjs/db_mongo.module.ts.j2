@@ -1,0 +1,13 @@
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+
+import { {{ module_class_name }}Controller } from './{{ module_kebab }}.controller';
+import { {{ module_class_name }}Service } from './{{ module_kebab }}.service';
+
+@Module({
+  imports: [ConfigModule],
+  controllers: [{{ module_class_name }}Controller],
+  providers: [{{ module_class_name }}Service],
+  exports: [{{ module_class_name }}Service],
+})
+export class {{ module_class_name }}Module {}

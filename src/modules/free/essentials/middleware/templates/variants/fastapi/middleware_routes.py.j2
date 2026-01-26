@@ -1,0 +1,47 @@
+"""FastAPI router for inspecting and refreshing middleware configuration."""
+
+from __future__ import annotations
+
+from fastapi import APIRouter
+
+from src.modules.free.essentials.middleware.middleware import MiddlewareConfig, build_default_config
+
+
+def _serialize_config(config: MiddlewareConfig) -> dict[str, object]:
+    return {
+        "module": "{{ rapidkit_vendor_module }}",
+        "enabled": config.enabled,
+        "cors": {
+            "enabled": config.cors_enabled,
+            "allow_origins": list(config.cors_allow_origins),
+            "allow_methods": list(config.cors_allow_methods),
+            "allow_headers": list(config.cors_allow_headers),
+            "allow_credentials": config.cors_allow_credentials,
+        },
+        "process_time_header": config.process_time_header,
+        "service_header": {
+            "enabled": config.service_header,
+            "header_name": config.service_header_name,
+            "service_name": config.service_name,
+        },
+        "custom_headers": {
+            "enabled": config.custom_headers,
+            "header_name": config.custom_header_name,
+            "header_value": config.custom_header_value,
+        },
+        "metadata": dict(config.metadata),
+        "extra_factories": len(config.extra_factories),
+    }
+
+
+def build_router() -> APIRouter:
+    """Return a router exposing middleware diagnostics."""
+
+    router = APIRouter(prefix="/{{ module_kebab }}", tags=["{{ module_title }}"])
+
+    @router.get("/", summary="Describe default middleware configuration")
+    async def describe() -> dict[str, object]:
+        config = build_default_config()
+        return _serialize_config(config)
+
+    return router

@@ -1,0 +1,78 @@
+import { Injectable } from "@nestjs/common";
+
+type DiscountRule = {
+  code: string;
+  description: string;
+  percentage?: string;
+  amount?: string;
+  applies_to: string[];
+  minimum_subtotal: string;
+};
+
+type CartDefaults = {
+  currency: string;
+  tax_rate: string;
+  apply_tax_before_discounts: boolean;
+  default_discount_code: string | null;
+  auto_apply_default_discount: boolean;
+  max_unique_items: number;
+  metadata: Record<string, unknown>;
+};
+
+const DEFAULTS: CartDefaults = {{ cart_defaults | default({}) | tojson(indent=2) }};
+const DISCOUNT_RULES: DiscountRule[] = {{ cart_discount_rules | default([]) | tojson(indent=2) }};
+const HEALTH_CONFIG: Record<string, unknown> = {{ cart_health_config | default({}) | tojson(indent=2) }};
+
+@Injectable()
+export class {{ module_class_name }}Service {
+  private readonly defaults = DEFAULTS;
+  private readonly discountRules = DISCOUNT_RULES;
+  private readonly healthConfig = HEALTH_CONFIG;
+
+  getStatus(): Record<string, unknown> {
+    return {
+      module: "{{ module_name }}",
+      status: "ok",
+      currency: this.defaults.currency,
+      lastUpdated: new Date().toISOString(),
+    };
+  }
+
+  getMetadata(): Record<string, unknown> {
+    return {
+      module: "{{ module_name }}",
+      title: "{{ module_title }}",
+      defaults: this.defaults,
+      discountRules: this.discountRules,
+    };
+  }
+
+  listDiscounts(): DiscountRule[] {
+    return this.discountRules;
+  }
+
+  getHealthPayload(): Record<string, unknown> {
+    const freshnessThreshold = Number(this.healthConfig["freshness_threshold_minutes"] ?? 30);
+    return {
+      status: "ok",
+      module: "{{ module_name }}",
+      currency: this.defaults.currency,
+      freshness_threshold_minutes: freshnessThreshold,
+      checks: [
+        {
+          name: "discount_rules_loaded",
+          status: this.discountRules.length > 0 ? "ok" : "warning",
+          details: { count: this.discountRules.length },
+        },
+        {
+          name: "metadata_present",
+          status: Object.keys(this.defaults.metadata ?? {}).length > 0 ? "ok" : "warning",
+        },
+      ],
+    };
+  }
+
+  getHealth(): Record<string, unknown> {
+    return this.getHealthPayload();
+  }
+}

@@ -1,0 +1,324 @@
+"""Runtime primitives for the {{ module_title }} module."""
+
+from __future__ import annotations
+
+import asyncio
+import contextlib
+import hashlib
+import io
+import json
+import mimetypes
+import os
+import shutil
+import uuid
+from dataclasses import dataclass, field
+from datetime import datetime
+from pathlib import Path
+from typing import Any, Iterable, Mapping, MutableMapping, Protocol
+
+try:  # pragma: no cover - optional dependency
+    from PIL import Image
+except Exception:  # pragma: no cover - pillow is optional
+    Image = None  # type: ignore[assignment]
+
+
+_DEFAULT_ALLOWED_EXTENSIONS: tuple[str, ...] = (
+    "jpg",
+    "jpeg",
+    "png",
+    "gif",
+    "pdf",
+    "doc",
+    "docx",
+    "xls",
+    "xlsx",
+    "txt",
+    "csv",
+    "zip",
+    "tar",
+    "gz",
+)
+_DEFAULT_MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB
+_DEFAULT_CHUNK_SIZE = 1024 * 1024  # 1MB
+
+
+class StorageAdapter(Protocol):
+    """Protocol for storage backends."""
+
+    async def save(
+        self,
+        file_id: str,
+        payload: bytes,
+        *,
+        metadata: Mapping[str, Any] | None = None,
+    ) -> None:
+        """Persist file bytes under the generated identifier."""
+
+    async def load(self, file_id: str) -> bytes:
+        """Retrieve file bytes; raises ``FileNotFoundError`` when missing."""
+
+    async def delete(self, file_id: str) -> None:
+        """Remove stored payload; is idempotent."""
+
+    async def stat(self, file_id: str) -> FileMetadata:
+        """Return metadata about a stored payload."""
+
+    async def health(self) -> Mapping[str, Any]:
+        """Return health metrics for the backend."""
+
+
+@dataclass(slots=True)
+class FileMetadata:
+    """Metadata describing a stored file."""
+
+    file_id: str
+    filename: str
+    size: int
+    mimetype: str | None
+    checksum: str | None
+    uploaded_at: datetime
+    adapter: str
+    extra: MutableMapping[str, Any] = field(default_factory=dict)
+
+
+@dataclass(slots=True)
+class UploadResult:
+    """Result of an upload operation."""
+
+    success: bool
+    file_id: str | None
+    message: str | None = None
+    metadata: FileMetadata | None = None
+
+
+@dataclass(slots=True)
+class StorageConfig:
+    """Configuration payload for {{ module_class_name }}."""
+
+    adapter: str = "local"
+    base_path: Path = Path("./storage/uploads")
+    allowed_extensions: Iterable[str] = _DEFAULT_ALLOWED_EXTENSIONS
+    max_file_size: int = _DEFAULT_MAX_FILE_SIZE
+    chunk_size: int = _DEFAULT_CHUNK_SIZE
+    image_processing_enabled: bool = True
+
+
+class LocalStorageAdapter:
+    """Filesystem-backed storage adapter."""
+
+    def __init__(self, config: StorageConfig) -> None:
+        self._config = config
+        self._root = Path(config.base_path).expanduser().resolve()
+        self._root.mkdir(parents=True, exist_ok=True)
+
+    async def save(
+        self,
+        file_id: str,
+        payload: bytes,
+        *,
+        metadata: Mapping[str, Any] | None = None,
+    ) -> None:
+        await asyncio.to_thread(self._write_file, file_id, payload)
+        await asyncio.to_thread(self._write_metadata, file_id, metadata or {})
+
+    async def load(self, file_id: str) -> bytes:
+        return await asyncio.to_thread(self._read_file, file_id)
+
+    async def delete(self, file_id: str) -> None:
+        await asyncio.to_thread(self._delete_file, file_id)
+
+    async def stat(self, file_id: str) -> FileMetadata:
+        return await asyncio.to_thread(self._stat_file, file_id)
+
+    async def health(self) -> Mapping[str, Any]:
+        return await asyncio.to_thread(self._health)
+
+    def _target(self, file_id: str) -> Path:
+        return self._root / file_id
+
+    def _write_file(self, file_id: str, payload: bytes) -> None:
+        target = self._target(file_id)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        with target.open("wb") as handle:
+            for start in range(0, len(payload), self._config.chunk_size):
+                handle.write(payload[start : start + self._config.chunk_size])
+
+    def _write_metadata(self, file_id: str, metadata: Mapping[str, Any]) -> None:
+        target = self._metadata_path(file_id)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        with target.open("w", encoding="utf-8") as handle:
+            json.dump(dict(metadata), handle, default=str)
+
+    def _read_file(self, file_id: str) -> bytes:
+        return self._target(file_id).read_bytes()
+
+    def _delete_file(self, file_id: str) -> None:
+        with contextlib.suppress(FileNotFoundError):
+            self._target(file_id).unlink()
+        with contextlib.suppress(FileNotFoundError):
+            self._metadata_path(file_id).unlink()
+
+    def _stat_file(self, file_id: str) -> FileMetadata:
+        target = self._target(file_id)
+        stat_result = target.stat()
+        stored_meta = self._read_metadata(file_id)
+        checksum = stored_meta.get("checksum")
+        extras = {k: v for k, v in stored_meta.items() if k != "checksum"}
+        return FileMetadata(
+            file_id=file_id,
+            filename=target.name,
+            size=stat_result.st_size,
+            mimetype=mimetypes.guess_type(target.name)[0],
+            checksum=checksum,
+            uploaded_at=datetime.fromtimestamp(stat_result.st_mtime),
+            adapter="local",
+            extra=extras,
+        )
+
+    def _health(self) -> Mapping[str, Any]:
+        usage = shutil.disk_usage(self._root)
+        return {
+            "adapter": "local",
+            "path": str(self._root),
+            "total": usage.total,
+            "used": usage.used,
+            "free": usage.free,
+            "writable": os.access(self._root, os.W_OK),
+        }
+
+    def _read_metadata(self, file_id: str) -> MutableMapping[str, Any]:
+        target = self._metadata_path(file_id)
+        if not target.exists():
+            return {}
+        try:
+            with target.open("r", encoding="utf-8") as handle:
+                loaded = json.load(handle)
+        except (OSError, json.JSONDecodeError):  # pragma: no cover - treat as missing
+            return {}
+        if isinstance(loaded, dict):
+            return dict(loaded)
+        return {}
+
+    def _metadata_path(self, file_id: str) -> Path:
+        target = self._target(file_id)
+        return target.with_name(f"{target.name}.meta.json")
+
+
+class FileValidationError(RuntimeError):
+    """Raised when file validation fails."""
+
+
+class UnsupportedAdapterError(RuntimeError):
+    """Raised when configuration selects an unsupported adapter."""
+
+
+class {{ module_class_name }}:
+    """High-level facade for file storage operations."""
+
+    def __init__(self, config: StorageConfig | None = None) -> None:
+        cfg = config or StorageConfig()
+        self._config = cfg
+        self._allowed = {ext.lower() for ext in cfg.allowed_extensions}
+        self._adapter = self._build_adapter(cfg)
+
+    async def upload_file(
+        self,
+        filename: str,
+        content: bytes,
+        *,
+        metadata: MutableMapping[str, Any] | None = None,
+    ) -> UploadResult:
+        self._validate_payload(filename, content)
+        file_id = self._build_file_id(filename)
+        checksum = self._checksum(content)
+        stored_metadata: dict[str, Any] = {"original_filename": filename, "checksum": checksum}
+        if metadata:
+            stored_metadata.update(metadata)
+        await self._adapter.save(file_id, content, metadata=stored_metadata)
+        meta = await self._adapter.stat(file_id)
+        if metadata:
+            meta.extra.update(metadata)
+        meta.extra.setdefault("original_filename", filename)
+        meta.extra.setdefault("checksum", checksum)
+        if meta.checksum is None:
+            meta.checksum = checksum
+        if self._config.image_processing_enabled:
+            await self._maybe_process_image(file_id, content, meta)
+        return UploadResult(success=True, file_id=file_id, metadata=meta)
+
+    async def download_file(self, file_id: str) -> bytes:
+        return await self._adapter.load(file_id)
+
+    async def delete_file(self, file_id: str) -> bool:
+        await self._adapter.delete(file_id)
+        return True
+
+    async def get_file_info(self, file_id: str) -> FileMetadata:
+        return await self._adapter.stat(file_id)
+
+    async def health_check(self) -> Mapping[str, Any]:
+        backend = await self._adapter.health()
+        status = "healthy"
+        if not backend.get("writable", True):
+            status = "degraded"
+        if backend.get("free") is not None and backend.get("free", 0) <= 0:
+            status = "degraded"
+        return {
+            "status": status,
+            "module": "{{ module_name }}",
+            "adapter": backend,
+        }
+
+    def _validate_payload(self, filename: str, content: bytes) -> None:
+        if not filename:
+            raise FileValidationError("filename must be provided")
+        if len(content) > self._config.max_file_size:
+            raise FileValidationError(
+                f"file exceeds allowed size of {self._config.max_file_size} bytes"
+            )
+        ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+        if self._allowed and ext not in self._allowed:
+            raise FileValidationError(f"files with extension .{ext or '<none>'} not allowed")
+
+    def _build_file_id(self, filename: str) -> str:
+        ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+        token = uuid.uuid4().hex
+        return f"{token}.{ext}" if ext else token
+
+    def _build_adapter(self, cfg: StorageConfig) -> StorageAdapter:
+        adapter = cfg.adapter.lower()
+        if adapter == "local":
+            return LocalStorageAdapter(cfg)
+        if adapter in {"s3", "gcs"}:
+            raise UnsupportedAdapterError(
+                f"Adapter '{adapter}' is not yet implemented; configure 'local' or provide a custom adapter via overrides."
+            )
+        raise UnsupportedAdapterError(f"Unknown adapter '{cfg.adapter}'")
+
+    async def _maybe_process_image(
+        self, file_id: str, content: bytes, metadata: FileMetadata
+    ) -> None:
+        if Image is None:
+            return
+        if not metadata.mimetype or not metadata.mimetype.startswith("image/"):
+            return
+        try:
+            thumb_bytes = await asyncio.to_thread(self._render_thumbnail, content)
+        except Exception:  # pragma: no cover - best effort logging handled by caller
+            return
+        if thumb_bytes is None:
+            return
+        thumb_id = f"{file_id}.thumbnail.jpg"
+        await self._adapter.save(thumb_id, thumb_bytes)
+
+    def _render_thumbnail(self, content: bytes) -> bytes | None:
+        if Image is None:
+            return None
+        with Image.open(io.BytesIO(content)) as img:
+            img.thumbnail((300, 300))
+            buffer = io.BytesIO()
+            img.save(buffer, format="JPEG", quality=80)
+        return buffer.getvalue()
+
+    def _checksum(self, payload: bytes) -> str:
+        return hashlib.sha256(payload).hexdigest()

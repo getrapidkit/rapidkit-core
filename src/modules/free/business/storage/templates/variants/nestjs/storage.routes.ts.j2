@@ -1,0 +1,9 @@
+import { Type } from "@nestjs/common";
+
+import { {{ module_controller_class }} } from "./{{ module_kebab }}.controller";
+import { {{ module_health_controller_class }} } from "../../../../health/{{ module_kebab }}.health";
+
+export const STORAGE_ROUTES: Type[] = [
+  {{ module_controller_class }},
+  {{ module_health_controller_class }},
+];

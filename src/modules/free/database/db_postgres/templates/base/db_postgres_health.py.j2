@@ -1,0 +1,96 @@
+"""Shared PostgreSQL health helpers for RapidKit generated projects."""
+
+from __future__ import annotations
+
+from datetime import datetime, timezone
+from typing import Any, Mapping, MutableMapping, Optional
+
+from .db_postgres_types import DbPostgresHealthSnapshot, as_dict
+
+
+def build_postgres_metadata(
+    *,
+    database_url: str,
+    pool_size: int,
+    max_overflow: int,
+    pool_timeout: int,
+    pool_recycle: int,
+    test_database_url: Optional[str] = None,
+    engine_vendor: str = "sqlalchemy",
+) -> MutableMapping[str, Any]:
+    """Return a normalized metadata payload describing the configured Postgres connection."""
+
+    redacted_url = _mask_credentials(database_url)
+    result: MutableMapping[str, Any] = {
+        "engine": engine_vendor,
+        "database_url": redacted_url,
+        "pool": {
+            "size": pool_size,
+            "max_overflow": max_overflow,
+            "timeout": pool_timeout,
+            "recycle": pool_recycle,
+        },
+        "test_database_url": _mask_credentials(test_database_url) if test_database_url else None,
+    }
+    return result
+
+
+def _mask_credentials(url: Optional[str]) -> Optional[str]:
+    if not url:
+        return None
+    if "@" not in url:
+        return url
+    scheme, remainder = url.split("://", 1)
+    creds, _, host_part = remainder.partition("@")
+    if not creds:
+        return url
+    user, _, _ = creds.partition(":")
+    return f"{scheme}://{user}:***@{host_part}"
+
+
+def build_health_snapshot(
+    status: str,
+    *,
+    database_url: str,
+    pool_size: int,
+    max_overflow: int,
+    pool_timeout: int,
+    pool_recycle: int,
+    test_database_url: Optional[str] = None,
+    engine_vendor: str = "sqlalchemy",
+    detail: Optional[str] = None,
+) -> DbPostgresHealthSnapshot:
+    """Create a typed health snapshot for downstream serialization."""
+
+    metadata = build_postgres_metadata(
+        database_url=database_url,
+        pool_size=pool_size,
+        max_overflow=max_overflow,
+        pool_timeout=pool_timeout,
+        pool_recycle=pool_recycle,
+        test_database_url=test_database_url,
+        engine_vendor=engine_vendor,
+    )
+
+    return DbPostgresHealthSnapshot(
+        status=status,
+        checked_at=datetime.now(timezone.utc),
+        metadata=metadata,
+        detail=detail,
+    )
+
+
+def render_health_snapshot(snapshot: DbPostgresHealthSnapshot) -> MutableMapping[str, Any]:
+    """Serialize a typed snapshot into a JSON payload."""
+
+    payload = as_dict(snapshot)
+    payload.setdefault("module", "db_postgres")
+    payload.setdefault("checked_at", snapshot.checked_at.isoformat())
+    return payload
+
+
+__all__ = [
+    "build_health_snapshot",
+    "build_postgres_metadata",
+    "render_health_snapshot",
+]

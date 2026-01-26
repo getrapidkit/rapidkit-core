@@ -1,0 +1,34 @@
+import { Controller, Get, HttpCode, HttpStatus, Post } from "@nestjs/common";
+
+import {
+  SettingsHealthPayload,
+  SettingsMetadata,
+  SettingsService,
+  SettingsSnapshot,
+} from "./settings.service";
+
+@Controller("{{ module_kebab }}")
+export class SettingsController {
+  constructor(private readonly service: SettingsService) {}
+
+  @Get()
+  readMetadata(): SettingsMetadata {
+    return this.service.getMetadata();
+  }
+
+  @Get("config")
+  readConfiguration(): SettingsSnapshot {
+    return this.service.snapshot();
+  }
+
+  @Get("health")
+  readHealth(): SettingsHealthPayload {
+    return this.service.getHealth();
+  }
+
+  @Post("refresh")
+  @HttpCode(HttpStatus.OK)
+  refreshConfiguration(): SettingsMetadata {
+    return this.service.refreshMetadata();
+  }
+}

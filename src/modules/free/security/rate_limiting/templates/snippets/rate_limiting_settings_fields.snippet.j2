@@ -1,0 +1,210 @@
+# Rate Limiting
+
+if "RATE_LIMIT_ENABLED" in locals():
+    RATE_LIMIT_ENABLED = Field(
+        default={{ "True" if (defaults.enabled | default(true)) else "False" }},
+        description="Enable or disable the rate limiter globally.",
+    )
+else:
+    RATE_LIMIT_ENABLED: bool = Field(
+        default={{ "True" if (defaults.enabled | default(true)) else "False" }},
+        description="Enable or disable the rate limiter globally.",
+    )
+
+if "RATE_LIMIT_BACKEND" in locals():
+    RATE_LIMIT_BACKEND = Field(
+        default={{ defaults.backend | default('memory') | tojson }},
+        description="Selected rate limit backend (memory or redis).",
+    )
+else:
+    RATE_LIMIT_BACKEND: str = Field(
+        default={{ defaults.backend | default('memory') | tojson }},
+        description="Selected rate limit backend (memory or redis).",
+    )
+
+if "RATE_LIMIT_REDIS_URL" in locals():
+    RATE_LIMIT_REDIS_URL = Field(
+        default={{ defaults.redis_url | default('') | tojson }},
+        description="Redis connection URL when RATE_LIMIT_BACKEND=redis.",
+    )
+else:
+    RATE_LIMIT_REDIS_URL: Optional[str] = Field(
+        default={{ defaults.redis_url | default('') | tojson }},
+        description="Redis connection URL when RATE_LIMIT_BACKEND=redis.",
+    )
+
+if "RATE_LIMIT_REDIS_PREFIX" in locals():
+    RATE_LIMIT_REDIS_PREFIX = Field(
+        default={{ defaults.redis_prefix | default('rate-limit') | tojson }},
+        description="Key prefix applied to rate limit buckets in Redis.",
+    )
+else:
+    RATE_LIMIT_REDIS_PREFIX: str = Field(
+        default={{ defaults.redis_prefix | default('rate-limit') | tojson }},
+        description="Key prefix applied to rate limit buckets in Redis.",
+    )
+
+if "RATE_LIMIT_TRUST_FORWARDED_FOR" in locals():
+    RATE_LIMIT_TRUST_FORWARDED_FOR = Field(
+        default={{ "True" if (defaults.trust_forwarded_for | default(false)) else "False" }},
+        description="Trust X-Forwarded-For headers for identity extraction.",
+    )
+else:
+    RATE_LIMIT_TRUST_FORWARDED_FOR: bool = Field(
+        default={{ "True" if (defaults.trust_forwarded_for | default(false)) else "False" }},
+        description="Trust X-Forwarded-For headers for identity extraction.",
+    )
+
+if "RATE_LIMIT_FORWARDED_FOR_HEADER" in locals():
+    RATE_LIMIT_FORWARDED_FOR_HEADER = Field(
+        default={{ defaults.forwarded_for_header | default('X-Forwarded-For') | tojson }},
+        description="Header evaluated when trust_forwarded_for is enabled.",
+    )
+else:
+    RATE_LIMIT_FORWARDED_FOR_HEADER: str = Field(
+        default={{ defaults.forwarded_for_header | default('X-Forwarded-For') | tojson }},
+        description="Header evaluated when trust_forwarded_for is enabled.",
+    )
+
+if "RATE_LIMIT_IDENTITY_HEADER" in locals():
+    RATE_LIMIT_IDENTITY_HEADER = Field(
+        default={{ defaults.identity_header | default('X-RateLimit-Identity') | tojson }},
+        description="Header used to derive per-identity buckets.",
+    )
+else:
+    RATE_LIMIT_IDENTITY_HEADER: Optional[str] = Field(
+        default={{ defaults.identity_header | default('X-RateLimit-Identity') | tojson }},
+        description="Header used to derive per-identity buckets.",
+    )
+
+if "RATE_LIMIT_DEFAULT_RULE_NAME" in locals():
+    RATE_LIMIT_DEFAULT_RULE_NAME = Field(
+        default={{ defaults.default_rule_name | default('default') | tojson }},
+        description="Name assigned to the default rate limit rule.",
+    )
+else:
+    RATE_LIMIT_DEFAULT_RULE_NAME: str = Field(
+        default={{ defaults.default_rule_name | default('default') | tojson }},
+        description="Name assigned to the default rate limit rule.",
+    )
+
+if "RATE_LIMIT_DEFAULT_LIMIT" in locals():
+    RATE_LIMIT_DEFAULT_LIMIT = Field(
+        default={{ defaults.default_limit | default(120) | tojson }},
+        description="Default request allowance per window.",
+    )
+else:
+    RATE_LIMIT_DEFAULT_LIMIT: int = Field(
+        default={{ defaults.default_limit | default(120) | tojson }},
+        description="Default request allowance per window.",
+    )
+
+if "RATE_LIMIT_DEFAULT_WINDOW" in locals():
+    RATE_LIMIT_DEFAULT_WINDOW = Field(
+        default={{ defaults.default_window | default(60) | tojson }},
+        description="Default rate limit window in seconds.",
+    )
+else:
+    RATE_LIMIT_DEFAULT_WINDOW: int = Field(
+        default={{ defaults.default_window | default(60) | tojson }},
+        description="Default rate limit window in seconds.",
+    )
+
+if "RATE_LIMIT_DEFAULT_SCOPE" in locals():
+    RATE_LIMIT_DEFAULT_SCOPE = Field(
+        default={{ defaults.default_scope | default('identity') | tojson }},
+        description="Default scope for new rate limit rules.",
+    )
+else:
+    RATE_LIMIT_DEFAULT_SCOPE: str = Field(
+        default={{ defaults.default_scope | default('identity') | tojson }},
+        description="Default scope for new rate limit rules.",
+    )
+
+if "RATE_LIMIT_DEFAULT_PRIORITY" in locals():
+    RATE_LIMIT_DEFAULT_PRIORITY = Field(
+        default={{ defaults.default_priority | default(100) | tojson }},
+        description="Priority applied to the default rule when sorting.",
+    )
+else:
+    RATE_LIMIT_DEFAULT_PRIORITY: int = Field(
+        default={{ defaults.default_priority | default(100) | tojson }},
+        description="Priority applied to the default rule when sorting.",
+    )
+
+if "RATE_LIMIT_DEFAULT_BLOCK_SECONDS" in locals():
+    RATE_LIMIT_DEFAULT_BLOCK_SECONDS = Field(
+        default={{ defaults.default_block_seconds | default("None", true) }},
+        description="Optional block duration applied when limits are exceeded.",
+    )
+else:
+    RATE_LIMIT_DEFAULT_BLOCK_SECONDS: Optional[int] = Field(
+        default={{ defaults.default_block_seconds | default("None", true) }},
+        description="Optional block duration applied when limits are exceeded.",
+    )
+
+if "RATE_LIMIT_HEADER_LIMIT" in locals():
+    RATE_LIMIT_HEADER_LIMIT = Field(
+        default={{ defaults.headers.limit | default('X-RateLimit-Limit') | tojson }},
+        description="Header name for communicating total request limit.",
+    )
+else:
+    RATE_LIMIT_HEADER_LIMIT: str = Field(
+        default={{ defaults.headers.limit | default('X-RateLimit-Limit') | tojson }},
+        description="Header name for communicating total request limit.",
+    )
+
+if "RATE_LIMIT_HEADER_REMAINING" in locals():
+    RATE_LIMIT_HEADER_REMAINING = Field(
+        default={{ defaults.headers.remaining | default('X-RateLimit-Remaining') | tojson }},
+        description="Header name for communicating remaining quota.",
+    )
+else:
+    RATE_LIMIT_HEADER_REMAINING: str = Field(
+        default={{ defaults.headers.remaining | default('X-RateLimit-Remaining') | tojson }},
+        description="Header name for communicating remaining quota.",
+    )
+
+if "RATE_LIMIT_HEADER_RESET" in locals():
+    RATE_LIMIT_HEADER_RESET = Field(
+        default={{ defaults.headers.reset | default('X-RateLimit-Reset') | tojson }},
+        description="Header name for communicating reset timestamps.",
+    )
+else:
+    RATE_LIMIT_HEADER_RESET: str = Field(
+        default={{ defaults.headers.reset | default('X-RateLimit-Reset') | tojson }},
+        description="Header name for communicating reset timestamps.",
+    )
+
+if "RATE_LIMIT_HEADER_RETRY_AFTER" in locals():
+    RATE_LIMIT_HEADER_RETRY_AFTER = Field(
+        default={{ defaults.headers.retry_after | default('Retry-After') | tojson }},
+        description="Header name for communicating retry-after durations.",
+    )
+else:
+    RATE_LIMIT_HEADER_RETRY_AFTER: str = Field(
+        default={{ defaults.headers.retry_after | default('Retry-After') | tojson }},
+        description="Header name for communicating retry-after durations.",
+    )
+
+if "RATE_LIMIT_HEADER_RULE" in locals():
+    RATE_LIMIT_HEADER_RULE = Field(
+        default={{ defaults.headers.rule | default('X-RateLimit-Rule') | tojson }},
+        description="Header name for communicating the matched rule.",
+    )
+else:
+    RATE_LIMIT_HEADER_RULE: str = Field(
+        default={{ defaults.headers.rule | default('X-RateLimit-Rule') | tojson }},
+        description="Header name for communicating the matched rule.",
+    )
+
+if "RATE_LIMIT_RULES_JSON" in locals():
+    RATE_LIMIT_RULES_JSON = Field(
+        default="",
+        description="JSON payload containing additional rate limit rules.",
+    )
+else:
+    RATE_LIMIT_RULES_JSON: str = Field(
+        default="",
+        description="JSON payload containing additional rate limit rules.",
+    )

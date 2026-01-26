@@ -1,0 +1,1 @@
+# Shared .gitkeep for empty folders (ensures src, tests, .rapidkit always exist)

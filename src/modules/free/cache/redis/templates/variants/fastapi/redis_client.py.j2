@@ -1,0 +1,137 @@
+"""Project-facing wrapper around the vendor Redis client runtime."""
+
+from __future__ import annotations
+
+import importlib.util
+import os
+import sys
+from functools import lru_cache
+from pathlib import Path
+from types import ModuleType
+from typing import Any
+
+_VENDOR_MODULE = "{{ rapidkit_vendor_module }}"
+_VENDOR_VERSION = "{{ rapidkit_vendor_version }}"
+_VENDOR_RELATIVE_PATH = "{{ vendor_client_relative }}"
+_VENDOR_ROOT_ENV = "RAPIDKIT_VENDOR_ROOT"
+_CACHE_PREFIX = "rapidkit_vendor_redis_client"
+
+
+def _project_root() -> Path:
+    return Path(__file__).resolve().parents[5]
+
+
+def _vendor_root() -> Path:
+    override = os.getenv(_VENDOR_ROOT_ENV)
+    if override:
+        return Path(override).expanduser().resolve()
+    return _project_root() / ".rapidkit" / "vendor"
+
+
+def _vendor_base_dir() -> Path:
+    root = _vendor_root()
+    module_dir = root / _VENDOR_MODULE
+    preferred = module_dir / _VENDOR_VERSION if _VENDOR_VERSION else None
+    if preferred and preferred.exists():
+        return preferred
+    candidates = sorted((p for p in module_dir.glob("*") if p.is_dir()), reverse=True)
+    if candidates:
+        return candidates[0]
+    raise RuntimeError(
+        "RapidKit vendor payload for '{module}' not found under {root}. "
+        "Re-run `rapidkit modules install {module}`.".format(module=_VENDOR_MODULE, root=root)
+    )
+
+
+def _vendor_file() -> Path:
+    relative = _VENDOR_RELATIVE_PATH
+    if not relative:
+        raise RuntimeError("Redis vendor relative path missing from generator context")
+    return _vendor_base_dir() / relative
+
+
+@lru_cache(maxsize=1)
+def _load_vendor_module() -> ModuleType:
+    vendor_path = _vendor_file()
+    if not vendor_path.exists():
+        raise RuntimeError(
+            "RapidKit vendor Redis file missing at {path}. "
+            "Re-run `rapidkit modules install {module}`.".format(
+                path=vendor_path,
+                module=_VENDOR_MODULE,
+            )
+        )
+
+    module_name = _CACHE_PREFIX + _VENDOR_MODULE.replace("/", "_")
+    spec = importlib.util.spec_from_file_location(module_name, vendor_path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Unable to load vendor Redis module from {vendor_path}")
+
+    module = importlib.util.module_from_spec(spec)
+    sys.modules.setdefault(module_name, module)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _resolve_export(name: str):
+    vendor = _load_vendor_module()
+    try:
+        return getattr(vendor, name)
+    except AttributeError as exc:  # pragma: no cover - defensive against drift
+        raise RuntimeError(f"Vendor Redis module missing attribute '{name}'") from exc
+
+
+def refresh_vendor_module() -> None:
+    """Clear vendor import caches (useful after module upgrades)."""
+
+    _load_vendor_module.cache_clear()
+
+
+AsyncRedis = _resolve_export("AsyncRedis")
+SyncRedis = _resolve_export("SyncRedis")
+RedisClient = _resolve_export("RedisClient")
+RedisSyncClient = _resolve_export("RedisSyncClient")
+DEFAULTS = _resolve_export("DEFAULTS")
+build_redis_url = _resolve_export("build_redis_url")
+check_redis_connection = _resolve_export("check_redis_connection")
+get_redis = _resolve_export("get_redis")
+get_redis_sync = _resolve_export("get_redis_sync")
+redis_dependency = _resolve_export("redis_dependency")
+register_redis = _resolve_export("register_redis")
+_vendor_get_redis_metadata = _resolve_export("get_redis_metadata")
+
+
+def get_redis_metadata() -> dict[str, Any]:
+    """Augment vendor metadata with module identification details."""
+
+    metadata = dict(_vendor_get_redis_metadata())
+    metadata.setdefault("module", _VENDOR_MODULE)
+    if _VENDOR_VERSION:
+        metadata["version"] = _VENDOR_VERSION
+    return metadata
+
+
+try:  # Optional override contracts (enterprise deployments)
+    from core.services.override_contracts import apply_module_overrides
+except ImportError:  # pragma: no cover - override system optional
+    apply_module_overrides = None
+
+if apply_module_overrides is not None:  # pragma: no branch - tiny guard
+    apply_module_overrides(sys.modules[__name__], "redis")
+
+
+__all__ = [
+    "AsyncRedis",
+    "SyncRedis",
+    "RedisClient",
+    "RedisSyncClient",
+    "DEFAULTS",
+    "build_redis_url",
+    "check_redis_connection",
+    "get_redis",
+    "get_redis_sync",
+    "redis_dependency",
+    "register_redis",
+    "refresh_vendor_module",
+    "get_redis_metadata",
+]

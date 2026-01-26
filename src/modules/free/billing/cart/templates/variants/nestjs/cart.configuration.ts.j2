@@ -1,0 +1,69 @@
+import { registerAs } from "@nestjs/config";
+
+const DEFAULTS = {{ cart_defaults | default({}) | tojson(indent=2) }};
+const DISCOUNT_RULES = {{ cart_discount_rules | default([]) | tojson(indent=2) }};
+
+const parseBoolean = (value: string | undefined, fallback: boolean): boolean => {
+  if (typeof value !== "string") {
+    return fallback;
+  }
+  const normalized = value.trim().toLowerCase();
+  if (["1", "true", "yes", "on"].includes(normalized)) {
+    return true;
+  }
+  if (["0", "false", "no", "off"].includes(normalized)) {
+    return false;
+  }
+  return fallback;
+};
+
+export interface CartDiscountRule {
+  code: string;
+  description: string;
+  percentage?: string;
+  amount?: string;
+  applies_to: string[];
+  minimum_subtotal: string;
+}
+
+export interface CartConfiguration {
+  currency: string;
+  tax_rate: string;
+  apply_tax_before_discounts: boolean;
+  default_discount_code: string | null;
+  auto_apply_default_discount: boolean;
+  max_unique_items: number;
+  metadata: Record<string, unknown>;
+  discount_rules: CartDiscountRule[];
+}
+
+const parseNumber = (value: string | undefined, fallback: number): number => {
+  if (typeof value !== "string") {
+    return fallback;
+  }
+  const parsed = Number.parseInt(value, 10);
+  return Number.isNaN(parsed) ? fallback : parsed;
+};
+
+export default registerAs("cart", (): CartConfiguration => {
+  return {
+    currency: process.env.RAPIDKIT_CART_CURRENCY ?? (DEFAULTS.currency ?? "USD"),
+    tax_rate: process.env.RAPIDKIT_CART_TAX_RATE ?? (DEFAULTS.tax_rate ?? "0.0000"),
+    apply_tax_before_discounts: parseBoolean(
+      process.env.RAPIDKIT_CART_TAX_BEFORE_DISCOUNTS,
+      Boolean(DEFAULTS.apply_tax_before_discounts ?? false),
+    ),
+    default_discount_code:
+      process.env.RAPIDKIT_CART_DEFAULT_DISCOUNT ?? DEFAULTS.default_discount_code ?? null,
+    auto_apply_default_discount: parseBoolean(
+      process.env.RAPIDKIT_CART_AUTO_APPLY_DEFAULT,
+      Boolean(DEFAULTS.auto_apply_default_discount ?? false),
+    ),
+    max_unique_items: parseNumber(
+      process.env.RAPIDKIT_CART_MAX_UNIQUE_ITEMS,
+      Number(DEFAULTS.max_unique_items ?? 100),
+    ),
+    metadata: DEFAULTS.metadata ?? {},
+    discount_rules: DISCOUNT_RULES,
+  };
+});

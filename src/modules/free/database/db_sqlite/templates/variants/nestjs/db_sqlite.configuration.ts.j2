@@ -1,0 +1,38 @@
+import { registerAs } from '@nestjs/config';
+
+interface DbSqlitePoolConfig {
+  maxSize: number;
+  recycleSeconds: number;
+}
+
+export interface DbSqliteConfig {
+  module: string;
+  databasePath: string;
+  createIfMissing: boolean;
+  timeoutSeconds: number;
+  isolationLevel: string | null;
+  detectTypes: string | null;
+  checkSameThread: boolean;
+  pragmas: Record<string, string>;
+  pool: DbSqlitePoolConfig;
+  retryAttempts: number;
+}
+
+export const dbSqliteConfiguration = registerAs(
+  'dbSqlite',
+  (): DbSqliteConfig => ({
+    module: {{ rapidkit_vendor_module | tojson }},
+    databasePath: {{ default_database_path | tojson }},
+    createIfMissing: {{ default_create_if_missing | tojson }},
+    timeoutSeconds: {{ default_timeout_seconds | tojson }},
+    isolationLevel: {{ default_isolation_level | tojson }},
+    detectTypes: {{ default_detect_types | tojson }},
+    checkSameThread: {{ default_check_same_thread | tojson }},
+    pragmas: {{ default_pragmas | tojson(indent=2) }},
+    pool: {
+      maxSize: {{ default_pool.max_size | tojson }},
+      recycleSeconds: {{ default_pool.recycle_seconds | tojson }},
+    },
+    retryAttempts: {{ default_retry_attempts | tojson }},
+  }),
+);

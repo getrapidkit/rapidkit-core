@@ -1,0 +1,48 @@
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { IsNotEmpty, IsString } from 'class-validator';
+
+import {
+  LoggerLevelSnapshot,
+  LoggingMetadata,
+  LoggingService,
+  LoggingConfigurationSnapshot,
+} from './logging.service';
+
+class UpdateLevelDto {
+  @IsString()
+  @IsNotEmpty()
+  level!: string;
+}
+
+@Controller('{{ module_kebab }}')
+export class LoggingController {
+  constructor(private readonly service: LoggingService) {}
+
+  @Get()
+  readConfiguration(): LoggingConfigurationSnapshot {
+    return this.service.configuration;
+  }
+
+  @Get('metadata')
+  readMetadata(): LoggingMetadata {
+    return this.service.getMetadata();
+  }
+
+  @Get('health')
+  readHealth(): LoggingMetadata {
+    return this.service.getHealth();
+  }
+
+  @Post('refresh')
+  refreshVendor(): LoggingMetadata {
+    return this.service.refreshVendorMetadata();
+  }
+
+  @Post('level/:loggerName')
+  updateLevel(
+    @Param('loggerName') loggerName: string,
+    @Body() payload: UpdateLevelDto,
+  ): LoggerLevelSnapshot {
+    return this.service.updateLoggerLevel(loggerName, payload.level);
+  }
+}

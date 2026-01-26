@@ -1,0 +1,168 @@
+import { registerAs } from '@nestjs/config';
+
+import type { CeleryModuleConfig } from './celery.service';
+
+type UnknownRecord = Record<string, unknown>;
+type StringRecord = Record<string, string>;
+
+const DEFAULTS = {{ celery_defaults | tojson(indent=2) }} as UnknownRecord;
+const SETTINGS_DEFAULTS = {{ celery_settings_defaults | tojson(indent=2) }} as UnknownRecord;
+
+const ensureString = (value: unknown, fallback: string): string => {
+  if (typeof value !== 'string') {
+    return fallback;
+  }
+  const trimmed = value.trim();
+  return trimmed ? trimmed : fallback;
+};
+
+const ensureStringOrNull = (value: unknown): string | null => {
+  if (typeof value !== 'string') {
+    return null;
+  }
+  const trimmed = value.trim();
+  return trimmed ? trimmed : null;
+};
+
+const ensureStringArray = (value: unknown, fallback: string[]): string[] => {
+  if (Array.isArray(value)) {
+    return value.map((item) => String(item).trim()).filter((item) => item.length > 0);
+  }
+  return [...fallback];
+};
+
+const coerceBoolean = (value: string | undefined, fallback: boolean): boolean => {
+  if (typeof value !== 'string') {
+    return fallback;
+  }
+  const normalised = value.trim().toLowerCase();
+  if (['1', 'true', 'yes', 'on', 'enabled'].includes(normalised)) {
+    return true;
+  }
+  if (['0', 'false', 'no', 'off', 'disabled'].includes(normalised)) {
+    return false;
+  }
+  return fallback;
+};
+
+const coerceInteger = (value: string | undefined, fallback: number | null): number | null => {
+  if (typeof value !== 'string') {
+    return fallback;
+  }
+  const parsed = Number.parseInt(value.trim(), 10);
+  if (Number.isNaN(parsed)) {
+    return fallback;
+  }
+  return parsed;
+};
+
+const parseList = (value: string | undefined, fallback: string[]): string[] => {
+  if (typeof value !== 'string') {
+    return [...fallback];
+  }
+  const segments = value
+    .split(',')
+    .map((segment) => segment.trim())
+    .filter((segment) => segment.length > 0);
+  return segments.length > 0 ? segments : [...fallback];
+};
+
+const parseJsonRecord = (value: string | undefined, fallback: StringRecord): StringRecord => {
+  try {
+    if (!value) {
+      return { ...fallback };
+    }
+    const parsed = JSON.parse(value);
+    if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+      return { ...fallback };
+    }
+    return Object.entries(parsed as StringRecord).reduce<StringRecord>((acc, [key, entry]) => {
+      if (!key) {
+        return acc;
+      }
+      acc[key] = String(entry);
+      return acc;
+    }, { ...fallback });
+  } catch {
+    return { ...fallback };
+  }
+};
+
+export interface CeleryConfiguration extends CeleryModuleConfig {
+  module: string;
+  name: string;
+  namespace: string;
+  autodiscover: string[];
+  resultExpires: number | null;
+}
+
+const DEFAULT_AUTODISCOVER = ensureStringArray(DEFAULTS.autodiscover, []);
+const DEFAULT_HEADERS: StringRecord = {
+  'X-RapidKit-Module': {{ rapidkit_vendor_module | tojson }},
+};
+const DEFAULT_BROKER_URL = ensureString(
+  SETTINGS_DEFAULTS.broker_url,
+  'redis://localhost:6379/0',
+);
+const DEFAULT_RESULT_BACKEND = ensureStringOrNull(SETTINGS_DEFAULTS.result_backend);
+const DEFAULT_DEFAULT_QUEUE = ensureString(
+  SETTINGS_DEFAULTS.task_default_queue,
+  'default',
+);
+const DEFAULT_RESULT_EXPIRES = coerceInteger(
+  typeof SETTINGS_DEFAULTS.result_expires === 'number'
+    ? String(SETTINGS_DEFAULTS.result_expires)
+    : undefined,
+  null,
+);
+
+export const CELERY_CONFIGURATION_NAMESPACE = 'celery';
+
+export const celeryConfiguration = registerAs(
+  CELERY_CONFIGURATION_NAMESPACE,
+  (): CeleryConfiguration => {
+    const autodiscover = parseList(process.env.CELERY_AUTODISCOVER, DEFAULT_AUTODISCOVER);
+    const defaultHeaders = parseJsonRecord(
+      process.env.CELERY_DEFAULT_HEADERS,
+      DEFAULT_HEADERS,
+    );
+
+    const brokerUrl = ensureString(
+      process.env.CELERY_BROKER_URL ?? DEFAULT_BROKER_URL,
+      DEFAULT_BROKER_URL,
+    );
+    const resultBackend = ensureStringOrNull(
+      process.env.CELERY_RESULT_BACKEND ?? DEFAULT_RESULT_BACKEND ?? undefined,
+    );
+    const defaultQueue = ensureString(
+      process.env.CELERY_DEFAULT_QUEUE ?? DEFAULT_DEFAULT_QUEUE,
+      DEFAULT_DEFAULT_QUEUE,
+    );
+
+    const resultExpires = coerceInteger(
+      process.env.CELERY_RESULT_EXPIRES,
+      DEFAULT_RESULT_EXPIRES,
+    );
+
+    return {
+      module: {{ rapidkit_vendor_module | tojson }},
+      name: ensureString(
+        process.env.CELERY_APP_NAME,
+        ensureString(DEFAULTS.name, 'rapidkit'),
+      ),
+      namespace: ensureString(
+        process.env.CELERY_NAMESPACE,
+        ensureString(DEFAULTS.namespace, 'CELERY'),
+      ),
+      autodiscover,
+      enabled: coerceBoolean(process.env.CELERY_ENABLED, true),
+      connection: {
+        brokerUrl,
+        resultBackend: resultBackend ?? undefined,
+        defaultQueue,
+      },
+      defaultHeaders,
+      resultExpires,
+    };
+  },
+);

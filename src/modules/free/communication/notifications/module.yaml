@@ -1,0 +1,220 @@
+name: notifications
+version: 0.1.17
+tier: free
+access: free
+status: stable
+category: communication
+description: Email and push notification delivery scaffolding.
+tags:
+    - communication
+    - notifications
+    - email
+generated_from_config: true
+depends_on:
+    - free/essentials/settings
+profile_inherits:
+    fastapi.standard: fastapi
+    fastapi.ddd: fastapi
+    nestjs.standard: nestjs
+metadata:
+    title: Email & Push Notifications
+    description:
+        Email notifications, templates, and delivery service for FastAPI and
+        NestJS
+    maintainer: RapidKit Core Team
+    support_contact: platform@rapidkit.top
+config_sources:
+    - config/base.yaml
+    - config/snippets.yaml
+generation:
+    vendor:
+        root: .rapidkit/vendor
+        files:
+            - template: templates/base/notifications.py.j2
+              relative: runtime/communication/notifications.py
+            - template: templates/base/notifications_health.py.j2
+              relative: runtime/communication/notifications_health.py
+            - template: templates/base/notifications_types.py.j2
+              relative: runtime/communication/notifications_types.py
+            - template: templates/vendor/nestjs/configuration.js.j2
+              relative: notifications/nestjs/configuration.js
+    variants:
+        fastapi: &fastapi_variant
+            root: .
+            context:
+                framework: fastapi
+                module_class_name: Notifications
+                runtime: python
+            files:
+                - template: templates/variants/fastapi/notifications.py.j2
+                  output: src/modules/free/communication/notifications/core/notifications.py
+                - template: templates/variants/fastapi/notifications_routes.py.j2
+                  output: src/modules/free/communication/notifications/routers/notifications.py
+                  description: FastAPI routes exposing Notifications operations
+                - template: templates/variants/fastapi/notifications_config.yaml.j2
+                  output: config/communication/notifications.yaml
+                  description: Default Notifications configuration values
+                - template: templates/variants/fastapi/tests/test_notifications_integration.py.j2
+                  output: tests/modules/free/integration/notifications/test_notifications_integration.py
+                  description: Integration tests for Notifications module
+        fastapi.standard: *fastapi_variant
+        fastapi.ddd: *fastapi_variant
+        nestjs: &nestjs_variant
+            root: .
+            context:
+                framework: nestjs
+                module_class_name: Notifications
+                module_kebab: notifications
+                runtime: node
+            files:
+                - template: templates/variants/nestjs/notifications.service.ts.j2
+                  output: src/modules/free/communication/notifications/notifications.service.ts
+                - template: templates/variants/nestjs/notifications.controller.ts.j2
+                  output: src/modules/free/communication/notifications/notifications.controller.ts
+                - template: templates/variants/nestjs/notifications.module.ts.j2
+                  output: src/modules/free/communication/notifications/notifications.module.ts
+                - template: templates/variants/nestjs/notifications.configuration.ts.j2
+                  output: src/modules/free/communication/notifications/notifications.configuration.ts
+                - template: templates/variants/nestjs/notifications.health.ts.j2
+                  output: src/modules/free/communication/notifications/notifications.health.ts
+                - template: templates/tests/integration/notifications.integration.spec.ts.j2
+                  output: tests/modules/integration/communication/notifications.integration.spec.ts
+                - template: templates/variants/nestjs/tests/notifications.e2e-spec.ts
+                  output: tests/modules/e2e/free/communication/notifications/notifications.e2e-spec.ts
+
+        nestjs.standard: *nestjs_variant
+    snippets:
+        enabled: true
+        config: config/snippets.yaml
+        default:
+            - notifications_env
+            - notifications_settings_fields
+dependencies:
+    fastapi:
+        - name: email-validator
+          source: external
+          tool: pip
+          version: ">=2.0.0,<3.0"
+          description: Required by Pydantic EmailStr validation
+    nestjs:
+        - name: nodemailer
+          source: npm
+          tool: npm
+          version: ">=6.9.0,<7.0"
+          description: SMTP email delivery
+        - name: handlebars
+          source: npm
+          tool: npm
+          version: ">=4.7.8,<5.0"
+          description: Email template rendering
+compatibility:
+    breaking: 1.0.0
+    deprecated: null
+    migration_guide: https://docs.rapidkit.top/modules/notifications/migration
+    python: ">=3.10"
+    frameworks:
+        - fastapi
+        - nestjs
+    os:
+        - linux
+        - darwin
+        - windows
+testing:
+    coverage_min: 85
+    integration_tests: true
+    e2e_tests: false
+    unit_tests:
+        - tests/modules/free/communication/notifications/test_notifications_generate.py
+        - tests/modules/free/communication/notifications/test_notifications_cli_entry.py
+    integration_test_files:
+        - tests/modules/free/integration/notifications/test_notifications_integration.py
+    fixtures: []
+documentation:
+    changelog: docs/changelog.md
+    readme: README.md
+    overview: docs/overview.md
+    usage: docs/usage.md
+    advanced: docs/advanced.md
+    migration: docs/migration.md
+    troubleshooting: docs/troubleshooting.md
+    api_docs: null
+    examples: []
+support:
+    issues: https://github.com/getrapidkit/core/issues
+    discussions: https://github.com/getrapidkit/core/discussions
+    documentation: https://docs.rapidkit.top/modules/notifications
+changelog:
+  - version: "0.1.17"
+    date: "2026-01-04"
+    notes: "See docs/changelog.md"
+validation:
+    pre_install:
+        - check_python_version
+        - check_dependencies
+    post_install:
+        - validate_generated_code
+        - run_tests
+rollback:
+    strategy: uninstall
+    backup_path: .rapidkit/backups/
+    max_backups: 5
+performance:
+    lazy_loading: true
+    caching:
+        templates: true
+        ttl: 300
+capabilities: []
+file_hashes:
+    templates/variants/nestjs/tests/notifications.e2e-spec.ts: sha256:48ef34c26144166931b106a4f7f6b96871287a071f73210953ebe53e3f8087e1
+    templates/variants/fastapi/tests/test_notifications_e2e.py: sha256:27db17ac1b467fa13c6bdf6c78350944dc27a54d8ed5553570ee4adb5d93ed35
+    scripts/run_demo.py: sha256:a7c436b14aa87168949ef529ab9a8d8f57a77d90558103b3a5c78e2112544b45
+    README.md: sha256:19f32e364ebceb3ef9558a42c7623971c42f06b03b7f20855ff7912ee3830fbf
+    __init__.py: sha256:644f0edecead7050895090d7d435a9055c9282fb64eb0f65e86bd0347185ebe5
+    config/base.yaml: sha256:ae225862ef9c14f46d8494ed88af42804eae96b9162bb4b35a7e6fa8ab7f10d3
+    config/snippets.yaml: sha256:a3cf9b7545892293fdd0bc47324c824353d41e0e7138aa6a49108878add13789
+    docs/README.md: sha256:839cc2f9c5adbfb8c9efdf7ca279ec22d214a5c7f6c8607ab154d970bcc6647a
+    docs/advanced.md: sha256:bc47b2dda0b7e75b7b8617ccc9ef2050c2e5cc3fd8ea9eceed7026c8e8c5fb98
+    docs/changelog.md: sha256:45aeff266831239eac3b3d43431eb3afb81120297d5a3babc033b4ba90cdfa72
+    docs/migration.md: sha256:03f6cc24dcdbfd799063ce232e414f56f2e88dd5be535b323f29c783b9b9db44
+    docs/overview.md: sha256:5728ed2b0e85f2a0304a24d8730ec2d21958de49ca2d96ecd52764e8e4ce6a6e
+    docs/troubleshooting.md: sha256:bf91812fe26cd39029a85fca6f4d967df59c807d904e5079db94d26dcaed0292
+    docs/usage.md: sha256:9c4bf0e663d1af43d278653e3a454653dafd058314c5c5618eb539cb07849829
+    frameworks/__init__.py: sha256:21db2ccea680e25604357e182721b5e5cd85d4da761cb845dfeae1d845874e0b
+    frameworks/fastapi.py: sha256:706cad34ef2cc600c2e7d71e109447cae106c7344ea39c3892aadffa0462d0df
+    frameworks/nestjs.py: sha256:28424e92ef6be431b8ff6380b248bb3feae306546830d72b160eb7c6400df24b
+    generate.py: sha256:f9e53811ff921a41b9db7b144c7b8b6ded39a6777f551b2a614a991b97911b16
+    module.verify.json: sha256:1959eece05245fc2e71c7637f2b79767f818ee09fd2b496aef7be7de9dcfe368
+    overrides.py: sha256:433388a9d218e1159cc25aa132b748a9a490768709e2382f14f1c793f1242535
+    templates/__init__.py: sha256:829c91a7b342975972d0c4b5f22096f215871f18931f0897ac10d7a830877d14
+    templates/base/__init__.py: sha256:09656ba66e544f144fa7f45b1c084c52d6ea318e4af47a4f01114900a12a2f2b
+    templates/base/notifications.py.j2: sha256:fc1b6b0f7bacd65bfdfe52c46116808fb83a2074d51eb3cfd5a87a1b63efda77
+    templates/base/notifications_health.py.j2: sha256:4cd273cb5bee3782368dfdfe4a877d76582e1731cc564e36f98bbc90f49c136e
+    templates/base/notifications_types.py.j2: sha256:e3ae9059bd820f6b8d94492a2f2887e7479d584d500828ac8bd3e92542f9c430
+    templates/snippets/env.snippet.j2: sha256:e459ce10c84b54495ff7d3be11da1388ae665e196e938071458dbe6d37bb3ca1
+    templates/snippets/notifications.snippet.j2: sha256:e0d57d5b73c2b79cc661cc2a9b19a51b63be77f925aba64a7b70d0b5403c6fd4
+    templates/snippets/settings_fields.snippet.j2: sha256:51493bf6602d1910f9ed749d8706a23c75fabb7becdd9687ed5b85a0bf47a3cb
+    templates/tests/__init__.py: sha256:70c6bea74e775deecb25930582b89d390cadd28687ef5fa9ffbdfe1f191c126e
+    templates/tests/integration/__init__.py: sha256:3604a41cbaf5a7a54c7645b2c84e59dcfe51edafe408babc11e5f5e06c67f627
+    templates/tests/integration/notifications.integration.spec.ts.j2: sha256:5b6a379babde04078f13d760adb12a22bfd018048df0f1d299ef765e10b71d18
+    templates/tests/integration/test_notifications_integration.j2: sha256:b43b57a305a0fe3ce5b0a482dd911ffedadb5d31409efd9cc00ee47876693313
+    templates/variants/__init__.py: sha256:db49c2ed45e2a1c5cf52499b3229b48617ae386afc90d9d79324ccf4392db986
+    templates/variants/fastapi/__init__.py: sha256:76c123c7f2de4a83bea209c159ac6ed206da23d1341fb37276d84808d58afe9f
+    templates/variants/fastapi/notifications.py.j2: sha256:4b0c076cc76703360bf13e2f7e09285eff9639d0bc49bc0d567184b2d9c4f681
+    templates/variants/fastapi/notifications_config.yaml.j2: sha256:9126acd89450db57624790ab2166ba9d1873052de6937e9555f0fbef5d79b393
+    templates/variants/fastapi/notifications_health.py.j2: sha256:92f207c22b187ac97b5c0a31d7dd6e34771c21e682ee9c3946bf15496925a179
+    templates/variants/fastapi/notifications_routes.py.j2: sha256:878a7842fd1f6363962b9249a5504307c22fe0cb4fc07771d8f6b1435498bb57
+    templates/variants/fastapi/tests/test_notifications_integration.py.j2: sha256:b4ce92069c7cdd047df352b480c16d9fd948e2a584867ab0c840fdab13e59e1f
+    templates/variants/nestjs/__init__.py: sha256:a80e3fb613dd6c385742cc2497933345e797eacb729c8714b542ad1fbc8ee702
+    templates/variants/nestjs/notifications.configuration.ts.j2: sha256:29e5566bc3cb03b392f946d552fa2185519ad870a298b100663520b7ffcc6f82
+    templates/variants/nestjs/notifications.controller.ts.j2: sha256:88811b2565c4d7675764db245e34d700bd27935908934cc3383499371996d0fa
+    templates/variants/nestjs/notifications.health.ts.j2: sha256:325ba7a2146da54d7dc9aa10459cd8b3ab00cd34532377d07050b87938edeb2e
+    templates/variants/nestjs/notifications.module.ts.j2: sha256:b0d12bcfe8b01e4c7b37a50e9691e74154f72327c4bccf45fa1e3ed34b0d78b6
+    templates/variants/nestjs/notifications.service.ts.j2: sha256:2ed1c7be64e43ef6cce70f86e12ac99b2c9c2712ee96f612b0af18182c91318b
+    templates/vendor/__init__.py: sha256:23068040c7be5be62357fc60d582bd212a2ed54c623a8c662c9e7bda524d671b
+    templates/vendor/nestjs/configuration.js.j2: sha256:3181bd4fd40f1bd8067ed5d272a7e60ddfb2337143cb10afc4f6bd0bb08b79b9
+signature:
+    signature: null
+    signer_id: null
+    signature_version: null
+signer_id: null
+signature_version: null

@@ -1,0 +1,13 @@
+{%- set defaults = cart_defaults or {} -%}
+# RapidKit generated configuration for {{ module_title }}.
+# Update values to match your pricing model, taxation policy, and discount strategy.
+
+cart:
+  currency: {{ defaults.get("currency", "USD") | tojson }}
+  tax_rate: {{ defaults.get("tax_rate", "0.0000") | tojson }}
+  apply_tax_before_discounts: {{ defaults.get("apply_tax_before_discounts", False) | tojson }}
+  default_discount_code: {{ defaults.get("default_discount_code") | tojson }}
+  auto_apply_default_discount: {{ defaults.get("auto_apply_default_discount", False) | tojson }}
+  max_unique_items: {{ defaults.get("max_unique_items", 100) | tojson }}
+  metadata: {{ defaults.get("metadata", {}) | tojson }}
+  discount_rules: {{ cart_discount_rules | default([]) | tojson(indent=2) }}

@@ -1,0 +1,180 @@
+"""Canonical FastAPI health router and helpers for the logging module."""
+
+from __future__ import annotations
+
+import logging
+import sys
+import importlib.util
+import time
+from pathlib import Path
+from types import SimpleNamespace
+from typing import Any, Dict, cast
+
+
+def _ensure_logging_runtime_importable() -> None:
+    """Ensure the generated project src/ directory is importable."""
+
+    current = Path(__file__).resolve()
+    for ancestor in current.parents:
+        src_dir = ancestor / "src"
+        candidate = src_dir / "modules" / "free" / "essentials" / "logging" / "logging.py"
+        if candidate.exists():
+            ancestor_str = str(ancestor)
+            if ancestor_str not in sys.path:
+                sys.path.insert(0, ancestor_str)
+            return
+    raise ModuleNotFoundError(
+        "Unable to locate 'src/modules/free/essentials/logging/logging.py' relative to the logging health shim"
+    )
+
+
+try:
+    from src.modules.free.essentials.logging.logging import (
+        get_logger,
+        get_logging_metadata,
+    )
+except ModuleNotFoundError:
+    _ensure_logging_runtime_importable()
+    runtime_module = None
+    for ancestor in Path(__file__).resolve().parents:
+        candidate = ancestor / "src" / "modules" / "free" / "essentials" / "logging" / "logging.py"
+        if not candidate.exists():
+            continue
+        spec = importlib.util.spec_from_file_location(
+            "src.modules.free.essentials.logging.logging", candidate
+        )
+        if spec is None or spec.loader is None:
+            continue
+        runtime_module = importlib.util.module_from_spec(spec)
+        sys.modules[spec.name] = runtime_module
+        spec.loader.exec_module(runtime_module)
+        break
+
+    if runtime_module is None:
+        raise
+
+    get_logger = runtime_module.get_logger  # type: ignore[attr-defined]
+    get_logging_metadata = runtime_module.get_logging_metadata  # type: ignore[attr-defined]
+
+APIRouter: Any
+FastAPIApp: Any
+status: Any
+JSONResponse: Any
+
+try:
+    from fastapi import APIRouter, FastAPI as FastAPIApp, status
+    from fastapi.responses import JSONResponse
+except ImportError:  # pragma: no cover - generated file must import safely without FastAPI
+    APIRouter = cast(Any, None)
+    FastAPIApp = cast(Any, None)
+    status = SimpleNamespace(HTTP_200_OK=200)
+    JSONResponse = None
+    _FASTAPI_AVAILABLE = False
+else:
+    _FASTAPI_AVAILABLE = True
+
+LOGGER = get_logger("logging.health")
+
+_START_MONOTONIC = time.monotonic()
+
+if _FASTAPI_AVAILABLE:
+    router = APIRouter(prefix="/api/health/module", tags=["health"])
+else:  # pragma: no cover - executed only when FastAPI is unavailable
+    router = None
+
+
+def collect_logging_health() -> Dict[str, Any]:
+    """Return aggregated metadata about the logging runtime."""
+
+    payload: Dict[str, Any] = {
+        # Strict health contract fields (required by stabilization runner).
+        "module": "{{ rapidkit_vendor_module }}",
+        "version": "{{ rapidkit_vendor_version }}",
+        "uptime": max(0.0, time.monotonic() - _START_MONOTONIC),
+        "module_version": "{{ rapidkit_vendor_version }}",
+        "status": "ok",
+    }
+
+    try:
+        vendor_metadata = get_logging_metadata()
+    except Exception as exc:  # pragma: no cover - defensive fallback
+        LOGGER.exception("Failed to collect logging metadata")
+        payload.update({"status": "error", "detail": str(exc) or "unknown failure"})
+        return payload
+
+    payload.update(vendor_metadata)
+    payload.setdefault("version", "{{ rapidkit_vendor_version }}")
+    return payload
+
+
+def build_health_payload(status: str = "ok", **extras: Any) -> Dict[str, Any]:
+    """Construct a canonical health payload for downstream frameworks."""
+
+    payload: Dict[str, Any] = {
+        "module": "{{ rapidkit_vendor_module }}",
+        "version": "{{ rapidkit_vendor_version }}",
+        "uptime": max(0.0, time.monotonic() - _START_MONOTONIC),
+        "module_version": "{{ rapidkit_vendor_version }}",
+        "status": status,
+    }
+    if extras:
+        payload.update(extras)
+    return payload
+
+
+if _FASTAPI_AVAILABLE:
+
+    @router.get(
+        "/logging",
+        status_code=status.HTTP_200_OK,
+        summary="Logging module health check",
+        responses={
+            status.HTTP_503_SERVICE_UNAVAILABLE: {
+                "description": "Logging subsystem unavailable",
+            }
+        },
+    )
+    async def logging_health_check() -> Any:
+        """Return status information about the logging subsystem."""
+
+        payload = collect_logging_health()
+        if payload.get("status") != "ok":
+            if JSONResponse is None:  # pragma: no cover - defensive guard
+                return payload
+            return JSONResponse(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                content=payload,
+            )
+
+        LOGGER.debug("Logging health endpoint invoked", extra={"payload": payload})
+        return payload
+
+
+else:  # pragma: no cover - executed only when FastAPI is unavailable
+
+    async def logging_health_check() -> Dict[str, Any]:
+        """Stub that surfaces a consistent error when FastAPI is unavailable."""
+
+        raise RuntimeError("FastAPI must be installed to use logging health endpoints")
+
+
+def register_logging_health(app: Any) -> None:
+    """Attach the logging health router to the provided FastAPI application."""
+
+    if not _FASTAPI_AVAILABLE:
+        raise RuntimeError("FastAPI must be installed to register logging health routes")
+    if FastAPIApp is not None and not isinstance(app, FastAPIApp):  # pragma: no cover - runtime guard
+        raise TypeError("register_logging_health expects a FastAPI application instance")
+    if router is None:  # pragma: no cover - defensive guard
+        raise RuntimeError("Logging health router unavailable")
+
+    app.include_router(router)
+
+
+__all__ = [
+    "collect_logging_health",
+    "build_health_payload",
+    "logging_health_check",
+    "register_logging_health",
+    "router",
+]

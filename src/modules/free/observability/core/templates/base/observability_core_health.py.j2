@@ -1,0 +1,60 @@
+"""Health helpers for {{ module_title }}."""
+
+from __future__ import annotations
+
+from typing import Any, Dict
+
+try:
+    from .{{ module_name }} import MODULE_NAME
+except Exception:  # pragma: no cover - fallback when relative import unavailable
+    MODULE_NAME = "{{ module_name }}"
+
+try:
+    from .{{ module_name }}_types import ObservabilitySummary
+except Exception:  # pragma: no cover - fallback to project types or shim
+    try:
+        from src.types.{{ module_name }} import ObservabilitySummary  # type: ignore
+    except Exception:
+        class ObservabilitySummary:
+            """Minimal shim used when full types module is not on the path."""
+
+            def __init__(self, **payload: Any) -> None:
+                self._payload = dict(payload)
+
+            def model_dump(self) -> Dict[str, Any]:
+                return dict(self._payload)
+
+
+def build_health_payload(**payload: Any) -> Dict[str, Any]:
+    summary = ObservabilitySummary(**payload)
+    result = summary.model_dump()
+    result.setdefault("module", MODULE_NAME)
+    return result
+
+
+def merge_metrics(base: Dict[str, Any], metrics: Dict[str, Any]) -> Dict[str, Any]:
+    """Merge health metrics onto the base payload."""
+
+    payload = dict(base)
+    merged_metrics = dict(payload.get("metrics", {}))
+    merged_metrics.update(metrics)
+    payload["metrics"] = merged_metrics
+    return payload
+
+
+def register_observability_core_health(app: Any) -> None:
+    """Attach health handlers; placeholder for framework-specific variants."""
+
+    # Framework adapters supply the actual router wiring.
+    return None
+
+
+router = None
+
+
+__all__ = [
+    "build_health_payload",
+    "merge_metrics",
+    "register_observability_core_health",
+    "router",
+]

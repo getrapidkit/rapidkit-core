@@ -1,0 +1,202 @@
+name: celery
+display_name: Celery
+description: Production-ready Celery task orchestration for asynchronous workloads
+version: 0.1.1
+tier: free
+access: free
+status: stable
+category: tasks
+tags:
+    - tasks
+    - queue
+    - async
+generated_from_config: true
+depends_on: []
+profile_inherits:
+    fastapi.standard: fastapi
+    fastapi.ddd: fastapi
+    nestjs.standard: nestjs
+metadata:
+    title: Celery Task Orchestration
+    description:
+        Production-ready task queue integration powered by Celery for Python
+        and NestJS workloads.
+    maintainer: RapidKit Core Team
+    support_contact: platform@rapidkit.top
+config_sources:
+    - config/base.yaml
+    - config/snippets.yaml
+generation:
+    vendor:
+        root: .rapidkit/vendor
+        files:
+            - template: templates/base/celery.py.j2
+              relative: src/modules/free/tasks/celery/celery.py
+            - template: templates/base/celery_health.py.j2
+              relative: src/health/celery.py
+            - template: templates/base/celery_types.py.j2
+              relative: src/modules/free/tasks/celery/celery_types.py
+            - template: templates/vendor/nestjs/configuration.js.j2
+              relative: nestjs/configuration.js
+    variants:
+        fastapi: &fastapi_variant
+            root: .
+            context:
+                framework: fastapi
+                module_class_name: Celery
+                vendor_runtime_relative: src/modules/free/tasks/celery/celery.py
+            files:
+                - template: templates/variants/fastapi/celery.py.j2
+                  output: src/modules/free/tasks/celery/celery.py
+                - template: templates/variants/fastapi/celery_routes.py.j2
+                  output: src/modules/free/tasks/celery/celery_routes.py
+                  description: FastAPI metadata routes for the Celery module
+                - template: templates/variants/fastapi/celery_config.yaml.j2
+                  output: config/tasks/celery.yaml
+                  description: Default Celery configuration for FastAPI projects
+                - template: templates/tests/integration/test_celery_integration.j2
+                  output: tests/modules/integration/tasks/test_celery_integration.py
+                  description: FastAPI integration test scaffold for the Celery module
+                - template: templates/variants/fastapi/tests/test_celery_e2e.py
+                  output: tests/modules/e2e/free/tasks/celery/test_celery_e2e.py
+
+        # Compatibility aliases: the runner installs with kit profile names.
+        fastapi.standard: *fastapi_variant
+        fastapi.ddd: *fastapi_variant
+
+        nestjs: &nestjs_variant
+            root: .
+            context:
+                framework: nestjs
+                vendor_configuration_relative: nestjs/configuration.js
+                module_class_name: Celery
+                module_kebab: celery
+            files:
+                - template: templates/variants/nestjs/celery.service.ts.j2
+                  output: src/modules/free/tasks/celery/celery.service.ts
+                - template: templates/variants/nestjs/celery.controller.ts.j2
+                  output: src/modules/free/tasks/celery/celery.controller.ts
+                - template: templates/variants/nestjs/celery.module.ts.j2
+                  output: src/modules/free/tasks/celery/celery.module.ts
+                - template: templates/variants/nestjs/celery.configuration.ts.j2
+                  output: src/modules/free/tasks/celery/celery.configuration.ts
+                  description: NestJS configuration bindings for the Celery module
+                - template: templates/variants/nestjs/celery.health.controller.ts.j2
+                  output: src/health/celery-health.controller.ts
+                  description: NestJS health controller for the Celery module
+                - template: templates/variants/nestjs/celery.health.module.ts.j2
+                  output: src/health/celery-health.module.ts
+                  description: NestJS health module wiring for the Celery module
+                - template: templates/tests/integration/celery.integration.spec.ts.j2
+                  output: tests/modules/integration/tasks/celery.integration.spec.ts
+                  description: NestJS integration test for the Celery module
+                - template: templates/variants/nestjs/tests/celery.e2e-spec.ts
+                  output: tests/modules/e2e/free/tasks/celery/celery.e2e-spec.ts
+
+        nestjs.standard: *nestjs_variant
+    snippets:
+        enabled: true
+        config: config/snippets.yaml
+        default:
+            - celery_env
+compatibility:
+    python: ">=3.10"
+    node: ">=18"
+    frameworks:
+        - fastapi
+        - nestjs
+    os:
+        - linux
+        - darwin
+        - windows
+testing:
+    coverage_min: 85
+    integration_tests: false
+    e2e_tests: false
+    unit_tests:
+        - tests/modules/free/tasks/celery/test_celery_generator.py
+        - tests/modules/free/tasks/celery/test_celery_integration.py
+    fixtures: []
+documentation:
+    changelog: docs/changelog.md
+    readme: README.md
+    overview: docs/overview.md
+    usage: docs/usage.md
+    advanced: docs/advanced.md
+    migration: docs/migration.md
+    troubleshooting: docs/troubleshooting.md
+    api_docs: null
+    examples: []
+support:
+    issues: https://github.com/getrapidkit/core/issues
+    discussions: https://github.com/getrapidkit/core/discussions
+    documentation: https://docs.rapidkit.top/modules/celery
+changelog:
+    - version: "0.1.1"
+      date: "2026-01-03"
+      notes: "See docs/changelog.md"
+validation:
+    pre_install:
+        - check_python_version
+        - check_dependencies
+    post_install:
+        - validate_generated_code
+        - run_tests
+rollback:
+    strategy: uninstall
+    backup_path: .rapidkit/backups/
+    max_backups: 5
+performance:
+    lazy_loading: true
+    caching:
+        templates: true
+        ttl: 300
+capabilities:
+    - tasks
+    - async
+    - queue
+signature:
+    signature: 2/ks13yRwdn4AZkmier8c7q+dVOZNWNC06/Eh1q8XbnRdL8p5paDyy3O81yyu/H7iA4yxemiTttTXHyEvUWWBA==
+    signer_id: c7eb213b1ac6d8c6
+    signature_version: v1
+signer_id: null
+signature_version: null
+file_hashes:
+    templates/variants/nestjs/tests/celery.e2e-spec.ts: sha256:f7bc5964a4296e355a58db735005152fa207d33078f7dfe9bbb5102f09260b4e
+    templates/variants/fastapi/tests/test_celery_e2e.py: sha256:e790290d06fc6b6f5761b3fbd73493624a73ae61e5655961a59cd97da7b60811
+    scripts/run_demo.py: sha256:fb73fd39199512714fcab1c7bb68356cadd8b2b63bf541d225b86bf4d326f1e2
+    README.md: sha256:493698fb230657d9c8aaa091f0dfba395de93c1b5300181444d5628373d63cd2
+    __init__.py: sha256:d484cb3e6a79cd43a40c2eb73d0d794fb1d684dd028c1574c084b8bbdc674689
+    config/base.yaml: sha256:a33eb9924ef1b51fa4d8f776d4be32ae214fb8a0ff0faa1b074027a4354832ad
+    config/snippets.yaml: sha256:4470e045592f19d205e12107e3398238b71c3d2ac4ff7fdd13a852e2f4ab2eaf
+    docs/README.md: sha256:3a3bb71ebe8e8690a0a54c5653beec10b90e01faa6a700b233dc9ac839255df4
+    docs/advanced.md: sha256:31b0ef14e7b6d344d659b1e805c7168be9549115c68578c341e532e8ae8d901d
+    docs/changelog.md: sha256:fcef877f68a8d690b47f2e5f2b9127bedd66b0729c89380fdc262eeae5fd9904
+    docs/migration.md: sha256:5e6d6557f4b01104e5c8d72b50d938fb193fca5ff8bbb44d9afbbab052c34e4a
+    docs/overview.md: sha256:91db36a40f3be6587f4e29ecc8b26f0267b4c3947dc550aa1e34347abebe19bf
+    docs/troubleshooting.md: sha256:873a0e89ac6f56fc05b640ab0e0da93b028804680c61dd3a46d2d1b41c7d520d
+    docs/usage.md: sha256:fa1c7f2d49542c6f6b66ad435a137e1bb6fe53db6c38142231b6516399609f82
+    frameworks/__init__.py: sha256:deb2f1e2fc421eeef330f17f57a809d2bcad123e31a0fdfcdf89adf6f90bd8a6
+    frameworks/fastapi.py: sha256:aa288f14f8e142360b28780319c14d1f48ba1cc57f56dcbaf2009d81da9fe035
+    frameworks/nestjs.py: sha256:ca2afc695d59182bb04514d51afc63c35864216837cc2edcc2f7af375e5eb807
+    generate.py: sha256:15cce37361d4c16ea886c41822abdb641f98dd9522cc5dca6dcc4ad5529952b8
+    module.verify.json: sha256:73a63a0caa3f594105bba95e6b8eaacf651232ef9905d17172326484cc0e8b6a
+    overrides.py: sha256:1d2de9b9ad92227a62ccefc8e1304803c18f814d2d407b20be0317acf39a35f0
+    templates/base/celery.py.j2: sha256:fe797b97041858ad3cf5fd87d135f3b5f4d6620c3f2a0da4c545fafa7384d706
+    templates/base/celery_health.py.j2: sha256:4f40956cd8ea62ad85b84ab39750a2292eacaefc697dc6a6816f4bab6d00670d
+    templates/base/celery_types.py.j2: sha256:c8263a910d740f8acfe0b8c8d8e82e42c15095ccc5bc40d714bae4b5783cdc3a
+    templates/snippets/celery.snippet.j2: sha256:6d4b37c8fa1f44919d30ac7a2efb81dfdf543b8185096ad5ea9b8a39528bfc0a
+    templates/tests/__init__.py: sha256:1bb37aa3fa8888b4797abef68ce3cc1fa711cdaf2821e0d96159e3aac8db36ea
+    templates/tests/integration/celery.integration.spec.ts.j2: sha256:51833bab93fc228996d254ccd919101a1447d60cb3da935cf63850f693f7f4de
+    templates/tests/integration/test_celery_integration.j2: sha256:e0253e8259945ee1372f23c84458ada036ce1e5187850d0aa3561ad4961b8925
+    templates/variants/fastapi/celery.py.j2: sha256:179e063fb8b8ae58189723da013efb26b7c84f9392acb45cccd7e3faafd7c377
+    templates/variants/fastapi/celery_config.yaml.j2: sha256:059b69d5fa363f722cc0c96e651abdd7be1f4351af0dfd9433f067804d95e2d4
+    templates/variants/fastapi/celery_health.py.j2: sha256:d813c57f146d267094542a6e6d7d3e923eaf0a6f654e34423c56161b61f72be2
+    templates/variants/fastapi/celery_routes.py.j2: sha256:4bb92f830a0e5029896f0c48a6030c34c38a9bfb6dcedf5627ff5b6d7a4d9d2c
+    templates/variants/nestjs/celery.configuration.ts.j2: sha256:0ff7d8aeb8ee625490c1c67248754c3484d3f5a41fb6beb71cfcbab6b21190c3
+    templates/variants/nestjs/celery.controller.ts.j2: sha256:6ad88d6cf59f8a8d132aac759e1afe0d6a316cf657553f7a1a01218bf890d874
+    templates/variants/nestjs/celery.health.controller.ts.j2: sha256:9f8814949600889fb289980d51c5b19f743b1eecf11083108750ac0a6672688a
+    templates/variants/nestjs/celery.health.module.ts.j2: sha256:e9dd1ba013fb06909e00d08086b42e01b16342a8ad51191adf3ecbba739fac3b
+    templates/variants/nestjs/celery.module.ts.j2: sha256:e9cf3122a88e7dc82d1e04e8da0fb645fa557add746e4f6fd75527d83ff765c1
+    templates/variants/nestjs/celery.service.ts.j2: sha256:c5551d1cb08e0e19774972200243ea7fa103d2b1fa41d635dbfc642bab34924b
+    templates/vendor/nestjs/configuration.js.j2: sha256:ccbcf4096c82e6e43916cbebaab81345ac567e733430657747977ab9610c8c24

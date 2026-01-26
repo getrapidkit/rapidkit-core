@@ -1,0 +1,206 @@
+# Database (MongoDB)
+
+{% set uri_default = mongo_defaults.connection_uri | default('mongodb://localhost:27017') | tojson %}
+{% set database_default = mongo_defaults.database | default('rapidkit') | tojson %}
+{% set app_name_default = mongo_defaults.app_name | default('rapidkit-db-mongo') | tojson %}
+{% set auth_source_default = mongo_defaults.auth_source | default('admin') | tojson %}
+{% set read_preference_default = mongo_defaults.read_preference | default('primary') | tojson %}
+{% set retry_reads_default = 'True' if (mongo_defaults.retry_reads | default(true)) else 'False' %}
+{% set retry_writes_default = 'True' if (mongo_defaults.retry_writes | default(true)) else 'False' %}
+{% set compressors_default = mongo_defaults.compressors | default([]) | tojson %}
+{% set min_pool_default = mongo_defaults.min_pool_size | default(0) | tojson %}
+{% set max_pool_default = mongo_defaults.max_pool_size | default(20) | tojson %}
+{% set connect_timeout_default = mongo_defaults.connect_timeout_ms | default(5000) | tojson %}
+{% set server_timeout_default = mongo_defaults.server_selection_timeout_ms | default(8000) | tojson %}
+{% set max_idle_default = mongo_defaults.max_idle_time_ms | default(120000) | tojson %}
+{% set tls_enabled_default = 'True' if (mongo_defaults.tls | default(false)) else 'False' %}
+{% set tls_invalid_default = 'True' if (mongo_defaults.tls_allow_invalid_certificates | default(false)) else 'False' %}
+{% set health_timeout_default = health_defaults.ping_timeout_ms | default(1500) | tojson %}
+{% set health_metrics_default = 'True' if (health_defaults.metrics | default(true)) else 'False' %}
+
+if "RAPIDKIT_DB_MONGO_URI" in locals():
+    RAPIDKIT_DB_MONGO_URI = Field(
+        default={{ uri_default }},
+        description="MongoDB connection URI",
+    )
+else:
+    RAPIDKIT_DB_MONGO_URI: str = Field(
+        default={{ uri_default }},
+        description="MongoDB connection URI",
+    )
+
+if "RAPIDKIT_DB_MONGO_DATABASE" in locals():
+    RAPIDKIT_DB_MONGO_DATABASE = Field(
+        default={{ database_default }},
+        description="Default MongoDB database name",
+    )
+else:
+    RAPIDKIT_DB_MONGO_DATABASE: str = Field(
+        default={{ database_default }},
+        description="Default MongoDB database name",
+    )
+
+if "RAPIDKIT_DB_MONGO_APP_NAME" in locals():
+    RAPIDKIT_DB_MONGO_APP_NAME = Field(
+        default={{ app_name_default }},
+        description="Application name reported to MongoDB for observability",
+    )
+else:
+    RAPIDKIT_DB_MONGO_APP_NAME: str = Field(
+        default={{ app_name_default }},
+        description="Application name reported to MongoDB for observability",
+    )
+
+if "RAPIDKIT_DB_MONGO_AUTH_SOURCE" in locals():
+    RAPIDKIT_DB_MONGO_AUTH_SOURCE = Field(
+        default={{ auth_source_default }},
+        description="Authentication database for MongoDB users",
+    )
+else:
+    RAPIDKIT_DB_MONGO_AUTH_SOURCE: str = Field(
+        default={{ auth_source_default }},
+        description="Authentication database for MongoDB users",
+    )
+
+if "RAPIDKIT_DB_MONGO_READ_PREFERENCE" in locals():
+    RAPIDKIT_DB_MONGO_READ_PREFERENCE = Field(
+        default={{ read_preference_default }},
+        description="Preferred replica read mode",
+    )
+else:
+    RAPIDKIT_DB_MONGO_READ_PREFERENCE: str = Field(
+        default={{ read_preference_default }},
+        description="Preferred replica read mode",
+    )
+
+if "RAPIDKIT_DB_MONGO_RETRY_READS" in locals():
+    RAPIDKIT_DB_MONGO_RETRY_READS = Field(
+        default={{ retry_reads_default }},
+        description="Enable automatic retry for retryable read operations",
+    )
+else:
+    RAPIDKIT_DB_MONGO_RETRY_READS: bool = Field(
+        default={{ retry_reads_default }},
+        description="Enable automatic retry for retryable read operations",
+    )
+
+if "RAPIDKIT_DB_MONGO_RETRY_WRITES" in locals():
+    RAPIDKIT_DB_MONGO_RETRY_WRITES = Field(
+        default={{ retry_writes_default }},
+        description="Enable automatic retry for retryable write operations",
+    )
+else:
+    RAPIDKIT_DB_MONGO_RETRY_WRITES: bool = Field(
+        default={{ retry_writes_default }},
+        description="Enable automatic retry for retryable write operations",
+    )
+
+if "RAPIDKIT_DB_MONGO_COMPRESSORS" in locals():
+    RAPIDKIT_DB_MONGO_COMPRESSORS = Field(
+        default={{ compressors_default }},
+        description="Preferred network compression algorithms",
+    )
+else:
+    RAPIDKIT_DB_MONGO_COMPRESSORS: list[str] = Field(
+        default={{ compressors_default }},
+        description="Preferred network compression algorithms",
+    )
+
+if "RAPIDKIT_DB_MONGO_MIN_POOL_SIZE" in locals():
+    RAPIDKIT_DB_MONGO_MIN_POOL_SIZE = Field(
+        default={{ min_pool_default }},
+        description="Minimum pooled connections maintained per process",
+    )
+else:
+    RAPIDKIT_DB_MONGO_MIN_POOL_SIZE: int = Field(
+        default={{ min_pool_default }},
+        description="Minimum pooled connections maintained per process",
+    )
+
+if "RAPIDKIT_DB_MONGO_MAX_POOL_SIZE" in locals():
+    RAPIDKIT_DB_MONGO_MAX_POOL_SIZE = Field(
+        default={{ max_pool_default }},
+        description="Maximum pooled connections allowed per process",
+    )
+else:
+    RAPIDKIT_DB_MONGO_MAX_POOL_SIZE: int = Field(
+        default={{ max_pool_default }},
+        description="Maximum pooled connections allowed per process",
+    )
+
+if "RAPIDKIT_DB_MONGO_CONNECT_TIMEOUT_MS" in locals():
+    RAPIDKIT_DB_MONGO_CONNECT_TIMEOUT_MS = Field(
+        default={{ connect_timeout_default }},
+        description="Connection establishment timeout in milliseconds",
+    )
+else:
+    RAPIDKIT_DB_MONGO_CONNECT_TIMEOUT_MS: int = Field(
+        default={{ connect_timeout_default }},
+        description="Connection establishment timeout in milliseconds",
+    )
+
+if "RAPIDKIT_DB_MONGO_SERVER_SELECTION_TIMEOUT_MS" in locals():
+    RAPIDKIT_DB_MONGO_SERVER_SELECTION_TIMEOUT_MS = Field(
+        default={{ server_timeout_default }},
+        description="Server selection timeout in milliseconds",
+    )
+else:
+    RAPIDKIT_DB_MONGO_SERVER_SELECTION_TIMEOUT_MS: int = Field(
+        default={{ server_timeout_default }},
+        description="Server selection timeout in milliseconds",
+    )
+
+if "RAPIDKIT_DB_MONGO_MAX_IDLE_TIME_MS" in locals():
+    RAPIDKIT_DB_MONGO_MAX_IDLE_TIME_MS = Field(
+        default={{ max_idle_default }},
+        description="Maximum idle lifetime for pooled connections",
+    )
+else:
+    RAPIDKIT_DB_MONGO_MAX_IDLE_TIME_MS: int = Field(
+        default={{ max_idle_default }},
+        description="Maximum idle lifetime for pooled connections",
+    )
+
+if "RAPIDKIT_DB_MONGO_TLS" in locals():
+    RAPIDKIT_DB_MONGO_TLS = Field(
+        default={{ tls_enabled_default }},
+        description="Enable TLS connections to MongoDB",
+    )
+else:
+    RAPIDKIT_DB_MONGO_TLS: bool = Field(
+        default={{ tls_enabled_default }},
+        description="Enable TLS connections to MongoDB",
+    )
+
+if "RAPIDKIT_DB_MONGO_TLS_ALLOW_INVALID_CERTS" in locals():
+    RAPIDKIT_DB_MONGO_TLS_ALLOW_INVALID_CERTS = Field(
+        default={{ tls_invalid_default }},
+        description="Permit invalid certificates when TLS is enabled",
+    )
+else:
+    RAPIDKIT_DB_MONGO_TLS_ALLOW_INVALID_CERTS: bool = Field(
+        default={{ tls_invalid_default }},
+        description="Permit invalid certificates when TLS is enabled",
+    )
+
+if "RAPIDKIT_DB_MONGO_HEALTH_TIMEOUT_MS" in locals():
+    RAPIDKIT_DB_MONGO_HEALTH_TIMEOUT_MS = Field(
+        default={{ health_timeout_default }},
+        description="Timeout used for MongoDB ping health checks",
+    )
+else:
+    RAPIDKIT_DB_MONGO_HEALTH_TIMEOUT_MS: int = Field(
+        default={{ health_timeout_default }},
+        description="Timeout used for MongoDB ping health checks",
+    )
+
+if "RAPIDKIT_DB_MONGO_HEALTH_METRICS" in locals():
+    RAPIDKIT_DB_MONGO_HEALTH_METRICS = Field(
+        default={{ health_metrics_default }},
+        description="Collect extended server metrics during health checks",
+    )
+else:
+    RAPIDKIT_DB_MONGO_HEALTH_METRICS: bool = Field(
+        default={{ health_metrics_default }},
+        description="Collect extended server metrics during health checks",
+    )

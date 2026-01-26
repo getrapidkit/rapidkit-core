@@ -1,0 +1,237 @@
+# PostgreSQL Database Configuration
+# Production-ready defaults for connection pooling, timeouts, and behavior
+
+name: db_postgres
+display_name: PostgreSQL
+description: SQLAlchemy async+sync Postgres with clean DI, healthchecks, and pool config
+root_path: src/
+
+profiles:
+  fastapi/standard:
+    description: Postgres integration for the RapidKit FastAPI starter.
+  fastapi/ddd:
+    inherits: fastapi/standard
+    description: Postgres integration tailored for the RapidKit FastAPI DDD starter.
+  fastapi/pro:
+    description: Postgres integration for the RapidKit FastAPI Pro starter.
+  fastapi/ai:
+    description: Postgres integration for the RapidKit FastAPI AI starter.
+  nestjs/standard:
+    description: NestJS provider and health modules for PostgreSQL connection pooling.
+
+variables:
+  base_module:
+    type: string
+    default: src
+    description: Base module path for the project
+    validation: "^[a-zA-Z0-9_./:-]+$"
+
+  database_url:
+    type: string
+    default: "postgresql://postgres:postgres@localhost:5432/myapp"
+    description: PostgreSQL connection string
+    validation: "^postgresql://.*"
+    env_var: DATABASE_URL
+
+  test_database_url:
+    type: string
+    default: "postgresql://postgres:postgres@localhost:5432/myapp_test"
+    description: Test database connection string (optional)
+    validation: "^postgresql://.*"
+    env_var: TEST_DATABASE_URL
+
+  # Connection Pool Settings
+  db_pool_size:
+    type: integer
+    default: 10
+    description: Number of permanent connections in the pool
+    validation: "^[1-9][0-9]*$"
+    env_var: DB_POOL_SIZE
+
+  db_max_overflow:
+    type: integer
+    default: 20
+    description: Maximum number of overflow connections beyond pool_size
+    validation: "^[0-9][0-9]*$"
+    env_var: DB_MAX_OVERFLOW
+
+  db_pool_recycle:
+    type: integer
+    default: 3600
+    description: Seconds before recycling connections (prevents stale connections)
+    validation: "^[1-9][0-9]*$"
+    env_var: DB_POOL_RECYCLE
+
+  db_pool_timeout:
+    type: integer
+    default: 30
+    description: Seconds to wait for a connection from the pool
+    validation: "^[1-9][0-9]*$"
+    env_var: DB_POOL_TIMEOUT
+
+  db_echo:
+    type: boolean
+    default: false
+    description: Log all SQL statements (useful for debugging)
+    env_var: DB_ECHO
+
+  # SQLAlchemy Settings
+  db_expire_on_commit:
+    type: boolean
+    default: false
+    description: Expire objects after commit (set false for better performance)
+    env_var: DB_EXPIRE_ON_COMMIT
+
+depends_on:
+  # Runtime dependencies required for the generated Postgres bundle
+  fastapi/standard:
+    - name: sqlalchemy
+      source: external
+      tool: pip
+      version: ">=2.0.0,<3.0"
+      description: SQLAlchemy core + ORM with asyncio support
+    - name: asyncpg
+      source: external
+      tool: pip
+      version: ">=0.29.0,<1.0"
+      description: Async PostgreSQL driver
+    - name: psycopg
+      source: external
+      tool: pip
+      version: ">=3.1.0,<4.0"
+      description: Sync PostgreSQL driver
+      extras:
+        - binary
+
+  fastapi/ddd:
+    - name: sqlalchemy
+      source: external
+      tool: pip
+      version: ">=2.0.0,<3.0"
+    - name: asyncpg
+      source: external
+      tool: pip
+      version: ">=0.29.0,<1.0"
+    - name: psycopg
+      source: external
+      tool: pip
+      version: ">=3.1.0,<4.0"
+      extras:
+        - binary
+
+  fastapi/pro:
+    - name: sqlalchemy
+      source: external
+      tool: pip
+      version: ">=2.0.0,<3.0"
+    - name: asyncpg
+      source: external
+      tool: pip
+      version: ">=0.29.0,<1.0"
+    - name: psycopg
+      source: external
+      tool: pip
+      version: ">=3.1.0,<4.0"
+      extras:
+        - binary
+
+  fastapi/ai:
+    - name: sqlalchemy
+      source: external
+      tool: pip
+      version: ">=2.0.0,<3.0"
+    - name: asyncpg
+      source: external
+      tool: pip
+      version: ">=0.29.0,<1.0"
+    - name: psycopg
+      source: external
+      tool: pip
+      version: ">=3.1.0,<4.0"
+      extras:
+        - binary
+
+  nestjs/standard:
+    - name: pg
+      source: npm
+      tool: npm
+      version: ">=8.11.0"
+      description: PostgreSQL client used by the NestJS service provider
+    - name: "@nestjs/common"
+      source: npm
+      tool: npm
+      version: ">=11.1.0"
+    - name: "@nestjs/core"
+      source: npm
+      tool: npm
+      version: ">=11.1.0"
+    - name: "@nestjs/config"
+      source: npm
+      tool: npm
+      version: ">=4.0.0"
+
+dev_dependencies:
+  - name: black
+    source: external
+    tool: pip
+    version: ">=25.0.0,<26.0"
+  - name: isort
+    source: external
+    tool: pip
+    version: ">=5.13.2,<6.0"
+  - name: mypy
+    source: external
+    tool: pip
+    version: ">=1.10.0,<2.0"
+  - name: ruff
+    source: external
+    tool: pip
+    version: ">=0.4.4,<1.0"
+  - name: pytest
+    source: external
+    tool: pip
+    version: ">=8.3.0,<9.0"
+  - name: pytest-asyncio
+    source: external
+    tool: pip
+    version: ">=0.25.0,<1.0"
+
+features:
+  db_postgres:
+    description: Provides PostgreSQL via SQLAlchemy (async + sync), DI, and healthchecks
+    profiles:
+      - fastapi/ddd
+      - fastapi/pro
+      - fastapi/standard
+      - fastapi/ai
+      - nestjs/standard
+
+features_files:
+  db_postgres:
+    - path: modules/free/database/db_postgres/postgres.py
+      replace_if_only_anchor: false
+      description: PostgreSQL database engines and session providers
+    - path: health/postgres.py
+      replace_if_only_anchor: false
+      description: FastAPI health endpoint shim for PostgreSQL
+    - path: config/database/postgres.yaml
+      replace_if_only_anchor: false
+      description: Runtime configuration defaults for FastAPI kits
+    - path: tests/modules/integration/database/test_postgres_integration.py
+      replace_if_only_anchor: false
+      description: Integration tests for PostgreSQL module
+    - path: modules/free/database/db_postgres/postgres.service.ts
+      replace_if_only_anchor: false
+      description: NestJS injectable service managing PostgreSQL pools
+    - path: modules/free/database/db_postgres/postgres.module.ts
+      replace_if_only_anchor: false
+      description: NestJS module exposing the database service and register helpers
+    - path: health/postgres-health.controller.ts
+      replace_if_only_anchor: false
+      description: NestJS health controller reporting database status
+    - path: health/postgres-health.module.ts
+      replace_if_only_anchor: false
+      description: NestJS health module wiring the controller and providers
+    - path: tests/modules/integration/database/postgres.integration.spec.ts
+      replace_if_only_anchor: false
+      description: NestJS integration spec validating PostgreSQL endpoints

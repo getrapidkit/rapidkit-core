@@ -1,0 +1,654 @@
+import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { performance } from 'perf_hooks';
+import path from 'node:path';
+
+import type { MiddlewareConfiguration } from './configuration';
+
+type RequestLike = {
+  method?: string;
+  headers?: Record<string, unknown>;
+  [key: string]: unknown;
+};
+
+interface ResponseLike {
+  setHeader(name: string, value: string): void;
+  end(...args: unknown[]): void;
+  headersSent?: boolean;
+  statusCode?: number;
+  getHeader?(name: string): unknown;
+  [key: string]: unknown;
+}
+
+export type MiddlewareHandler = (req: RequestLike, res: ResponseLike, next: () => void) => void;
+
+export type MiddlewareFactory = (
+  config: MiddlewareConfig,
+) => MiddlewareHandler | MiddlewareHandler[] | null | undefined;
+
+export interface MiddlewareConfig {
+  enabled: boolean;
+  corsEnabled: boolean;
+  corsAllowOrigins: string[];
+  corsAllowMethods: string[];
+  corsAllowHeaders: string[];
+  corsAllowCredentials: boolean;
+  processTimeHeader: boolean;
+  serviceHeader: boolean;
+  serviceName?: string | null;
+  serviceHeaderName: string;
+  customHeaders: boolean;
+  customHeaderName: string;
+  customHeaderValue: string;
+  metadata: Record<string, unknown>;
+  extraFactories: MiddlewareFactory[];
+}
+
+export interface MiddlewareDescription {
+  module: string;
+  enabled: boolean;
+  cors: {
+    enabled: boolean;
+    allow_origins: string[];
+    allow_methods: string[];
+    allow_headers: string[];
+    allow_credentials: boolean;
+  };
+  process_time_header: boolean;
+  service_header: {
+    enabled: boolean;
+    header_name: string;
+    service_name: string | null;
+  };
+  custom_headers: {
+    enabled: boolean;
+    header_name: string;
+    header_value: string;
+  };
+  metadata: Record<string, unknown>;
+  extra_factories: number;
+}
+
+export interface MiddlewareStatus {
+  module: string;
+  status: 'ok' | 'error';
+  enabled: boolean;
+}
+
+export interface MiddlewareMetadata {
+  module: string;
+  title: string;
+  status: 'ok' | 'error';
+  enabled: boolean;
+  version?: string;
+  defaults: MiddlewareDescription;
+  configuration: MiddlewareDescription;
+}
+
+type MiddlewareVendorConfiguration = {
+  module: string;
+  title: string;
+  enabled: boolean;
+  version?: string;
+  defaults?: Record<string, unknown>;
+};
+
+const VENDOR_MODULE = '{{ rapidkit_vendor_module }}';
+const VENDOR_VERSION = '{{ rapidkit_vendor_version }}';
+
+const DEFAULT_CONFIG: MiddlewareConfig = {
+  enabled: true,
+  corsEnabled: false,
+  corsAllowOrigins: ['*'],
+  corsAllowMethods: ['*'],
+  corsAllowHeaders: ['*'],
+  corsAllowCredentials: true,
+  processTimeHeader: true,
+  serviceHeader: true,
+  serviceName: null,
+  serviceHeaderName: 'X-Service',
+  customHeaders: true,
+  customHeaderName: 'X-Custom-Header',
+  customHeaderValue: 'RapidKit',
+  metadata: {},
+  extraFactories: [],
+};
+
+const FACTORY_REGISTRY: MiddlewareFactory[] = [];
+
+export function registerMiddlewareFactory(factory: MiddlewareFactory): void {
+  if (typeof factory !== 'function') {
+    throw new TypeError('Middleware factory must be a function');
+  }
+  FACTORY_REGISTRY.push(factory);
+}
+
+type VendorConfiguration = {
+  module?: string;
+  title?: string;
+  enabled?: boolean;
+  version?: string;
+  defaults?: Record<string, unknown>;
+};
+
+type VendorModule = {
+  loadConfiguration?: () => VendorConfiguration;
+};
+
+function resolveVendorRoot(): string {
+  const override = process.env.RAPIDKIT_VENDOR_ROOT;
+  if (override && override.trim().length > 0) {
+    return path.resolve(override);
+  }
+  return path.resolve(process.cwd(), '.rapidkit', 'vendor');
+}
+
+function resolveVendorModule(): VendorModule | null {
+  const candidates = [
+    path.join(
+      resolveVendorRoot(),
+      '{{ module_name }}',
+      '{{ rapidkit_vendor_version }}',
+      'middleware',
+      'nestjs',
+      'configuration.js',
+    ),
+    path.join(process.cwd(), 'middleware', 'nestjs', 'configuration.js'),
+  ];
+
+  for (const candidate of candidates) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+      return require(candidate);
+    } catch (err: unknown) {
+      const e = err as { code?: string } | undefined;
+      // If the candidate wasn't found, continue to the next candidate.
+      if (e && (e.code === 'MODULE_NOT_FOUND' || e.code === 'ENOENT')) {
+        continue;
+      }
+      // For unexpected errors, rethrow to avoid hiding real problems.
+      throw err;
+    }
+  }
+
+  // No vendor snapshot found - return null to indicate absence and allow
+  // graceful fallback behavior downstream.
+  // eslint-disable-next-line no-console
+  console.warn(
+    `WARN: middleware vendor configuration not found for module '${VENDOR_MODULE}' - continuing with defaults`,
+  );
+  return null;
+}
+
+const vendor = resolveVendorModule();
+
+function loadVendorConfiguration(): MiddlewareVendorConfiguration {
+  if (!vendor || typeof vendor.loadConfiguration !== 'function') {
+    // No vendor snapshot present or module doesn't expose loadConfiguration
+    // - return a safe default so the middleware works even when vendor
+    // artifacts are missing.
+    return {
+      module: VENDOR_MODULE,
+      title: '{{ module_title }}',
+      enabled: true,
+      version: VENDOR_VERSION,
+      defaults: {},
+    };
+  }
+
+  const configuration = vendor.loadConfiguration();
+  return {
+    module: configuration.module ?? VENDOR_MODULE,
+    title: configuration.title ?? '{{ module_title }}',
+    enabled: configuration.enabled ?? true,
+    version: configuration.version ?? VENDOR_VERSION,
+    defaults: configuration.defaults ?? {},
+  };
+}
+
+function cloneArray(source: string[] | undefined, fallback: string[]): string[] {
+  return source ? [...source] : [...fallback];
+}
+
+function normalizeDefaults(defaults?: Record<string, unknown>): Partial<MiddlewareConfig> {
+  if (!defaults) {
+    return {};
+  }
+
+  const normalized: Partial<MiddlewareConfig> = {};
+
+  for (const [key, value] of Object.entries(defaults)) {
+    switch (key) {
+      case 'cors_enabled':
+        normalized.corsEnabled = Boolean(value);
+        break;
+      case 'cors_allow_origins':
+        if (Array.isArray(value)) {
+          normalized.corsAllowOrigins = value.map((item) => `${item}`);
+        }
+        break;
+      case 'cors_allow_methods':
+        if (Array.isArray(value)) {
+          normalized.corsAllowMethods = value.map((item) => `${item}`);
+        }
+        break;
+      case 'cors_allow_headers':
+        if (Array.isArray(value)) {
+          normalized.corsAllowHeaders = value.map((item) => `${item}`);
+        }
+        break;
+      case 'cors_allow_credentials':
+        normalized.corsAllowCredentials = Boolean(value);
+        break;
+      case 'process_time_header':
+        normalized.processTimeHeader = Boolean(value);
+        break;
+      case 'service_header':
+        normalized.serviceHeader = Boolean(value);
+        break;
+      case 'service_header_name':
+        if (typeof value === 'string') {
+          normalized.serviceHeaderName = value;
+        }
+        break;
+      case 'service_name':
+        if (typeof value === 'string') {
+          normalized.serviceName = value;
+        }
+        break;
+      case 'custom_headers':
+        normalized.customHeaders = Boolean(value);
+        break;
+      case 'custom_header_name':
+        if (typeof value === 'string') {
+          normalized.customHeaderName = value;
+        }
+        break;
+      case 'custom_header_value':
+        if (typeof value === 'string') {
+          normalized.customHeaderValue = value;
+        }
+        break;
+      case 'metadata':
+        if (value && typeof value === 'object' && !Array.isArray(value)) {
+          normalized.metadata = { ...(value as Record<string, unknown>) };
+        }
+        break;
+      default:
+        break;
+    }
+  }
+
+  return normalized;
+}
+
+function safeSetHeader(res: ResponseLike, key: string, value: string): void {
+  try {
+    res.setHeader(key, value);
+  } catch {
+    // Headers may already be sent; swallow header assignment errors.
+  }
+}
+
+function createProcessTimeMiddleware(): MiddlewareHandler {
+  return (_req, res, next) => {
+    const start = performance.now();
+    const originalEnd = res.end;
+
+    res.end = function (...args: unknown[]): unknown {
+      const durationSeconds = (performance.now() - start) / 1000;
+      safeSetHeader(res, 'X-Process-Time', durationSeconds.toFixed(6));
+      res.end = originalEnd;
+      return originalEnd.apply(this, args as unknown[]);
+    };
+
+    next();
+  };
+}
+
+function createServiceHeaderMiddleware(serviceName: string, headerName: string): MiddlewareHandler {
+  const resolvedHeaderName = headerName?.trim().length ? headerName.trim() : 'X-Service';
+  const resolvedServiceName = serviceName?.trim().length ? serviceName.trim() : 'RapidKit Service';
+
+  return (_req, res, next) => {
+    safeSetHeader(res, resolvedHeaderName, resolvedServiceName);
+    next();
+  };
+}
+
+function createCustomHeaderMiddleware(headerName: string, headerValue: string): MiddlewareHandler {
+  const resolvedHeaderName = headerName?.trim().length ? headerName.trim() : 'X-Custom-Header';
+  const resolvedHeaderValue = headerValue?.toString().trim().length
+    ? headerValue.toString().trim()
+    : 'RapidKit';
+
+  return (_req, res, next) => {
+    safeSetHeader(res, resolvedHeaderName, resolvedHeaderValue);
+    next();
+  };
+}
+
+function createSignatureMiddleware(): MiddlewareHandler {
+  return (_req, res, next) => {
+    safeSetHeader(res, 'X-Powered-By', 'RapidKit');
+    next();
+  };
+}
+
+function createCorsMiddleware(config: MiddlewareConfig): MiddlewareHandler {
+  const allowOrigins = config.corsAllowOrigins.length ? config.corsAllowOrigins : ['*'];
+  const allowAllOrigins = allowOrigins.includes('*');
+
+  return (req, res, next) => {
+    const origin = typeof req.headers?.origin === 'string' ? req.headers.origin : undefined;
+
+    if (allowAllOrigins) {
+      safeSetHeader(res, 'Access-Control-Allow-Origin', origin ?? '*');
+    } else if (origin && allowOrigins.includes(origin)) {
+      safeSetHeader(res, 'Access-Control-Allow-Origin', origin);
+      if (typeof res.getHeader === 'function') {
+        const existing = res.getHeader('Vary');
+        if (typeof existing === 'string' && existing.length > 0 && !existing.includes('Origin')) {
+          safeSetHeader(res, 'Vary', `${existing}, Origin`);
+        } else {
+          safeSetHeader(res, 'Vary', 'Origin');
+        }
+      } else {
+        safeSetHeader(res, 'Vary', 'Origin');
+      }
+    }
+
+    if (config.corsAllowMethods.length) {
+      safeSetHeader(res, 'Access-Control-Allow-Methods', config.corsAllowMethods.join(', '));
+    }
+
+    if (config.corsAllowHeaders.length) {
+      safeSetHeader(res, 'Access-Control-Allow-Headers', config.corsAllowHeaders.join(', '));
+    }
+
+    if (config.corsAllowCredentials) {
+      safeSetHeader(res, 'Access-Control-Allow-Credentials', 'true');
+    }
+
+    if (req.method && req.method.toUpperCase() === 'OPTIONS') {
+      if (!res.statusCode || res.statusCode < 200 || res.statusCode >= 400) {
+        res.statusCode = 204;
+      }
+
+      try {
+        res.end();
+      } catch {
+        // noop - response may already be closed by the platform adapter
+      }
+      return;
+    }
+
+    next();
+  };
+}
+
+@Injectable()
+export class {{ module_class_name }}Service {
+  private vendor: MiddlewareVendorConfiguration;
+
+  private configuration: MiddlewareConfig;
+
+  constructor(private readonly configService: ConfigService) {
+    this.vendor = loadVendorConfiguration();
+    this.configuration = this.buildConfiguration(
+      this.vendor,
+      this.resolveProjectConfiguration(),
+    );
+  }
+
+  getMetadata(): MiddlewareMetadata {
+    const snapshot = this.describe();
+    return {
+      module: this.vendor.module,
+      title: this.vendor.title,
+      status: this.configuration.enabled ? 'ok' : 'error',
+      enabled: this.configuration.enabled,
+      version: this.vendor.version,
+      defaults: snapshot,
+      configuration: snapshot,
+    };
+  }
+
+  getStatus(): MiddlewareStatus {
+    return {
+      module: this.vendor.module,
+      status: this.configuration.enabled ? 'ok' : 'error',
+      enabled: this.configuration.enabled,
+    };
+  }
+
+  describe(): MiddlewareDescription {
+    return this.serializeConfiguration(this.configuration);
+  }
+
+  refresh(): MiddlewareMetadata {
+    this.vendor = loadVendorConfiguration();
+    this.configuration = this.buildConfiguration(
+      this.vendor,
+      this.resolveProjectConfiguration(),
+    );
+    return this.getMetadata();
+  }
+
+  getHandlers(): MiddlewareHandler[] {
+    if (!this.configuration.enabled) {
+      return [];
+    }
+
+    return this.buildPipeline(this.configuration);
+  }
+
+  registerFactory(factory: MiddlewareFactory): void {
+    if (typeof factory !== 'function') {
+      throw new TypeError('Middleware factory must be a function');
+    }
+    this.configuration.extraFactories.push(factory);
+  }
+
+  private resolveProjectConfiguration(): Partial<MiddlewareConfig> {
+    const configuration = this.configService.get<MiddlewareConfiguration>('middleware');
+    if (!configuration || typeof configuration !== 'object') {
+      return {};
+    }
+
+    const metadata =
+      configuration.metadata && typeof configuration.metadata === 'object' && !Array.isArray(configuration.metadata)
+        ? { ...(configuration.metadata as Record<string, unknown>) }
+        : undefined;
+
+    return {
+      enabled: typeof configuration.enabled === 'boolean' ? configuration.enabled : undefined,
+      corsEnabled: typeof configuration.corsEnabled === 'boolean' ? configuration.corsEnabled : undefined,
+      corsAllowOrigins: Array.isArray(configuration.corsAllowOrigins)
+        ? configuration.corsAllowOrigins.map((item) => `${item}`)
+        : undefined,
+      corsAllowMethods: Array.isArray(configuration.corsAllowMethods)
+        ? configuration.corsAllowMethods.map((item) => `${item}`)
+        : undefined,
+      corsAllowHeaders: Array.isArray(configuration.corsAllowHeaders)
+        ? configuration.corsAllowHeaders.map((item) => `${item}`)
+        : undefined,
+      corsAllowCredentials:
+        typeof configuration.corsAllowCredentials === 'boolean'
+          ? configuration.corsAllowCredentials
+          : undefined,
+      processTimeHeader:
+        typeof configuration.processTimeHeader === 'boolean'
+          ? configuration.processTimeHeader
+          : undefined,
+      serviceHeader: typeof configuration.serviceHeader === 'boolean' ? configuration.serviceHeader : undefined,
+      serviceName:
+        typeof configuration.serviceName === 'string' && configuration.serviceName.trim().length > 0
+          ? configuration.serviceName.trim()
+          : undefined,
+      serviceHeaderName:
+        typeof configuration.serviceHeaderName === 'string'
+          ? configuration.serviceHeaderName
+          : undefined,
+      customHeaders: typeof configuration.customHeaders === 'boolean' ? configuration.customHeaders : undefined,
+      customHeaderName:
+        typeof configuration.customHeaderName === 'string'
+          ? configuration.customHeaderName
+          : undefined,
+      customHeaderValue:
+        typeof configuration.customHeaderValue === 'string'
+          ? configuration.customHeaderValue
+          : undefined,
+      metadata,
+      extraFactories: [],
+    };
+  }
+
+  private buildConfiguration(
+    vendorConfig: MiddlewareVendorConfiguration,
+    projectOverrides: Partial<MiddlewareConfig> = {},
+  ): MiddlewareConfig {
+    const defaults = normalizeDefaults(vendorConfig.defaults);
+    const base: MiddlewareConfig = {
+      enabled: vendorConfig.enabled ?? DEFAULT_CONFIG.enabled,
+      corsEnabled: defaults.corsEnabled ?? DEFAULT_CONFIG.corsEnabled,
+      corsAllowOrigins: cloneArray(defaults.corsAllowOrigins, DEFAULT_CONFIG.corsAllowOrigins),
+      corsAllowMethods: cloneArray(defaults.corsAllowMethods, DEFAULT_CONFIG.corsAllowMethods),
+      corsAllowHeaders: cloneArray(defaults.corsAllowHeaders, DEFAULT_CONFIG.corsAllowHeaders),
+      corsAllowCredentials: defaults.corsAllowCredentials ?? DEFAULT_CONFIG.corsAllowCredentials,
+      processTimeHeader: defaults.processTimeHeader ?? DEFAULT_CONFIG.processTimeHeader,
+      serviceHeader: defaults.serviceHeader ?? DEFAULT_CONFIG.serviceHeader,
+      serviceName:
+        typeof defaults.serviceName === 'string' && defaults.serviceName.trim().length > 0
+          ? defaults.serviceName.trim()
+          : DEFAULT_CONFIG.serviceName,
+      serviceHeaderName: defaults.serviceHeaderName ?? DEFAULT_CONFIG.serviceHeaderName,
+      customHeaders: defaults.customHeaders ?? DEFAULT_CONFIG.customHeaders,
+      customHeaderName: defaults.customHeaderName ?? DEFAULT_CONFIG.customHeaderName,
+      customHeaderValue: defaults.customHeaderValue ?? DEFAULT_CONFIG.customHeaderValue,
+      metadata: { ...(defaults.metadata ?? DEFAULT_CONFIG.metadata) },
+      extraFactories: [],
+    };
+
+    const overrides = projectOverrides ?? {};
+
+    return {
+      ...base,
+      enabled: overrides.enabled ?? base.enabled,
+      corsEnabled: overrides.corsEnabled ?? base.corsEnabled,
+      corsAllowOrigins: cloneArray(overrides.corsAllowOrigins, base.corsAllowOrigins),
+      corsAllowMethods: cloneArray(overrides.corsAllowMethods, base.corsAllowMethods),
+      corsAllowHeaders: cloneArray(overrides.corsAllowHeaders, base.corsAllowHeaders),
+      corsAllowCredentials: overrides.corsAllowCredentials ?? base.corsAllowCredentials,
+      processTimeHeader: overrides.processTimeHeader ?? base.processTimeHeader,
+      serviceHeader: overrides.serviceHeader ?? base.serviceHeader,
+      serviceName:
+        overrides.serviceName && overrides.serviceName.trim().length > 0
+          ? overrides.serviceName.trim()
+          : base.serviceName,
+      serviceHeaderName: overrides.serviceHeaderName ?? base.serviceHeaderName,
+      customHeaders: overrides.customHeaders ?? base.customHeaders,
+      customHeaderName: overrides.customHeaderName ?? base.customHeaderName,
+      customHeaderValue: overrides.customHeaderValue ?? base.customHeaderValue,
+      metadata: {
+        ...base.metadata,
+        ...(overrides.metadata ?? {}),
+      },
+      extraFactories: [],
+    };
+  }
+
+  private buildPipeline(config: MiddlewareConfig): MiddlewareHandler[] {
+    const pipeline: MiddlewareHandler[] = [];
+
+    if (config.corsEnabled) {
+      pipeline.push(createCorsMiddleware(config));
+    }
+
+    if (config.processTimeHeader) {
+      pipeline.push(createProcessTimeMiddleware());
+    }
+
+    if (config.serviceHeader) {
+      pipeline.push(createServiceHeaderMiddleware(this.resolveServiceName(config), config.serviceHeaderName));
+    }
+
+    if (config.customHeaders) {
+      pipeline.push(createCustomHeaderMiddleware(config.customHeaderName, config.customHeaderValue));
+    }
+
+    pipeline.push(createSignatureMiddleware());
+
+    for (const factory of FACTORY_REGISTRY) {
+      const handlers = factory(config);
+      if (Array.isArray(handlers)) {
+        for (const handler of handlers) {
+          if (typeof handler === 'function') {
+            pipeline.push(handler);
+          }
+        }
+      } else if (typeof handlers === 'function') {
+        pipeline.push(handlers);
+      }
+    }
+
+    for (const factory of config.extraFactories) {
+      const handlers = factory(config);
+      if (Array.isArray(handlers)) {
+        for (const handler of handlers) {
+          if (typeof handler === 'function') {
+            pipeline.push(handler);
+          }
+        }
+      } else if (typeof handlers === 'function') {
+        pipeline.push(handlers);
+      }
+    }
+
+    return pipeline;
+  }
+
+  private serializeConfiguration(config: MiddlewareConfig): MiddlewareDescription {
+    return {
+      module: this.vendor.module,
+      enabled: config.enabled,
+      cors: {
+        enabled: config.corsEnabled,
+        allow_origins: [...config.corsAllowOrigins],
+        allow_methods: [...config.corsAllowMethods],
+        allow_headers: [...config.corsAllowHeaders],
+        allow_credentials: config.corsAllowCredentials,
+      },
+      process_time_header: config.processTimeHeader,
+      service_header: {
+        enabled: config.serviceHeader,
+        header_name: config.serviceHeaderName,
+        service_name: config.serviceName ?? null,
+      },
+      custom_headers: {
+        enabled: config.customHeaders,
+        header_name: config.customHeaderName,
+        header_value: config.customHeaderValue,
+      },
+      metadata: { ...config.metadata },
+      extra_factories: config.extraFactories.length,
+    };
+  }
+
+  private resolveServiceName(config: MiddlewareConfig): string {
+    if (config.serviceName && config.serviceName.trim().length > 0) {
+      return config.serviceName.trim();
+    }
+
+    const envServiceName = process.env.RAPIDKIT_SERVICE_NAME;
+    if (envServiceName && envServiceName.trim().length > 0) {
+      return envServiceName.trim();
+    }
+
+    if (this.vendor.title && this.vendor.title.trim().length > 0) {
+      return this.vendor.title.trim();
+    }
+
+    return 'RapidKit Service';
+  }
+}

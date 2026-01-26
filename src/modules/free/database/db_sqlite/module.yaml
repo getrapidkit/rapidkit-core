@@ -1,0 +1,201 @@
+name: db_sqlite
+display_name: Db Sqlite
+description: SQLite database integration for development
+version: 0.1.3
+access: free
+status: stable
+tier: free
+category: database
+generated_from_config: true
+tags:
+    - database
+    - db-sqlite
+depends_on:
+    - free/essentials/settings
+profile_inherits:
+    fastapi.standard: fastapi
+    fastapi.ddd: fastapi
+    nestjs.standard: nestjs
+config_sources:
+    - config/base.yaml
+    - config/snippets.yaml
+generation:
+    vendor:
+        root: .rapidkit/vendor
+        files:
+            - template: templates/base/db_sqlite.py.j2
+              relative: src/modules/free/database/db_sqlite/db_sqlite.py
+            - template: templates/base/db_sqlite_health.py.j2
+              relative: src/health/db_sqlite.py
+            - template: templates/base/db_sqlite_types.py.j2
+              relative: src/modules/free/database/db_sqlite/types/db_sqlite.py
+            - template: templates/vendor/nestjs/configuration.js.j2
+              relative: nestjs/configuration.js
+    variants:
+        fastapi: &fastapi_variant
+            root: .
+            context:
+                framework: fastapi
+                module_class_name: DbSqlite
+                vendor_runtime_relative: src/modules/free/database/db_sqlite/db_sqlite.py
+            files:
+                - template: templates/variants/fastapi/db_sqlite.py.j2
+                  output: src/modules/free/database/db_sqlite/db_sqlite.py
+                - template: templates/variants/fastapi/db_sqlite_health.py.j2
+                  output: src/health/db_sqlite.py
+                - template: templates/variants/fastapi/db_sqlite_routes.py.j2
+                  output: src/modules/free/database/db_sqlite/routers/db_sqlite.py
+                - template: templates/variants/fastapi/db_sqlite_config.yaml.j2
+                  output: config/database/db_sqlite.yaml
+                - template: templates/tests/integration/test_db_sqlite_integration.j2
+                  output: tests/modules/integration/database/test_db_sqlite_integration.py
+                - template: templates/variants/fastapi/tests/test_db_sqlite_e2e.py
+                  output: tests/modules/e2e/free/database/db_sqlite/test_db_sqlite_e2e.py
+        fastapi.standard: *fastapi_variant
+        fastapi.ddd: *fastapi_variant
+        nestjs: &nestjs_variant
+            root: .
+            context:
+                framework: nestjs
+                vendor_configuration_relative: nestjs/configuration.js
+                vendor_runtime_relative: src/modules/free/database/db_sqlite/db_sqlite.py
+                module_class_name: DbSqlite
+                module_kebab: db-sqlite
+            files:
+                - template: templates/variants/nestjs/db_sqlite.service.ts.j2
+                  output: src/modules/free/database/db_sqlite/db-sqlite/db-sqlite.service.ts
+                - template: templates/variants/nestjs/db_sqlite.controller.ts.j2
+                  output: src/modules/free/database/db_sqlite/db-sqlite/db-sqlite.controller.ts
+                - template: templates/variants/nestjs/db_sqlite.module.ts.j2
+                  output: src/modules/free/database/db_sqlite/db-sqlite/db-sqlite.module.ts
+                - template: templates/variants/nestjs/db_sqlite.configuration.ts.j2
+                  output: src/modules/free/database/db_sqlite/db-sqlite/db-sqlite.configuration.ts
+                - template: templates/variants/nestjs/db_sqlite.health.controller.ts.j2
+                  output: src/health/db-sqlite-health.controller.ts
+                - template: templates/variants/nestjs/db_sqlite.health.module.ts.j2
+                  output: src/health/db-sqlite-health.module.ts
+                - template: templates/tests/integration/db_sqlite.integration.spec.ts.j2
+                  output: tests/modules/integration/database/db_sqlite.integration.spec.ts
+                - template: templates/variants/nestjs/tests/db_sqlite.e2e-spec.ts
+                  output: tests/modules/e2e/free/database/db_sqlite/db_sqlite.e2e-spec.ts
+        nestjs.standard: *nestjs_variant
+    snippets:
+        enabled: true
+        config: config/snippets.yaml
+        default: []
+compatibility:
+    python: ">=3.10,<4.0"
+    node: ">=18,<21"
+    frameworks:
+        - fastapi
+        - nestjs
+    os:
+        - linux
+        - darwin
+        - windows
+testing:
+    coverage_min: 85
+    integration_tests: true
+    e2e_tests: false
+    unit_tests:
+        - tests/modules/free/database/db_sqlite/test_db_sqlite_generator.py
+        - tests/modules/free/database/db_sqlite/test_db_sqlite_overrides.py
+        - tests/modules/free/database/db_sqlite/test_db_sqlite_runtime.py
+        - tests/modules/free/database/db_sqlite/test_db_sqlite_adapters.py
+        - tests/modules/free/database/db_sqlite/test_db_sqlite_validation.py
+        - tests/modules/free/database/db_sqlite/test_db_sqlite_error_handling.py
+        - tests/modules/free/database/db_sqlite/test_db_sqlite_health_check.py
+        - tests/modules/free/database/db_sqlite/test_db_sqlite_framework_variants.py
+        - tests/modules/free/database/db_sqlite/test_db_sqlite_vendor_layer.py
+        - tests/modules/free/database/db_sqlite/test_db_sqlite_configuration.py
+        - tests/modules/free/database/db_sqlite/test_db_sqlite_versioning.py
+        - tests/modules/free/database/db_sqlite/test_db_sqlite_integration.py
+        - tests/modules/free/database/db_sqlite/test_db_sqlite_standard_module.py
+    fixtures:
+        - tests/modules/free/database/db_sqlite/conftest.py
+documentation:
+    changelog: docs/changelog.md
+    readme: README.md
+    overview: docs/overview.md
+    usage: docs/usage.md
+    advanced: docs/advanced.md
+    migration: docs/migration.md
+    troubleshooting: docs/troubleshooting.md
+    api_docs: docs/api-reference.md
+    examples: []
+support:
+    issues: https://github.com/getrapidkit/core/issues
+    discussions: https://github.com/getrapidkit/core/discussions
+    documentation: https://docs.rapidkit.top/modules/database/db_sqlite
+changelog:
+    - version: 0.1.3
+      date: "2026-01-04"
+      notes: See docs/changelog.md
+validation:
+    pre_install:
+        - check_python_version
+    post_install:
+        - validate_generated_code
+rollback:
+    strategy: uninstall
+    backup_path: .rapidkit/backups/
+    max_backups: 3
+performance:
+    lazy_loading: true
+    caching:
+        templates: true
+        ttl: 300
+capabilities:
+    - sqlite
+    - database
+    - fastapi
+    - nestjs
+signature:
+    signature: OFQFLT3KnstQsbr4A6eBhCsKe5jsEUiVR7ZXMy8ZHiR84ntgI5MtbdJpzJEHnNFlo52b8C6tpTZXT6Q5uNTwBw==
+    signer_id: c7eb213b1ac6d8c6
+    signature_version: v1
+signer_id: null
+signature_version: null
+file_hashes:
+    templates/variants/nestjs/tests/db_sqlite.e2e-spec.ts: sha256:378a060b0709235eb8c5a6cc47dc5fb8ef1b036bec8721104525d536c09b9689
+    templates/variants/fastapi/tests/test_db_sqlite_e2e.py: sha256:5c2d103517727650b112baff35e6d10ea294c796f8e69182f2d7a32096a734bf
+    scripts/run_demo.py: sha256:d5bc3b5a8acb891a2473494c7accc978b7dd7104eab54be75636618e1a9b4d16
+    README.md: sha256:975bc6c3bacbdee4bcb7a261e2451f455e853ac5eeb3397195ba8f5ebd231c0a
+    __init__.py: sha256:d52b93e914e4445edc59fff0e8fed6ef3f008219ed68152b260d9efcba74f102
+    config/base.yaml: sha256:bfc86fac7b62c3995ecaafbbf0a9c6807c68f9ba5b8fe9b91ac056d8836db672
+    config/snippets.yaml: sha256:6654416eebd163c92d50f768104c2d600cdda6d4a78cc00f6a300ded6d045717
+    docs/README.md: sha256:c8f41e78692b79c7b6708748c1a86f3b3d99d19d87251de7f8458655a1dfe636
+    docs/advanced.md: sha256:473470a3f11fbfb73c9504dc36c03e3f477071cd80504a2746adf2301a384006
+    docs/api-reference.md: sha256:847461b3a2574bdca16e15fc256d3586710e7c6a9eff772bb04e2d5fca5d7b89
+    docs/changelog.md: sha256:2e815fe86ef5c6022fcf8cf056501f6ea2223c069b0f38e6b7aaed5be5f92ca3
+    docs/migration.md: sha256:291700555d8ca96a7729884bdf8a21dc28ffd22f635a73c8c715903a2bcb8dc7
+    docs/overview.md: sha256:cd9bb13d116b22290075aec13fc7f04dab3f92b0b07b269302b8c193d804a5be
+    docs/troubleshooting.md: sha256:c6ff2afeea4b377b3004e5ce50e119985cc5dfc64b79a33ff44266eae212b212
+    docs/usage.md: sha256:f8bb47b2688991d3c52071a3d58ea8062255a9f378501ad323ef1951fe102212
+    frameworks/__init__.py: sha256:c027daa9d16b2140f37ef8fc8e9b34053df407b1915ad7d0a5db3f251227e478
+    frameworks/fastapi.py: sha256:cb4984e02f6b33dc24202533e02c95056f66318736828491646bbff398474064
+    frameworks/nestjs.py: sha256:10291b86c9fe5aaf07dd65f96fa6cfae9e6afd4ec4b2c4a7761a4848bef4d0ca
+    generate.py: sha256:62e7b10e9ed041dc31cf8caed6fae8b106a8cf3f4d643408613f7641ca9ee002
+    module.verify.json: sha256:d89d92ab3bf4f7e1c2d0dc8c34db130abaa2d92f1ece1391213df2296dbefebf
+    overrides.py: sha256:5944a8802c8d15d281fe35acdcca02b0b877376f01256f8cf4c3e91575427e93
+    templates/base/db_sqlite.py.j2: sha256:acea38182b7ecab14717c15255d4ed860c712a8fc2f00318fc7f4fee6dc6c322
+    templates/base/db_sqlite_health.py.j2: sha256:dd6dd66ad30fbfea75e6cbf1a1d4f6493ca6afa301d8c33b25560f183f1562f2
+    templates/base/db_sqlite_types.py.j2: sha256:6bc8eafeef1687e81cab654dd94c86ac836c47dd0fc37707da2d696f9b459b03
+    templates/snippets/db_sqlite.snippet.j2: sha256:5f56b0b4c41f3dc6dff061850f2442772e1ab4493d0a4d2db26b6f5485fe4826
+    templates/snippets/db_sqlite_env.snippet.j2: sha256:eec012a3e59e853a2f5fb33282c32f9fa265d7057d12f971f4dbba7ac2a38be2
+    templates/snippets/db_sqlite_settings_fields.snippet.j2: sha256:5bc17abbe977e6f6c7b5050080da3cfc6a3a348fab83eb7ae3b8deffed93262a
+    templates/snippets/db_sqlite_settings_fields_nestjs.snippet.j2: sha256:994aa1196ba304a814cc6769a5a09d26f87898e5beace30a25f1a7e406299405
+    templates/tests/__init__.py: sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+    templates/tests/integration/db_sqlite.integration.spec.ts.j2: sha256:0f2ac1d145ed6b7ce548f0a738b0e9aeecaa7abe0868636641d83f65b4cb9db3
+    templates/tests/integration/test_db_sqlite_integration.j2: sha256:b9b581db94b56b43ee0c165e9b969a95dde743ecc6302193be3318b1327a7455
+    templates/variants/fastapi/db_sqlite.py.j2: sha256:28859818d1d24218347f1a084a2217b2378d3cb38a487588e0175ce649a35ec9
+    templates/variants/fastapi/db_sqlite_config.yaml.j2: sha256:820342876754b732162de93356197f6121040dabdc0a6aff12af34c27a2f5734
+    templates/variants/fastapi/db_sqlite_health.py.j2: sha256:1699e7d6bce86ba6e9ec8b2eb17ece04c5403cc8529399ac7c11c045b57b3972
+    templates/variants/fastapi/db_sqlite_routes.py.j2: sha256:6d56ba244ecc036b2895bb004a6400f9a1e5d8a095162d54584db3c5a7eb0b04
+    templates/variants/nestjs/db_sqlite.configuration.ts.j2: sha256:34958677c8dc79ddefa241591d25f0064f4bfd29868431c1d6d39ab68c2c73e9
+    templates/variants/nestjs/db_sqlite.controller.ts.j2: sha256:c475ed8268bc978934e80b7bbdf40306d52c157a8a0bd25363fad032741ade38
+    templates/variants/nestjs/db_sqlite.health.controller.ts.j2: sha256:9b83c875fdecac1f5b551cac0658ab4cd20560ac53e423478b07cfa819a9c939
+    templates/variants/nestjs/db_sqlite.health.module.ts.j2: sha256:9928f6a2eae72177202ddb234f42570388b9a4cb70c8679b74e0a82d4b9097ae
+    templates/variants/nestjs/db_sqlite.module.ts.j2: sha256:2e1a95ed8d014d4ab725bb56dc3d1e6a923a40891f85037bcc92124849bac203
+    templates/variants/nestjs/db_sqlite.service.ts.j2: sha256:3857902db70d8bd7d5eba31253d635491ca58bddea756a527ec81fa94be371e6
+    templates/vendor/nestjs/configuration.js.j2: sha256:151f8f558581388a97c803f19873be8056a58b748bcbd1bfdfec271e3892c8cb

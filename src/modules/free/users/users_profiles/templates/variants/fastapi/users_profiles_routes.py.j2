@@ -1,0 +1,57 @@
+"""FastAPI routes exposing {{ module_title }} metadata and features."""
+
+from __future__ import annotations
+
+from typing import Dict
+
+from fastapi import APIRouter, FastAPI, status
+
+from src.modules.free.users.users_profiles.users_profiles import (
+    MODULE_FEATURES,
+    get_{{ module_name }}_metadata as get_{{ module_name }}_metadata_runtime,
+)
+from src.health.users_profiles import (
+    build_health_snapshot,
+    render_health_snapshot,
+)
+
+router = APIRouter(prefix="/api/users_profiles", tags=["users_profiles"])
+
+
+@router.get("/metadata", status_code=status.HTTP_200_OK)
+async def get_users_profiles_metadata() -> Dict[str, object]:
+    """Expose normalized metadata describing the {{ module_title }} configuration."""
+
+    metadata = get_{{ module_name }}_metadata_runtime()
+    return dict(metadata)
+
+
+@router.get("/features", status_code=status.HTTP_200_OK)
+async def list_users_profiles_features() -> Dict[str, object]:
+    """Return the list of advertised capabilities for the {{ module_title }} module."""
+
+    return {"features": list(MODULE_FEATURES)}
+
+
+@router.get("/health", status_code=status.HTTP_200_OK)
+async def get_users_profiles_health() -> Dict[str, object]:
+    """Return health snapshot for the {{ module_title }} subsystem."""
+
+    metadata = get_{{ module_name }}_metadata_runtime()
+    snapshot = build_health_snapshot(metadata)
+    return render_health_snapshot(snapshot)
+
+
+def register_users_profiles_routes(app: FastAPI) -> None:
+    """Attach the {{ module_title }} metadata routes to a FastAPI application."""
+
+    app.include_router(router)
+
+
+__all__ = [
+    "get_users_profiles_health",
+    "get_users_profiles_metadata",
+    "list_users_profiles_features",
+    "register_users_profiles_routes",
+    "router",
+]

@@ -1,0 +1,13 @@
+# RapidKit Modules Lock Template
+# Copy this to your repository's .pre-commit-config.yaml
+
+repos:
+  - repo: local
+    hooks:
+      # Update modules lock file when modules change
+      - id: update-modules-lock
+        name: update-modules-lock
+        entry: rapidkit modules lock --overwrite
+        language: system
+        files: ^src/modules/
+        pass_filenames: false

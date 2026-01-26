@@ -1,0 +1,111 @@
+import { Body, Controller, Get, HttpCode, HttpException, HttpStatus, Post } from '@nestjs/common';
+
+import {
+  {{ module_class_name }}Service,
+  EmailDeliveryError,
+  EmailMessagePayload,
+  EmailSendResult,
+} from './email.service';
+
+type SendEmailDto = EmailMessagePayload & { body?: string };
+
+interface SendTemplatedEmailDto {
+  to: string[];
+  cc?: string[];
+  bcc?: string[];
+  templateName: string;
+  context?: Record<string, unknown>;
+  subject: string;
+  textTemplate?: string;
+  replyTo?: string;
+  headers?: Record<string, string>;
+}
+
+type SendEmailResponse = EmailSendResult;
+
+@Controller('communication/email')
+export class {{ module_class_name }}Controller {
+  constructor(private readonly service: {{ module_class_name }}Service) {}
+
+  @Get('metadata')
+  getMetadata(): Record<string, unknown> {
+    return this.service.metadata();
+  }
+
+  @Get('features')
+  getFeatures(): Record<string, string[]> {
+    return { features: this.service.listFeatures() };
+  }
+
+  @Get('status')
+  getStatus(): Record<string, unknown> {
+    return this.service.status();
+  }
+
+  @Post('verify')
+  async verify(): Promise<{ verified: boolean }> {
+    const verified = await this.service.verifyConnection();
+    return { verified };
+  }
+
+  @Post('send')
+  @HttpCode(HttpStatus.CREATED)
+  async sendEmail(@Body() payload: SendEmailDto): Promise<SendEmailResponse> {
+    try {
+      const normalizedPayload = this.normalizePayload(payload);
+      return await this.service.sendEmail(normalizedPayload);
+    } catch (error) {
+      if (error instanceof EmailDeliveryError) {
+        throw new HttpException(
+          {
+            message: error.message,
+            provider: error.provider,
+            metadata: error.metadata,
+          },
+          HttpStatus.BAD_GATEWAY,
+        );
+      }
+      throw error;
+    }
+  }
+
+  @Post('send-templated')
+  @HttpCode(HttpStatus.CREATED)
+  async sendTemplatedEmail(@Body() payload: SendTemplatedEmailDto): Promise<SendEmailResponse> {
+    try {
+      return await this.service.sendTemplatedEmail(
+        payload.to,
+        payload.templateName,
+        payload.context ?? {},
+        payload.subject,
+        payload.textTemplate,
+        {
+          cc: payload.cc,
+          bcc: payload.bcc,
+          replyTo: payload.replyTo,
+          headers: payload.headers,
+        },
+      );
+    } catch (error) {
+      if (error instanceof EmailDeliveryError) {
+        throw new HttpException(
+          {
+            message: error.message,
+            provider: error.provider,
+            metadata: error.metadata,
+          },
+          HttpStatus.BAD_GATEWAY,
+        );
+      }
+      throw error;
+    }
+  }
+
+  private normalizePayload(payload: SendEmailDto): EmailMessagePayload {
+    const { body, ...rest } = payload;
+    if (!rest.textBody && body) {
+      return { ...rest, textBody: body };
+    }
+    return rest;
+  }
+}

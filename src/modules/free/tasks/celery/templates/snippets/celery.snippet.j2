@@ -1,0 +1,12 @@
+{# Environment snippet for configuring the Celery module #}
+
+{% set prefix = "RAPIDKIT_CELERY" %}
+
+{{ prefix }}_BROKER_URL=redis://localhost:6379/0
+{{ prefix }}_RESULT_BACKEND=redis://localhost:6379/1
+{{ prefix }}_DEFAULT_QUEUE=default
+{{ prefix }}_TIMEZONE=UTC
+{{ prefix }}_ENABLE_UTC=true
+{{ prefix }}_IMPORTS=apps.workers.tasks
+{{ prefix }}_INCLUDE=
+{{ prefix }}_AUTODISCOVER=apps.workers

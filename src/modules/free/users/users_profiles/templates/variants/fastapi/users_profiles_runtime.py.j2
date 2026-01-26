@@ -1,0 +1,120 @@
+"""Project-facing wrapper around the vendor {{ module_title }} runtime."""
+
+from __future__ import annotations
+
+import importlib.util
+import os
+import sys
+from functools import lru_cache
+from pathlib import Path
+from types import ModuleType
+from typing import Any
+
+_VENDOR_MODULE = {{ rapidkit_vendor_module | tojson }}
+_VENDOR_VERSION = {{ rapidkit_vendor_version | tojson }}
+_VENDOR_RELATIVE_PATH = {{ vendor_runtime_relative | tojson }}
+_VENDOR_ROOT_ENV = "RAPIDKIT_VENDOR_ROOT"
+_CACHE_PREFIX = "rapidkit_vendor_users_profiles"
+
+
+def _project_root() -> Path:
+    here = Path(__file__).resolve()
+    for parent in here.parents:
+        if (parent / "pyproject.toml").exists() or (parent / ".rapidkit").exists():
+            return parent
+    return here.parents[5]
+
+
+def _vendor_root() -> Path:
+    override = os.getenv(_VENDOR_ROOT_ENV)
+    if override:
+        return Path(override).expanduser().resolve()
+    return _project_root() / ".rapidkit" / "vendor"
+
+
+def _vendor_base_dir() -> Path:
+    root = _vendor_root()
+    module_dir = root / _VENDOR_MODULE
+    preferred = module_dir / _VENDOR_VERSION if _VENDOR_VERSION else None
+    if preferred and preferred.exists():
+        return preferred
+    candidates = sorted((path for path in module_dir.glob("*") if path.is_dir()), reverse=True)
+    if candidates:
+        return candidates[0]
+    raise RuntimeError(
+        "RapidKit vendor payload for '{module}' not found under {root}. "
+        "Re-run `rapidkit modules install {module}`.".format(module=_VENDOR_MODULE, root=root)
+    )
+
+
+def _vendor_file() -> Path:
+    if not _VENDOR_RELATIVE_PATH:
+        raise RuntimeError("Users Profiles vendor runtime relative path missing from generator context")
+    return _vendor_base_dir() / _VENDOR_RELATIVE_PATH
+
+
+@lru_cache(maxsize=1)
+def _load_vendor_module() -> ModuleType:
+    vendor_path = _vendor_file()
+    if not vendor_path.exists():
+        raise RuntimeError(
+            "RapidKit vendor Users Profiles runtime missing at {path}. "
+            "Re-run `rapidkit modules install {module}`.".format(
+                path=vendor_path,
+                module=_VENDOR_MODULE,
+            )
+        )
+
+    module_name = _CACHE_PREFIX + _VENDOR_MODULE.replace("/", "_")
+    spec = importlib.util.spec_from_file_location(module_name, vendor_path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Unable to load vendor Users Profiles runtime from {vendor_path}")
+
+    module = importlib.util.module_from_spec(spec)
+    sys.modules.setdefault(module_name, module)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _resolve_export(name: str) -> Any:
+    vendor = _load_vendor_module()
+    try:
+        return getattr(vendor, name)
+    except AttributeError as exc:  # pragma: no cover - defensive guard against drift
+        raise RuntimeError(f"Vendor Users Profiles runtime missing attribute '{name}'") from exc
+
+
+def refresh_vendor_module() -> None:
+    """Clear runtime caches to force vendor re-import (useful after upgrades)."""
+
+    _load_vendor_module.cache_clear()
+
+
+MODULE_NAME = _resolve_export("MODULE_NAME")
+MODULE_TITLE = _resolve_export("MODULE_TITLE")
+MODULE_FEATURES = _resolve_export("MODULE_FEATURES")
+UsersProfilesConfig = _resolve_export("UsersProfilesConfig")
+describe_users_profiles = _resolve_export("describe_{{ module_name }}")
+get_users_profiles_metadata = _resolve_export("get_{{ module_name }}_metadata")
+load_config_from_env = _resolve_export("load_config_from_env")
+
+
+try:  # Optional override contracts for enterprise deployments
+    from core.services.override_contracts import apply_module_overrides
+except ImportError:  # pragma: no cover - override system optional
+    apply_module_overrides = None
+
+if apply_module_overrides is not None:  # pragma: no branch - tiny guard
+    apply_module_overrides(sys.modules[__name__], "users_profiles")
+
+
+__all__ = [
+    "MODULE_FEATURES",
+    "MODULE_NAME",
+    "MODULE_TITLE",
+    "UsersProfilesConfig",
+    "describe_users_profiles",
+    "get_users_profiles_metadata",
+    "load_config_from_env",
+    "refresh_vendor_module",
+]

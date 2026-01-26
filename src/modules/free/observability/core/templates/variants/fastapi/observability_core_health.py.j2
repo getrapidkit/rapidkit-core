@@ -1,0 +1,11 @@
+"""FastAPI health helper for {{ module_title }}."""
+
+from __future__ import annotations
+
+from .{{ module_name }} import register_fastapi
+
+
+def create_health_router():
+    """Return the router used exclusively for health checks."""
+
+    return register_fastapi  # Expose reference for health framework wiring

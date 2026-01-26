@@ -1,0 +1,211 @@
+import { registerAs } from '@nestjs/config';
+
+import type { {{ module_class_name }}Options } from './{{ module_kebab }}.service';
+
+type UnknownRecord = Record<string, unknown>;
+
+type PermissionsPolicyValue = string | string[] | null;
+type PermissionsPolicyRecord = Record<string, PermissionsPolicyValue>;
+
+type HeadersRecord = Record<string, string>;
+
+const DEFAULTS = {{ security_headers_defaults | tojson(indent=2) }} as UnknownRecord;
+const STRICT_DEFAULTS = {{ strict_transport_security_defaults | tojson(indent=2) }} as UnknownRecord;
+const PERMISSIONS_DEFAULTS = {{ permissions_policy_defaults | tojson(indent=2) }} as UnknownRecord;
+const ADDITIONAL_HEADERS_DEFAULTS = {{ additional_headers_defaults | tojson(indent=2) }} as UnknownRecord;
+
+const coerceBoolean = (value: string | undefined, fallback: boolean): boolean => {
+  if (typeof value !== 'string') {
+    return fallback;
+  }
+  const normalised = value.trim().toLowerCase();
+  if (['1', 'true', 'yes', 'on', 'enabled'].includes(normalised)) {
+    return true;
+  }
+  if (['0', 'false', 'no', 'off', 'disabled'].includes(normalised)) {
+    return false;
+  }
+  return fallback;
+};
+
+const coerceContentTypeOptions = (value: string | undefined, fallback: string | boolean): string | boolean => {
+  if (typeof value !== 'string') {
+    return fallback;
+  }
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return fallback;
+  }
+  const normalised = trimmed.toLowerCase();
+  if (['0', 'false', 'no', 'off', 'disabled'].includes(normalised)) {
+    return false;
+  }
+  if (['1', 'true', 'yes', 'on', 'enabled'].includes(normalised)) {
+    return typeof fallback === 'string' ? fallback : 'nosniff';
+  }
+  return trimmed;
+};
+
+const coerceNumber = (value: string | undefined, fallback: number): number => {
+  if (typeof value !== 'string') {
+    return fallback;
+  }
+  const parsed = Number.parseInt(value, 10);
+  if (Number.isNaN(parsed)) {
+    return fallback;
+  }
+  return parsed;
+};
+
+const coerceString = <TFallback extends string | null>(value: string | undefined, fallback: TFallback): TFallback | string => {
+  if (typeof value !== 'string') {
+    return fallback;
+  }
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return fallback;
+  }
+  return trimmed;
+};
+
+const parsePermissionsPolicy = (value: string | undefined, fallback: PermissionsPolicyRecord): PermissionsPolicyRecord => {
+  const base: PermissionsPolicyRecord = { ...fallback };
+  if (typeof value !== 'string') {
+    return base;
+  }
+  try {
+    const parsed = JSON.parse(value);
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      const entries = Object.entries(parsed as PermissionsPolicyRecord).map(([key, entry]) => {
+        if (!key) {
+          return undefined;
+        }
+        if (entry === null) {
+          return [key, null] as const;
+        }
+        if (Array.isArray(entry)) {
+          return [key, entry.map((item) => String(item))] as const;
+        }
+        return [key, String(entry)] as const;
+      });
+      for (const pair of entries) {
+        if (pair) {
+          base[pair[0]] = pair[1];
+        }
+      }
+    }
+  } catch {
+    // ignore malformed payloads
+  }
+  return base;
+};
+
+const parseHeadersRecord = (value: string | undefined, fallback: HeadersRecord): HeadersRecord => {
+  const base: HeadersRecord = { ...fallback };
+  if (typeof value !== 'string') {
+    return base;
+  }
+  try {
+    const parsed = JSON.parse(value);
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      for (const [key, entry] of Object.entries(parsed as HeadersRecord)) {
+        if (!key) {
+          continue;
+        }
+        base[key] = String(entry);
+      }
+    }
+  } catch {
+    // ignore malformed payloads
+  }
+  return base;
+};
+
+export type SecurityHeadersConfiguration = {{ module_class_name }}Options;
+
+export const securityHeadersConfiguration = registerAs(
+  'securityHeaders',
+  (): SecurityHeadersConfiguration => {
+    const permissionsPolicy = parsePermissionsPolicy(
+      process.env.SECURITY_HEADERS_PERMISSIONS_POLICY,
+      PERMISSIONS_DEFAULTS as PermissionsPolicyRecord,
+    );
+    const additionalHeaders = parseHeadersRecord(
+      process.env.SECURITY_HEADERS_ADDITIONAL_HEADERS,
+      ADDITIONAL_HEADERS_DEFAULTS as HeadersRecord,
+    );
+
+    return {
+      enabled: coerceBoolean(
+        process.env.SECURITY_HEADERS_ENABLED,
+        Boolean(DEFAULTS.enabled ?? true),
+      ),
+      strictTransportSecurity: coerceBoolean(
+        process.env.SECURITY_HEADERS_STRICT_TRANSPORT_SECURITY,
+        Boolean(STRICT_DEFAULTS.enabled ?? true),
+      ),
+      strictTransportSecurityMaxAge: coerceNumber(
+        process.env.SECURITY_HEADERS_STRICT_TRANSPORT_SECURITY_MAX_AGE,
+        Number(STRICT_DEFAULTS.max_age ?? 63072000),
+      ),
+      strictTransportSecurityIncludeSubdomains: coerceBoolean(
+        process.env.SECURITY_HEADERS_STRICT_TRANSPORT_SECURITY_INCLUDE_SUBDOMAINS,
+        Boolean(STRICT_DEFAULTS.include_subdomains ?? true),
+      ),
+      strictTransportSecurityPreload: coerceBoolean(
+        process.env.SECURITY_HEADERS_STRICT_TRANSPORT_SECURITY_PRELOAD,
+        Boolean(STRICT_DEFAULTS.preload ?? true),
+      ),
+      contentSecurityPolicy: coerceString(
+        process.env.SECURITY_HEADERS_CONTENT_SECURITY_POLICY,
+        (DEFAULTS.content_security_policy ?? null) as string | null,
+      ) as string | null,
+      contentSecurityPolicyReportOnly: coerceBoolean(
+        process.env.SECURITY_HEADERS_CONTENT_SECURITY_POLICY_REPORT_ONLY,
+        Boolean(DEFAULTS.content_security_policy_report_only ?? false),
+      ),
+      referrerPolicy: (coerceString(
+        process.env.SECURITY_HEADERS_REFERRER_POLICY,
+        (DEFAULTS.referrer_policy ?? 'strict-origin-when-cross-origin') as string,
+      ) as string) ?? 'strict-origin-when-cross-origin',
+      xContentTypeOptions: coerceContentTypeOptions(
+        process.env.SECURITY_HEADERS_X_CONTENT_TYPE_OPTIONS,
+        (DEFAULTS.x_content_type_options ?? 'nosniff') as string | boolean,
+      ),
+      xFrameOptions: (coerceString(
+        process.env.SECURITY_HEADERS_X_FRAME_OPTIONS,
+        (DEFAULTS.x_frame_options ?? 'DENY') as string,
+      ) as string) ?? 'DENY',
+      xXssProtection: coerceBoolean(
+        process.env.SECURITY_HEADERS_X_XSS_PROTECTION,
+        Boolean(DEFAULTS.x_xss_protection ?? false),
+      ),
+      crossOriginEmbedderPolicy: coerceString(
+        process.env.SECURITY_HEADERS_CROSS_ORIGIN_EMBEDDER_POLICY,
+        (DEFAULTS.cross_origin_embedder_policy ?? null) as string | null,
+      ) as string | null,
+      crossOriginOpenerPolicy: coerceString(
+        process.env.SECURITY_HEADERS_CROSS_ORIGIN_OPENER_POLICY,
+        (DEFAULTS.cross_origin_opener_policy ?? null) as string | null,
+      ) as string | null,
+      crossOriginResourcePolicy: coerceString(
+        process.env.SECURITY_HEADERS_CROSS_ORIGIN_RESOURCE_POLICY,
+        (DEFAULTS.cross_origin_resource_policy ?? null) as string | null,
+      ) as string | null,
+      permissionsPolicy,
+      expectCt: coerceString(
+        process.env.SECURITY_HEADERS_EXPECT_CT,
+        (DEFAULTS.expect_ct ?? null) as string | null,
+      ) as string | null,
+      xDnsPrefetchControl: coerceString(
+        process.env.SECURITY_HEADERS_X_DNS_PREFETCH_CONTROL,
+        (DEFAULTS.x_dns_prefetch_control ?? 'off') as string | null,
+      ) as string | null,
+      xDownloadOptions: coerceString(
+        process.env.SECURITY_HEADERS_X_DOWNLOAD_OPTIONS,
+        (DEFAULTS.x_download_options ?? 'noopen') as string | null,
+      ) as string | null,
+      additionalHeaders,
+    };
+  },
+);

@@ -1,0 +1,35 @@
+# Default configuration for the Api Keys module.
+defaults:
+  enabled: true
+  key_prefix: "rk"
+  display_prefix: "rk_live_"
+  token_separator: "."
+  secret_bytes: 32
+  prefix_bytes: 6
+  prefix_charset: "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+  hash_algorithm: "sha256"
+  pepper_env: "RAPIDKIT_API_KEYS_PEPPER"
+  pepper: null
+  default_scopes:
+    - read
+  allowed_scopes:
+    - read
+    - write
+    - admin
+  allow_scope_wildcards: false
+  ttl_hours: null
+  rotation_days: 90
+  max_active_per_owner: 25
+  leak_window_hours: 72
+  metadata:
+    issuer: rapidkit
+  repository_backend: "memory"
+  persist_last_used: true
+  retry_attempts: 3
+  audit_trail: true
+  features:
+    - deterministic_hashing
+    - scope_enforcement
+    - usage_metrics
+    - rotation_window
+    - leak_detection

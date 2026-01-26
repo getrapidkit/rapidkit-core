@@ -1,0 +1,133 @@
+name: logging
+display_name: Structured Logging & Observability
+description: >-
+  Structured logging runtime with correlation IDs, multi-sink transport, async queue handling,
+  redaction filters, sampling, and framework-ready bridges for metrics and OpenTelemetry.
+root_path: src/
+
+profiles:
+  fastapi/standard:
+    description: Opinionated logging profile aligned with the RapidKit FastAPI starter.
+  fastapi/ddd:
+    inherits: fastapi/standard
+    description: Logging defaults tuned for the RapidKit FastAPI DDD starter.
+  nestjs/standard:
+    description: TypeScript logging helpers for NestJS configuration modules.
+
+variables:
+  log_level:
+    type: string
+    default: INFO
+    description: Default logging level (DEBUG, INFO, WARNING, ERROR, CRITICAL)
+    validation: ^(DEBUG|INFO|WARNING|ERROR|CRITICAL)$
+  log_format:
+    type: string
+    default: json
+    description: Output format for log records (json, text, colored)
+    validation: ^(json|text|colored)$
+  log_sinks:
+    type: list
+    default: [stderr]
+    description: Enabled destinations (stderr, file, syslog)
+  log_async_queue:
+    type: boolean
+    default: true
+    description: Enable QueueHandler/QueueListener pipeline for non-blocking IO
+  log_file_path:
+    type: string
+    default: logs/app.log
+    description: File path used when the file sink is enabled
+  log_file_rotate:
+    type: boolean
+    default: true
+    description: Enable RotatingFileHandler instead of plain FileHandler
+  log_sampling_rate:
+    type: float
+    default: 1.0
+    description: Sampling ratio for high-volume loggers (0.0 - 1.0)
+  log_enable_redaction:
+    type: boolean
+    default: true
+    description: Enable masking for secret-like key/value pairs
+  enable_request_context:
+    type: boolean
+    default: true
+    description: Propagate request/user IDs via middleware helpers
+  correlation_id_header:
+    type: string
+    default: X-Request-ID
+    description: HTTP header used to transport correlation identifiers
+  otel_bridge_enabled:
+    type: boolean
+    default: false
+    description: Activate the OpenTelemetry bridge handler (stub implementation)
+  metrics_bridge_enabled:
+    type: boolean
+    default: false
+    description: Activate the metrics bridge handler (stub implementation)
+
+features:
+  request_context_middleware:
+    status: stable
+    enabled: true
+    description: FastAPI middleware that enriches log records with request/user identifiers.
+  async_queue:
+    status: stable
+    enabled: true
+    description: Queue-based logging pipeline that keeps handlers off the request thread.
+  sampling_filter:
+    status: beta
+    enabled: false
+    description: Probabilistic sampling for debug/verbose loggers.
+  health_probe:
+    status: beta
+    enabled: true
+    description: FastAPI health endpoint exposing logging subsystem metadata.
+    files:
+      - path: core/health/logging.py
+        description: Health router registering logging diagnostics with FastAPI.
+
+snippets:
+  - name: logging_env
+    path: templates/snippets/env.snippet.j2
+    description: Environment variables required by the logging module.
+  - name: logging_fields_fastapi
+    path: templates/snippets/logging_fields.snippet.j2
+    description: Injects logging fields into Pydantic settings modules.
+  - name: logging_fields_nestjs
+    path: templates/snippets/logging_fields_nestjs.snippet.j2
+    description: Decorates NestJS config schemas with logging metadata.
+
+depends_on:
+  fastapi/standard:
+    - name: python-json-logger
+      source: external
+      tool: pip
+      version: ">=2.0.0,<3.0"
+  nestjs/standard:
+    - name: '@nestjs/config'
+      source: npm
+      tool: npm
+      version: ">=4.0.0"
+    - name: joi
+      source: npm
+      tool: npm
+      version: ">=17.0.0"
+
+dev_dependencies:
+  - name: pytest
+    source: external
+    tool: pip
+    version: ">=8.3.0,<9.0"
+  - name: pytest-asyncio
+    source: external
+    tool: pip
+    version: ">=1.2.0,<2.0"
+  - name: httpx
+    source: external
+    tool: pip
+    version: ">=0.28.0,<1.0"
+  - name: black
+    source: external
+    tool: pip
+    version: ">=24.8.0,<25.0"

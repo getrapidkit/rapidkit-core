@@ -1,0 +1,69 @@
+{% set runtime = runtime | default('python') -%}
+{% set python_version = python_version | default('3.10.14') -%}
+{% set node_version = node_version | default('20.19.6') -%}
+{% set package_manager = package_manager | default('npm') -%}
+
+{% if runtime == 'python' %}
+FROM python:{{ python_version }}-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV POETRY_HTTP_TIMEOUT=120
+
+WORKDIR /app
+
+RUN apt-get update \
+    && apt-get upgrade -y \
+    && apt-get install -y --no-install-recommends build-essential curl \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY pyproject.toml poetry.lock* /app/
+
+COPY . /app
+
+RUN pip install --no-cache-dir --retries 10 --timeout 60 setuptools==78.1.1 \
+    && pip install --no-cache-dir --retries 10 --timeout 60 poetry \
+    && poetry config virtualenvs.create false \
+    && poetry install --no-interaction --no-ansi \
+    && apt-get purge -y --auto-remove build-essential curl \
+    && rm -rf /var/lib/apt/lists/*
+
+EXPOSE 8000
+
+CMD ["poetry", "run", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
+{% elif runtime == 'node' %}
+FROM node:{{ node_version }}-alpine
+
+WORKDIR /app
+
+COPY package.json package-lock.json* pnpm-lock.yaml* yarn.lock* /app/
+
+{% if package_manager == 'pnpm' %}
+RUN npm install -g pnpm && pnpm install --frozen-lockfile
+{% elif package_manager == 'yarn' %}
+RUN yarn install --frozen-lockfile
+{% else %}
+RUN npm install --legacy-peer-deps
+{% endif %}
+
+COPY . /app
+
+{% if package_manager == 'pnpm' %}
+RUN pnpm build || true
+EXPOSE 3000
+CMD ["pnpm", "run", "start:prod"]
+{% elif package_manager == 'yarn' %}
+RUN yarn build || true
+EXPOSE 3000
+CMD ["yarn", "start:prod"]
+{% else %}
+RUN npm run build || true
+EXPOSE 3000
+CMD ["npm", "run", "start:prod"]
+{% endif %}
+{% else %}
+FROM alpine:3.19
+WORKDIR /app
+COPY . /app
+CMD ["/bin/sh"]
+{% endif %}

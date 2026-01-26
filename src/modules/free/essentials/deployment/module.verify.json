@@ -1,0 +1,51 @@
+{
+  "checked_at": "2025-12-25T12:26:44.501750+00:00",
+  "description": "Lean module layout blueprint (v3)",
+  "extra_directories": [
+    "scripts"
+  ],
+  "extra_files": [
+    "scripts/run_demo.py",
+    "templates/base/.dockerignore.j2",
+    "templates/base/Dockerfile.j2",
+    "templates/base/Makefile.j2",
+    "templates/base/ci.yml.j2",
+    "templates/base/deployment_health.py.j2",
+    "templates/base/docker-compose.base.yml.j2",
+    "templates/base/docker-compose.local.yml.j2",
+    "templates/base/docker-compose.production.yml.j2",
+    "templates/base/docker-compose.yml.j2"
+  ],
+  "missing_directories": [],
+  "missing_files": [],
+  "module": "free/essentials/deployment",
+  "parity": {
+    "fastapi": {
+      "declared": true,
+      "has_config": true,
+      "has_health": true,
+      "has_metadata": true,
+      "has_tests": true,
+      "issues": [],
+      "plugin": true,
+      "status": "ok"
+    },
+    "nestjs": {
+      "declared": true,
+      "has_config": true,
+      "has_health": true,
+      "has_metadata": true,
+      "has_tests": true,
+      "issues": [],
+      "plugin": true,
+      "status": "ok"
+    }
+  },
+  "parity_checked_at": "2025-12-06T21:56:11.635980+00:00",
+  "parity_valid": true,
+  "spec_version": 4,
+  "structure_tree_hash": "3ddd8e9a70820c9643a8ea5beec5510d112b86c9e5808f1aaca83ad309d395ae",
+  "structure_valid": true,
+  "tree_hash": "3ddd8e9a70820c9643a8ea5beec5510d112b86c9e5808f1aaca83ad309d395ae",
+  "valid": true
+}

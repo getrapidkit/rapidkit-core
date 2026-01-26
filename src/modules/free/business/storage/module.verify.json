@@ -1,0 +1,43 @@
+{
+  "checked_at": "2025-12-23T21:15:22.230718+00:00",
+  "description": "Lean module layout blueprint (v3)",
+  "extra_directories": [
+    "scripts"
+  ],
+  "extra_files": [
+    "scripts/run_demo.py",
+    "templates/base/storage_health.py.j2"
+  ],
+  "missing_directories": [],
+  "missing_files": [],
+  "module": "free/business/storage",
+  "parity": {
+    "fastapi": {
+      "declared": true,
+      "has_config": true,
+      "has_health": true,
+      "has_metadata": true,
+      "has_tests": true,
+      "issues": [],
+      "plugin": true,
+      "status": "ok"
+    },
+    "nestjs": {
+      "declared": true,
+      "has_config": true,
+      "has_health": true,
+      "has_metadata": true,
+      "has_tests": true,
+      "issues": [],
+      "plugin": true,
+      "status": "ok"
+    }
+  },
+  "parity_checked_at": "2025-11-23T14:25:21.818354+00:00",
+  "parity_valid": true,
+  "spec_version": 4,
+  "structure_tree_hash": "cc4ee531184863cab9b40d956fff5c0137582cd5955364f328a5154e3d81f23f",
+  "structure_valid": true,
+  "tree_hash": "cc4ee531184863cab9b40d956fff5c0137582cd5955364f328a5154e3d81f23f",
+  "valid": true
+}

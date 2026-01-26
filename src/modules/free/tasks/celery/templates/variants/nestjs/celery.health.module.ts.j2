@@ -1,0 +1,10 @@
+import { Module } from '@nestjs/common';
+
+import { {{ module_class_name }}Module } from '../modules/free/tasks/celery/celery.module';
+import { {{ module_class_name }}HealthController } from './celery-health.controller';
+
+@Module({
+  imports: [{{ module_class_name }}Module],
+  controllers: [{{ module_class_name }}HealthController],
+})
+export class {{ module_class_name }}HealthModule {}

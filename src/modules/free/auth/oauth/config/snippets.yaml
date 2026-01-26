@@ -1,0 +1,123 @@
+# Snippet registrations for the OAuth module
+snippets:
+  - id: oauth_env
+    target: .env,.env.dev,.env.prod,.env.example
+    anchor: "# <<<inject:module-env>>>"
+    template: env.snippet.j2
+    features: [oauth]
+    profiles: [fastapi/standard, nestjs/standard]
+    description: Inject OAuth environment variables
+    version: "0.1.0"
+    priority: 10
+    dependencies: []
+    context:
+      oauth_defaults:
+        redirect_base_url: "https://example.com/auth/oauth"
+        state_ttl_seconds: 900
+        state_cleanup_interval: 300
+        providers:
+          github:
+            client_id: ""
+            client_secret: ""
+            scopes:
+              - user:email
+    schema:
+      type: object
+      properties:
+        OAUTH_REDIRECT_BASE_URL:
+          type: str
+          default: "https://example.com/auth/oauth"
+          description: Base URL used for OAuth redirect callbacks
+        OAUTH_STATE_TTL_SECONDS:
+          type: int
+          default: 900
+          description: Lifetime (seconds) for stored OAuth state tokens
+        OAUTH_STATE_CLEANUP_INTERVAL:
+          type: int
+          default: 300
+          description: Cleanup cadence (seconds) for purging expired OAuth state
+        OAUTH_PROVIDERS:
+          type: string
+          default: "{\"github\": {\"scopes\": [\"user:email\"]}}"
+          description: JSON map of configured OAuth providers and their settings
+      additionalProperties: true
+      required: []
+    metadata:
+      author: "RapidKit Core Team"
+      created_at: "2025-10-30"
+      last_modified: "2025-10-30"
+    conflict_resolution: merge
+
+  - id: oauth_settings_fields
+    target: src/modules/free/essentials/settings/settings.py
+    anchor: "# <<<inject:settings-fields>>>"
+    template: settings_fields.snippet.j2
+    features: [extendable_settings, oauth]
+    profiles: [fastapi/standard]
+    description: Inject OAuth settings into Python configuration
+    version: "0.1.0"
+    priority: 20
+    dependencies: []
+    context:
+      oauth_defaults:
+        redirect_base_url: "https://example.com/auth/oauth"
+        state_ttl_seconds: 900
+        state_cleanup_interval: 300
+        providers:
+          github:
+            client_id: ""
+            client_secret: ""
+            scopes:
+              - user:email
+    schema:
+      type: object
+      properties: {}
+      additionalProperties: true
+      required: []
+    metadata:
+      author: "RapidKit Core Team"
+      created_at: "2025-10-30"
+      last_modified: "2025-10-30"
+    conflict_resolution: merge
+
+  - id: oauth_settings_fields_nestjs
+    target: src/config/configuration.ts
+    anchor: "// <<<inject:configuration>>>"
+    template: settings_fields_nestjs.snippet.j2
+    features: [oauth]
+    profiles: [nestjs/standard]
+    description: Extend NestJS settings interface with OAuth fields
+    version: "0.1.0"
+    priority: 20
+    dependencies: []
+    schema:
+      type: object
+      properties: {}
+      additionalProperties: true
+      required: []
+    metadata:
+      author: "RapidKit Core Team"
+      created_at: "2025-10-30"
+      last_modified: "2025-10-30"
+    conflict_resolution: merge
+
+  - id: oauth_quickstart
+    target: README.md
+    anchor: "<!-- <<<inject:module-snippet>>> -->"
+    template: oauth.snippet.j2
+    features: [oauth]
+    profiles: [fastapi/standard, nestjs/standard]
+    description: Quick commands for validating the OAuth module installation
+    version: "0.1.0"
+    priority: 5
+    dependencies: []
+    schema:
+      type: object
+      properties: {}
+      additionalProperties: true
+      required: []
+    metadata:
+      author: "RapidKit Core Team"
+      created_at: "2025-11-02"
+      last_modified: "2025-11-02"
+    conflict_resolution: merge

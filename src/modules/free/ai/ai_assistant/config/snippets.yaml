@@ -1,0 +1,7 @@
+# Register snippet bundles for Ai Assistant
+
+snippets:
+  -
+    name: "ai_assistant_usage_example"
+    template: "templates/snippets/ai_assistant.snippet.j2"
+    description: "Injects an opinionated usage example for Ai Assistant."

@@ -1,0 +1,10 @@
+{# FastAPI integration snippet for the Api Keys module. #}
+
+from auth.api_keys import {{ dependency_name }}, register_fastapi
+
+
+def install_api_keys(app, *, prefix: str = "{{ route_prefix }}"):
+    """Attach the Api Keys router to the provided FastAPI application."""
+
+    runtime = {{ dependency_name }}()
+    register_fastapi(app, runtime=runtime, prefix=prefix)

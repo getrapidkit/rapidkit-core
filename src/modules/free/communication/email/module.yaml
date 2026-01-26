@@ -1,0 +1,212 @@
+name: email
+version: 0.1.10
+tier: free
+access: free
+status: stable
+category: communication
+tags:
+    - communication
+    - email
+    - transactional
+    - marketing
+generated_from_config: true
+depends_on: []
+profile_inherits:
+    fastapi.standard: fastapi
+    fastapi.ddd: fastapi
+    nestjs.standard: nestjs
+metadata:
+    title: Email Delivery
+    description:
+        Pluggable transactional and marketing email service with template rendering
+        and FastAPI/NestJS integrations.
+    maintainer: RapidKit Core Team
+    support_contact: platform@rapidkit.top
+config_sources:
+    - config/base.yaml
+    - config/snippets.yaml
+generation:
+    vendor:
+        root: .rapidkit/vendor
+        files:
+            - template: templates/base/email.py.j2
+              relative: src/modules/free/communication/email/email.py
+            - template: templates/base/email_health.py.j2
+              relative: src/health/email.py
+            - template: templates/base/email_types.py.j2
+              relative: src/modules/free/communication/email/email_types.py
+    variants:
+        fastapi: &fastapi_variant
+            root: .
+            context: &fastapi_context
+                framework: fastapi
+                module_class_name: Email
+                vendor_runtime_relative: src/modules/free/communication/email/email.py
+            files: &fastapi_files
+                - template: templates/variants/fastapi/email.py.j2
+                  output: src/modules/free/communication/email/email.py
+                - template: templates/base/email_types.py.j2
+                  output: src/modules/free/communication/email/email_types.py
+                - template: templates/variants/fastapi/email_routes.py.j2
+                  output: src/modules/free/communication/email/routers/email.py
+                - template: templates/variants/fastapi/email_config.yaml.j2
+                  output: src/modules/free/communication/email/config/email.yaml
+                - template: templates/variants/fastapi/tests/test_email_integration.py.j2
+                  output: tests/modules/free/communication/email/test_email_integration.py
+                - template: templates/variants/fastapi/tests/conftest.py.j2
+                  output: tests/modules/free/communication/email/conftest.py
+                - template: templates/variants/fastapi/tests/test_email_e2e.py
+                  output: tests/modules/e2e/free/communication/email/test_email_e2e.py
+
+        # Compatibility aliases: the installer uses kit profile names.
+        fastapi.standard: *fastapi_variant
+        fastapi.ddd: *fastapi_variant
+
+        nestjs: &nestjs_variant
+            root: .
+            context: &nestjs_context
+                framework: nestjs
+                module_class_name: Email
+                module_kebab: email
+            files: &nestjs_files
+                - template: templates/variants/nestjs/email.service.ts.j2
+                  output: src/modules/free/communication/email/email.service.ts
+                - template: templates/variants/nestjs/email.controller.ts.j2
+                  output: src/modules/free/communication/email/email.controller.ts
+                - template: templates/variants/nestjs/email.module.ts.j2
+                  output: src/modules/free/communication/email/email.module.ts
+                - template: templates/variants/nestjs/email.configuration.ts.j2
+                  output: src/modules/free/communication/email/email.configuration.ts
+                - template: templates/variants/nestjs/email.health.ts.j2
+                  output: src/modules/free/communication/email/email.health.ts
+                - template: templates/tests/integration/email.integration.spec.ts.j2
+                  output: tests/modules/integration/communication/email.integration.spec.ts
+                - template: templates/variants/nestjs/tests/email.e2e-spec.ts
+                  output: tests/modules/e2e/free/communication/email/email.e2e-spec.ts
+
+        nestjs.standard: *nestjs_variant
+    snippets:
+        enabled: true
+        config: config/snippets.yaml
+        default:
+            - email_env
+dependencies: {}
+dev_dependencies:
+    - name: pytest
+      source: external
+      tool: pip
+      version: ">=8.3.0,<9.0"
+    - name: pytest-asyncio
+      source: external
+      tool: pip
+      version: ">=0.25.0,<1.0"
+    - name: httpx
+      source: external
+      tool: pip
+      version: ">=0.27.2,<0.29"
+compatibility:
+    python: ">=3.10"
+    node: ">=18"
+    frameworks:
+        - fastapi
+        - nestjs
+    os:
+        - linux
+        - darwin
+        - windows
+testing:
+    coverage_min: 85
+    integration_tests: true
+    e2e_tests: false
+    unit_tests:
+        - tests/modules/free/communication/email/test_email_generator.py
+        - tests/modules/free/communication/email/test_email_runtime.py
+        - tests/modules/free/communication/email/test_email_integration.py
+    integration_test_files:
+        - tests/modules/free/communication/email/test_email_integration.py
+    fixtures: []
+documentation:
+    changelog: docs/changelog.md
+    readme: README.md
+    overview: docs/overview.md
+    usage: docs/usage.md
+    advanced: docs/advanced.md
+    migration: docs/migration.md
+    troubleshooting: docs/troubleshooting.md
+    api_docs: null
+    examples: []
+support:
+    issues: https://github.com/getrapidkit/core/issues
+    discussions: https://github.com/getrapidkit/core/discussions
+    documentation: https://docs.rapidkit.top/modules/email
+changelog:
+    - version: "0.1.10"
+      date: "2025-12-14"
+      notes: "See docs/changelog.md"
+validation:
+    pre_install:
+        - check_python_version
+        - check_dependencies
+        - validate_configuration
+    post_install:
+        - validate_generated_code
+        - run_tests
+rollback:
+    strategy: uninstall
+    backup_path: .rapidkit/backups/
+    max_backups: 5
+performance:
+    lazy_loading: true
+    caching:
+        templates: true
+        ttl: 300
+capabilities:
+    - communication
+    - email
+    - fastapi
+    - nestjs
+signature:
+    signature: WPhSuiMHTMp+CxCE9mh8f/lgJZh4amznjjNHer4jFlEyg4t71WKx33grKGVsbsHUKH5cJapY3NNNk13Qn7slDA==
+    signer_id: c7eb213b1ac6d8c6
+    signature_version: v1
+signer_id: null
+signature_version: null
+file_hashes:
+    templates/variants/nestjs/tests/email.e2e-spec.ts: sha256:b17800a5f6b0e1707a39d70001e0ff2569b136fcfec171c76dc2cca6e8cc5b32
+    templates/variants/fastapi/tests/test_email_e2e.py: sha256:9e12451e8073cd1098aacda3d9e0735bca4073656acdcffc9a5ab32f347d65cd
+    scripts/run_demo.py: sha256:f8d3567bbb500c4483f6c70b5905a9e5a12da8ed110ab26c0a064c53bd470bb4
+    README.md: sha256:4a7dc6c470601e36da1f0a3242f394c34abee5e72fb2c6531e5d1ce2d0239bcc
+    __init__.py: sha256:99399baaae52cac84fbb98f313e1adf673965e25f2aa6b6df510d780cf198391
+    config/base.yaml: sha256:13168c18a31bea956b3ed38947c7789ecfcb1ba12bf77e93253d8098c945900d
+    config/snippets.yaml: sha256:d6ee7a669ec6e66ff7fbf358346c219f419b1d8fbad83464912a631110aec7f2
+    docs/README.md: sha256:cf7297de9d9ee707d26d349ecd175c0cdef394142ff29bbf12a9e19209579c3a
+    docs/advanced.md: sha256:04ab82fe774fa31aec8f63ed817c866c8a7614744c2e6a4f8104accb1d6e0d97
+    docs/changelog.md: sha256:3cf462ea3a2369af9c14b6b72d1c25be3edac3791232babd4476eae64e2d7af7
+    docs/migration.md: sha256:d9b81688135aea9d67bc8463d8f022dc875e2a02778a05315d4d0d6811b99bca
+    docs/overview.md: sha256:7db9a124668123ab6e1fe74a11c0af53a1a99ff294ea47c1736d77bdd0972762
+    docs/troubleshooting.md: sha256:585e98accc2bf1b76e44622a0935993aa39edc5088a11aec6363c01713f0d5e2
+    docs/usage.md: sha256:db773e5d3b4230ade344cef2a391738de88bab97df95263afdfa1ba7be03a59d
+    frameworks/__init__.py: sha256:80e4b16def416fea7ea38c780335b1c500942b6e30ffe8d2371971556a938900
+    frameworks/fastapi.py: sha256:09c8be8b577e0b5ec22f3e8f48ea9ecb3338ad94aa4eb78c325434aa0d04a8e8
+    frameworks/nestjs.py: sha256:23eba7eae8b6fbd7a66c2874045b7c1a67289a84f36bda8d4a2a51338c715dc3
+    generate.py: sha256:25d0c72d510eb31d91b042805fb92017821efb49d4a7195127b59b90bc1b4d47
+    module.verify.json: sha256:4899b0417d49831fec5ac75d6c981d8c825731104db62df2da90a9cb8d8155b9
+    overrides.py: sha256:6890ac107509ed2a0c3c681e7a44ccd2c19eb742e79de8a44c4a00a2ad33d178
+    templates/base/email.py.j2: sha256:c2f31de8bbab7339e65e180c4849d5ab47193213a20c2e3b7f2b5320954fdff4
+    templates/base/email_health.py.j2: sha256:3200081522cbc2a5393f48f769cf2ec2f410491f18c0a41b628b3987cf4c7c73
+    templates/base/email_types.py.j2: sha256:10ed118bcf645de0bcaf2a8fc24c8701734dbc7c1c96a9cc6d1ffb61b61f3691
+    templates/snippets/email.snippet.j2: sha256:663dc1677235ea5d029db75fa199344bc9c7b3c68939d1e5f7e4bd3f4dd3bda8
+    templates/tests/__init__.py: sha256:68512fea2dcfec492626e86f080eea440adecfc08a1d766eadccaf5c8ce30889
+    templates/tests/integration/email.integration.spec.ts.j2: sha256:febcb9fb1f34c5ccc08155759876309835756e31e50edde99262a50c1bdc3dac
+    templates/tests/integration/test_email_integration.j2: sha256:f86af9f8ee59d8e0ce5c1f8dbd580c87d095aee4623df8e910af946d519c9a2e
+    templates/variants/fastapi/email.py.j2: sha256:195e6e74de0319a4d64f94fcdb99f96f2425e029bcad1840fb2667a035323add
+    templates/variants/fastapi/email_config.yaml.j2: sha256:72ca6f959e59dad59a34439c565a62fbcc543575a5a1861f78bccdf41b72e018
+    templates/variants/fastapi/email_health.py.j2: sha256:78a3007521b852dc91608f4df673321f4b2905aedf8f4ee8e17c92310a0def42
+    templates/variants/fastapi/email_routes.py.j2: sha256:b817f0b0e2b0d19e22a06a8101936271bfc4be28ff7f31cd5b216dbf532b0cf4
+    templates/variants/fastapi/tests/test_email_integration.py.j2: sha256:86185290490a08e3d1794e3f82c3fbbc0c1ad9596c168958c32fa2a38956a223
+    templates/variants/nestjs/email.configuration.ts.j2: sha256:f52aad31aeadb8959d14f03d5749a6c4173b723189a1bf358715e0c112e40c93
+    templates/variants/nestjs/email.controller.ts.j2: sha256:a20661a54e4e5ddae29b7cb219a1db5cd287bc2c09c5e9f3fb33aaa9fc508169
+    templates/variants/nestjs/email.health.ts.j2: sha256:a7b4d643147aa7533a712f3c8709ac0c7fbfbf9d67abbec3a51177d0136c3b42
+    templates/variants/nestjs/email.module.ts.j2: sha256:c64306a160b6e93a7fefca13b7b509a4185ba0ac1117306c3dfae0f17d10cea6
+    templates/variants/nestjs/email.service.ts.j2: sha256:5132f55502eb7bd0155319e26be10de88efe7bd9139d7fe3481dd91832f72ffa
+    templates/vendor/nestjs/configuration.js.j2: sha256:8601cd270dadb57215c210cb2da6c2873b2989c74da1c3efea5f26e8f246f99f

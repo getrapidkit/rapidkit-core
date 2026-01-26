@@ -1,0 +1,42 @@
+# Observability Core default configuration profile.
+defaults:
+  enabled: true
+  service_name: rapidkit-app
+  environment: local
+  log_level: INFO
+  structured_logging: true
+  include_trace_ids: true
+  resource_attributes:
+    deployment: local
+    owner: platform
+  retry_attempts: 3
+  metrics:
+    enabled: true
+    exporter: prometheus
+    endpoint: /metrics
+    namespace: rapidkit
+    default_labels:
+      service: rapidkit-app
+      environment: local
+    buckets:
+      - 0.1
+      - 0.5
+      - 1
+      - 2.5
+      - 5
+      - 10
+    retention_seconds: 600
+    register_process_metrics: true
+  tracing:
+    enabled: false
+    exporter: console
+    endpoint: null
+    sample_ratio: 0.25
+    include_headers: true
+  events:
+    buffer_size: 1000
+    flush_interval_seconds: 5
+    audit_enabled: false
+  dashboards:
+    enabled: false
+    emit_reference_links: true

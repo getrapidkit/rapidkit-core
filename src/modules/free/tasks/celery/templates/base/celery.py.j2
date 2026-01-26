@@ -1,0 +1,314 @@
+"""Runtime primitives for orchestrating {{ module_title }} task processing."""
+
+from __future__ import annotations
+
+import os
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta, timezone
+from functools import lru_cache
+from typing import Any, Callable, Mapping, MutableMapping, Optional, Sequence
+
+try:  # Optional dependency
+    from celery import Celery  # type: ignore
+    from celery.schedules import crontab, schedule as celery_schedule  # type: ignore
+except ImportError:  # pragma: no cover - optional dependency not installed
+    Celery = None  # type: ignore
+    crontab = None  # type: ignore
+    celery_schedule = None  # type: ignore
+
+
+DEFAULT_ENV_PREFIX = "RAPIDKIT_{{ module_name|upper }}_"
+MODULE_FEATURES: tuple[str, ...] = (
+    "task_execution",
+    "beat_schedule",
+    "worker_monitoring",
+)
+
+
+class {{ module_class_name }}RuntimeError(RuntimeError):
+    """Raised when {{ module_title }} runtime operations fail."""
+
+
+@dataclass(slots=True)
+class {{ module_class_name }}Schedule:
+    """Represents a Celery beat schedule entry."""
+
+    task: str
+    schedule: Any
+    args: Sequence[Any] = field(default_factory=tuple)
+    kwargs: Mapping[str, Any] = field(default_factory=dict)
+    options: Mapping[str, Any] = field(default_factory=dict)
+
+    @classmethod
+    def from_mapping(cls, payload: Mapping[str, Any]) -> "{{ module_class_name }}Schedule":
+        task = payload.get("task")
+        if not isinstance(task, str) or not task:
+            raise ValueError("{{ module_title }} schedule payload requires a non-empty 'task'")
+        schedule = payload.get("schedule")
+        if schedule is None:
+            raise ValueError("{{ module_title }} schedule payload missing 'schedule'")
+        derived = _coerce_schedule(schedule)
+        return cls(
+            task=task,
+            schedule=derived,
+            args=tuple(payload.get("args", ()) or ()),
+            kwargs=dict(payload.get("kwargs", {}) or {}),
+            options=dict(payload.get("options", {}) or {}),
+        )
+
+
+@dataclass(slots=True)
+class {{ module_class_name }}Settings:
+    """Encapsulates Celery configuration options."""
+
+    broker_url: str = "redis://localhost:6379/0"
+    result_backend: Optional[str] = "redis://localhost:6379/1"
+    timezone: str = "UTC"
+    enable_utc: bool = True
+    task_default_queue: str = "default"
+    task_routes: MutableMapping[str, Any] = field(default_factory=dict)
+    task_annotations: MutableMapping[str, Any] = field(default_factory=dict)
+    imports: Sequence[str] = field(default_factory=tuple)
+    include: Sequence[str] = field(default_factory=tuple)
+    beat_schedule: MutableMapping[str, {{ module_class_name }}Schedule] = field(default_factory=dict)
+    worker_max_tasks_per_child: Optional[int] = None
+    result_expires: Optional[int] = 3600
+
+    @classmethod
+    def from_mapping(cls, payload: Mapping[str, Any]) -> "{{ module_class_name }}Settings":
+        beat_payload = payload.get("beat_schedule", {}) or {}
+        schedule_map: MutableMapping[str, {{ module_class_name }}Schedule] = {}
+        for name, entry in beat_payload.items():
+            if not isinstance(entry, Mapping):
+                raise ValueError("beat_schedule entries must be mappings")
+            schedule_map[str(name)] = {{ module_class_name }}Schedule.from_mapping(entry)
+        return cls(
+            broker_url=str(payload.get("broker_url", cls.broker_url)),
+            result_backend=_maybe(payload.get("result_backend"), default=cls.result_backend),
+            timezone=str(payload.get("timezone", cls.timezone)),
+            enable_utc=bool(payload.get("enable_utc", cls.enable_utc)),
+            task_default_queue=str(payload.get("task_default_queue", cls.task_default_queue)),
+            task_routes=dict(payload.get("task_routes", {}) or {}),
+            task_annotations=dict(payload.get("task_annotations", {}) or {}),
+            imports=tuple(payload.get("imports", ()) or ()),
+            include=tuple(payload.get("include", ()) or ()),
+            beat_schedule=schedule_map,
+            worker_max_tasks_per_child=_maybe(payload.get("worker_max_tasks_per_child")),
+            result_expires=_maybe(payload.get("result_expires"), default=cls.result_expires),
+        )
+
+
+@dataclass(slots=True)
+class {{ module_class_name }}AppConfig:
+    """High level configuration used to build Celery applications."""
+
+    name: str = "rapidkit"
+    settings: {{ module_class_name }}Settings = field(default_factory={{ module_class_name }}Settings)
+    namespace: str = "CELERY"
+    autodiscover: Sequence[str] = field(default_factory=tuple)
+    config_overrides: MutableMapping[str, Any] = field(default_factory=dict)
+
+    @classmethod
+    def from_mapping(cls, payload: Mapping[str, Any]) -> "{{ module_class_name }}AppConfig":
+        settings_payload = payload.get("settings", {}) or {}
+        return cls(
+            name=str(payload.get("name", cls.name)),
+            settings={{ module_class_name }}Settings.from_mapping(settings_payload),
+            namespace=str(payload.get("namespace", cls.namespace)),
+            autodiscover=tuple(payload.get("autodiscover", ()) or ()),
+            config_overrides=dict(payload.get("config_overrides", {}) or {}),
+        )
+
+
+class {{ module_class_name }}TaskRegistry:
+    """Utility used to register and introspect Celery tasks."""
+
+    def __init__(self, app: Any) -> None:
+        self._app = app
+
+    def task(self, *decorator_args: Any, **decorator_kwargs: Any) -> Callable[[Callable[..., Any]], Any]:
+        if Celery is None:
+            raise {{ module_class_name }}RuntimeError("Celery is required to register tasks. Install it via 'pip install celery[redis]'.")
+        return self._app.task(*decorator_args, **decorator_kwargs)
+
+    def list_task_names(self) -> Sequence[str]:
+        registered = getattr(self._app, "tasks", {})
+        return tuple(sorted(name for name in registered))
+
+
+def _maybe(value: Any, *, default: Any = None) -> Any:
+    return default if value in (None, "") else value
+
+
+def _coerce_schedule(schedule: Any) -> Any:
+    if isinstance(schedule, Mapping):
+        schedule_type = str(schedule.get("type", "")).lower()
+        if schedule_type == "crontab":
+            if crontab is None:
+                raise {{ module_class_name }}RuntimeError("celery[schedule] extras required for crontab support.")
+            return crontab(
+                minute=schedule.get("minute", "*"),
+                hour=schedule.get("hour", "*"),
+                day_of_week=schedule.get("day_of_week", "*"),
+                day_of_month=schedule.get("day_of_month", "*"),
+                month_of_year=schedule.get("month_of_year", "*"),
+            )
+        if schedule_type == "interval":
+            every = schedule.get("every")
+            period = str(schedule.get("period", "seconds")).lower()
+            if every is None:
+                raise ValueError("Interval schedules require 'every' and 'period'")
+            if celery_schedule is None:
+                return {"every": every, "period": period}
+            delta_kwargs: MutableMapping[str, Any] = {}
+            if period not in {"seconds", "minutes", "hours", "days"}:
+                raise ValueError("Interval period must be one of seconds, minutes, hours, or days")
+            delta_kwargs[period] = every
+            return celery_schedule(run_every=timedelta(**delta_kwargs))
+    return schedule
+
+
+def create_{{ module_name }}_app(config: {{ module_class_name }}AppConfig) -> Any:
+    if Celery is None:
+        raise {{ module_class_name }}RuntimeError("Celery is not installed. Install via 'pip install celery[redis]'.")
+    app = Celery(config.name, broker=config.settings.broker_url, backend=config.settings.result_backend)
+    app.conf.update(
+        enable_utc=config.settings.enable_utc,
+        timezone=config.settings.timezone,
+        task_default_queue=config.settings.task_default_queue,
+        task_routes=config.settings.task_routes,
+        task_annotations=config.settings.task_annotations,
+        imports=list(config.settings.imports),
+        include=list(config.settings.include),
+        result_expires=config.settings.result_expires,
+        worker_max_tasks_per_child=config.settings.worker_max_tasks_per_child,
+        beat_schedule={name: _serialise_schedule(entry) for name, entry in config.settings.beat_schedule.items()},
+        **config.config_overrides,
+    )
+    if config.autodiscover:
+        app.autodiscover_tasks(config.autodiscover, force=True)
+    return app
+
+
+def _format_schedule(value: Any) -> str:
+    try:
+        return str(value)
+    except Exception:  # pragma: no cover - defensive guard for non-stringable schedules
+        return repr(value)
+
+
+def _serialise_schedule(entry: {{ module_class_name }}Schedule) -> Mapping[str, Any]:
+    payload: MutableMapping[str, Any] = {
+        "task": entry.task,
+        "schedule": _format_schedule(entry.schedule),
+        "args": list(entry.args),
+        "kwargs": dict(entry.kwargs),
+        "options": dict(entry.options),
+    }
+    return payload
+
+
+@lru_cache(maxsize=1)
+def _get_default_{{ module_name }}_app() -> Any:
+    return create_{{ module_name }}_app({{ module_class_name }}AppConfig())
+
+
+def get_{{ module_name }}_app(config: {{ module_class_name }}AppConfig | None = None) -> Any:
+    if config is None:
+        return _get_default_{{ module_name }}_app()
+    return create_{{ module_name }}_app(config)
+
+
+def load_config_from_env(prefix: str = DEFAULT_ENV_PREFIX, env: Mapping[str, str] | None = None) -> {{ module_class_name }}AppConfig:
+    source = env or os.environ
+    settings_payload: MutableMapping[str, Any] = {
+        "broker_url": source.get(f"{prefix}BROKER_URL"),
+        "result_backend": source.get(f"{prefix}RESULT_BACKEND"),
+        "timezone": source.get(f"{prefix}TIMEZONE"),
+        "enable_utc": _flag(source.get(f"{prefix}ENABLE_UTC")),
+        "task_default_queue": source.get(f"{prefix}DEFAULT_QUEUE"),
+    }
+    name = source.get(f"{prefix}APP_NAME", "rapidkit")
+    autodiscover = _split_list(source.get(f"{prefix}AUTODISCOVER"))
+    include = _split_list(source.get(f"{prefix}INCLUDE"))
+    imports = _split_list(source.get(f"{prefix}IMPORTS"))
+    settings_payload["include"] = include
+    settings_payload["imports"] = imports
+    settings = {{ module_class_name }}Settings.from_mapping({k: v for k, v in settings_payload.items() if v not in (None, "")})
+    return {{ module_class_name }}AppConfig(
+        name=name,
+        settings=settings,
+        autodiscover=tuple(autodiscover),
+    )
+
+
+def describe_{{ module_name }}(
+    config: {{ module_class_name }}AppConfig | None = None,
+    *,
+    app: Any | None = None,
+    include_tasks: bool = False,
+) -> MutableMapping[str, Any]:
+    """Return normalized metadata describing the {{ module_title }} configuration."""
+
+    resolved_config = config or {{ module_class_name }}AppConfig()
+    settings = resolved_config.settings
+    metadata: MutableMapping[str, Any] = {
+        "module": "{{ module_name }}",
+        "status": "ok" if Celery is not None else "degraded",
+        "checked_at": datetime.now(timezone.utc).isoformat(),
+        "enabled": True,
+        "broker_url": settings.broker_url,
+        "result_backend": settings.result_backend,
+        "timezone": settings.timezone,
+        "task_default_queue": settings.task_default_queue,
+        "imports": list(settings.imports),
+        "include": list(settings.include),
+        "autodiscover": list(resolved_config.autodiscover),
+        "namespace": resolved_config.namespace,
+        "beat_schedule": {
+            name: {
+                "task": entry.task,
+                "schedule": _format_schedule(entry.schedule),
+                "args": list(entry.args),
+                "kwargs": dict(entry.kwargs),
+                "options": dict(entry.options),
+            }
+            for name, entry in settings.beat_schedule.items()
+        },
+        "config_overrides": dict(resolved_config.config_overrides),
+        "features": list(MODULE_FEATURES),
+    }
+
+    if include_tasks and app is None:
+        try:
+            app = get_{{ module_name }}_app(resolved_config)
+        except Exception:  # pragma: no cover - optional Celery runtime may be unavailable
+            app = None
+
+    if include_tasks and app is not None:
+        try:
+            metadata["registered_tasks"] = tuple(sorted(getattr(app, "tasks", {}).keys()))
+        except Exception:  # pragma: no cover - defensive guard
+            metadata["registered_tasks"] = ()
+    else:
+        metadata["registered_tasks"] = ()
+
+    return metadata
+
+
+def get_{{ module_name }}_metadata(*, include_tasks: bool = False) -> MutableMapping[str, Any]:
+    """Convenience helper returning metadata derived from environment configuration."""
+
+    return describe_{{ module_name }}(load_config_from_env(), include_tasks=include_tasks)
+
+
+def _flag(value: Optional[str]) -> Optional[bool]:
+    if value is None:
+        return None
+    return value.lower() in {"1", "true", "yes", "on"}
+
+
+def _split_list(value: Optional[str]) -> Sequence[str]:
+    if not value:
+        return ()
+    return tuple(item.strip() for item in value.split(",") if item.strip())

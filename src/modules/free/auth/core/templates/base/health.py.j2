@@ -1,0 +1,89 @@
+"""FastAPI router exposing Auth Core health information."""
+
+from __future__ import annotations
+
+import logging
+
+from src.modules.free.auth.core.auth.core import get_auth_core_metadata, load_settings
+
+try:  # pragma: no cover - FastAPI is optional at import time
+    from fastapi import APIRouter, FastAPI as FastAPIApp, status
+    from fastapi.responses import JSONResponse
+except ImportError:  # pragma: no cover - generated file must import safely without FastAPI
+    APIRouter = None  # type: ignore[assignment]
+    FastAPIApp = None  # type: ignore[assignment]
+    status = type("status", (), {"HTTP_200_OK": 200, "HTTP_503_SERVICE_UNAVAILABLE": 503})()  # type: ignore[assignment]
+    JSONResponse = None  # type: ignore[assignment]
+    _FASTAPI_AVAILABLE = False
+else:
+    _FASTAPI_AVAILABLE = True
+
+logger = logging.getLogger("src.health.auth_core")
+
+
+if _FASTAPI_AVAILABLE:
+    router = APIRouter(prefix="/api/health/module", tags=["health"])
+
+    @router.get(
+        "/auth-core",
+        status_code=status.HTTP_200_OK,
+        summary="Auth Core module health check",
+        responses={
+            status.HTTP_503_SERVICE_UNAVAILABLE: {
+                "description": "Auth Core runtime unavailable",
+            }
+        },
+    )
+    async def auth_core_health_check() -> dict[str, object]:
+        """Return Auth Core runtime metadata for health inspection."""
+
+        try:
+            settings = load_settings()
+            metadata = get_auth_core_metadata(settings)
+        except Exception as exc:  # pragma: no cover - defensive guard
+            logger.exception("Auth Core health check failed")
+            if JSONResponse is None:
+                raise
+            return JSONResponse(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                content={
+                    "status": "error",
+                    "module": "auth_core",
+                    "detail": str(exc) or "Auth Core runtime unavailable",
+                },
+            )
+
+        return {
+            "status": "ok",
+            "module": metadata.get("module", "auth_core"),
+            "issuer": metadata.get("issuer"),
+            "hash": metadata.get("hash"),
+            "iterations": metadata.get("iterations"),
+            "pepper_env": metadata.get("pepper_env"),
+            "pepper_configured": metadata.get("pepper_configured"),
+        }
+else:  # pragma: no cover - executed only when FastAPI is unavailable
+    router = None  # type: ignore[assignment]
+
+    async def auth_core_health_check() -> dict[str, str]:  # type: ignore[override]
+        raise RuntimeError("FastAPI must be installed to use Auth Core health endpoints")
+
+
+def register_auth_core_health(app: object) -> None:
+    """Attach the Auth Core health router to a FastAPI application."""
+
+    if not _FASTAPI_AVAILABLE:
+        raise RuntimeError("FastAPI must be installed to register Auth Core health routes")
+    if FastAPIApp is not None and not isinstance(app, FastAPIApp):  # pragma: no cover - runtime guard
+        raise TypeError("register_auth_core_health expects a FastAPI application instance")
+    if router is None:  # pragma: no cover - defensive guard
+        raise RuntimeError("Auth Core health router unavailable")
+
+    app.include_router(router)
+
+
+__all__ = [
+    "auth_core_health_check",
+    "register_auth_core_health",
+    "get_auth_core_metadata",
+]

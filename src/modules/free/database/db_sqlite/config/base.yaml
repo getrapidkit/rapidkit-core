@@ -1,0 +1,33 @@
+# Default configuration scaffold for Db Sqlite
+defaults:
+    enabled: true
+    database_path: "./.rapidkit/runtime/sqlite/app.db"
+    create_if_missing: true
+    timeout_seconds: 30.0
+    isolation_level: null
+    detect_types: "PARSE_DECLTYPES|PARSE_COLNAMES"
+    check_same_thread: false
+    pragmas:
+        journal_mode: wal
+        synchronous: normal
+        foreign_keys: on
+        cache_size_kib: -2000
+    pool:
+        max_size: 4
+        recycle_seconds: 600
+    retry_attempts: 3
+
+depends_on:
+    fastapi/standard: []
+    fastapi/ddd: []
+    nestjs/standard:
+        - name: better-sqlite3
+          source: npm
+          tool: npm
+          version: "^12.5.0"
+
+dev_dependencies:
+    - name: "@types/better-sqlite3"
+      source: npm
+      tool: npm
+      version: "^7.6.13"

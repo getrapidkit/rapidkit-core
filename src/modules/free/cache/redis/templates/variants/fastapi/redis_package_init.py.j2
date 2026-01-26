@@ -1,0 +1,60 @@
+"""Redis package exports wired to the vendor runtime."""
+
+from typing import Any, Dict, Iterable, List
+
+from .client import (
+    AsyncRedis,
+    DEFAULTS,
+    RedisClient,
+    RedisSyncClient,
+    SyncRedis,
+    build_redis_url,
+    check_redis_connection,
+    get_redis,
+    get_redis_metadata,
+    get_redis_sync,
+    redis_dependency,
+    refresh_vendor_module,
+    register_redis,
+)
+
+
+def describe_cache(extras: Iterable[tuple[str, Any]] | None = None) -> Dict[str, Any]:
+    """Return a serialisable description of the Redis integration."""
+
+    payload = {
+        "module": "{{ rapidkit_vendor_module }}",
+        "module_version": "{{ rapidkit_vendor_version }}",
+        "defaults": dict(DEFAULTS),
+    }
+    metadata = dict(get_redis_metadata())
+    payload.update(metadata)
+    if extras:
+        payload.update(dict(extras))
+    return payload
+
+
+def list_features() -> List[str]:
+    """List Redis capabilities exposed by the module."""
+
+    metadata = get_redis_metadata()
+    features = metadata.get("features") or []
+    return list(features)
+
+__all__ = [
+    "AsyncRedis",
+    "SyncRedis",
+    "RedisClient",
+    "RedisSyncClient",
+    "DEFAULTS",
+    "build_redis_url",
+    "check_redis_connection",
+    "get_redis",
+    "get_redis_sync",
+    "redis_dependency",
+    "register_redis",
+    "refresh_vendor_module",
+    "get_redis_metadata",
+    "describe_cache",
+    "list_features",
+]

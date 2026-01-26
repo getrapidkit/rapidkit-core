@@ -1,0 +1,46 @@
+/** Health controller for the {{ module_title }} NestJS integration. */
+
+import {
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  ServiceUnavailableException,
+} from "@nestjs/common";
+
+import { {{ module_class_name }}Service } from "./session.service";
+
+type SessionHealthPayload = {
+  status: "ok" | "degraded";
+  metadata: Record<string, unknown>;
+  issues: string[];
+};
+
+@Controller("api/health/module")
+export class {{ module_class_name }}HealthController {
+  constructor(private readonly service: {{ module_class_name }}Service) {}
+
+  @Get("session")
+  @HttpCode(HttpStatus.OK)
+  getModuleHealth(): SessionHealthPayload {
+    try {
+      const metadata = this.service.describe();
+      const issues: string[] = [];
+      if (!metadata["supportsRefreshTokens"]) {
+        issues.push("refresh_token_support_disabled");
+      }
+      const status: "ok" | "degraded" = issues.length === 0 ? "ok" : "degraded";
+      return {
+        status,
+        metadata,
+        issues,
+      };
+    } catch (error) {
+      throw new ServiceUnavailableException({
+        status: "error",
+        module: "session",
+        detail: error instanceof Error ? error.message : "session health check failed",
+      });
+    }
+  }
+}

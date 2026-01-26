@@ -1,0 +1,57 @@
+name: oauth
+display_name: OAuth Providers
+description: >-
+  Lightweight OAuth 2.0 scaffolding with provider registry, state tracking,
+  and callback helpers for RapidKit applications.
+root_path: src/
+
+profiles:
+  fastapi/standard:
+    description: FastAPI wiring with router scaffold and dependency helpers.
+  nestjs/standard:
+    description: NestJS service exposing provider configuration snapshots.
+
+defaults:
+  redirect_base_url: "https://example.com/oauth"
+  state_ttl_seconds: 300
+  state_cleanup_interval: 60
+  providers:
+    google:
+      client_id_env: GOOGLE_OAUTH_CLIENT_ID
+      client_secret_env: GOOGLE_OAUTH_CLIENT_SECRET
+      authorize_url: https://accounts.google.com/o/oauth2/v2/auth
+      token_url: https://oauth2.googleapis.com/token
+      userinfo_url: https://openidconnect.googleapis.com/v1/userinfo
+      scopes:
+        - openid
+        - email
+        - profile
+    github:
+      client_id_env: GITHUB_OAUTH_CLIENT_ID
+      client_secret_env: GITHUB_OAUTH_CLIENT_SECRET
+      authorize_url: https://github.com/login/oauth/authorize
+      token_url: https://github.com/login/oauth/access_token
+      userinfo_url: https://api.github.com/user
+      scopes:
+        - read:user
+        - user:email
+
+variables:
+  oauth_redirect_base_url:
+    type: string
+    default: "https://example.com/oauth"
+    description: Base URL (including scheme and host) where OAuth callbacks will be received.
+  oauth_state_ttl_seconds:
+    type: integer
+    default: 300
+    description: Time-to-live for issued OAuth state parameters.
+
+features:
+  provider_registry:
+    status: stable
+    enabled: true
+    description: Built-in provider registry with environment variable overrides.
+  state_store_memory:
+    status: beta
+    enabled: true
+    description: In-memory state store suitable for local development and tests.

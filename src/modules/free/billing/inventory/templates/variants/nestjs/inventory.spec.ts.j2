@@ -1,0 +1,15 @@
+import { Test } from "@nestjs/testing";
+
+import { {{ module_class_name }}Module } from "../../src/modules/{{ module_slug }}/{{ module_name }}.module";
+import { {{ module_class_name }}Service, INVENTORY_CONFIG_TOKEN } from "../../src/modules/{{ module_slug }}/{{ module_name }}.service";
+
+describe("{{ module_class_name }}Module", () => {
+	it("compiles and registers providers", async () => {
+		const moduleRef = await Test.createTestingModule({
+			imports: [{{ module_class_name }}Module],
+		}).compile();
+
+		expect(moduleRef.get({{ module_class_name }}Service)).toBeDefined();
+		expect(moduleRef.get(INVENTORY_CONFIG_TOKEN)).toBeDefined();
+	});
+});

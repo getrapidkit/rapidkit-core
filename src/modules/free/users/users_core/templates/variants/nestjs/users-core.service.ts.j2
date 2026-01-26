@@ -1,0 +1,358 @@
+import {
+  BadRequestException,
+  ConflictException,
+  ForbiddenException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
+import { randomUUID } from "crypto";
+
+type UserStatus = "active" | "invited" | "disabled";
+
+export interface UserDto {
+  id: string;
+  email: string;
+  fullName?: string | null;
+  locale: string;
+  status: UserStatus;
+  isVerified: boolean;
+  metadata?: Record<string, string> | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateUserDto {
+  email: string;
+  fullName?: string | null;
+  locale?: string | null;
+  isVerified?: boolean;
+  metadata?: Record<string, string> | null;
+}
+
+export interface UpdateUserDto {
+  fullName?: string | null;
+  locale?: string | null;
+  status?: Exclude<UserStatus, "invited">;
+  isVerified?: boolean;
+  metadata?: Record<string, string> | null;
+}
+
+interface UserRecord {
+  id: string;
+  email: string;
+  fullName: string | null;
+  locale: string;
+  status: UserStatus;
+  isVerified: boolean;
+  metadata: Record<string, string> | null;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface UsersCoreDefaults {
+  allow_registration?: boolean;
+  enforce_unique_email?: boolean;
+  default_locale?: string | null;
+  audit_log_enabled?: boolean;
+  max_results_per_page?: number | string | null;
+  passwordless_supported?: boolean;
+  supported_locales?: string[] | null;
+}
+
+export const USERS_CORE_FEATURES = [
+  "user_registration",
+  "profile_management",
+  "unique_email_enforcement",
+  "audit_logging",
+  "passwordless_opt_in",
+] as const;
+
+export type UsersCoreFeature = (typeof USERS_CORE_FEATURES)[number];
+
+const DEFAULTS: UsersCoreDefaults = {{ users_core_defaults | tojson(indent=2) }};
+const SUPPORTED_LOCALES: string[] = resolveSupportedLocales(
+  DEFAULTS.supported_locales,
+  DEFAULTS.default_locale,
+);
+
+export interface UsersCoreMetadata {
+  module: string;
+  title: string;
+  status: string;
+  checked_at: string;
+  allow_registration: boolean;
+  enforce_unique_email: boolean;
+  default_locale: string;
+  audit_log_enabled: boolean;
+  max_results_per_page: number;
+  passwordless_supported: boolean;
+  supported_locales: string[];
+  features: UsersCoreFeature[];
+}
+
+export type UsersCoreHealthPayload = UsersCoreMetadata & { detail?: string };
+
+@Injectable()
+export class {{ module_class_name }}Service {
+  private readonly users = new Map<string, UserRecord>();
+  private readonly emailIndex = new Map<string, string>();
+
+  private readonly idFactory: () => string = () => randomUUID();
+  private readonly clock: () => Date = () => new Date();
+
+  async listUsers(limit?: number, offset = 0): Promise<UserDto[]> {
+    const effectiveLimit = this.resolveLimit(limit);
+    if (offset < 0) {
+      throw new BadRequestException("offset cannot be negative");
+    }
+
+    const users = Array.from(this.users.values()).slice(offset, offset + effectiveLimit);
+    return users.map(toDto);
+  }
+
+  async getUser(userId: string): Promise<UserDto> {
+    const record = this.users.get(userId);
+    if (!record) {
+      throw new NotFoundException(`User '${userId}' was not found`);
+    }
+    return toDto(record);
+  }
+
+  async getUserByEmail(email: string): Promise<UserDto> {
+    const key = normalizeEmail(email);
+    const userId = this.emailIndex.get(key);
+    if (!userId) {
+      throw new NotFoundException(`User with email '${email}' was not found`);
+    }
+    return this.getUser(userId);
+  }
+
+  async createUser(payload: CreateUserDto): Promise<UserDto> {
+    this.ensureRegistrationAllowed();
+
+    const normalizedEmail = normalizeEmail(payload.email);
+    if (!normalizedEmail) {
+      throw new BadRequestException("Email is required");
+    }
+
+    if (this.shouldEnforceUniqueEmail() && this.emailIndex.has(normalizedEmail)) {
+      throw new ConflictException(`Email '${normalizedEmail}' already exists`);
+    }
+
+    const now = this.clock();
+    const record: UserRecord = {
+      id: this.idFactory(),
+      email: normalizeDisplayEmail(payload.email),
+      fullName: valueOrNull(payload.fullName),
+      locale: resolveLocale(payload.locale),
+      status: "active",
+      isVerified: coerceBoolean(payload.isVerified, false),
+      metadata: cloneMetadata(payload.metadata),
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    this.users.set(record.id, record);
+    this.emailIndex.set(normalizedEmail, record.id);
+    return toDto(record);
+  }
+
+  async updateUser(userId: string, payload: UpdateUserDto): Promise<UserDto> {
+    const record = this.users.get(userId);
+    if (!record) {
+      throw new NotFoundException(`User '${userId}' was not found`);
+    }
+
+    if (payload.locale !== undefined && payload.locale !== null && !payload.locale.trim()) {
+      throw new BadRequestException("locale cannot be an empty string");
+    }
+
+    const updated: UserRecord = {
+      ...record,
+      fullName: payload.fullName !== undefined ? valueOrNull(payload.fullName) : record.fullName,
+      locale: payload.locale !== undefined ? resolveLocale(payload.locale) : record.locale,
+      status: payload.status ?? record.status,
+      isVerified:
+        payload.isVerified !== undefined
+          ? coerceBoolean(payload.isVerified, record.isVerified)
+          : record.isVerified,
+      metadata: payload.metadata !== undefined ? cloneMetadata(payload.metadata) : record.metadata,
+      updatedAt: this.clock(),
+    };
+
+    this.users.set(userId, updated);
+    return toDto(updated);
+  }
+
+  async deleteUser(userId: string): Promise<void> {
+    const existing = this.users.get(userId);
+    if (!existing) {
+      throw new NotFoundException(`User '${userId}' was not found`);
+    }
+    this.users.delete(userId);
+    this.emailIndex.delete(normalizeEmail(existing.email));
+  }
+
+  listFeatures(): UsersCoreFeature[] {
+    return Array.from(USERS_CORE_FEATURES);
+  }
+
+  buildMetadata(): UsersCoreMetadata {
+    return {
+      module: "{{ module_name }}",
+      title: "{{ module_title }}",
+      status: "ok",
+      checked_at: new Date().toISOString(),
+      allow_registration: this.isRegistrationEnabled(),
+      enforce_unique_email: this.shouldEnforceUniqueEmail(),
+      default_locale: resolveLocale(null),
+      audit_log_enabled: coerceBoolean(DEFAULTS.audit_log_enabled, true),
+      max_results_per_page: this.resolveLimit(),
+      passwordless_supported: coerceBoolean(DEFAULTS.passwordless_supported, false),
+      supported_locales: [...SUPPORTED_LOCALES],
+      features: this.listFeatures(),
+    };
+  }
+
+  async resolveHealth(): Promise<UsersCoreHealthPayload> {
+    return this.buildMetadata();
+  }
+
+  private resolveLimit(limit?: number): number {
+    const fallback = coerceNumber(DEFAULTS.max_results_per_page, 100);
+    const candidate = limit ?? fallback;
+    if (!Number.isInteger(candidate) || candidate <= 0) {
+      throw new BadRequestException("limit must be a positive integer");
+    }
+    return candidate;
+  }
+
+  private ensureRegistrationAllowed(): void {
+    if (!this.isRegistrationEnabled()) {
+      throw new ForbiddenException("User registrations are disabled");
+    }
+  }
+
+  private isRegistrationEnabled(): boolean {
+    return coerceBoolean(DEFAULTS.allow_registration, true);
+  }
+
+  private shouldEnforceUniqueEmail(): boolean {
+    return coerceBoolean(DEFAULTS.enforce_unique_email, true);
+  }
+
+}
+
+function normalizeEmail(email: string | null | undefined): string {
+  if (!email) {
+    return "";
+  }
+  return email.trim().toLowerCase();
+}
+
+function normalizeDisplayEmail(email: string | null | undefined): string {
+  if (!email) {
+    return "";
+  }
+  return email.trim();
+}
+
+function resolveLocale(locale: string | null | undefined): string {
+  const candidate = locale?.trim();
+  if (candidate) {
+    return candidate;
+  }
+  if (typeof DEFAULTS.default_locale === "string" && DEFAULTS.default_locale.trim()) {
+    return DEFAULTS.default_locale.trim();
+  }
+  return "en";
+}
+
+function valueOrNull<T>(value: T | null | undefined): T | null {
+  return value === undefined ? null : value;
+}
+
+function cloneMetadata(payload: Record<string, unknown> | null | undefined): Record<string, string> | null {
+  if (!payload) {
+    return null;
+  }
+  const clone: Record<string, string> = {};
+  for (const [key, value] of Object.entries(payload)) {
+    if (value === undefined || value === null) {
+      continue;
+    }
+    clone[String(key)] = String(value);
+  }
+  return clone;
+}
+
+function toDto(record: UserRecord): UserDto {
+  return {
+    id: record.id,
+    email: record.email,
+    fullName: record.fullName,
+    locale: record.locale,
+    status: record.status,
+    isVerified: record.isVerified,
+    metadata: record.metadata,
+    createdAt: record.createdAt.toISOString(),
+    updatedAt: record.updatedAt.toISOString(),
+  };
+}
+
+function resolveSupportedLocales(value: unknown, defaultLocale: unknown): string[] {
+  const locales = new Set<string>();
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const normalized = typeof item === "string" ? item.trim() : String(item).trim();
+      if (normalized) {
+        locales.add(normalized);
+      }
+    }
+  } else if (typeof value === "string" && value.trim()) {
+    for (const part of value.split(",")) {
+      const normalized = part.trim();
+      if (normalized) {
+        locales.add(normalized);
+      }
+    }
+  }
+  const defaultNormalized = typeof defaultLocale === "string" ? defaultLocale.trim() : "";
+  if (defaultNormalized) {
+    locales.add(defaultNormalized);
+  }
+  if (!locales.size) {
+    locales.add("en");
+  }
+  return Array.from(locales);
+}
+
+function coerceBoolean(value: unknown, fallback: boolean): boolean {
+  if (typeof value === "boolean") {
+    return value;
+  }
+  if (value === undefined || value === null) {
+    return fallback;
+  }
+  const normalized = String(value).trim().toLowerCase();
+  if (normalized === "true" || normalized === "1" || normalized === "yes" || normalized === "on") {
+    return true;
+  }
+  if (normalized === "false" || normalized === "0" || normalized === "no" || normalized === "off") {
+    return false;
+  }
+  return fallback;
+}
+
+function coerceNumber(value: unknown, fallback: number): number {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+  return fallback;
+}

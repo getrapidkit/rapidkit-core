@@ -1,0 +1,111 @@
+"""FastAPI integration helpers for the deployment module."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Dict, Iterable, List
+
+
+@dataclass(slots=True)
+class DeploymentAsset:
+    """Describe a deployment artefact surfaced by the module."""
+
+    name: str
+    path: str
+    runtime: str
+    description: str = ""
+    metadata: Dict[str, str] = field(default_factory=dict)
+
+
+@dataclass(slots=True)
+class DeploymentPlan:
+    """Aggregate the deployment artefacts for downstream consumers."""
+
+    module: str
+    version: str
+    assets: List[DeploymentAsset] = field(default_factory=list)
+
+
+def _default_assets() -> List[DeploymentAsset]:
+    return [
+        DeploymentAsset(
+            name="fastapi",
+            path="deployment/fastapi",
+            runtime="python",
+            description="Docker, Compose, and CI assets tailored for RapidKit FastAPI services.",
+            metadata={
+                "dockerfile": "deployment/fastapi/Dockerfile",
+                "compose": "deployment/fastapi/docker-compose.yml",
+                "workflow": "deployment/fastapi/ci.yml",
+            },
+        ),
+        DeploymentAsset(
+            name="nestjs",
+            path="deployment/nestjs",
+            runtime="node",
+            description="Docker, Compose, and CI assets tailored for RapidKit NestJS services.",
+            metadata={
+                "dockerfile": "deployment/nestjs/Dockerfile",
+                "compose": "deployment/nestjs/docker-compose.yml",
+                "workflow": "deployment/nestjs/ci.yml",
+            },
+        ),
+    ]
+
+
+def build_plan(assets: Iterable[DeploymentAsset] | None = None) -> DeploymentPlan:
+    """Return the canonical deployment plan surfaced to downstream tooling."""
+
+    materialised = list(assets or _default_assets())
+    return DeploymentPlan(
+        module="{{ rapidkit_vendor_module }}",
+        version="{{ rapidkit_vendor_version }}",
+        assets=materialised,
+    )
+
+
+def _serialise_asset(asset: DeploymentAsset) -> Dict[str, object]:
+    return {
+        "name": asset.name,
+        "path": asset.path,
+        "runtime": asset.runtime,
+        "description": asset.description,
+        "metadata": dict(asset.metadata),
+    }
+
+
+def describe_plan(assets: Iterable[DeploymentAsset] | None = None) -> Dict[str, object]:
+    """Expose the deployment plan as a JSON-friendly payload."""
+
+    plan = build_plan(assets=assets)
+    return {
+        "module": plan.module,
+        "version": plan.version,
+        "assets": [_serialise_asset(asset) for asset in plan.assets],
+    }
+
+
+def list_assets(
+    assets: Iterable[DeploymentAsset] | None = None,
+) -> List[DeploymentAsset]:
+    """Return the list of deployment artefacts bound to the plan."""
+
+    return list(build_plan(assets=assets).assets)
+
+
+def describe_assets(
+    assets: Iterable[DeploymentAsset] | None = None,
+) -> List[Dict[str, object]]:
+    """Return the deployment assets as serialisable mappings."""
+
+    return [_serialise_asset(asset) for asset in list_assets(assets=assets)]
+
+
+__all__ = [
+    "DeploymentAsset",
+    "DeploymentPlan",
+    "build_plan",
+    "describe_plan",
+    "list_assets",
+    "describe_assets",
+]

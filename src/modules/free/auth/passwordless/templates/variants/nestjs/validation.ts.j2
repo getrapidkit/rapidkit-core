@@ -1,0 +1,24 @@
+import * as Joi from "joi";
+
+export const passwordlessValidationSchema = Joi.object({
+  PASSWORDLESS_MAGIC_LINK_BASE_URL: Joi.string()
+    .uri({ allowRelative: false })
+    .default({{ module_defaults.magic_link_base_url | default('https://example.com/auth/passwordless') | tojson }}),
+  PASSWORDLESS_TOKEN_TTL_SECONDS: Joi.number()
+    .integer()
+    .min(1)
+    .default({{ module_defaults.token_ttl_seconds | default(900) | tojson }}),
+  PASSWORDLESS_TOKEN_LENGTH: Joi.number()
+    .integer()
+    .min(1)
+    .default({{ module_defaults.token_length | default(8) | tojson }}),
+  PASSWORDLESS_RESEND_COOLDOWN_SECONDS: Joi.number()
+    .integer()
+    .min(0)
+    .default({{ module_defaults.resend_cooldown_seconds | default(60) | tojson }}),
+  PASSWORDLESS_MAX_ATTEMPTS: Joi.number()
+    .integer()
+    .min(1)
+    .default({{ module_defaults.max_attempts | default(5) | tojson }}),
+  PASSWORDLESS_DELIVERY_METHODS: Joi.string().optional(),
+});

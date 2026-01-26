@@ -1,0 +1,61 @@
+import { DynamicModule, Module, Provider } from "@nestjs/common";
+import { ConfigModule, ConfigType } from "@nestjs/config";
+
+import { AUTH_CORE_CONFIG, AuthCoreConfig, AuthCoreService, AuthCorePolicy } from "./auth-core.service";
+
+export const AUTH_CORE_CONFIGURATION = "AUTH_CORE_CONFIGURATION";
+
+const DEFAULTS: AuthCoreConfig = {
+  hashName: "{{ auth_core_defaults.hash_name }}",
+  iterations: {{ auth_core_defaults.iterations }},
+  saltBytes: {{ auth_core_defaults.salt_bytes }},
+  tokenBytes: {{ auth_core_defaults.token_bytes }},
+  tokenTtlSeconds: {{ auth_core_defaults.token_ttl_seconds }},
+  pepperEnv: "{{ auth_core_defaults.pepper_env }}",
+  issuer: "{{ auth_core_defaults.issuer }}",
+  policy: {
+    minLength: {{ auth_core_defaults.policy.min_length }},
+    requireUppercase: {{ auth_core_defaults.policy.require_uppercase | tojson }},
+    requireLowercase: {{ auth_core_defaults.policy.require_lowercase | tojson }},
+    requireDigits: {{ auth_core_defaults.policy.require_digits | tojson }},
+    requireSymbols: {{ auth_core_defaults.policy.require_symbols | tojson }},
+  } as AuthCorePolicy,
+};
+
+@Module({})
+export class AuthCoreModule {
+  static forRoot(config: Partial<AuthCoreConfig> = {}): DynamicModule {
+    const merged: AuthCoreConfig = {
+      ...DEFAULTS,
+      ...config,
+      policy: {
+        ...DEFAULTS.policy,
+        ...(config.policy ?? {}),
+      },
+    };
+
+    const providers: Provider[] = [
+      {
+        provide: AUTH_CORE_CONFIG,
+        useValue: merged,
+      },
+      AuthCoreService,
+    ];
+
+    return {
+      module: AuthCoreModule,
+      global: true,
+      imports: [ConfigModule],
+      providers,
+      exports: [AUTH_CORE_CONFIG, AuthCoreService],
+    };
+  }
+
+  static forConfig(configuration: ConfigType<typeof authCoreConfiguration>): DynamicModule {
+    return AuthCoreModule.forRoot(configuration);
+  }
+}
+
+export function authCoreConfiguration(): AuthCoreConfig {
+  return DEFAULTS;
+}

@@ -1,0 +1,99 @@
+"""Integration tests for the notifications module."""
+
+from __future__ import annotations
+
+from unittest.mock import AsyncMock
+
+import pytest
+from fastapi import FastAPI, status
+from fastapi.testclient import TestClient
+from starlette.requests import Request
+
+from src.health.notifications import register_notifications_health
+from src.modules.free.communication.notifications.core.notifications import (
+    EmailConfig,
+    Notification,
+    NotificationManager,
+    get_notification_manager,
+    register_notifications,
+)
+
+pytestmark = [pytest.mark.integration, pytest.mark.core_integration]
+
+
+def _build_app() -> FastAPI:
+    app = FastAPI(title="Notifications Integration")
+    config = EmailConfig(
+        host="smtp.example.com",
+        port=587,
+        username="mailer",
+        password="secret",
+        from_email="noreply@example.com",
+        from_name="RapidKit",
+    )
+    register_notifications(app, config=config)
+    register_notifications_health(app)
+    return app
+
+
+def test_register_notifications_attaches_manager() -> None:
+    app = _build_app()
+
+    manager = getattr(app.state, "notification_manager", None)
+    assert isinstance(manager, NotificationManager)
+    assert manager.email_service is not None
+
+
+@pytest.mark.asyncio
+async def test_email_notifications_route_through_manager() -> None:
+    app = _build_app()
+    manager: NotificationManager = app.state.notification_manager
+    assert manager.email_service is not None
+
+    manager.email_service.send_email = AsyncMock(return_value=True)  # type: ignore[assignment]
+
+    notification = Notification(
+        channel="email",
+        recipient="user@example.com",
+        title="Welcome",
+        body="<strong>Hello</strong>",
+    )
+
+    result = await manager.send_notification(notification)
+
+    assert result is True
+    manager.email_service.send_email.assert_awaited_once()  # type: ignore[attr-defined]
+
+
+def test_health_endpoint_exposes_provider_status() -> None:
+    app = _build_app()
+    client = TestClient(app)
+
+    response = client.get("/api/health/module/notifications")
+    assert response.status_code == status.HTTP_200_OK
+
+    payload = response.json()
+    assert payload["module"] == "{{ rapidkit_vendor_module }}"
+    assert payload["version"] == "{{ rapidkit_vendor_version }}"
+    assert payload["providers"]["email"]["enabled"] is True
+
+
+def test_health_endpoint_degraded_without_registration() -> None:
+    app = FastAPI()
+    register_notifications_health(app)
+    client = TestClient(app)
+
+    response = client.get("/api/health/module/notifications")
+
+    assert response.status_code == status.HTTP_200_OK
+    assert response.json()["status"] == "degraded"
+
+
+def test_get_notification_manager_dependency_returns_state_instance() -> None:
+    app = _build_app()
+    scope = {"type": "http", "app": app}
+    request = Request(scope)
+
+    manager = get_notification_manager(request)
+
+    assert manager is app.state.notification_manager

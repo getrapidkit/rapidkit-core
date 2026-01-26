@@ -1,0 +1,123 @@
+"""Health helpers for {{ module_title }}."""
+
+from __future__ import annotations
+
+from dataclasses import asdict
+from datetime import datetime, timedelta, timezone
+from typing import Iterable, Mapping, Sequence
+
+from .{{ module_name }}_types import (
+    {{ module_class_name }}Config,
+    {{ module_class_name }}Health,
+    {{ module_class_name }}Record,
+)
+
+UTC = timezone.utc
+
+
+def _rotation_deadline(record: {{ module_class_name }}Record, config: {{ module_class_name }}Config) -> datetime | None:
+    if config.rotation_days <= 0:
+        return None
+    return record.created_at + timedelta(days=config.rotation_days)
+
+
+def _compute_rotation_due(
+    records: Sequence[{{ module_class_name }}Record],
+    *,
+    config: {{ module_class_name }}Config,
+    now: datetime,
+) -> list[str]:
+    if config.rotation_days <= 0:
+        return []
+
+    due: list[str] = []
+    for record in records:
+        if record.revoked_at is not None:
+            continue
+        if record.expires_at is not None and record.expires_at <= now:
+            continue
+        deadline = _rotation_deadline(record, config)
+        if deadline is not None and deadline <= now:
+            due.append(record.key_id)
+    return due
+
+
+def _normalise_stats(stats: Mapping[str, int]) -> dict[str, int]:
+    expected = {"total", "active", "revoked", "expired", "disabled"}
+    payload = {key: int(value) for key, value in stats.items()}
+    for key in expected:
+        payload.setdefault(key, 0)
+    payload.setdefault("stale", 0)
+    return payload
+
+
+def _identify_stale_keys(
+    records: Sequence[{{ module_class_name }}Record],
+    *,
+    config: {{ module_class_name }}Config,
+    now: datetime,
+) -> list[str]:
+    if config.leak_window_hours is None or config.leak_window_hours <= 0:
+        return []
+    threshold = timedelta(hours=config.leak_window_hours)
+    stale: list[str] = []
+    for record in records:
+        if record.last_used_at is None:
+            # Treat never-used keys older than leak window as stale
+            if now - record.created_at >= threshold:
+                stale.append(record.key_id)
+            continue
+        if now - record.last_used_at >= threshold:
+            stale.append(record.key_id)
+    return stale
+
+
+def build_health_payload(
+    *,
+    config: {{ module_class_name }}Config,
+    stats: Mapping[str, int],
+    recent_records: Sequence[{{ module_class_name }}Record],
+    metadata: Mapping[str, object],
+    pepper_loaded: bool = True,
+    issues: Iterable[str] | None = None,
+    now: datetime | None = None,
+) -> dict[str, object]:
+    """Build a health payload consumable by monitoring surfaces."""
+
+    timestamp = now or datetime.now(tz=UTC)
+    totals = _normalise_stats(stats)
+    effective_issues = list(issues or [])
+    rotation_due = _compute_rotation_due(recent_records, config=config, now=timestamp)
+    stale_keys = _identify_stale_keys(recent_records, config=config, now=timestamp)
+    if stale_keys:
+        totals["stale"] = len(stale_keys)
+
+    if not pepper_loaded:
+        effective_issues.append("api_keys_pepper_missing")
+    if config.max_active_per_owner <= 0:
+        effective_issues.append("max_active_per_owner_misconfigured")
+
+    status = "ok"
+    if not config.enabled:
+        status = "disabled"
+    elif effective_issues:
+        status = "degraded"
+
+    payload = {{ module_class_name }}Health(
+        status=status,
+        totals=totals,
+        rotation_due=rotation_due,
+        issues=effective_issues,
+        metadata={
+            **dict(metadata),
+            "timestamp": timestamp.isoformat(),
+            "features": list(config.features),
+            "config": {
+                "rotation_days": config.rotation_days,
+                "ttl_hours": config.ttl_hours,
+                "max_active_per_owner": config.max_active_per_owner,
+            },
+            "stale_keys": stale_keys,
+        },
+    )
+    return asdict(payload)

@@ -1,0 +1,29 @@
+"""Convenience facade re-exporting Redis helpers."""
+
+from src.modules.free.cache.redis.client import (  # type: ignore[no-redef]
+    AsyncRedis,
+    DEFAULTS,
+    RedisClient,
+    RedisSyncClient,
+    SyncRedis,
+    build_redis_url,
+    check_redis_connection,
+    get_redis,
+    get_redis_sync,
+    redis_dependency,
+    register_redis,
+)
+
+__all__ = [
+    "AsyncRedis",
+    "SyncRedis",
+    "RedisClient",
+    "RedisSyncClient",
+    "DEFAULTS",
+    "build_redis_url",
+    "check_redis_connection",
+    "get_redis",
+    "get_redis_sync",
+    "redis_dependency",
+    "register_redis",
+]

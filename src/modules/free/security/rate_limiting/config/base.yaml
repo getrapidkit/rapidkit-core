@@ -1,0 +1,174 @@
+name: rate_limiting
+display_name: Rate Limiting
+description: >-
+  Production-grade request throttling with configurable rules, FastAPI middleware,
+  NestJS guard helpers, and optional Redis-backed quota storage.
+root_path: src/
+
+profiles:
+  fastapi/standard:
+    description: FastAPI middleware + dependency wiring for API-first services.
+  fastapi/ddd:
+    inherits: fastapi/standard
+    description: FastAPI wiring tailored for the RapidKit DDD starter.
+  nestjs/standard:
+    description: NestJS guard and provider wiring using the shared rate limiter runtime.
+
+defaults:
+  enabled: true
+  backend: memory
+  redis_url: ""
+  redis_prefix: rate-limit
+  trust_forwarded_for: false
+  forwarded_for_header: X-Forwarded-For
+  identity_header: X-RateLimit-Identity
+  default_scope: identity
+  default_rule_name: default
+  default_limit: 120
+  default_window: 60
+  default_priority: 100
+  default_block_seconds: null
+  headers:
+    limit: X-RateLimit-Limit
+    remaining: X-RateLimit-Remaining
+    reset: X-RateLimit-Reset
+    retry_after: Retry-After
+    rule: X-RateLimit-Rule
+  rules:
+    - name: burst
+      limit: 30
+      window_seconds: 30
+      scope: route-identity
+      priority: 50
+      include_headers: true
+      methods: [GET, POST, PUT, PATCH, DELETE]
+      routes:
+        - /api/
+    - name: sustained
+      limit: 120
+      window_seconds: 60
+      scope: identity
+      priority: 100
+      include_headers: true
+  metadata:
+    telemetry_sample_rate: 0.1
+    expose_metrics: true
+
+variables:
+  rate_limit_enabled:
+    type: boolean
+    default: true
+    description: Toggle the rate limiter runtime on or off.
+  rate_limit_backend:
+    type: enum
+    default: memory
+    choices: [memory, redis]
+    description: Storage backend used for counters.
+  rate_limit_redis_url:
+    type: string
+    default: "redis://localhost:6379/0"
+    description: Connection string for Redis when the redis backend is selected.
+  rate_limit_default_limit:
+    type: integer
+    default: 120
+    description: Requests allowed per default window.
+  rate_limit_default_window:
+    type: integer
+    default: 60
+    description: Window size in seconds for the default rule.
+  rate_limit_rules_json:
+    type: string
+    default: ""
+    description: JSON-encoded rule overrides applied at runtime.
+
+features:
+  core_runtime:
+    status: stable
+    enabled: true
+    description: Shared rate limiter runtime including memory + Redis backends.
+    files:
+      - path: security/rate_limiting/__init__.py
+        description: Vendor runtime distributed with module releases.
+  fastapi_dependency:
+    status: beta
+    enabled: true
+    description: FastAPI dependency + router helpers that surface quota headers.
+    files:
+      - path: security/rate_limiting/dependencies.py
+        description: Dependency helpers wired into FastAPI endpoints.
+      - path: security/rate_limiting/router.py
+        description: Ready-to-use router exposing rate limit status endpoints.
+  nestjs_guard:
+    status: beta
+    enabled: true
+    description: NestJS guard + service wrappers that forward to the shared runtime.
+    files:
+      - path: rate-limiting/rate-limiting.guard.ts
+        description: NestJS guard enforcing per-route limits.
+      - path: rate-limiting/rate-limiting.service.ts
+        description: NestJS injectable service forwarding to the vendor runtime.
+  redis_backend:
+    status: beta
+    enabled: true
+    description: Optional Redis backend leveraging atomic counters and TTL semantics.
+
+snippets:
+  - name: rate_limiting_env
+    path: templates/snippets/rate_limiting_env.snippet.j2
+    description: Injects rate limit environment variables into project .env files.
+
+depends_on:
+  fastapi/standard:
+    - name: fastapi
+      source: external
+      tool: pip
+      version: ">=0.115.0"
+    - name: httpx
+      source: external
+      tool: pip
+      version: ">=0.27.0"
+  fastapi/ddd:
+    - name: fastapi
+      source: external
+      tool: pip
+      version: ">=0.115.0"
+    - name: httpx
+      source: external
+      tool: pip
+      version: ">=0.27.0"
+  nestjs/standard:
+    - name: "@nestjs/common"
+      source: npm
+      tool: npm
+      version: ">=11.1.0"
+    - name: "@nestjs/core"
+      source: npm
+      tool: npm
+      version: ">=11.1.0"
+    - name: "@nestjs/config"
+      source: npm
+      tool: npm
+      version: ">=4.0.0"
+    - name: joi
+      source: npm
+      tool: npm
+      version: ">=17.0.0"
+  redis_backend:
+    - name: redis
+      source: external
+      tool: pip
+      version: ">=5.0.0,<6.0"
+
+dev_dependencies:
+  - name: pytest
+    source: external
+    tool: pip
+    version: ">=8.3.0,<9.0"
+  - name: pytest-asyncio
+    source: external
+    tool: pip
+    version: ">=0.25.0,<1.0"
+  - name: httpx
+    source: external
+    tool: pip
+    version: ">=0.27.0,<0.29.0"

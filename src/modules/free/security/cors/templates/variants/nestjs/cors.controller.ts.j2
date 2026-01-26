@@ -1,0 +1,28 @@
+import { Controller, Get } from "@nestjs/common";
+
+import {
+  {{ module_class_name }}Service,
+  CorsHealthPayload,
+  CorsMetadataPayload,
+  CORS_FEATURES,
+} from "./cors.service";
+
+@Controller("security/cors")
+export class {{ module_class_name }}Controller {
+  constructor(private readonly corsService: {{ module_class_name }}Service) {}
+
+  @Get("metadata")
+  getMetadata(): CorsMetadataPayload {
+    return this.corsService.getMetadata();
+  }
+
+  @Get("features")
+  listFeatures(): { features: string[] } {
+    return { features: [...CORS_FEATURES] };
+  }
+
+  @Get("health")
+  getHealth(): CorsHealthPayload {
+    return this.corsService.getHealthPayload();
+  }
+}

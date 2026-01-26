@@ -1,0 +1,9 @@
+import { Type } from "@nestjs/common";
+
+import { {{ module_class_name }}Controller } from "./session.controller";
+import { {{ module_class_name }}HealthController } from "../../../../health/session.health";
+
+export const SESSION_ROUTES: Type[] = [
+  {{ module_class_name }}Controller,
+  {{ module_class_name }}HealthController,
+];

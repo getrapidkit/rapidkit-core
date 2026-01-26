@@ -1,0 +1,227 @@
+"""FastAPI router glue for {{ module_title }}."""
+
+from __future__ import annotations
+
+from collections.abc import AsyncIterator
+from typing import Any, Mapping, MutableMapping, Sequence
+
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, Response, status
+from fastapi.responses import StreamingResponse
+from pydantic import BaseModel, Field
+
+from src.modules.free.ai.ai_assistant.ai_assistant import (
+    AiAssistant,
+    AiAssistantConfig,
+    AssistantConfigurationError,
+    AssistantMessage,
+    AssistantResponse,
+    ProviderNotFoundError,
+)
+from src.modules.free.ai.ai_assistant.ai_assistant_types import ProviderConfig
+from src.health.ai_assistant import check_health
+
+
+class MessagePayload(BaseModel):
+    """Serializable representation of an assistant message."""
+
+    role: str = Field(..., min_length=2, max_length=32)
+    content: str = Field(..., min_length=1)
+
+
+class CompletionRequest(BaseModel):
+    """Payload describing a completion request."""
+
+    prompt: str = Field(..., min_length=1, max_length=4000)
+    provider: str | None = Field(default=None)
+    context: Sequence[MessagePayload] = Field(default_factory=list)
+    settings: MutableMapping[str, Any] = Field(default_factory=dict)
+
+
+class CompletionResponsePayload(BaseModel):
+    """HTTP-friendly view over :class:`AssistantResponse`."""
+
+    provider: str
+    content: str
+    latency_ms: float
+    cached: bool
+    usage: Mapping[str, int]
+    metadata: Mapping[str, Any] | None = None
+
+
+def _coerce_providers(raw: Sequence[Any] | None) -> tuple[ProviderConfig, ...]:
+    providers: list[ProviderConfig] = []
+    if not raw:
+        return tuple(providers)
+
+    for entry in raw:
+        if isinstance(entry, ProviderConfig):
+            providers.append(entry)
+            continue
+        if isinstance(entry, Mapping):
+            providers.append(
+                ProviderConfig(
+                    name=str(entry.get("name", "provider")),
+                    provider_type=str(entry.get("provider_type", "echo")),
+                    options=dict(entry.get("options", {})),
+                    enabled=bool(entry.get("enabled", True)),
+                )
+            )
+            continue
+        raise AssistantConfigurationError("Provider definitions must be mappings or ProviderConfig instances")
+    return tuple(providers)
+
+
+def build_config(payload: Mapping[str, Any] | AiAssistantConfig | None) -> AiAssistantConfig:
+    """Return an assistant config from optional configuration mapping."""
+
+    if payload is None:
+        return AiAssistantConfig()
+    if isinstance(payload, AiAssistantConfig):
+        return payload
+
+    data = dict(payload)
+    providers = _coerce_providers(data.pop("providers", ()))
+    if providers:
+        data["providers"] = providers
+    return AiAssistantConfig(**data)
+
+
+def create_assistant(payload: Mapping[str, Any] | AiAssistantConfig | None = None) -> AiAssistant:
+    """Instantiate the runtime using the supplied configuration payload."""
+
+    return AiAssistant(build_config(payload))
+
+
+def register_ai_assistant(
+    app: FastAPI,
+    *,
+    config: Mapping[str, Any] | AiAssistantConfig | None = None,
+    instance: AiAssistant | None = None,
+) -> AiAssistant:
+    """Attach the assistant runtime and routers to the FastAPI app."""
+
+    assistant = instance or create_assistant(config)
+    app.state.ai_assistant = assistant
+    app.include_router(build_router())
+    app.include_router(build_health_router())
+    return assistant
+
+
+def _get_assistant(request: Request) -> AiAssistant:
+    assistant = getattr(request.app.state, "ai_assistant", None)
+    if assistant is None:
+        assistant = AiAssistant()
+        request.app.state.ai_assistant = assistant
+    return assistant
+
+
+def _convert_context(messages: Sequence[MessagePayload]) -> tuple[AssistantMessage, ...]:
+    return tuple(AssistantMessage(role=msg.role, content=msg.content) for msg in messages)
+
+
+def _serialize_response(response: AssistantResponse) -> CompletionResponsePayload:
+    return CompletionResponsePayload(
+        provider=response.provider,
+        content=response.content,
+        latency_ms=response.latency_ms,
+        cached=response.cached,
+        usage=dict(response.usage),
+        metadata=dict(response.metadata) if response.metadata else None,
+    )
+
+
+def _handle_runtime_error(exc: Exception) -> HTTPException:
+    if isinstance(exc, AssistantConfigurationError):
+        return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+    if isinstance(exc, ProviderNotFoundError):
+        return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+    return HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc))
+
+
+def build_router() -> APIRouter:
+    """Return the primary router exposing completion endpoints."""
+
+    router = APIRouter(prefix="/ai/assistant", tags=["{{ module_title }}"])
+
+    @router.post("/completions", response_model=CompletionResponsePayload, summary="Request a completion")
+    async def create_completion(
+        payload: CompletionRequest,
+        assistant: AiAssistant = Depends(_get_assistant),
+    ) -> CompletionResponsePayload:
+        try:
+            response = assistant.chat(
+                payload.prompt,
+                provider=payload.provider,
+                context=_convert_context(payload.context),
+                settings=payload.settings,
+            )
+            return _serialize_response(response)
+        except Exception as exc:  # noqa: BLE001
+            raise _handle_runtime_error(exc) from exc
+
+    @router.post(
+        "/stream",
+        response_class=StreamingResponse,
+        summary="Stream completion tokens",
+    )
+    async def stream_completion(
+        payload: CompletionRequest,
+        assistant: AiAssistant = Depends(_get_assistant),
+    ) -> StreamingResponse:
+        try:
+            iterator = assistant.stream_chat(
+                payload.prompt,
+                provider=payload.provider,
+                context=_convert_context(payload.context),
+                settings=payload.settings,
+            )
+        except Exception as exc:  # noqa: BLE001
+            raise _handle_runtime_error(exc) from exc
+
+        async def _aiter() -> AsyncIterator[bytes]:
+            for chunk in iterator:
+                yield f"{chunk} ".encode("utf-8")
+
+        return StreamingResponse(_aiter(), media_type="text/plain")
+
+    @router.get("/providers", response_model=list[str], summary="List available providers")
+    async def list_providers(assistant: AiAssistant = Depends(_get_assistant)) -> Sequence[str]:
+        return assistant.list_providers()
+
+    @router.post("/cache/clear", status_code=status.HTTP_204_NO_CONTENT)
+    async def clear_cache(assistant: AiAssistant = Depends(_get_assistant)) -> Response:
+        assistant.clear_cache()
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    return router
+
+
+def build_health_router() -> APIRouter:
+    """Expose vendor health shim data alongside runtime metadata."""
+
+    router = APIRouter(prefix="/ai/assistant", tags=["{{ module_title }} Health"])
+
+    @router.get("/health", response_model=Mapping[str, Any])
+    async def healthcheck(request: Request) -> Mapping[str, Any]:
+        context = {"request_id": request.headers.get("x-request-id")}
+        vendor_payload = check_health(context=context)
+        runtime_snapshot = _get_assistant(request).health_report()
+        return {
+            "vendor": vendor_payload,
+            "runtime": runtime_snapshot,
+            "status": runtime_snapshot.get("status", vendor_payload.get("status", "ok")),
+        }
+
+    return router
+
+
+__all__ = [
+    "CompletionRequest",
+    "CompletionResponsePayload",
+    "MessagePayload",
+    "build_router",
+    "build_health_router",
+    "register_ai_assistant",
+    "create_assistant",
+    "build_config",
+]

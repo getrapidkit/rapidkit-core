@@ -1,0 +1,51 @@
+# OAuth Providers
+
+{% set defaults = oauth_defaults %}
+{% set redirect_default = defaults.redirect_base_url | default('https://example.com/oauth') | tojson %}
+{% set state_ttl_default = defaults.state_ttl_seconds | default(300) | tojson %}
+{% set cleanup_interval_default = defaults.state_cleanup_interval | default(60) | tojson %}
+{% set providers_default = defaults.providers | default({}) | tojson(indent=2) %}
+
+if "OAUTH_REDIRECT_BASE_URL" in locals():
+    OAUTH_REDIRECT_BASE_URL = Field(
+        default={{ redirect_default }},
+        description="Base URL where OAuth callbacks are received",
+    )
+else:
+    OAUTH_REDIRECT_BASE_URL: str = Field(
+        default={{ redirect_default }},
+        description="Base URL where OAuth callbacks are received",
+    )
+
+if "OAUTH_STATE_TTL_SECONDS" in locals():
+    OAUTH_STATE_TTL_SECONDS = Field(
+        default={{ state_ttl_default }},
+        description="Lifetime (seconds) for issued OAuth state parameters",
+    )
+else:
+    OAUTH_STATE_TTL_SECONDS: int = Field(
+        default={{ state_ttl_default }},
+        description="Lifetime (seconds) for issued OAuth state parameters",
+    )
+
+if "OAUTH_STATE_CLEANUP_INTERVAL" in locals():
+    OAUTH_STATE_CLEANUP_INTERVAL = Field(
+        default={{ cleanup_interval_default }},
+        description="Interval (seconds) for pruning stale OAuth state artifacts",
+    )
+else:
+    OAUTH_STATE_CLEANUP_INTERVAL: int = Field(
+        default={{ cleanup_interval_default }},
+        description="Interval (seconds) for pruning stale OAuth state artifacts",
+    )
+
+if "OAUTH_PROVIDERS" in locals():
+    OAUTH_PROVIDERS = Field(
+        default={{ providers_default }},
+        description="Provider registry keyed by provider identifier",
+    )
+else:
+    OAUTH_PROVIDERS: dict[str, Any] = Field(
+        default={{ providers_default }},
+        description="Provider registry keyed by provider identifier",
+    )

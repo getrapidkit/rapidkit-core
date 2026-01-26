@@ -1,0 +1,16 @@
+# Storage settings fields for FastAPI settings module
+storage_adapter: str = Field(
+    default="local",
+    description="Storage backend: local, s3, or gcs",
+    env="STORAGE_ADAPTER"
+)
+storage_base_path: str = Field(
+    default="./storage/uploads",
+    description="Base path for local file storage",
+    env="STORAGE_BASE_PATH"
+)
+storage_max_file_size: int = Field(
+    default=104857600,
+    description="Maximum file size in bytes (100MB)",
+    env="STORAGE_MAX_FILE_SIZE"
+)

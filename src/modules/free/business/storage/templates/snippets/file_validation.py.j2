@@ -1,0 +1,19 @@
+from typing import List
+
+ALLOWED_EXTENSIONS = {
+    'jpg', 'jpeg', 'png', 'gif', 'pdf', 'doc', 'docx',
+    'xls', 'xlsx', 'txt', 'csv', 'zip', 'tar', 'gz'
+}
+MAX_FILE_SIZE = 104857600  # 100MB
+
+def validate_file(filename: str, size: int) -> tuple[bool, str]:
+    """Validate file against constraints."""
+    ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else ''
+
+    if ext not in ALLOWED_EXTENSIONS:
+        return False, f"File type .{ext} not allowed"
+
+    if size > MAX_FILE_SIZE:
+        return False, f"File size exceeds {MAX_FILE_SIZE} bytes"
+
+    return True, "OK"

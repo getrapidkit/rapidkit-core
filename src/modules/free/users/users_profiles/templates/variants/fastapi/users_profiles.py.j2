@@ -1,0 +1,38 @@
+"""FastAPI-facing helpers for the {{ module_title }} module."""
+
+from __future__ import annotations
+
+from fastapi import FastAPI
+
+from src.health.users_profiles import register_users_profiles_health
+from src.modules.free.users.users_profiles.core.users.profiles.metadata_routes import register_users_profiles_routes
+from src.modules.free.users.users_profiles.users_profiles import (
+    MODULE_FEATURES,
+    describe_{{ module_name }},
+    get_{{ module_name }}_metadata,
+    load_config_from_env,
+)
+from src.health.users_profiles import (
+    DEFAULT_FEATURES,
+    build_health_snapshot,
+    render_health_snapshot,
+)
+
+
+def register_users_profiles(app: FastAPI) -> None:
+    """Register Users Profiles health and metadata routes onto a FastAPI app."""
+
+    register_users_profiles_routes(app)
+    register_users_profiles_health(app)
+
+
+__all__ = [
+    "DEFAULT_FEATURES",
+    "MODULE_FEATURES",
+    "describe_{{ module_name }}",
+    "get_{{ module_name }}_metadata",
+    "load_config_from_env",
+    "build_health_snapshot",
+    "render_health_snapshot",
+    "register_users_profiles",
+]

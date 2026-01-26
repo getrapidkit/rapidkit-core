@@ -1,0 +1,185 @@
+"""FastAPI route definitions for {{ module_title }}."""
+
+from __future__ import annotations
+
+from decimal import Decimal
+from typing import Any, Dict, Mapping, Optional
+
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, status
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field, field_validator
+
+from {{ module_import_base }}.cart import (
+    CartItemNotFoundError,
+    CartConfig,
+    CartService,
+    CartValidationError,
+)
+from {{ module_import_base }}.types.cart import CartItem, CartSnapshot
+from src.health.{{ module_name }} import build_health_router
+
+
+class CartItemPayload(BaseModel):
+    sku: str = Field(..., min_length=1, max_length=128)
+    name: str = Field(..., min_length=1, max_length=256)
+    quantity: int = Field(default=1, ge=1)
+    unit_price: Decimal = Field(...)
+    currency: Optional[str] = Field(default=None, min_length=3, max_length=3)
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+
+    @field_validator("currency", mode="before")
+    @classmethod
+    def uppercase_currency(cls, value: str | None) -> str | None:
+        if value is None:
+            return None
+        return str(value).upper()
+
+
+class DiscountPayload(BaseModel):
+    force: bool = False
+
+
+def _serialize(snapshot: CartSnapshot | Dict[str, Any]) -> Dict[str, Any]:
+    if isinstance(snapshot, CartSnapshot):
+        return snapshot.to_dict()
+    return dict(snapshot)
+
+
+def _handle_error(exc: Exception) -> HTTPException:
+    if isinstance(exc, CartItemNotFoundError):
+        return HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+    if isinstance(exc, CartValidationError):
+        return HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+    return HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc))
+
+
+def get_cart_service(request: Request) -> CartService:
+    service = getattr(request.app.state, "cart_service", None)
+    if service is None:
+        service = CartService()
+        request.app.state.cart_service = service
+    return service
+
+
+def build_router() -> APIRouter:
+    router = APIRouter(prefix="/api/{{ module_kebab }}", tags=["{{ module_title }}"])
+
+    @router.get("/{cart_id}", summary="Retrieve a cart", response_model=dict)
+    async def read_cart(cart_id: str, service: CartService = Depends(get_cart_service)) -> JSONResponse:
+        snapshot = service.get_cart(cart_id)
+        return JSONResponse(_serialize(snapshot))
+
+    @router.post("/{cart_id}/items", status_code=status.HTTP_201_CREATED, response_model=dict)
+    async def add_item(
+        cart_id: str,
+        payload: CartItemPayload,
+        service: CartService = Depends(get_cart_service),
+    ) -> JSONResponse:
+        try:
+            snapshot = service.add_item(
+                cart_id,
+                sku=payload.sku,
+                name=payload.name,
+                quantity=payload.quantity,
+                unit_price=payload.unit_price,
+                currency=payload.currency,
+                metadata=payload.metadata,
+            )
+            return JSONResponse(_serialize(snapshot), status_code=status.HTTP_201_CREATED)
+        except Exception as exc:  # noqa: BLE001 - we convert to HTTPException
+            raise _handle_error(exc) from exc
+
+    @router.put("/{cart_id}/items/{sku}", response_model=dict)
+    async def update_item(
+        cart_id: str,
+        sku: str,
+        payload: CartItemPayload,
+        service: CartService = Depends(get_cart_service),
+    ) -> JSONResponse:
+        try:
+            snapshot = service.update_item(
+                cart_id,
+                sku=sku,
+                quantity=payload.quantity,
+                unit_price=payload.unit_price,
+                metadata=payload.metadata,
+            )
+            return JSONResponse(_serialize(snapshot))
+        except Exception as exc:  # noqa: BLE001
+            raise _handle_error(exc) from exc
+
+    @router.delete("/{cart_id}/items/{sku}", response_model=dict)
+    async def remove_item(
+        cart_id: str,
+        sku: str,
+        service: CartService = Depends(get_cart_service),
+    ) -> JSONResponse:
+        try:
+            snapshot = service.remove_item(cart_id, sku=sku)
+            return JSONResponse(_serialize(snapshot))
+        except Exception as exc:  # noqa: BLE001
+            raise _handle_error(exc) from exc
+
+    @router.post("/{cart_id}/discounts/{code}", response_model=dict)
+    async def apply_discount(
+        cart_id: str,
+        code: str,
+        payload: DiscountPayload | None = None,
+        service: CartService = Depends(get_cart_service),
+    ) -> JSONResponse:
+        try:
+            snapshot = service.apply_discount(cart_id, code=code, force=payload.force if payload else False)
+            return JSONResponse(_serialize(snapshot))
+        except Exception as exc:  # noqa: BLE001
+            raise _handle_error(exc) from exc
+
+    @router.delete("/{cart_id}/discounts/{code}", response_model=dict)
+    async def remove_discount(
+        cart_id: str,
+        code: str,
+        service: CartService = Depends(get_cart_service),
+    ) -> JSONResponse:
+        try:
+            snapshot = service.remove_discount(cart_id, code)
+            return JSONResponse(_serialize(snapshot))
+        except Exception as exc:  # noqa: BLE001
+            raise _handle_error(exc) from exc
+
+    @router.post("/{cart_id}/clear", response_model=dict)
+    async def clear_cart(
+        cart_id: str,
+        service: CartService = Depends(get_cart_service),
+    ) -> JSONResponse:
+        snapshot = service.clear(cart_id)
+        return JSONResponse(_serialize(snapshot))
+
+    return router
+
+
+def register_cart(
+    app: FastAPI,
+    *,
+    config: Mapping[str, Any] | CartConfig | None = None,
+    service: CartService | None = None,
+) -> CartService:
+    """Attach the {{ module_title }} routes and health checks to the FastAPI app."""
+
+    if service is None:
+        if isinstance(config, CartConfig):
+            service = CartService(config)
+        else:
+            service = CartService(CartConfig.from_mapping(config))
+
+    app.state.cart_service = service
+    app.include_router(build_router())
+    app.include_router(build_health_router())
+    return service
+
+
+__all__ = [
+    "build_router",
+    "get_cart_service",
+    "CartItemPayload",
+    "DiscountPayload",
+    "register_cart",
+]

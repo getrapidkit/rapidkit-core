@@ -1,0 +1,79 @@
+"""Shared dataclasses for the {{ module_title }} runtime."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from typing import Any, Dict, Mapping, Tuple
+
+
+@dataclass(slots=True)
+class AssistantMessage:
+    """Represents a message exchanged with the assistant."""
+
+    role: str
+    content: str
+    timestamp: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+    metadata: Mapping[str, Any] | None = None
+
+
+@dataclass(slots=True)
+class AssistantResponse:
+    """Structured response emitted by the assistant runtime."""
+
+    provider: str
+    content: str
+    created_at: datetime
+    latency_ms: float
+    cached: bool
+    usage: Mapping[str, int]
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+
+@dataclass(slots=True)
+class ProviderStatus:
+    """Health status information for a provider implementation."""
+
+    name: str
+    status: str
+    latency_ms: float | None = None
+    details: Mapping[str, Any] = field(default_factory=dict)
+
+
+@dataclass(slots=True)
+class ProviderConfig:
+    """Configuration payload describing an available provider."""
+
+    name: str
+    provider_type: str
+    options: Dict[str, Any] = field(default_factory=dict)
+    enabled: bool = True
+
+
+@dataclass(slots=True)
+class {{ module_class_name }}Config:
+    """Runtime configuration for {{ module_title }}."""
+
+    default_provider: str = "echo"
+    conversation_window: int = 20
+    cache_enabled: bool = True
+    request_timeout_seconds: int = 30
+    telemetry_enabled: bool = True
+    providers: Tuple[ProviderConfig, ...] = field(
+        default_factory=lambda: (
+            ProviderConfig(
+                name="echo",
+                provider_type="echo",
+                options={"prefix": "[echo] "},
+            ),
+        )
+    )
+
+
+__all__ = [
+    "AssistantMessage",
+    "AssistantResponse",
+    "ProviderStatus",
+    "ProviderConfig",
+    "{{ module_class_name }}Config",
+]

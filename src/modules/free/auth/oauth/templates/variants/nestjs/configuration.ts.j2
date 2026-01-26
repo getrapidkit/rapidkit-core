@@ -1,0 +1,59 @@
+import { registerAs } from "@nestjs/config";
+
+type RawOauthProvider = Record<string, unknown>;
+
+type OauthConfiguration = {
+  redirectBaseUrl: string;
+  stateTtlSeconds: number;
+  stateCleanupInterval: number;
+  providers: Record<string, RawOauthProvider>;
+};
+
+type DefaultOauthConfig = {
+  redirect_base_url?: string;
+  state_ttl_seconds?: number;
+  state_cleanup_interval?: number;
+  providers?: Record<string, RawOauthProvider>;
+};
+
+const DEFAULTS: DefaultOauthConfig = {{ module_defaults | default({}) | tojson(indent=2) }};
+
+const parseInteger = (value: string | undefined, fallback: number): number => {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    return fallback;
+  }
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const parseProviders = (value: string | undefined, fallback: Record<string, RawOauthProvider>): Record<string, RawOauthProvider> => {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    return fallback;
+  }
+  try {
+    const parsed = JSON.parse(value);
+    if (parsed && typeof parsed === "object") {
+      return parsed as Record<string, RawOauthProvider>;
+    }
+  } catch {
+    // ignore malformed overrides and fall back to defaults
+  }
+  return fallback;
+};
+
+export default registerAs("oauth", (): OauthConfiguration => {
+  const rawProviders = DEFAULTS.providers ?? {};
+  return {
+    redirectBaseUrl:
+      process.env.OAUTH_REDIRECT_BASE_URL ?? (DEFAULTS.redirect_base_url ?? "https://example.com/oauth"),
+    stateTtlSeconds: parseInteger(
+      process.env.OAUTH_STATE_TTL_SECONDS,
+      DEFAULTS.state_ttl_seconds ?? 300,
+    ),
+    stateCleanupInterval: parseInteger(
+      process.env.OAUTH_STATE_CLEANUP_INTERVAL,
+      DEFAULTS.state_cleanup_interval ?? 60,
+    ),
+    providers: parseProviders(process.env.OAUTH_PROVIDERS, rawProviders),
+  };
+});

@@ -1,0 +1,88 @@
+"""Canonical Notifications health router shared across frameworks."""
+
+from __future__ import annotations
+
+import logging
+import time
+from types import SimpleNamespace
+from typing import Any, Dict, Mapping, cast
+
+from src.modules.free.communication.notifications.core.notifications import describe_notifications
+
+APIRouter: Any
+FastAPIApp: Any
+RequestType: Any
+status: Any
+
+try:  # pragma: no cover - FastAPI optional
+    from fastapi import APIRouter, FastAPI as FastAPIApp, Request as RequestType, status
+except ImportError:  # pragma: no cover - allow import without FastAPI installed
+    APIRouter = cast(Any, None)
+    FastAPIApp = cast(Any, None)
+    RequestType = cast(Any, None)
+    status = SimpleNamespace(HTTP_200_OK=200, HTTP_503_SERVICE_UNAVAILABLE=503)
+    _FASTAPI_AVAILABLE = False
+else:
+    _FASTAPI_AVAILABLE = True
+
+logger = logging.getLogger("communication.notifications.health")
+
+_STARTED_AT = time.monotonic()
+
+if _FASTAPI_AVAILABLE:
+    router = APIRouter(prefix="/api/health/module", tags=["health"])
+else:  # pragma: no cover - executed only when FastAPI unavailable
+    router = None
+
+
+def _resolve_manager(app: Any) -> Any:
+    state = getattr(app, "state", None)
+    return getattr(state, "notification_manager", None)
+
+
+def _collect_snapshot(app: Any) -> Dict[str, Any]:
+    manager = _resolve_manager(app)
+    metadata: Mapping[str, Any] = describe_notifications(manager)
+    payload = dict(metadata)
+    if "status" not in payload:
+        payload["status"] = "ok" if manager is not None else "degraded"
+    payload.setdefault("module", "{{ rapidkit_vendor_module }}")
+    payload.setdefault("version", "{{ rapidkit_vendor_version }}")
+    payload.setdefault("uptime", max(0.0, time.monotonic() - _STARTED_AT))
+    return payload
+
+
+if _FASTAPI_AVAILABLE:
+
+    @router.get(  # type: ignore[union-attr]
+        "/notifications",
+        summary="Notifications module health check",
+        status_code=status.HTTP_200_OK,
+    )
+    async def notifications_health_check(  # pragma: no cover - exercised in integration tests
+        request: RequestType,
+    ) -> Dict[str, Any]:
+        payload = _collect_snapshot(request.app)
+        logger.debug("Notifications health snapshot", extra={"payload": payload})
+        return payload
+
+else:  # pragma: no cover - executed only without FastAPI
+
+    async def notifications_health_check(*_: Any, **__: Any) -> Dict[str, Any]:  # type: ignore[override]
+        raise RuntimeError("FastAPI must be installed to expose Notifications health endpoints")
+
+
+def register_notifications_health(app: Any) -> None:
+    """Attach the notifications health router to a FastAPI instance."""
+
+    if not _FASTAPI_AVAILABLE:
+        raise RuntimeError("FastAPI must be installed to register Notifications health routes")
+    if FastAPIApp is not None and not isinstance(app, FastAPIApp):  # pragma: no cover - defensive
+        raise TypeError("register_notifications_health expects a FastAPI application instance")
+    if router is None:  # pragma: no cover - defensive guard
+        raise RuntimeError("Notifications health router unavailable")
+
+    app.include_router(router)
+
+
+__all__ = ["notifications_health_check", "register_notifications_health", "router"]

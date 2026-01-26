@@ -1,0 +1,305 @@
+name: deployment
+version: 0.1.3
+tier: free
+access: free
+status: stable
+category: essentials
+description: Deployment tooling for RapidKit services.
+tags:
+    - essentials
+    - deployment
+    - devops
+generated_from_config: true
+depends_on:
+    - free/essentials/logging
+    - free/essentials/settings
+profile_inherits:
+    fastapi.standard: fastapi
+    fastapi.ddd: fastapi
+    nestjs.standard: nestjs
+config_sources: []
+metadata:
+    title: Deployment Toolkit
+    description: Portable Docker, Compose, Makefile, and CI assets for RapidKit projects.
+    maintainer: RapidKit Core Team
+    support_contact: platform@rapidkit.top
+options:
+    include_ci: true
+    include_postgres: true
+    python_version: "3.10.14"
+    node_version: "20.19.6"
+    package_manager: npm
+generation:
+    vendor:
+        root: .rapidkit/vendor
+        files:
+            - template: templates/base/Makefile.j2
+              relative: deployment/fastapi/Makefile
+              context:
+                  runtime: python
+                  include_ci: true
+            - template: templates/base/deployment.py.j2
+              relative: src/modules/free/essentials/deployment/deployment.py
+            - template: templates/base/deployment_health.py.j2
+              relative: src/health/deployment.py
+            - template: templates/base/deployment_types.py.j2
+              relative: src/modules/free/essentials/deployment/deployment_types.py
+            - template: templates/base/Dockerfile.j2
+              relative: deployment/fastapi/Dockerfile
+              context:
+                  runtime: python
+                  python_version: "3.10.14"
+            - template: templates/base/docker-compose.yml.j2
+              relative: deployment/fastapi/docker-compose.yml
+              context:
+                  runtime: python
+                  include_postgres: true
+            - template: templates/base/ci.yml.j2
+              relative: deployment/fastapi/ci.yml
+              context:
+                  runtime: python
+                  include_ci: true
+            - template: templates/base/.dockerignore.j2
+              relative: deployment/fastapi/.dockerignore
+            - template: templates/base/Makefile.j2
+              relative: deployment/nestjs/Makefile
+              context:
+                  runtime: node
+                  package_manager: npm
+                  package_manager_command: npm
+                  include_ci: true
+            - template: templates/base/Dockerfile.j2
+              relative: deployment/nestjs/Dockerfile
+              context:
+                  runtime: node
+                  node_version: "20.19.6"
+                  package_manager: npm
+                  package_manager_command: npm
+            - template: templates/base/docker-compose.yml.j2
+              relative: deployment/nestjs/docker-compose.yml
+              context:
+                  runtime: node
+                  package_manager: npm
+                  package_manager_command: npm
+                  include_postgres: true
+            - template: templates/base/ci.yml.j2
+              relative: deployment/nestjs/ci.yml
+              context:
+                  runtime: node
+                  package_manager: npm
+                  package_manager_command: npm
+                  include_ci: true
+            - template: templates/base/.dockerignore.j2
+              relative: deployment/nestjs/.dockerignore
+            - template: templates/vendor/nestjs/deployment-health.controller.ts.j2
+              relative: deployment/nestjs/deployment-health.controller.ts
+            - template: templates/vendor/nestjs/deployment-health.module.ts.j2
+              relative: deployment/nestjs/deployment-health.module.ts
+    variants:
+        fastapi: &fastapi_variant
+            root: .
+            context:
+                framework: fastapi
+                runtime: python
+                include_ci: true
+                include_postgres: true
+                python_version: "3.10.14"
+            files:
+                - template: templates/variants/fastapi/Makefile.j2
+                  output: Makefile
+                - template: templates/variants/fastapi/.dockerignore.j2
+                  output: .dockerignore
+                - template: templates/variants/fastapi/Dockerfile.j2
+                  output: Dockerfile
+                - template: templates/variants/fastapi/docker-compose.yml.j2
+                  output: docker-compose.yml
+                - template: templates/variants/fastapi/ci.yml.j2
+                  output: .github/workflows/ci.yml
+                - template: templates/variants/fastapi/deployment.py.j2
+                  output: src/modules/free/essentials/deployment/deployment.py
+                - template: templates/variants/fastapi/deployment_routes.py.j2
+                  output: src/modules/free/essentials/deployment/routers/deployment.py
+                - template: templates/base/deployment_health.py.j2
+                  output: src/health/deployment.py
+                  description: Shared deployment health helpers consumed by FastAPI adapters
+                - template: templates/tests/integration/test_deployment_integration.j2
+                  output: tests/modules/free/essentials/deployment/test_deployment_integration.py
+                  description: Integration tests for Deployment module
+                - template: templates/variants/fastapi/deployment_config.yaml.j2
+                  output: src/modules/free/essentials/deployment/config/deployment.yaml
+                  description: Deployment configuration defaults for FastAPI projects
+                - template: templates/variants/fastapi/tests/test_deployment_e2e.py
+                  output: tests/modules/e2e/free/essentials/deployment/test_deployment_e2e.py
+        fastapi.standard: *fastapi_variant
+        fastapi.ddd: *fastapi_variant
+        nestjs: &nestjs_variant
+            root: .
+            context:
+                framework: nestjs
+                runtime: node
+                include_ci: true
+                include_postgres: true
+                node_version: "20.19.6"
+                package_manager: npm
+                package_manager_command: npm
+            files:
+                - template: templates/variants/nestjs/Makefile.j2
+                  output: Makefile
+                - template: templates/variants/nestjs/.dockerignore.j2
+                  output: .dockerignore
+                - template: templates/variants/nestjs/Dockerfile.j2
+                  output: Dockerfile
+                - template: templates/variants/nestjs/docker-compose.yml.j2
+                  output: docker-compose.yml
+                - template: templates/variants/nestjs/ci.yml.j2
+                  output: .github/workflows/ci.yml
+                - template: templates/variants/nestjs/deployment.service.ts.j2
+                  output: src/modules/free/essentials/deployment/deployment.service.ts
+                - template: templates/variants/nestjs/deployment.controller.ts.j2
+                  output: src/modules/free/essentials/deployment/deployment.controller.ts
+                - template: templates/variants/nestjs/deployment.module.ts.j2
+                  output: src/modules/free/essentials/deployment/deployment.module.ts
+                - template: templates/variants/nestjs/deployment.configuration.ts.j2
+                  output: src/modules/free/essentials/deployment/deployment.configuration.ts
+                  description: Deployment configuration schema for NestJS projects
+                - template: templates/tests/integration/deployment.integration.spec.ts.j2
+                  output: tests/modules/integration/essentials/deployment/deployment.integration.spec.ts
+                  description: Integration tests for NestJS deployment tooling
+                - template: templates/variants/nestjs/tests/deployment.e2e-spec.ts
+                  output: tests/modules/e2e/free/essentials/deployment/deployment.e2e-spec.ts
+        nestjs.standard: *nestjs_variant
+    snippets:
+        enabled: true
+        config: config/snippets.yaml
+        default: []
+compatibility:
+    breaking: 1.0.0
+    deprecated: null
+    migration_guide: https://docs.rapidkit.top/modules/deployment/migration
+    python: ">=3.10"
+    node: ">=18"
+    frameworks:
+        - fastapi
+        - nestjs
+    os:
+        - linux
+        - darwin
+        - windows
+testing:
+    coverage_min: 85
+    integration_tests: true
+    e2e_tests: false
+    unit_tests:
+        - tests/modules/free/essentials/deployment/test_deployment_generate.py
+        - tests/modules/free/essentials/deployment/test_deployment_generate_old.py
+        - tests/modules/free/essentials/deployment/test_deployment_generation_cli.py
+        - tests/modules/free/essentials/deployment/test_fastapi_plugin.py
+        - tests/modules/free/essentials/deployment/test_overrides_runtime.py
+        - tests/modules/free/essentials/deployment/test_deployment_vendor_layer.py
+        - tests/modules/free/essentials/deployment/test_deployment_health_check.py
+        - tests/modules/free/essentials/deployment/test_deployment_versioning.py
+        - tests/modules/free/essentials/deployment/test_deployment_framework_variants.py
+    integration_test_files:
+        - tests/modules/free/essentials/deployment/test_deployment_integration.py
+        - tests/modules/integration/essentials/deployment/deployment.integration.spec.ts
+    fixtures: []
+documentation:
+    changelog: docs/changelog.md
+    readme: README.md
+    overview: docs/overview.md
+    usage: docs/usage.md
+    advanced: docs/advanced.md
+    migration: docs/migration.md
+    troubleshooting: docs/troubleshooting.md
+    api_docs: null
+    examples: []
+support:
+    issues: https://github.com/getrapidkit/core/issues
+    discussions: https://github.com/getrapidkit/core/discussions
+    documentation: https://docs.rapidkit.top/modules/deployment
+changelog:
+    - version: 0.1.3
+      date: "2025-12-14"
+      notes: See docs/changelog.md
+validation:
+    pre_install:
+        - check_python_version
+        - check_dependencies
+    post_install:
+        - validate_generated_code
+        - run_tests
+rollback:
+    strategy: uninstall
+    backup_path: .rapidkit/backups/
+    max_backups: 5
+performance:
+    lazy_loading: true
+    caching:
+        templates: true
+        ttl: 300
+capabilities: []
+file_hashes:
+    templates/variants/nestjs/tests/deployment.e2e-spec.ts: sha256:73a0c704782c90ef124ca0f04704b3213937256d710222a1e2c013ea84ff3ec9
+    templates/variants/fastapi/tests/test_deployment_e2e.py: sha256:85b1cbfa14a8d66072baad80d8fdc5eac58a6dde5ea63c9b67177e5f99eb84aa
+    scripts/run_demo.py: sha256:80b5c1b2262d62c71b185492504889c7cd336c5866fb89ef5ad0e65835c7c901
+    README.md: sha256:8b632406c61464df1f62a3def642baca9490bf48dbb1ed8c0a65cf90610fa09a
+    __init__.py: sha256:b4bcd83f4f6f205a7dd3362629a25589fa2b40356cc7e4ab04ac3392812806bf
+    config/base.yaml: sha256:d9515e2f14e4fdcc4961a8e3b7ef09813e5b2903ad3f569d8aaa6057e35f391e
+    config/snippets.yaml: sha256:6d11079ae29ac703921c8521866114b99dff9c1c63002dcaefab9286b7465c0b
+    docs/README.md: sha256:3296082cde0a43ee20f936f31fcd6e94309c2dedfa2f0b3bfd00063070792a16
+    docs/advanced.md: sha256:2ea62b1f3e34ea48d68b204df1192f61a4583d9a38018249fe39f8b95f2db785
+    docs/changelog.md: sha256:b51afbc9d43f3b7043de89e8221d4895b4403557df052acfda09eacdf593d5d7
+    docs/migration.md: sha256:d4e66e4e1093dc295d9805d1dd3e559a81d96163aa596c9749d5084d54566686
+    docs/overview.md: sha256:1c4add5b07401d7c992896860031c23d5aac91e8f460fed4dbf098fedadca49b
+    docs/troubleshooting.md: sha256:0f9eb40289f853c67345c0d0c4cb6925d3c1fea806260b031c077a4359ea2076
+    docs/usage.md: sha256:be6e188a522e6cd4040386ee88bddc497ba9646386076dd56aedacc47080847e
+    frameworks/__init__.py: sha256:71e460de0c49f7abab0d3a51de4abe1a950d7c537f78f2174cd93e87b0ba00d0
+    frameworks/fastapi.py: sha256:9174361c3aab02786995786bcffeeb204fdf125fb3f5872480573e16d952ed8c
+    frameworks/nestjs.py: sha256:2170f24910aa34ca8bb6091b0130516e71786fe1e0163d03009ac8fece26f744
+    generate.py: sha256:cefb83bd2ad23044162df7bdc6bac4deec0584e7e039002b76e0fbc90b48fe81
+    module.verify.json: sha256:7a1553e3486effc3aa50f233bfc8af9a551ebb025ca39ae10a2f4badc40f31be
+    overrides.py: sha256:71aa2edd74d1fe3de1dbbeeb7fbb965756ceba6e9ef808acb762e2d4687f073c
+    templates/base/Dockerfile.j2: sha256:a25a17df57cc8fd9afd1db8e29dfc48f32904f46b8edcefd4191bd26370e55b5
+    templates/base/Makefile.j2: sha256:741f7066d3be0f89df8e13c605d00e169b43ab5413263217d880483de7e8a00e
+    templates/base/ci.yml.j2: sha256:8c97088e9d9812b1a248b2a2b972d553c4e19db21412bb274e86650d8af35c0c
+    templates/base/deployment.py.j2: sha256:9d4c9cb7ae9f8f46e5db2d818dfe11d172aa8c83444836e79c8ff1c0a916cb4a
+    templates/base/deployment_health.py.j2: sha256:ac07d4a46943608a2df567ae4472affc9e705bf085c7d5e47430d5a9d97bb5e1
+    templates/base/deployment_types.py.j2: sha256:f060d078e54bab2328aece11ce7bf20af9db53ceaf9b52f1abb4271eaaecdcbe
+    templates/base/docker-compose.base.yml.j2: sha256:2e34876e605c42750d04ebd6373f15896e0c6bec1a9cba172cd9d3f26e0d15ee
+    templates/base/docker-compose.local.yml.j2: sha256:f22e32149b9576c9c267a2fae97fbc3b494855166cf7a5ae4002ee3a5f6e88f8
+    templates/base/docker-compose.production.yml.j2: sha256:a68d2e6ae6075848d4a55e1fb33b27bee914466a1833be483d6c6d32b4e47321
+    templates/base/docker-compose.yml.j2: sha256:4ee1839a5c517244ab5de3cdd0eb95a50134215a88a6a9f4acdb01aee72aa0b8
+    templates/snippets/deployment.snippet.j2: sha256:f86ca0c28d67d46c51d8bb048d54954eb18a8820295aaa28924f4979b623d484
+    templates/tests/__init__.py: sha256:3a2f6567eefdf3ed2eff84b8584ebdcb07a194c72dcff7b562bf0806d9d55bec
+    templates/tests/integration/deployment.integration.spec.ts.j2: sha256:f5883b680ecb15f0051dc2eeee5e160fd2900b2884736fe997496e988fda63c2
+    templates/tests/integration/test_deployment_integration.j2: sha256:e63e18723ea4dcee2e35976b7e4df760e74c3ad1b84032a831263bdc8b6d1bf3
+    templates/variants/fastapi/Dockerfile.j2: sha256:e1c9af8426aead0c9fa83ba32282583b9be5a116369862bfff54ed5fd773686c
+    templates/variants/fastapi/Makefile.j2: sha256:f5ecfc50ec705c9368e0092b1d2da4a837a276019004fd6b238c58ec4b5ad60c
+    templates/variants/fastapi/ci.yml.j2: sha256:d52ce3eda3b2d69551d47f9f4040847b89da354a542812e4dbccb7d201f19dfe
+    templates/variants/fastapi/deployment.py.j2: sha256:dfab4ac450b45789328bfdbd11f0f2e64966b030f88e2c3e28c6b35f87b76c5f
+    templates/variants/fastapi/deployment_config.yaml.j2: sha256:746d4677cb05f0baacaefa774f88632e35834c426df1a264a83b3569eea914cc
+    templates/variants/fastapi/deployment_routes.py.j2: sha256:b8cffac22c70c1e043129ca009877752a9d764b911000fa5717697c644ef5661
+    templates/variants/fastapi/docker-compose.local.yml.j2: sha256:1cd94491de92ab98420fbcccd3f6b92794476b6ace3c296d81fed83826e55f0c
+    templates/variants/fastapi/docker-compose.production.yml.j2: sha256:45fabc108e5a212b698a4ec9b1ba85baaab2f98862b033a6bd828b24acbd90be
+    templates/variants/fastapi/docker-compose.yml.j2: sha256:95aa37ac48c423611bc92bddf94edb991ac769483c42a63beea3f15a42c1fd29
+    templates/variants/fastapi/health-check.sh.j2: sha256:75dc352d437ff6f3fb6587e84cb8b90d24135c45d9d69a6ff9888c60b30fef87
+    templates/variants/nestjs/Dockerfile.j2: sha256:2f43fe52a7ba6c222d5101b11b9b0fa0f40893532a5811dc38a110e89d14e578
+    templates/variants/nestjs/Makefile.j2: sha256:f5ecfc50ec705c9368e0092b1d2da4a837a276019004fd6b238c58ec4b5ad60c
+    templates/variants/nestjs/ci.yml.j2: sha256:1c69fed8b3d25e993545144ec2d147cea68cc16abe7e5a69cd74b5a3ebd410c5
+    templates/variants/nestjs/deployment.configuration.ts.j2: sha256:a854721f27bfaba60533468cac9dbcbfbafce6e47f50a551f83fc219a017ad5f
+    templates/variants/nestjs/deployment.controller.ts.j2: sha256:e733ae7eafbc30a457866c63535599e81a0df7651730c6841dddf88f33041212
+    templates/variants/nestjs/deployment.module.ts.j2: sha256:e7c18b147abe4190200f8365af5d2f930708e4ec3609d366c5eb4cf74862cedb
+    templates/variants/nestjs/deployment.service.ts.j2: sha256:51cab05d7a093a8b7e6acbc660a7a45f51b024ecb064b5550ef14ab4a8cc6769
+    templates/variants/nestjs/docker-compose.local.yml.j2: sha256:1cd94491de92ab98420fbcccd3f6b92794476b6ace3c296d81fed83826e55f0c
+    templates/variants/nestjs/docker-compose.production.yml.j2: sha256:45fabc108e5a212b698a4ec9b1ba85baaab2f98862b033a6bd828b24acbd90be
+    templates/variants/nestjs/docker-compose.yml.j2: sha256:ae081b13d5ebbc518f95f8cd9417bb44aaa8b6e1dd28ea353586d929b941c119
+    templates/variants/nestjs/health-check.sh.j2: sha256:a32e9e46d061a105aebe1bda0ee4dcb45c96f3eba30a3d716ba458c0f4f04432
+    templates/vendor/nestjs/configuration.js.j2: sha256:72beccf4d5a8b886369e13d70e1064c4d5a026e410f0f4248baacbf6522cd26f
+    templates/vendor/nestjs/deployment-health.controller.ts.j2: sha256:a08ff5996fa7ebab5e4f9e1a49c5a3796b8206f16ef6514889fb9123a7cff34d
+    templates/vendor/nestjs/deployment-health.module.ts.j2: sha256:ebd22066723cef46ff14db091bd729d9d4596370c7124b423a14a4f1f93dcc1c
+signature:
+    signature: 0lZdR89Vqixj7TG95ahajAR0O1cvYEnLEOZPM4Oo0N3hIExljzlCrWa3007JeJb9q45UvFTs1ehyP6umVUbjDw==
+    signer_id: c7eb213b1ac6d8c6
+    signature_version: v1
+signer_id: null
+signature_version: null

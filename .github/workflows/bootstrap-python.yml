@@ -1,0 +1,81 @@
+name: Bootstrap Python Environment
+
+on:
+    workflow_call:
+        inputs:
+            runner-label:
+                type: string
+                required: false
+                default: ubuntu-latest
+            python-version:
+                type: string
+                required: false
+                default: "3.10"
+            install-args:
+                type: string
+                required: false
+                default: "--with dev --no-interaction"
+            artifact-name:
+                type: string
+                required: false
+                default: bootstrap
+        secrets:
+            POETRY_HTTP_BASIC_USERNAME:
+                required: false
+            POETRY_HTTP_BASIC_PASSWORD:
+                required: false
+
+jobs:
+    bootstrap:
+        name: Bootstrap (Python ${{ inputs.python-version }})
+        runs-on: ${{ inputs.runner-label }}
+        env:
+            PYTHONUNBUFFERED: "1"
+            PIP_DISABLE_PIP_VERSION_CHECK: "1"
+            POETRY_VIRTUALENVS_IN_PROJECT: "true"
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Setup Python
+              uses: actions/setup-python@v5
+              with:
+                  python-version: ${{ inputs.python-version }}
+
+            - name: Upgrade pip
+              run: python -m pip install --upgrade pip
+
+            - name: Install Poetry
+              uses: snok/install-poetry@v1
+              with:
+                  version: "1.8.3"
+                  virtualenvs-in-project: true
+                  virtualenvs-create: true
+
+            - name: Configure Poetry
+              run: |
+                  poetry config virtualenvs.in-project true
+                  poetry config virtualenvs.path .venv
+
+            - name: Install dependencies
+              run: |
+                  set -euo pipefail
+                  poetry install ${{ inputs.install-args }} || {
+                    echo "Primary Poetry install failed; retrying without cache";
+                    poetry install ${{ inputs.install-args }} --no-cache;
+                  }
+
+            - name: Validate virtual environment
+              run: |
+                  test -d .venv || { echo "Virtualenv missing"; exit 1; }
+                  .venv/bin/python -V
+
+            - name: Package virtual environment artifact
+              run: tar -czf venv.tar.gz .venv
+
+            - name: Upload artifact
+              uses: actions/upload-artifact@v4
+              with:
+                  name: ${{ inputs.artifact-name }}
+                  path: venv.tar.gz
+                  retention-days: 3

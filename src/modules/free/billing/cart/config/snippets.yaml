@@ -1,0 +1,10 @@
+# Register snippet bundles for Cart
+# Each snippet merges additional configuration into the generation context.
+
+snippets:
+  - name: loyalty-tier
+    description: Enables loyalty discount stacking for premium customers.
+    file: snippets/loyalty-tier.yaml
+  - name: b2b-wholesale
+    description: Configures volume-based discounts for wholesale carts.
+    file: snippets/b2b-wholesale.yaml

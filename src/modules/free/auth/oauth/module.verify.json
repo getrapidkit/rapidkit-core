@@ -1,0 +1,43 @@
+{
+  "checked_at": "2025-12-23T20:58:46.575196+00:00",
+  "description": "Lean module layout blueprint (v3)",
+  "extra_directories": [
+    "scripts"
+  ],
+  "extra_files": [
+    "scripts/run_demo.py",
+    "templates/base/oauth_health.py.j2"
+  ],
+  "missing_directories": [],
+  "missing_files": [],
+  "module": "free/auth/oauth",
+  "parity": {
+    "fastapi": {
+      "declared": true,
+      "has_config": true,
+      "has_health": true,
+      "has_metadata": true,
+      "has_tests": true,
+      "issues": [],
+      "plugin": true,
+      "status": "ok"
+    },
+    "nestjs": {
+      "declared": true,
+      "has_config": true,
+      "has_health": true,
+      "has_metadata": true,
+      "has_tests": true,
+      "issues": [],
+      "plugin": true,
+      "status": "ok"
+    }
+  },
+  "parity_checked_at": "2025-11-09T20:55:36.976892+00:00",
+  "parity_valid": true,
+  "spec_version": 4,
+  "structure_tree_hash": "94a1fdec343cb776f324c0f0a4aba9e2e4e01d79ccbedcff9ee45356bfac7246",
+  "structure_valid": true,
+  "tree_hash": "94a1fdec343cb776f324c0f0a4aba9e2e4e01d79ccbedcff9ee45356bfac7246",
+  "valid": true
+}

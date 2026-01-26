@@ -1,0 +1,31 @@
+"""FastAPI health endpoints for the {{ module_title }} module."""
+
+from __future__ import annotations
+
+from datetime import datetime, timezone
+from typing import Dict
+
+from fastapi import APIRouter, Depends, FastAPI, status
+
+from .storage import FileStorage, get_storage
+
+router = APIRouter(prefix="/api/health/module", tags=["health"])
+
+
+@router.get("/storage", status_code=status.HTTP_200_OK)
+async def get_storage_health(storage: FileStorage = Depends(get_storage)) -> Dict[str, object]:
+    """Return the current health snapshot for the storage runtime."""
+
+    payload = await storage.health_check()
+    return {
+        "module": "{{ module_name }}",
+        "status": payload.get("status", "unknown"),
+        "checked_at": datetime.now(timezone.utc).isoformat(),
+        "adapter": payload.get("adapter", {}),
+    }
+
+
+def register_storage_health(app: FastAPI) -> None:
+    """Register storage health routes on the provided FastAPI application."""
+
+    app.include_router(router)

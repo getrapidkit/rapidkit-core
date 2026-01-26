@@ -1,0 +1,209 @@
+"""Runtime facade for the {{ module_title }} module."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Any, Callable, Dict, Mapping, Optional
+
+from types.db_mongo import MongoHealthReport
+
+try:  # pragma: no cover - optional dependency
+    from motor.motor_asyncio import AsyncIOMotorClient
+except ImportError:  # pragma: no cover - handled at runtime
+    AsyncIOMotorClient = None  # type: ignore[assignment]
+
+MODULE_NAME = "{{ module_name }}"
+MODULE_TITLE = "{{ module_title }}"
+
+DEFAULT_CONNECTION_URI = "{{ default_connection_uri }}"
+DEFAULT_DATABASE_NAME = "{{ default_database_name }}"
+DEFAULT_APP_NAME = "{{ default_app_name }}"
+DEFAULT_AUTH_SOURCE = "{{ default_auth_source }}"
+{% if default_replica_set is none %}DEFAULT_REPLICA_SET = None
+{% else %}DEFAULT_REPLICA_SET = "{{ default_replica_set }}"
+{% endif %}{% if default_username is none %}DEFAULT_USERNAME = None
+{% else %}DEFAULT_USERNAME = "{{ default_username }}"
+{% endif %}{% if default_password is none %}DEFAULT_PASSWORD = None
+{% else %}DEFAULT_PASSWORD = "{{ default_password }}"
+{% endif %}DEFAULT_READ_PREFERENCE = "{{ default_read_preference }}"
+DEFAULT_RETRY_READS = {{ "True" if default_retry_reads else "False" }}
+DEFAULT_RETRY_WRITES = {{ "True" if default_retry_writes else "False" }}
+DEFAULT_CONNECT_TIMEOUT_MS = {{ default_connect_timeout_ms }}
+DEFAULT_SERVER_SELECTION_TIMEOUT_MS = {{ default_server_selection_timeout_ms }}
+DEFAULT_MAX_IDLE_TIME_MS = {{ default_max_idle_time_ms }}
+DEFAULT_POOL_MIN_SIZE = {{ default_pool_min_size }}
+DEFAULT_POOL_MAX_SIZE = {{ default_pool_max_size }}
+DEFAULT_TLS_ENABLED = {{ "True" if default_tls_enabled else "False" }}
+DEFAULT_TLS_ALLOW_INVALID = {{ "True" if default_tls_allow_invalid_certificates else "False" }}
+DEFAULT_COMPRESSORS = tuple({{ default_compressors | tojson }})
+DEFAULT_HEALTH_TIMEOUT_MS = {{ default_health_timeout_ms }}
+DEFAULT_COLLECT_METRICS = {{ "True" if default_collect_metrics else "False" }}
+
+
+class DbMongoDependencyError(RuntimeError):
+    """Raised when required MongoDB dependencies are missing."""
+
+
+ClientFactory = Callable[["DbMongoConfig"], Any]
+
+
+def _build_client_kwargs(config: "DbMongoConfig") -> Dict[str, Any]:
+    kwargs: Dict[str, Any] = {
+        "appname": config.app_name,
+        "retryWrites": config.retry_writes,
+        "retryReads": config.retry_reads,
+        "maxPoolSize": max(1, config.max_pool_size),
+        "minPoolSize": max(0, config.min_pool_size),
+        "connectTimeoutMS": max(0, config.connect_timeout_ms),
+        "serverSelectionTimeoutMS": max(0, config.server_selection_timeout_ms),
+        "maxIdleTimeMS": max(0, config.max_idle_time_ms),
+        "authSource": config.auth_source,
+        "tls": config.tls,
+        "tlsAllowInvalidCertificates": config.tls_allow_invalid_certificates,
+    }
+    if config.username:
+        kwargs["username"] = config.username
+    if config.password:
+        kwargs["password"] = config.password
+    if config.replica_set:
+        kwargs["replicaSet"] = config.replica_set
+    if config.compressors:
+        kwargs["compressors"] = list(config.compressors)
+    return kwargs
+
+
+class DbMongoClientFactory:
+    """Construct clients using motor if the dependency is available."""
+
+    def __call__(self, config: "DbMongoConfig") -> Any:
+        if AsyncIOMotorClient is None:
+            raise DbMongoDependencyError(
+                "motor is not installed. Install motor>=3.4.0 to enable Db Mongo runtime support."
+            )
+        kwargs = _build_client_kwargs(config)
+        return AsyncIOMotorClient(config.connection_uri, **kwargs)
+
+
+@dataclass(slots=True)
+class DbMongoConfig:
+    """Runtime configuration for {{ module_title }}."""
+
+    connection_uri: str = DEFAULT_CONNECTION_URI
+    database: str = DEFAULT_DATABASE_NAME
+    app_name: str = DEFAULT_APP_NAME
+    username: Optional[str] = DEFAULT_USERNAME
+    password: Optional[str] = DEFAULT_PASSWORD
+    auth_source: str = DEFAULT_AUTH_SOURCE
+    replica_set: Optional[str] = DEFAULT_REPLICA_SET
+    read_preference: str = DEFAULT_READ_PREFERENCE
+    retry_reads: bool = DEFAULT_RETRY_READS
+    retry_writes: bool = DEFAULT_RETRY_WRITES
+    tls: bool = DEFAULT_TLS_ENABLED
+    tls_allow_invalid_certificates: bool = DEFAULT_TLS_ALLOW_INVALID
+    compressors: tuple[str, ...] = field(default_factory=lambda: tuple(DEFAULT_COMPRESSORS))
+    connect_timeout_ms: int = DEFAULT_CONNECT_TIMEOUT_MS
+    server_selection_timeout_ms: int = DEFAULT_SERVER_SELECTION_TIMEOUT_MS
+    max_idle_time_ms: int = DEFAULT_MAX_IDLE_TIME_MS
+    min_pool_size: int = DEFAULT_POOL_MIN_SIZE
+    max_pool_size: int = DEFAULT_POOL_MAX_SIZE
+    health_timeout_ms: int = DEFAULT_HEALTH_TIMEOUT_MS
+    collect_metrics: bool = DEFAULT_COLLECT_METRICS
+
+    def as_options(self) -> Dict[str, Any]:
+        return {
+            "connection_uri": self.connection_uri,
+            "database": self.database,
+            "app_name": self.app_name,
+            "auth_source": self.auth_source,
+            "replica_set": self.replica_set,
+            "retry_reads": self.retry_reads,
+            "retry_writes": self.retry_writes,
+            "compressors": list(self.compressors),
+            "connect_timeout_ms": self.connect_timeout_ms,
+            "server_selection_timeout_ms": self.server_selection_timeout_ms,
+            "max_idle_time_ms": self.max_idle_time_ms,
+            "pool": {
+                "min": self.min_pool_size,
+                "max": self.max_pool_size,
+            },
+            "tls": {
+                "enabled": self.tls,
+                "allow_invalid_certificates": self.tls_allow_invalid_certificates,
+            },
+        }
+
+
+class {{ module_class_name }}:
+    """Primary facade exposing {{ module_title }} capabilities."""
+
+    def __init__(
+        self,
+        config: DbMongoConfig | None = None,
+        *,
+        client_factory: ClientFactory | None = None,
+    ) -> None:
+        self.config = config or DbMongoConfig()
+        self._client_factory = client_factory or DbMongoClientFactory()
+        self._client: Any | None = None
+
+    @property
+    def client(self) -> Any:
+        if self._client is None:
+            self._client = self._client_factory(self.config)
+        return self._client
+
+    def get_database(self, name: str | None = None) -> Any:
+        target = name or self.config.database
+        return self.client.get_database(target)
+
+    def collection(self, name: str, *, database: str | None = None) -> Any:
+        db = self.get_database(database)
+        return db.get_collection(name)
+
+    async def ping(self, *, timeout_ms: int | None = None) -> Mapping[str, Any]:
+        admin_db = self.client.get_database("admin")
+        payload = {"ping": 1, "$db": "admin"}
+        if timeout_ms is None:
+            timeout_ms = self.config.health_timeout_ms
+        result = await admin_db.command(payload, socketTimeoutMS=timeout_ms)
+        return result
+
+    async def server_info(self) -> Mapping[str, Any]:
+        info = await self.client.server_info()
+        return info
+
+    async def health_check(
+        self,
+        *,
+        timeout_ms: int | None = None,
+        collect_metrics: bool | None = None,
+    ) -> MongoHealthReport:
+        from health.db_mongo import perform_health_check as _perform_health_check
+
+        effective_timeout = timeout_ms or self.config.health_timeout_ms
+        effective_metrics = collect_metrics if collect_metrics is not None else self.config.collect_metrics
+        return await _perform_health_check(self, timeout_ms=effective_timeout, collect_metrics=effective_metrics)
+
+    def metadata(self) -> Dict[str, Any]:
+        return {
+            "module": MODULE_NAME,
+            "title": MODULE_TITLE,
+            "config": self.config.as_options(),
+        }
+
+    async def close(self) -> None:
+        client = self._client
+        if client is None:
+            return
+        try:
+            client.close()
+        finally:
+            self._client = None
+
+
+__all__ = [
+    "{{ module_class_name }}",
+    "DbMongoConfig",
+    "DbMongoClientFactory",
+    "DbMongoDependencyError",
+]

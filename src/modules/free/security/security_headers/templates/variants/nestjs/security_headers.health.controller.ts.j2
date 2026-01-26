@@ -1,0 +1,38 @@
+import {
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Logger,
+  ServiceUnavailableException,
+} from '@nestjs/common';
+import { hostname } from 'node:os';
+
+import { {{ module_class_name }}Service } from '../modules/free/security/security_headers/{{ module_kebab }}/{{ module_kebab }}.service';
+
+@Controller('api/health/module')
+export class {{ module_class_name }}HealthController {
+  private readonly logger = new Logger({{ module_class_name }}HealthController.name);
+
+  constructor(private readonly securityHeadersService: {{ module_class_name }}Service) {}
+
+  @Get('{{ module_kebab }}')
+  @HttpCode(HttpStatus.OK)
+  getModuleHealth(): Record<string, unknown> {
+    try {
+      const payload = this.securityHeadersService.health();
+      return {
+        ...payload,
+        hostname: hostname(),
+      };
+    } catch (error) {
+      const detail = error instanceof Error && error.message ? error.message : 'security headers health check failed';
+      this.logger.error(`Security headers health check failed: ${detail}`);
+      throw new ServiceUnavailableException({
+        status: 'error',
+        module: {{ module_name | tojson }},
+        detail,
+      });
+    }
+  }
+}

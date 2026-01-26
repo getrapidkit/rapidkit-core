@@ -1,0 +1,10 @@
+import { Module } from '@nestjs/common';
+
+import { DbMongoModule } from '../modules/free/database/db_mongo/db-mongo.module';
+import { DbMongoHealthController } from './db-mongo-health.controller';
+
+@Module({
+  imports: [DbMongoModule],
+  controllers: [DbMongoHealthController],
+})
+export class DbMongoHealthModule {}

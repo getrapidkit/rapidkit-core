@@ -1,0 +1,47 @@
+import { INestApplication } from "@nestjs/common";
+import { Test, TestingModule } from "@nestjs/testing";
+import request from "supertest";
+import { join } from "path";
+import { tmpdir } from "os";
+
+import { {{ module_module_class }} } from "@modules/free/business/storage/{{ module_kebab }}.module";
+import { {{ module_service_class }} } from "@modules/free/business/storage/{{ module_kebab }}.service";
+
+describe("{{ module_title }} NestJS integration", () => {
+  let app: INestApplication;
+  let module: TestingModule;
+  let service: {{ module_service_class }};
+
+  beforeAll(async () => {
+    process.env.RAPIDKIT_STORAGE_PATH = join(tmpdir(), "rapidkit-storage-tests");
+
+    module = await Test.createTestingModule({
+      imports: [{{ module_module_class }}],
+    }).compile();
+
+    app = module.createNestApplication();
+    await app.init();
+
+    service = app.get({{ module_service_class }});
+  });
+
+  afterAll(async () => {
+    await app.close();
+    await module.close();
+  });
+
+  it("exposes module health endpoint", async () => {
+    const response = await request(app.getHttpServer()).get("/api/health/module/{{ module_kebab }}");
+
+    expect(response.status).toBe(200);
+    expect(response.body.module).toBe("{{ module_name }}");
+    expect(response.body.status).toMatch(/healthy|degraded/);
+  });
+
+  it("provides a health status summary", async () => {
+    const summary = await service.getStatus();
+
+    expect(summary.module).toBe("{{ module_name }}");
+    expect(summary.status).toMatch(/healthy|degraded/);
+  });
+});

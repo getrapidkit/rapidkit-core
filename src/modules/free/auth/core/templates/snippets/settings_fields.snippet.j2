@@ -1,0 +1,150 @@
+# Authentication (Auth Core)
+
+{% set defaults = auth_core_defaults %}
+{% set policy = defaults.policy | default({}) %}
+{% set hash_name_default = defaults.hash_name | default('sha256') | tojson %}
+{% set iterations_default = defaults.iterations | default(390000) | tojson %}
+{% set salt_bytes_default = defaults.salt_bytes | default(32) | tojson %}
+{% set token_bytes_default = defaults.token_bytes | default(32) | tojson %}
+{% set token_ttl_default = defaults.token_ttl_seconds | default(1800) | tojson %}
+{% set issuer_default = defaults.issuer | default('RapidKit') | tojson %}
+{% set pepper_env_default = defaults.pepper_env | default('RAPIDKIT_AUTH_CORE_PEPPER') | tojson %}
+{% set min_length_default = policy.min_length | default(12) | tojson %}
+{% set require_uppercase_default = "True" if (policy.require_uppercase | default(true)) else "False" %}
+{% set require_lowercase_default = "True" if (policy.require_lowercase | default(true)) else "False" %}
+{% set require_digits_default = "True" if (policy.require_digits | default(true)) else "False" %}
+{% set require_symbols_default = "True" if (policy.require_symbols | default(false)) else "False" %}
+
+if "AUTH_HASH_NAME" in locals():
+    AUTH_HASH_NAME = Field(
+        default={{ hash_name_default }},
+        description="Digest algorithm used when hashing passwords with PBKDF2",
+    )
+else:
+    AUTH_HASH_NAME: str = Field(
+        default={{ hash_name_default }},
+        description="Digest algorithm used when hashing passwords with PBKDF2",
+    )
+
+if "AUTH_HASH_ITERATIONS" in locals():
+    AUTH_HASH_ITERATIONS = Field(
+        default={{ iterations_default }},
+        description="Number of PBKDF2 iterations applied to user passwords",
+    )
+else:
+    AUTH_HASH_ITERATIONS: int = Field(
+        default={{ iterations_default }},
+        description="Number of PBKDF2 iterations applied to user passwords",
+    )
+
+if "AUTH_SALT_BYTES" in locals():
+    AUTH_SALT_BYTES = Field(
+        default={{ salt_bytes_default }},
+        description="Byte length of generated salts for password hashing",
+    )
+else:
+    AUTH_SALT_BYTES: int = Field(
+        default={{ salt_bytes_default }},
+        description="Byte length of generated salts for password hashing",
+    )
+
+if "AUTH_TOKEN_BYTES" in locals():
+    AUTH_TOKEN_BYTES = Field(
+        default={{ token_bytes_default }},
+        description="Number of random bytes used when issuing opaque tokens",
+    )
+else:
+    AUTH_TOKEN_BYTES: int = Field(
+        default={{ token_bytes_default }},
+        description="Number of random bytes used when issuing opaque tokens",
+    )
+
+if "AUTH_TOKEN_TTL_SECONDS" in locals():
+    AUTH_TOKEN_TTL_SECONDS = Field(
+        default={{ token_ttl_default }},
+        description="Default lifetime (seconds) for issued authentication tokens",
+    )
+else:
+    AUTH_TOKEN_TTL_SECONDS: int = Field(
+        default={{ token_ttl_default }},
+        description="Default lifetime (seconds) for issued authentication tokens",
+    )
+
+if "AUTH_ISSUER" in locals():
+    AUTH_ISSUER = Field(
+        default={{ issuer_default }},
+        description="Issuer claim embedded into signed tokens",
+    )
+else:
+    AUTH_ISSUER: str = Field(
+        default={{ issuer_default }},
+        description="Issuer claim embedded into signed tokens",
+    )
+
+if "AUTH_PEPPER_ENV" in locals():
+    AUTH_PEPPER_ENV = Field(
+        default={{ pepper_env_default }},
+        description="Environment variable searched for the Auth Core signing pepper",
+    )
+else:
+    AUTH_PEPPER_ENV: str = Field(
+        default={{ pepper_env_default }},
+        description="Environment variable searched for the Auth Core signing pepper",
+    )
+
+if "AUTH_PASSWORD_MIN_LENGTH" in locals():
+    AUTH_PASSWORD_MIN_LENGTH = Field(
+        default={{ min_length_default }},
+        ge=6,
+        description="Minimum password length enforced by Auth Core",
+    )
+else:
+    AUTH_PASSWORD_MIN_LENGTH: int = Field(
+        default={{ min_length_default }},
+        ge=6,
+        description="Minimum password length enforced by Auth Core",
+    )
+
+if "AUTH_PASSWORD_REQUIRE_UPPERCASE" in locals():
+    AUTH_PASSWORD_REQUIRE_UPPERCASE = Field(
+        default={{ require_uppercase_default }},
+        description="Require passwords to include at least one uppercase character",
+    )
+else:
+    AUTH_PASSWORD_REQUIRE_UPPERCASE: bool = Field(
+        default={{ require_uppercase_default }},
+        description="Require passwords to include at least one uppercase character",
+    )
+
+if "AUTH_PASSWORD_REQUIRE_LOWERCASE" in locals():
+    AUTH_PASSWORD_REQUIRE_LOWERCASE = Field(
+        default={{ require_lowercase_default }},
+        description="Require passwords to include at least one lowercase character",
+    )
+else:
+    AUTH_PASSWORD_REQUIRE_LOWERCASE: bool = Field(
+        default={{ require_lowercase_default }},
+        description="Require passwords to include at least one lowercase character",
+    )
+
+if "AUTH_PASSWORD_REQUIRE_DIGITS" in locals():
+    AUTH_PASSWORD_REQUIRE_DIGITS = Field(
+        default={{ require_digits_default }},
+        description="Require passwords to include at least one numeric digit",
+    )
+else:
+    AUTH_PASSWORD_REQUIRE_DIGITS: bool = Field(
+        default={{ require_digits_default }},
+        description="Require passwords to include at least one numeric digit",
+    )
+
+if "AUTH_PASSWORD_REQUIRE_SYMBOLS" in locals():
+    AUTH_PASSWORD_REQUIRE_SYMBOLS = Field(
+        default={{ require_symbols_default }},
+        description="Require passwords to include at least one non-alphanumeric symbol",
+    )
+else:
+    AUTH_PASSWORD_REQUIRE_SYMBOLS: bool = Field(
+        default={{ require_symbols_default }},
+        description="Require passwords to include at least one non-alphanumeric symbol",
+    )

@@ -1,0 +1,142 @@
+{% set runtime = runtime | default('python') %}
+{% set python_version = python_version | default('3.10.14') %}
+{% set package_manager = package_manager | default('npm') %}
+{% set package_manager_command = package_manager_command | default(package_manager) %}
+
+{% macro node_run(script) -%}
+{% if package_manager == 'yarn' -%}
+{{ package_manager_command }} {{ script }}
+{% else -%}
+{{ package_manager_command }} run {{ script }}
+{% endif -%}
+{%- endmacro %}
+
+.PHONY: init install setup dev start lint format test coverage typecheck build docker-up docker-down docker-logs ci audit
+
+.RECIPEPREFIX := >
+
+POETRY ?= poetry
+PYTHON ?= python3
+
+init:
+> @echo "Bootstrapping dependencies via RapidKit CLI"
+> @if [ -x ".rapidkit/rapidkit" ]; then \
+>   RAPIDKIT_BIN="./.rapidkit/rapidkit"; \
+> elif command -v rapidkit >/dev/null 2>&1; then \
+>   RAPIDKIT_BIN="rapidkit"; \
+> else \
+>   echo "rapidkit command not found. Install rapidkit or rerun scaffolding."; \
+>   exit 127; \
+> fi; \
+> if [ -f ".rapidkit/activate" ]; then . ./.rapidkit/activate >/dev/null 2>&1 || true; fi; \
+> "$$RAPIDKIT_BIN" init
+> @echo "Tip: run 'source .rapidkit/activate' in new shells to load the project-local CLI"
+
+install:
+> @echo "Installing dependencies"
+> @if [ "${SKIP_INIT:-0}" = "1" ]; then \
+>   echo "SKIP_INIT=1 detected — skipping make init"; \
+> else \
+>   $(MAKE) init; \
+> fi
+{% if runtime == 'python' -%}
+> $(POETRY) run pre-commit install --install-hooks || true
+{% else -%}
+> @echo "Developer tooling ready."
+{% endif %}
+
+setup:
+> @$(MAKE) install
+
+dev:
+> @echo "🚀 Starting development server"
+{% if runtime == 'python' -%}
+> $(POETRY) run uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
+{% else -%}
+> {{ node_run('start:dev') }}
+{% endif %}
+
+start:
+> @echo "⚡ Starting production server"
+{% if runtime == 'python' -%}
+> $(POETRY) run uvicorn src.main:app --host 0.0.0.0 --port 8000
+{% else -%}
+> {{ node_run('start:prod') }}
+{% endif %}
+
+lint:
+{% if runtime == 'python' -%}
+> $(POETRY) run ruff check src tests
+> $(POETRY) run black --check src tests
+{% else -%}
+> {{ node_run('lint') }}
+{% endif %}
+
+format:
+{% if runtime == 'python' -%}
+> $(POETRY) run ruff check src tests --fix
+> $(POETRY) run black src tests
+{% else -%}
+> {{ node_run('format') }}
+{% endif %}
+
+test:
+{% if runtime == 'python' -%}
+> $(POETRY) run pytest -q
+{% else -%}
+> {{ node_run('test') }}
+{% endif %}
+
+coverage:
+{% if runtime == 'python' -%}
+> $(POETRY) run pytest --cov=src --cov-report=term-missing
+{% else -%}
+> {% if package_manager == 'yarn' -%}{{ package_manager_command }} test:cov || {{ package_manager_command }} test --coverage{% else -%}{{ node_run('test:cov') }} || {{ node_run('test') }} -- --coverage{% endif %}
+{% endif %}
+
+typecheck:
+{% if runtime == 'python' -%}
+> $(POETRY) run mypy src
+{% else -%}
+> {{ node_run('lint') }}
+{% endif %}
+
+build:
+{% if runtime == 'python' -%}
+> $(POETRY) run build
+{% else -%}
+> {{ node_run('build') }}
+{% endif %}
+
+ci:
+> @echo "🧪 Running CI pipeline"
+> $(MAKE) lint
+> $(MAKE) typecheck
+> $(MAKE) test
+
+audit:
+{% if runtime == 'python' -%}
+> $(POETRY) run pip-audit --progress-spinner=off
+{% else -%}
+{% if package_manager in ('npm', 'pnpm') -%}
+> {{ package_manager_command }} audit --omit=dev || {{ package_manager_command }} audit
+{% elif package_manager == 'yarn' -%}
+> {{ package_manager_command }} audit --group dependencies || {{ package_manager_command }} audit
+{% else -%}
+> {{ package_manager_command }} audit || true
+{% endif -%}
+{% endif %}
+
+### Docker helpers ###
+
+docker-build:
+> docker compose build
+
+docker-up:
+> docker compose up --remove-orphans
+
+docker-down:
+> docker compose down
+
+docker-logs:
+> docker compose logs -f

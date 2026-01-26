@@ -1,0 +1,203 @@
+name: rate_limiting
+description: Request rate limiting and throttling protections for RapidKit services
+version: 0.1.0
+access: free
+status: stable
+category: security
+tags:
+    - security
+    - rate-limiting
+    - throttling
+generated_from_config: true
+depends_on:
+    - free/essentials/settings
+profile_inherits:
+    fastapi.standard: fastapi
+    fastapi.ddd: fastapi
+    nestjs.standard: nestjs
+config_sources:
+    - config/base.yaml
+    - config/snippets.yaml
+generation:
+    vendor:
+        root: .rapidkit/vendor
+        files:
+            - template: templates/base/rate_limiting.py.j2
+              relative: src/modules/free/security/rate_limiting/rate_limiting.py
+            - template: templates/base/rate_limiting_health.py.j2
+              relative: src/health/rate_limiting.py
+            - template: templates/base/rate_limiting_types.py.j2
+              relative: src/modules/free/security/rate_limiting/rate_limiting_types.py
+            - template: templates/vendor/nestjs/configuration.js.j2
+              relative: nestjs/configuration.js
+    variants:
+        fastapi: &fastapi_variant
+            root: .
+            context:
+                framework: fastapi
+                module_class_name: RateLimiting
+            files:
+                - template: templates/variants/fastapi/rate_limiting.py.j2
+                  output: src/modules/free/security/rate_limiting/__init__.py
+                - template: templates/variants/fastapi/rate_limiting_dependencies.py.j2
+                  output: src/modules/free/security/rate_limiting/dependencies.py
+                - template: templates/variants/fastapi/rate_limiting_router.py.j2
+                  output: src/modules/free/security/rate_limiting/router.py
+                - template: templates/variants/fastapi/rate_limiting_routes.py.j2
+                  output: src/modules/free/security/rate_limiting/routes.py
+                  description: FastAPI metadata routes for Rate Limiting module
+                - template: templates/base/rate_limiting_types.py.j2
+                  output: src/modules/free/security/rate_limiting/rate_limiting_types.py
+                - template: templates/variants/fastapi/rate_limiting_config.yaml.j2
+                  output: config/security/rate_limiting.yaml
+                  description: FastAPI configuration defaults for Rate Limiting module
+                - template: templates/tests/integration/test_rate_limiting_integration.j2
+                  output: tests/modules/integration/security/test_rate_limiting_integration.py
+                  description: Integration test scaffold for Rate Limiting module
+                - template: templates/variants/fastapi/tests/test_rate_limiting_e2e.py
+                  output: tests/modules/e2e/free/security/rate_limiting/test_rate_limiting_e2e.py
+        fastapi.standard: *fastapi_variant
+        fastapi.ddd: *fastapi_variant
+        nestjs: &nestjs_variant
+            root: .
+            context:
+                framework: nestjs
+                vendor_configuration_relative: nestjs/configuration.js
+                module_kebab: rate-limiting
+            files:
+                - template: templates/variants/nestjs/rate_limiting.module.ts.j2
+                  output: src/modules/free/security/rate_limiting/rate-limiting.module.ts
+                - template: templates/variants/nestjs/rate_limiting.service.ts.j2
+                  output: src/modules/free/security/rate_limiting/rate-limiting.service.ts
+                - template: templates/variants/nestjs/rate_limiting.guard.ts.j2
+                  output: src/modules/free/security/rate_limiting/rate-limiting.guard.ts
+                - template: templates/variants/nestjs/rate_limiting.controller.ts.j2
+                  output: src/modules/free/security/rate_limiting/rate-limiting.controller.ts
+                - template: templates/variants/nestjs/rate_limiting.configuration.ts.j2
+                  output: src/modules/free/security/rate_limiting/rate-limiting.configuration.ts
+                - template: templates/variants/nestjs/rate_limiting.health.controller.ts.j2
+                  output: src/health/rate-limiting-health.controller.ts
+                - template: templates/variants/nestjs/rate_limiting.health.module.ts.j2
+                  output: src/health/rate-limiting-health.module.ts
+                - template: templates/base/rate_limiting_types.py.j2
+                  output: src/modules/free/security/rate_limiting/rate_limiting_types.py
+                - template: templates/tests/integration/rate_limiting.integration.spec.ts.j2
+                  output: tests/modules/integration/security/rate_limiting.integration.spec.ts
+                - template: templates/variants/nestjs/tests/rate_limiting.e2e-spec.ts
+                  output: tests/modules/e2e/free/security/rate_limiting/rate_limiting.e2e-spec.ts
+        nestjs.standard: *nestjs_variant
+    snippets:
+        enabled: true
+        config: config/snippets.yaml
+        default:
+            - rate_limiting_env
+compatibility:
+    python: ">=3.10,<4.0"
+    node: ">=18"
+    frameworks:
+        - fastapi
+        - nestjs
+    os:
+        - linux
+        - darwin
+        - windows
+testing:
+    coverage_min: 85
+    integration_tests: true
+    e2e_tests: false
+    unit_tests:
+        - tests/modules/free/security/rate_limiting/test_rate_limiting_generate.py
+        - tests/modules/free/security/rate_limiting/test_rate_limiting_runtime.py
+    fixtures: []
+documentation:
+    changelog: docs/changelog.md
+    readme: README.md
+    overview: docs/overview.md
+    usage: docs/usage.md
+    advanced: docs/advanced.md
+    migration: docs/migration.md
+    troubleshooting: docs/troubleshooting.md
+    api_docs: null
+    examples: []
+support:
+    issues: https://github.com/getrapidkit/core/issues
+    discussions: https://github.com/getrapidkit/core/discussions
+    documentation: https://docs.rapidkit.top/modules/rate_limiting
+changelog:
+    - version: 0.1.0
+      date: "2025-12-14"
+      notes: See docs/changelog.md
+validation:
+    pre_install:
+        - check_python_version
+        - check_dependencies
+    post_install:
+        - validate_generated_code
+        - run_tests
+rollback:
+    strategy: uninstall
+    backup_path: .rapidkit/backups/
+    max_backups: 5
+performance:
+    lazy_loading: true
+    caching:
+        templates: true
+        ttl: 300
+tier: free
+capabilities:
+    - security
+    - rate-limiting
+signature:
+    signature: 0uQlAVtd78++x6b/43mWx3kMNu+hlhdDlYCEAUAX3RB9eI/K5Vn4RuoWXbauNl08GrFcfaW/E7l5wKWDlXX2AA==
+    signer_id: c7eb213b1ac6d8c6
+    signature_version: v1
+signer_id: null
+signature_version: null
+file_hashes:
+    templates/variants/nestjs/tests/rate_limiting.e2e-spec.ts: sha256:5b48bf08b7749aa9d8c2bbe537da7edf4784eff416c6663870f780284e28ca26
+    templates/variants/fastapi/tests/test_rate_limiting_e2e.py: sha256:8eeb695fd20eaf6aeb1a72cddce69774176032a5a9e174c1a095a9243e8b08e4
+    scripts/run_demo.py: sha256:acfe8df39b47a79d47011f4e3eee8018ced663e80ee922652514bd199b729a53
+    README.md: sha256:bdcf43cd44810b5d54a749f168823da4c9f6592ffa9b63f6a1aeac501644fc0d
+    __init__.py: sha256:1c2c5d84d2b257b01a1a9caeb45a72e4e21dad5762dfea1ea8177ac2beac2c27
+    config/base.yaml: sha256:edde3945588f05304409efa45e2282acca3299be13a5fcf4dd16ac5b7ecd5046
+    config/snippets.yaml: sha256:d55266cf2c730994a2218de2ed4ee2415a2e5c1edad8ea3bd897817b04e31f2a
+    docs/README.md: sha256:00e31c214356488e129c3e0fdd092807d883ff341290c864d1e4a34e84fa879d
+    docs/advanced.md: sha256:6ff4d90e5feb4431e434047c59245cc53d7abafdbe3a63c6935cb7864c806a7d
+    docs/changelog.md: sha256:8a0e3e4b428864e1904998c2ce501a3e67f29829e8fe10bdaf479932e9f33093
+    docs/migration.md: sha256:5b51d314ed69071004c2d1abc64751e04a138abae1fcf0e1345eea116c905f85
+    docs/overview.md: sha256:95d8e5ac6adf9ab6ffad79b991fb76dc89e5b8602723692570ba7c0d63f62171
+    docs/troubleshooting.md: sha256:ac26b87fa35eefe4bd3fdc4019f75c187efe80986c5ea22843d62df2797b5b89
+    docs/usage.md: sha256:b19eb701fd2f526e4b4bf49d0bbe17956ea77019915052384f87d5ee2526a092
+    frameworks/__init__.py: sha256:f0fd77aa47107fed1160628fc3ab92a2bc62be8ee4d849cac1052cb2f3b6e078
+    frameworks/fastapi.py: sha256:4426259a125aa482964fc078c60ab8ba9b3eed015a66d86e3e0f91794f25a853
+    frameworks/nestjs.py: sha256:70044ecec090d7a85be5d8edc1abd5bde04ed5f1e0ab6d05102a475f2b16663a
+    generate.py: sha256:3acf1d0856e84eaf5e680a76ff3af81ce39da978ec1fdc2ac9bd135d5592a512
+    module.verify.json: sha256:d4f9b49f71a82416cc1d85c7dfad8df7e018d2d07807ae1f5ea3a4599434442a
+    overrides.py: sha256:c9634aa95e739a4f6a21ae2c6a1863fa5fb2e3f1f876c2ca840755f2ea08a76f
+    templates/base/rate_limiting.py.j2: sha256:a0344d0b559fa77cd7dfba9475801915b3bdb0c8d17baade33b39bad5f3fad2a
+    templates/base/rate_limiting_health.py.j2: sha256:8fedcedcdfc8ccf19a9e66d9cd0a9a2b78b2edb7998ed318c59ec4f04aebf92f
+    templates/base/rate_limiting_types.py.j2: sha256:6414911a89c97dd3be0eb1b9eabd9826728f7399790066004c3e78a5ef599a0d
+    templates/snippets/rate_limiting.snippet.j2: sha256:827cf13adb1788fb2502d090471c11ad8b320438db8a4ad678bd91a580e3867b
+    templates/snippets/rate_limiting_env.snippet.j2: sha256:d8dc22d8d49f69d1c2513f34eab3432fb6721301757ceb0c1adcffed28413051
+    templates/snippets/rate_limiting_settings_fields.snippet.j2: sha256:630ea9e348af7849c7fe98ed7ae77c768aff0b19bb3cf73139c0f8716ce4bd08
+    templates/snippets/rate_limiting_settings_fields_nestjs.snippet.j2: sha256:43d8d098b1bf5f9a23aac20db96bcd02136e03a704b5880c0d1de542d0a0a831
+    templates/tests/__init__.py: sha256:a7ec682bf80931958f0b80f8dfe038195fd979690b196aa8a6bb68863064ecb2
+    templates/tests/integration/rate_limiting.integration.spec.ts.j2: sha256:41739d6027489a4aae09800c83e206a952f06a23a0626e037f863640b6c3c317
+    templates/tests/integration/test_rate_limiting_integration.j2: sha256:4f4eefa06f2a07c3a195ade308b7076e1abd701378b05118f136d141cce9fe91
+    templates/variants/fastapi/rate_limiting.py.j2: sha256:6e6d5eb8ac6f3d8fcbc222db8cf7eebb15b47ecc409832002d818e456ecdf6b2
+    templates/variants/fastapi/rate_limiting_config.yaml.j2: sha256:ec26750e86b730a6f4c760e4c2adc1bdd08faacef6758a34d2b8c86a50e26b55
+    templates/variants/fastapi/rate_limiting_dependencies.py.j2: sha256:362118c6b80db55c82f328a7f9e32e48403f32066fe1c702fae456e5c07bf796
+    templates/variants/fastapi/rate_limiting_health.py.j2: sha256:f812650ecc9de66ae6032500bba164cc70f170467d0e1d6851837a072818274c
+    templates/variants/fastapi/rate_limiting_health_runtime.py.j2: sha256:db95c885392bcd6d9e333e6a7ff8c0f4ef9494d4cbb6246660f6229c8d9bad02
+    templates/variants/fastapi/rate_limiting_router.py.j2: sha256:7488857369c162e112fe476db389f670b4252a6d3228e6e152d2a578bfff0ea9
+    templates/variants/fastapi/rate_limiting_routes.py.j2: sha256:aa4ce3a817d1062bbc358fa761cd23de8384a5f9cc0e929ad5fd2131c8b1836d
+    templates/variants/fastapi/rate_limiting_runtime.py.j2: sha256:6e6d5eb8ac6f3d8fcbc222db8cf7eebb15b47ecc409832002d818e456ecdf6b2
+    templates/variants/nestjs/rate_limiting.configuration.ts.j2: sha256:6fb79627fe74d360699e1213a53b146be437c165a7f5ca63d19d49f70ee5ff31
+    templates/variants/nestjs/rate_limiting.controller.ts.j2: sha256:a66864cda0bbc35e18436b92d2e510d93aef94ba6da20539e75c9c9ffb686e32
+    templates/variants/nestjs/rate_limiting.guard.ts.j2: sha256:48e357661ce05b6a1e7b8972603ec2b3525bc0fde41f28c1697396c56a2489f2
+    templates/variants/nestjs/rate_limiting.health.controller.ts.j2: sha256:2a7b41c261bb5c38b7dc3802da7c54f079af2bc65782cbbe5881f9d731dce49f
+    templates/variants/nestjs/rate_limiting.health.module.ts.j2: sha256:0bc0085b44ecef03c50e4adbf451e6f68f546007655833bde55223d8d839a4d2
+    templates/variants/nestjs/rate_limiting.module.ts.j2: sha256:37398c2176f0fe353ba725de157095219096d5b501ac5d708e37b1e6125899d7
+    templates/variants/nestjs/rate_limiting.service.ts.j2: sha256:3a2af4607b85ebc890fb6a9bbbf071550807b4de7793ce055ebf42467d1514b1
+    templates/variants/nestjs/rate_limiting_health_runtime.py.j2: sha256:db95c885392bcd6d9e333e6a7ff8c0f4ef9494d4cbb6246660f6229c8d9bad02
+    templates/vendor/nestjs/configuration.js.j2: sha256:0b10c8e81705a51dd0664499a25c6ecf45c27cc410ec589032e30c60d813e365

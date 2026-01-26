@@ -1,0 +1,49 @@
+{% include "templates/base/stripe_payment_health.py.j2" %}
+
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, status
+
+from {{ module_import_base }}.stripe_payment import StripePayment
+
+
+def _get_service(request: Request) -> StripePayment:
+    service = getattr(request.app.state, "stripe_payment_service", None)
+    if service is None:
+        service = StripePayment()
+        request.app.state.stripe_payment_service = service
+    return service
+
+
+def run_stripe_payment_health(service: StripePayment) -> dict[str, object]:
+    payload = service.health_check()
+    metrics = {
+        "automatic_payment_methods": payload.get("automatic_payment_methods", False),
+        "webhook_enabled": payload.get("webhook_enabled", False),
+        "manual_capture_available": payload.get("manual_capture_available", False),
+    }
+    return merge_metrics(payload, metrics)
+
+
+def build_health_router() -> APIRouter:
+    router = APIRouter(prefix="/api/health/module", tags=["health", "{{ module_title }}"])
+
+    @router.get("/{{ module_kebab }}", response_model=dict)
+    async def stripe_payment_health(service: StripePayment = Depends(_get_service)) -> dict[str, object]:
+        payload = run_stripe_payment_health(service)
+        if payload.get("status") != "ok":
+            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=payload)
+        return payload
+
+    return router
+
+
+def register_stripe_payment_health(app: FastAPI) -> None:
+    """Register the {{ module_title }} health router."""
+
+    app.include_router(build_health_router())
+
+
+__all__ = [
+    "build_health_router",
+    "register_stripe_payment_health",
+    "run_stripe_payment_health",
+]

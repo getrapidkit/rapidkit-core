@@ -1,0 +1,132 @@
+"""Health helpers for {{ module_title }}."""
+
+from __future__ import annotations
+
+import importlib.util
+import sys
+import time
+from pathlib import Path
+from types import ModuleType
+from typing import Any, Dict, cast
+
+
+def _load_local_module(suffix: str, path: Path) -> ModuleType:
+    module_name = f"{__name__}__{suffix}"
+    existing = sys.modules.get(module_name)
+    if isinstance(existing, ModuleType):
+        return existing
+    spec = importlib.util.spec_from_file_location(module_name, path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Unable to load vendor module from {path}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[module_name] = module
+    spec.loader.exec_module(module)
+    return module
+
+
+_HERE = Path(__file__).resolve()
+_MODULE_DIR = _HERE.parent.parent
+_START_TS = time.monotonic()
+_runtime = _load_local_module(
+    "stripe_payment_runtime",
+    _MODULE_DIR / "modules" / "free" / "billing" / "stripe_payment" / "stripe_payment.py",
+)
+
+StripePayment = getattr(_runtime, "StripePayment", None) or getattr(_runtime, "StripePaymentService", None)
+if StripePayment is None:  # pragma: no cover
+    raise RuntimeError("Unable to resolve StripePayment runtime from local module payload")
+
+APIRouter: Any
+FastAPIApp: Any
+status: Any
+HTTPException: Any
+
+try:  # pragma: no cover
+    from fastapi import APIRouter, Depends, FastAPI as FastAPIApp, HTTPException, status
+except ImportError:  # pragma: no cover
+    APIRouter = cast(Any, None)
+    FastAPIApp = cast(Any, None)
+    HTTPException = cast(Any, None)
+    status = cast(Any, None)
+    _FASTAPI_AVAILABLE = False
+else:
+    _FASTAPI_AVAILABLE = True
+
+
+def _get_service() -> Any:
+    return StripePayment()
+
+
+def build_health_payload(status: str = "ok", **extra: Any) -> Dict[str, Any]:
+    payload = {
+        "module": "{{ module_name }}",
+        "status": status,
+        "version": "{{ rapidkit_vendor_version | default('0.0.0') }}",
+        "uptime": max(0.0, time.monotonic() - _START_TS),
+    }
+    if extra:
+        payload.update(extra)
+    return payload
+
+
+def merge_metrics(base: Dict[str, Any], metrics: Dict[str, Any]) -> Dict[str, Any]:
+    """Merge health metrics onto the base payload."""
+
+    payload = dict(base)
+    payload.setdefault("metrics", {}).update(metrics)
+    return payload
+
+
+def run_stripe_payment_health(service: Any) -> Dict[str, Any]:
+    payload = service.health_check() or {}
+    base = build_health_payload(status=str(payload.get("status", "ok")))
+    base.update(payload)
+    metrics = {
+        "automatic_payment_methods": base.get("automatic_payment_methods", False),
+        "webhook_enabled": base.get("webhook_enabled", False),
+        "manual_capture_available": base.get("manual_capture_available", False),
+    }
+    return merge_metrics(base, metrics)
+
+
+def build_health_router(prefix: str = "/api/health/module") -> Any:
+    """Return a FastAPI router sourced from the vendor runtime."""
+
+    if not _FASTAPI_AVAILABLE:
+        raise RuntimeError("FastAPI must be installed to build Stripe Payment health router")
+
+    router = APIRouter(prefix=prefix, tags=["health", "{{ module_title }}"])
+
+    @router.get("/{{ module_kebab }}", response_model=dict)
+    async def stripe_payment_health(service: Any = Depends(_get_service)) -> Dict[str, Any]:
+        payload = run_stripe_payment_health(service)
+        if payload.get("status") != "ok":
+            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=payload)
+        return payload
+
+    return router
+
+
+def register_stripe_payment_health(app: Any, *, prefix: str = "/api/health/module") -> None:
+    if not _FASTAPI_AVAILABLE:
+        raise RuntimeError("FastAPI must be installed to register Stripe Payment health routes")
+    if FastAPIApp is not None and not isinstance(app, FastAPIApp):  # pragma: no cover
+        raise TypeError("register_stripe_payment_health expects a FastAPI application instance")
+
+    app.include_router(build_health_router(prefix=prefix))
+
+
+try:
+    router = build_health_router()
+except Exception:  # pragma: no cover
+    router = None
+
+
+__all__ = [
+    "build_health_payload",
+    "build_health_router",
+    "merge_metrics",
+    "register_stripe_payment_health",
+    "run_stripe_payment_health",
+    "router",
+]

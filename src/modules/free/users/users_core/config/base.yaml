@@ -1,0 +1,146 @@
+name: users_core
+display_name: Users Core
+description: >-
+  Opinionated user management backbone that ships immutable domain models,
+  orchestration services, and framework adapters ready for production-grade
+  RapidKit projects.
+root_path: src/
+
+profiles:
+  fastapi/standard:
+    description: FastAPI-native runtime exposing dependency providers and REST routers.
+  fastapi/ddd:
+    inherits: fastapi/standard
+    description: DDD-flavoured profile exporting the same runtime with stricter layering defaults.
+  nestjs/standard:
+    description: NestJS service and provider bundle mirroring the Python service contract.
+
+defaults:
+  allow_registration: true
+  enforce_unique_email: true
+  default_locale: en
+  audit_log_enabled: true
+  max_results_per_page: 100
+  passwordless_supported: false
+
+variables:
+  user_id_generator:
+    type: string
+    default: uuid4
+    description: Callable name used to generate user identifiers inside scaffolds.
+    validation: ^[a-zA-Z_][a-zA-Z0-9_.:]*$
+  default_user_locale:
+    type: string
+    default: en
+    description: ISO language code applied to newly created users when not provided explicitly.
+    validation: ^[a-z]{2}(-[A-Z]{2})?$
+  invite_only:
+    type: boolean
+    default: false
+    description: Flag that toggles whether user creation requires the invited status first.
+  audit_bucket_name:
+    type: string
+    default: ""
+    description: Optional bucket or topic identifier used by generated audit hooks.
+
+features:
+  domain_models:
+    status: stable
+    enabled: true
+    description: Immutable Pydantic models and enums describing RapidKit users.
+    files:
+      - path: core/users/models.py
+        description: Domain entity and supporting value objects.
+  repository_protocol:
+    status: beta
+    enabled: true
+    description: Repository abstractions with an in-memory implementation for tests.
+    files:
+      - path: core/users/repository.py
+        description: Repository protocol for persistence backends.
+      - path: core/users/in_memory_repository.py
+        description: Drop-in in-memory repository for demos and tests.
+  service_layer:
+    status: beta
+    enabled: true
+    description: Application service orchestrating creation, lookup, update, and lifecycle flows.
+    files:
+      - path: core/users/service.py
+        description: Core service implementation.
+      - path: core/users/errors.py
+        description: Rich exceptions surfaced by the service layer.
+  fastapi_router:
+    status: beta
+    enabled: true
+    description: REST router and dependency providers for FastAPI projects.
+    files:
+      - path: core/users/dependencies.py
+        description: Lazy dependency factories exposing the service.
+      - path: core/users/router.py
+        description: CRUD router implementing JSON contracts.
+  nestjs_service:
+    status: experimental
+    enabled: true
+    description: NestJS service mirroring the Python API for polyglot teams.
+    files:
+      - path: users-core.service.ts
+        description: NestJS injectable for user management workflows.
+
+snippets:
+  - name: users_core_env
+    path: templates/snippets/users_core.snippet.j2
+    description: Environment variables and settings fragment for project templates.
+
+depends_on:
+  fastapi/standard:
+    - name: pydantic
+      source: external
+      tool: pip
+      version: ">=2.12.2,<3.0"
+    - name: email-validator
+      source: external
+      tool: pip
+      version: ">=2.1.1,<3.0"
+    - name: fastapi
+      source: external
+      tool: pip
+      version: ">=0.111.0,<1.0"
+    - name: httpx
+      source: external
+      tool: pip
+      version: ">=0.27.2,<1.0"
+  nestjs/standard:
+    - name: "@nestjs/common"
+      source: npm
+      tool: npm
+      version: ">=11.1.0"
+    - name: "@nestjs/config"
+      source: npm
+      tool: npm
+      version: ">=4.0.0"
+    - name: class-transformer
+      source: npm
+      tool: npm
+      version: ">=0.5.1"
+    - name: class-validator
+      source: npm
+      tool: npm
+      version: ">=0.14.1"
+
+dev_dependencies:
+  - name: pytest
+    source: external
+    tool: pip
+    version: ">=8.3.0,<9.0"
+  - name: pytest-asyncio
+    source: external
+    tool: pip
+    version: ">=0.25.0,<1.0"
+  - name: ruff
+    source: external
+    tool: pip
+    version: ">=0.14.0,<1.0"
+  - name: mypy
+    source: external
+    tool: pip
+    version: ">=1.10.0,<2.0"

@@ -1,0 +1,31 @@
+import { Controller, Get } from '@nestjs/common';
+
+import {
+  CELERY_FEATURES,
+  CeleryMetadata,
+  {{ module_class_name }}Service,
+} from './celery.service';
+
+@Controller('tasks/{{ module_kebab }}')
+export class {{ module_class_name }}Controller {
+  constructor(private readonly service: {{ module_class_name }}Service) {}
+
+  private buildMetadata(): CeleryMetadata {
+    return this.service.buildMetadata('{{ module_name }}');
+  }
+
+  @Get('metadata')
+  getMetadata(): CeleryMetadata {
+    return this.buildMetadata();
+  }
+
+  @Get('features')
+  listFeatures(): { features: string[] } {
+    return { features: Array.from(CELERY_FEATURES) };
+  }
+
+  @Get('health')
+  getHealth(): CeleryMetadata {
+    return this.buildMetadata();
+  }
+}

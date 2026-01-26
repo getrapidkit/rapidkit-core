@@ -1,0 +1,35 @@
+{% include "templates/base/users_core_health.py.j2" %}
+
+from typing import Dict
+
+from fastapi import APIRouter, FastAPI, status
+
+
+router = APIRouter(prefix="/api/health/module/{{ module_kebab }}", tags=["health", "{{ module_kebab }}"])
+
+
+@router.get(
+	"/",
+	summary="{{ module_title }} module health check",
+	status_code=status.HTTP_200_OK,
+)
+async def get_users_core_health_module() -> Dict[str, object]:
+	"""Return normalized metadata for the {{ module_title }} subsystem."""
+
+	metadata = get_{{ module_name }}_metadata()
+	snapshot = build_health_snapshot(metadata, features=MODULE_FEATURES)
+	return render_health_snapshot(snapshot)
+
+
+def register_users_core_health(app: FastAPI) -> None:
+	"""Attach {{ module_title }} health routes to a FastAPI application."""
+
+	app.include_router(router)
+
+
+__all__ = [
+	*list(__all__),
+	"get_users_core_health_module",
+	"register_users_core_health",
+	"router",
+]

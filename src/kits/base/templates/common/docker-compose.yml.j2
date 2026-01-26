@@ -1,0 +1,55 @@
+{% set runtime = runtime | default('python') %}
+{% set include_postgres = has_postgres | default(false) %}
+{% set include_redis = has_redis | default(false) %}
+version: "3.9"
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: {{ project_name | default('rapidkit-app') }}:latest
+    env_file:
+      - .env
+    ports: ["{{ '8000:8000' if runtime == 'python' else '3000:3000' }}"]
+{% if include_postgres or include_redis %}
+    depends_on:
+{% if include_postgres %}
+      - postgres
+{% endif %}
+{% if include_redis %}
+      - redis
+{% endif %}
+{% endif %}
+    command: "{{ 'poetry run uvicorn src.main:app --host 0.0.0.0 --port 8000' if runtime == 'python' else (package_manager | default('npm')) ~ ' run dev' }}"
+    volumes:
+      - .:/app
+    restart: unless-stopped
+
+{% if include_postgres %}
+  postgres:
+    image: postgres:15
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: {{ project_name | default('rapidkit') }}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+{% endif %}
+
+{% if include_redis %}
+  redis:
+    image: redis:7
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+{% endif %}
+
+{% if include_postgres %}
+volumes:
+  postgres-data:
+    driver: local
+{% endif %}

@@ -1,0 +1,29 @@
+{# RapidKit Notifications module quick-start snippet. #}
+
+### Notifications Module Quick Start
+
+```python
+from fastapi import FastAPI
+from src.modules.free.communication.notifications.core.notifications import EmailConfig, register_notifications
+from src.health.notifications import register_notifications_health
+
+app = FastAPI()
+
+@app.on_event("startup")
+async def bootstrap_notifications() -> None:
+    config = EmailConfig(host="smtp.example.com", port=587, username="mailer", password="secret")
+    register_notifications(app, config=config)
+    register_notifications_health(app)
+```
+
+```http
+POST /notifications/send HTTP/1.1
+Content-Type: application/json
+
+{
+  "channel": "email",
+  "recipient": "user@example.com",
+  "title": "Welcome",
+  "body": "<p>Hello from RapidKit!</p>"
+}
+```

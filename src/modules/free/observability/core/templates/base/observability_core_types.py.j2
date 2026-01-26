@@ -1,0 +1,64 @@
+"""Shared type definitions for {{ module_title }}."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional
+
+from pydantic import BaseModel, Field
+
+
+class ObservabilityEvent(BaseModel):
+    """Structured representation of an emitted observability event."""
+
+    name: str
+    severity: str = Field(default="INFO", pattern=r"^[A-Z]+$")
+    attributes: Dict[str, Any] = Field(default_factory=dict)
+    timestamp: float = Field(..., description="UNIX timestamp in seconds")
+
+
+class ObservabilityEventCreate(BaseModel):
+    """Incoming payload for event emission."""
+
+    name: str
+    severity: str = Field(default="INFO", pattern=r"^[A-Z]+$")
+    attributes: Dict[str, Any] = Field(default_factory=dict)
+
+
+class ObservabilitySpan(BaseModel):
+    """Summarised tracing span information."""
+
+    name: str
+    duration_ms: Optional[float]
+    attributes: Dict[str, Any] = Field(default_factory=dict)
+
+
+class ObservabilityMetricSnapshot(BaseModel):
+    """Rendered metrics payload together with content type metadata."""
+
+    payload: str
+    content_type: str
+
+
+class ObservabilitySummary(BaseModel):
+    """Aggregated health payload used by transport layers."""
+
+    module: str = Field(default="{{ module_name }}")
+    status: str = Field(default="ok")
+    service_name: str
+    environment: str
+    metrics: Dict[str, Any]
+    tracing: Dict[str, Any]
+    events: Dict[str, Any]
+
+
+@dataclass(slots=True)
+class {{ module_class_name }}Result:
+    """Standard result envelope for {{ module_title }} operations."""
+
+    success: bool
+    message: str = ""
+    events: List[ObservabilityEvent] = field(default_factory=list)
+    spans: List[ObservabilitySpan] = field(default_factory=list)
+    metrics: ObservabilityMetricSnapshot | None = None
+    summary: ObservabilitySummary | None = None

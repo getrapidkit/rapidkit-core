@@ -1,0 +1,282 @@
+name: Python Release (Reusable)
+
+on:
+    workflow_call:
+        inputs:
+            python-version:
+                type: string
+                required: false
+                default: "3.10.14"
+            distribution-tier:
+                type: string
+                required: false
+                default: community
+            limited-mode:
+                type: boolean
+                required: false
+                default: false
+            publish-testpypi:
+                type: boolean
+                required: false
+                default: false
+            publish-testpypi-on-release:
+                type: boolean
+                required: false
+                default: false
+            allow-production:
+                type: boolean
+                required: false
+                default: false
+            tag-prefix:
+                type: string
+                required: false
+                default: v
+        secrets:
+            TEST_PYPI_TOKEN:
+                required: false
+            PYPI_TOKEN:
+                required: false
+            RAPIDKIT_SIGN_KEY:
+                required: false
+
+permissions:
+    contents: write
+    id-token: write
+
+jobs:
+    build-and-test:
+        runs-on: ubuntu-latest
+        env:
+            DISTRIBUTION_TIER: ${{ inputs.distribution-tier }}
+            LIMITED_MODE: ${{ inputs.limited-mode }}
+        strategy:
+            matrix:
+                python-version:
+                    - ${{ inputs.python-version }}
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Setup Python
+              uses: actions/setup-python@v5
+              with:
+                  python-version: ${{ matrix.python-version }}
+
+            - name: Install Poetry
+              uses: snok/install-poetry@v1
+              with:
+                  version: "1.8.3"
+                  virtualenvs-in-project: true
+                  virtualenvs-create: true
+
+            - name: Cache Poetry dependencies
+              uses: actions/cache@v4
+              with:
+                  path: |
+                      ~/.cache/pypoetry
+                      ~/.cache/pip
+                      .venv
+                  key: poetry-${{ matrix.python-version }}-${{ hashFiles('**/poetry.lock') }}
+                  restore-keys: |
+                      poetry-${{ matrix.python-version }}-
+
+            - name: Install dependencies
+              run: poetry install --with dev --no-interaction
+
+            - name: Run tests
+              run: poetry run pytest -q --maxfail=1 --disable-warnings
+
+            - name: Build package
+              run: poetry build
+
+            - name: Upload build artifacts
+              uses: actions/upload-artifact@v4
+              with:
+                  name: dist-${{ matrix.python-version }}
+                  path: dist/
+
+    sign-and-release:
+        runs-on: ubuntu-latest
+        needs: build-and-test
+        env:
+            DISTRIBUTION_TIER: ${{ inputs.distribution-tier }}
+            LIMITED_MODE: ${{ inputs.limited-mode }}
+            PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
+            TEST_PYPI_TOKEN: ${{ secrets.TEST_PYPI_TOKEN }}
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Download build artifacts
+              uses: actions/download-artifact@v4
+              with:
+                  name: dist-${{ inputs.python-version }}
+                  path: dist
+
+            - name: Setup Python
+              uses: actions/setup-python@v5
+              with:
+                  python-version: ${{ inputs.python-version }}
+
+            - name: Install Poetry
+              uses: snok/install-poetry@v1
+              with:
+                  version: "1.8.3"
+                  virtualenvs-in-project: true
+                  virtualenvs-create: true
+
+            - name: Cache Poetry dependencies
+              uses: actions/cache@v4
+              with:
+                  path: |
+                      ~/.cache/pypoetry
+                      ~/.cache/pip
+                      .venv
+                  key: poetry-sign-${{ hashFiles('**/poetry.lock') }}
+                  restore-keys: |
+                      poetry-sign-
+
+            - name: Install dependencies
+              run: poetry install --with dev --no-interaction
+
+            - name: Determine release version
+              id: version
+              run: |
+                  VERSION=$(poetry version --short)
+                  echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+            - name: Sign artifacts
+              env:
+                  SIGN_KEY: ${{ secrets.RAPIDKIT_SIGN_KEY || '' }}
+              run: |
+                  if [ -z "$SIGN_KEY" ]; then
+                    echo "⚠️ No signing key available for this tier"
+                    echo "ℹ️ Skipping signing"
+                  else
+                    echo "🔐 Signing would be performed here"
+                  fi
+
+            - name: Generate modules.lock
+              run: poetry run python scripts/generate_modules_lock.py
+
+            - name: Compute aggregate version
+              id: agg
+              run: poetry run python scripts/compute_agg_version.py
+
+            - name: Set TAG env for downstream steps
+              id: tag
+              run: |
+                  VERSION="${{ steps.version.outputs.version }}"
+                  if [ -z "$VERSION" ]; then
+                    VERSION="${{ steps.agg.outputs.agg_version }}"
+                  fi
+                  PREFIX="${{ inputs.tag-prefix }}"
+                  # If this workflow is triggered from an existing tag, reuse it.
+                  if [[ "${GITHUB_REF:-}" == refs/tags/* ]]; then
+                    TAG_VALUE="${GITHUB_REF_NAME}"
+                    if [[ -z "$TAG_VALUE" ]]; then
+                      echo "GITHUB_REF_NAME is empty; refusing to continue." >&2
+                      exit 1
+                    fi
+                    if [[ "$TAG_VALUE" != "${PREFIX}"* ]]; then
+                      echo "❌ Tag '$TAG_VALUE' does not start with expected prefix '$PREFIX'." >&2
+                      exit 1
+                    fi
+                    EXPECTED_TAG="${PREFIX}${VERSION}"
+                    if [[ "$TAG_VALUE" != "$EXPECTED_TAG" ]]; then
+                      echo "❌ Tag/version mismatch: ref='$TAG_VALUE' but poetry version implies '$EXPECTED_TAG'." >&2
+                      exit 1
+                    fi
+                  else
+                    TAG_VALUE="${PREFIX}${VERSION}"
+                  fi
+                  echo "TAG=${TAG_VALUE}" >> $GITHUB_ENV
+                  echo "tag=${TAG_VALUE}" >> "$GITHUB_OUTPUT"
+
+            - name: Create git tag
+              if: ${{ !startsWith(github.ref, 'refs/tags/') }}
+              env:
+                  TAG: ${{ steps.tag.outputs.tag }}
+              run: |
+                  git config user.name "github-actions"
+                  git config user.email "github-actions@users.noreply.github.com"
+                  git tag -a "$TAG" -m "Release $TAG" || echo "⚠️ Tag exists"
+                  git push origin "$TAG" || echo "⚠️ Tag already pushed"
+
+            - name: Generate release notes
+              run: |
+                  prev_tag=$(git tag -l "${{ inputs.tag-prefix }}*" | sort -V | grep -v "$TAG" | tail -n1 || true)
+                  if [ -n "$prev_tag" ]; then
+                    git show "$prev_tag:modules.lock" > prev_modules.lock || echo '{}' > prev_modules.lock
+                  else
+                    echo '{}' > prev_modules.lock
+                  fi
+                  poetry run python scripts/generate_release_notes.py --prev prev_modules.lock --curr modules.lock > release_notes.md
+
+            - name: Create release summary
+              run: |
+                  echo "📦 Modules versions:" > release_summary.txt
+                  cat modules.lock >> release_summary.txt
+                  if [ -f release_notes.md ]; then
+                    echo -e "\n---\n📝 Detailed Release Notes" >> release_summary.txt
+                    cat release_notes.md >> release_summary.txt
+                  fi
+                  if [ -f CHANGELOG.md ]; then
+                    echo -e "\n---\n📜 Changelog" >> release_summary.txt
+                    awk 'BEGIN{printing=0} /^## / {if(printing) exit; printing=1} {if(printing) print}' CHANGELOG.md >> release_summary.txt
+                  fi
+
+            - name: Create GitHub Release
+              uses: softprops/action-gh-release@v2
+              with:
+                  tag_name: ${{ steps.tag.outputs.tag }}
+                  name: "Release ${{ steps.tag.outputs.tag }}"
+                  body_path: release_summary.txt
+                  files: |
+                      dist/*
+
+            - name: "Guard: prevent production publish of pre-release tags"
+              if: ${{ inputs.allow-production }}
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  tag="${TAG:-}"
+                  if [ -z "$tag" ]; then
+                    echo "TAG is empty; refusing to publish." >&2
+                    exit 1
+                  fi
+                  version="${tag#${{ inputs.tag-prefix }}}"
+                  if echo "$version" | grep -Eq '(a|b|rc|dev)[0-9]+'; then
+                    echo "❌ Refusing production publish for pre-release tag: $tag" >&2
+                    exit 1
+                  fi
+
+            - name: Publish to PyPI (token)
+              if: ${{ inputs.allow-production && env.PYPI_TOKEN != '' }}
+              uses: pypa/gh-action-pypi-publish@release/v1
+              with:
+                  packages-dir: dist/
+                  user: __token__
+                  password: ${{ env.PYPI_TOKEN }}
+
+            - name: Publish to PyPI (trusted publishing)
+              if: ${{ inputs.allow-production && env.PYPI_TOKEN == '' }}
+              uses: pypa/gh-action-pypi-publish@release/v1
+              with:
+                  packages-dir: dist/
+
+            - name: Publish to TestPyPI (token)
+              if: ${{ inputs['publish-testpypi'] && (!inputs['publish-testpypi-on-release'] || github.event_name == 'release') && env.TEST_PYPI_TOKEN != '' }}
+              uses: pypa/gh-action-pypi-publish@release/v1
+              with:
+                  packages-dir: dist/
+                  repository-url: https://test.pypi.org/legacy/
+                  user: __token__
+                  password: ${{ env.TEST_PYPI_TOKEN }}
+
+            - name: Publish to TestPyPI (trusted publishing)
+              if: ${{ inputs['publish-testpypi'] && (!inputs['publish-testpypi-on-release'] || github.event_name == 'release') && env.TEST_PYPI_TOKEN == '' }}
+              uses: pypa/gh-action-pypi-publish@release/v1
+              with:
+                  packages-dir: dist/
+                  repository-url: https://test.pypi.org/legacy/

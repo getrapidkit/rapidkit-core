@@ -1,0 +1,427 @@
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
+import { existsSync, readFileSync } from 'fs';
+import { join, resolve } from 'path';
+
+type TemplateDelegate = (context: Record<string, unknown>) => string;
+
+export type SendMailOptions = {
+  from?: string;
+  to?: string;
+  cc?: string;
+  bcc?: string;
+  subject: string;
+  html?: string;
+  text?: string;
+  replyTo?: string;
+  headers?: Record<string, string>;
+  attachments?: Array<{
+    filename: string;
+    content: string | Buffer;
+    contentType?: string;
+    cid?: string;
+  }>;
+};
+
+export type EmailTransport = (
+  message: SendMailOptions,
+) => Promise<string | null | void>;
+
+export interface EmailTransportOptions {
+  host: string;
+  port: number;
+  username?: string;
+  password?: string;
+  useTls?: boolean;
+  timeoutSeconds?: number;
+}
+
+export interface EmailTemplateOptions {
+  directory?: string;
+  autoReload?: boolean;
+  strict?: boolean;
+  cache?: boolean;
+}
+
+export interface EmailModuleConfig {
+  enabled: boolean;
+  provider: string;
+  fromAddress: string;
+  fromName?: string;
+  replyTo?: string;
+  dryRun?: boolean;
+  metadata?: Record<string, unknown>;
+  defaultHeaders?: Record<string, string>;
+  transport: EmailTransportOptions;
+  template?: EmailTemplateOptions;
+}
+
+export interface EmailAttachmentPayload {
+  filename: string;
+  content: string | Buffer;
+  contentType?: string;
+  inline?: boolean;
+  contentId?: string;
+}
+
+export interface EmailMessagePayload {
+  to: string[];
+  cc?: string[];
+  bcc?: string[];
+  subject: string;
+  htmlBody?: string;
+  textBody?: string;
+  replyTo?: string;
+  headers?: Record<string, string>;
+  attachments?: EmailAttachmentPayload[];
+}
+
+export interface EmailSendResult {
+  accepted: boolean;
+  provider: string;
+  messageId: string | null;
+  detail: string | null;
+  metadata: Record<string, unknown>;
+}
+
+export class EmailDeliveryError extends Error {
+  constructor(
+    message: string,
+    readonly provider: string,
+    readonly metadata: Record<string, unknown> = {},
+  ) {
+    super(message);
+    this.name = 'EmailDeliveryError';
+  }
+}
+
+export const EMAIL_MODULE_CONFIG = 'EMAIL_MODULE_CONFIG';
+export const EMAIL_TEMPLATE_OPTIONS = 'EMAIL_TEMPLATE_OPTIONS';
+export const EMAIL_TRANSPORT = 'EMAIL_TRANSPORT';
+
+const FEATURE_FLAGS = [
+  'smtp_transport',
+  'console_transport',
+  'templated_delivery',
+  'default_headers',
+  'dry_run_mode',
+  'metadata_reporting',
+] as const;
+
+@Injectable()
+export class {{ module_class_name }}Service {
+  private readonly logger = new Logger('{{ module_class_name }}Service');
+  private readonly templateCache = new Map<string, TemplateDelegate>();
+  private readonly cacheEnabled: boolean;
+  private autoReload: boolean;
+  private readonly strictTemplates: boolean;
+  private templateDirectory: string | null;
+
+  constructor(
+    @Inject(EMAIL_MODULE_CONFIG) private readonly config: EmailModuleConfig,
+    @Optional() @Inject(EMAIL_TEMPLATE_OPTIONS) templateOptions?: EmailTemplateOptions,
+    @Optional() @Inject(EMAIL_TRANSPORT) private readonly transport?: EmailTransport,
+  ) {
+    this.templateDirectory = templateOptions?.directory ?? this.config.template?.directory ?? null;
+    this.cacheEnabled = templateOptions?.cache ?? this.config.template?.cache ?? true;
+    this.autoReload = templateOptions?.autoReload ?? this.config.template?.autoReload ?? false;
+    this.strictTemplates = templateOptions?.strict ?? this.config.template?.strict ?? false;
+  }
+
+  setTemplateDirectory(
+    directory: string,
+    options: { clearCache?: boolean; autoReload?: boolean } = {},
+  ): void {
+    this.templateDirectory = resolve(directory);
+    if (options.clearCache ?? true) {
+      this.templateCache.clear();
+    }
+    if (options.autoReload !== undefined) {
+      this.autoReload = options.autoReload;
+    }
+  }
+
+  renderTemplate(templateName: string, context: Record<string, unknown> = {}): string {
+    try {
+      const template = this.getTemplate(templateName);
+      return template(context ?? {});
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'unknown error';
+      this.logger.error(`Unable to render template '${templateName}': ${message}`);
+      throw new EmailDeliveryError(`Failed to render template '${templateName}'`, this.provider, {
+        template: templateName,
+      });
+    }
+  }
+
+  async sendEmail(payload: EmailMessagePayload): Promise<EmailSendResult> {
+    this.ensureRecipients(payload);
+
+    if (!this.config.enabled) {
+      this.logger.warn('Email delivery disabled by configuration');
+      return this.buildResult(false, 'disabled');
+    }
+
+    if (this.config.dryRun) {
+      this.logger.log(
+        `Dry-run email delivery => to=${(payload.to || []).join(', ')} subject="${payload.subject}"`,
+      );
+      return this.buildResult(true, 'dry_run', { dry_run: true });
+    }
+
+    if (this.provider === 'console') {
+      this.logger.log(
+        `Console email delivery => to=${(payload.to || []).join(', ')} subject="${payload.subject}"`,
+      );
+      return this.buildResult(true, 'console');
+    }
+
+    const message = this.normalizeMessage(payload);
+
+    try {
+      if (this.transport) {
+        const messageId = await this.transport(message);
+        return this.buildResult(true, 'transport_override', {}, messageId ?? null);
+      }
+
+      if (this.provider === 'smtp') {
+        this.logger.warn(
+          'SMTP provider selected but no transport override configured; falling back to simulated delivery.',
+        );
+        return this.buildResult(true, 'smtp_simulated', { simulated: true });
+      }
+
+      this.logger.log(
+        `Email delivery (simulated) => to=${(payload.to || []).join(', ')} subject="${payload.subject}"`,
+      );
+      return this.buildResult(true, 'simulated', { simulated: true });
+    } catch (error) {
+      const detail = error instanceof Error ? error.message : 'unknown error';
+      this.logger.error(`SMTP delivery failed: ${detail}`);
+      throw new EmailDeliveryError('SMTP delivery failed', this.provider, { error: detail });
+    }
+  }
+
+  async sendTemplatedEmail(
+    to: string[],
+    templateName: string,
+    context: Record<string, unknown>,
+    subject: string,
+    textTemplate?: string,
+    options: {
+      cc?: string[];
+      bcc?: string[];
+      replyTo?: string;
+      headers?: Record<string, string>;
+    } = {},
+  ): Promise<EmailSendResult> {
+    const htmlBody = this.renderTemplate(templateName, context);
+    const textBody = textTemplate ? this.renderTemplate(textTemplate, context) : undefined;
+
+    return this.sendEmail({
+      to,
+      cc: options.cc,
+      bcc: options.bcc,
+      subject,
+      htmlBody,
+      textBody,
+      replyTo: options.replyTo,
+      headers: options.headers,
+    });
+  }
+
+  async verifyConnection(): Promise<boolean> {
+    if (!this.config.enabled) {
+      return false;
+    }
+
+    if (this.provider === 'console' || this.config.dryRun || this.transport) {
+      return true;
+    }
+
+    if (this.provider === 'smtp') {
+      this.logger.warn('SMTP provider selected but no transport override configured');
+      return true;
+    }
+
+    return true;
+  }
+
+  status(): Record<string, unknown> {
+    return {
+      enabled: this.config.enabled,
+      provider: this.provider,
+      dryRun: this.config.dryRun ?? false,
+      templateDirectory: this.templateDirectory ?? this.config.template?.directory ?? null,
+      defaultHeaders: { ...(this.config.defaultHeaders ?? {}) },
+      features: this.listFeatures(),
+      metadata: this.metadata().metadata,
+    };
+  }
+
+  metadata(): Record<string, unknown> {
+    return this.describe();
+  }
+
+  describe(): Record<string, unknown> {
+    const template = this.config.template ?? {};
+    const transport = this.config.transport;
+    return {
+      module: '{{ module_kebab }}',
+      enabled: this.config.enabled,
+      provider: this.provider,
+      from_email: this.config.fromAddress,
+      from_name: this.config.fromName ?? null,
+      reply_to: this.config.replyTo ?? null,
+      supports_templates: Boolean(template.directory),
+      template_directory: template.directory ?? null,
+      template_auto_reload: Boolean(template.autoReload ?? this.autoReload),
+      template_strict: Boolean(template.strict ?? this.strictTemplates),
+      supports_smtp: this.provider === 'smtp',
+      smtp: {
+        host: transport.host,
+        port: transport.port,
+        username: transport.username ?? null,
+        timeout_seconds: transport.timeoutSeconds ?? null,
+        use_tls: transport.useTls ?? false,
+      },
+      metadata: { ...(this.config.metadata ?? {}) },
+      default_headers: { ...(this.config.defaultHeaders ?? {}) },
+      features: this.listFeatures(),
+    };
+  }
+
+  listFeatures(): string[] {
+    return [...FEATURE_FLAGS];
+  }
+
+  private ensureRecipients(payload: EmailMessagePayload): void {
+    const to = payload.to ?? [];
+    const cc = payload.cc ?? [];
+    const bcc = payload.bcc ?? [];
+    if (!to.length && !cc.length && !bcc.length) {
+      throw new EmailDeliveryError('At least one recipient must be provided', this.provider);
+    }
+    if (!payload.htmlBody && !payload.textBody) {
+      throw new EmailDeliveryError('htmlBody or textBody must be provided', this.provider);
+    }
+  }
+
+  private getTemplate(templateName: string): TemplateDelegate {
+    if (!this.autoReload && this.templateCache.has(templateName)) {
+      return this.templateCache.get(templateName)!;
+    }
+
+    const directory = this.templateDirectory ?? this.config.template?.directory ?? null;
+    if (!directory) {
+      throw new EmailDeliveryError('Template directory not configured', this.provider);
+    }
+
+    const resolvedDirectory = resolve(directory);
+    if (!existsSync(resolvedDirectory)) {
+      throw new EmailDeliveryError(
+        `Email template directory does not exist: ${resolvedDirectory}`,
+        this.provider,
+      );
+    }
+
+    const directPath = join(resolvedDirectory, templateName);
+    const candidate = existsSync(directPath) ? directPath : `${directPath}.hbs`;
+    if (!existsSync(candidate)) {
+      throw new EmailDeliveryError(`Email template not found: ${templateName}`, this.provider);
+    }
+
+    const source = readFileSync(candidate, 'utf8');
+
+    const compiled: TemplateDelegate = (context: Record<string, unknown>) =>
+      source.replace(/\{\{\s*([\w.]+)\s*\}\}/g, (_match, key: string) => {
+        const value = key
+          .split('.')
+          .reduce<unknown>((acc, part) => {
+            if (acc && typeof acc === 'object' && part in (acc as Record<string, unknown>)) {
+              return (acc as Record<string, unknown>)[part];
+            }
+            return undefined;
+          }, context);
+
+        if (value === null || value === undefined) {
+          return '';
+        }
+        return String(value);
+      });
+
+    if (this.cacheEnabled) {
+      this.templateCache.set(templateName, compiled);
+    }
+
+    return compiled;
+  }
+
+  private normalizeMessage(payload: EmailMessagePayload): SendMailOptions {
+    const headers = {
+      ...(this.config.defaultHeaders ?? {}),
+      ...(payload.headers ?? {}),
+    };
+
+    const attachments = (payload.attachments ?? []).map((attachment) => ({
+      filename: attachment.filename,
+      content: attachment.content,
+      contentType: attachment.contentType,
+      cid: attachment.inline ? attachment.contentId ?? attachment.filename : undefined,
+    }));
+
+    return {
+      from: this.formatSender(),
+      to: payload.to?.length ? payload.to.join(', ') : undefined,
+      cc: payload.cc?.length ? payload.cc.join(', ') : undefined,
+      bcc: payload.bcc?.length ? payload.bcc.join(', ') : undefined,
+      subject: payload.subject,
+      html: payload.htmlBody,
+      text: payload.textBody,
+      replyTo: payload.replyTo ?? this.config.replyTo,
+      headers,
+      attachments: attachments.length ? attachments : undefined,
+    };
+  }
+
+  private formatSender(): string {
+    return this.config.fromName
+      ? `${this.config.fromName} <${this.config.fromAddress}>`
+      : this.config.fromAddress;
+  }
+
+  private buildResult(
+    accepted: boolean,
+    detail: string | null = null,
+    metadata: Record<string, unknown> = {},
+    messageId: string | null = null,
+  ): EmailSendResult {
+    return {
+      accepted,
+      provider: this.provider,
+      messageId,
+      detail,
+      metadata,
+    };
+  }
+
+  private get provider(): string {
+    return (this.config.provider ?? 'smtp').toLowerCase();
+  }
+}
+
+export type EmailHealthSummary = {
+  status: 'up' | 'down';
+  details: Record<string, unknown>;
+};
+
+export async function createEmailHealthCheck(
+  service: {{ module_class_name }}Service,
+): Promise<Record<string, EmailHealthSummary>> {
+  const verified = await service.verifyConnection();
+  return {
+    email: {
+      status: verified ? 'up' : 'down',
+      details: service.status(),
+    },
+  };
+}

@@ -1,0 +1,24 @@
+# Snippet registrations for the Observability Core module
+snippets:
+  - id: observability_core_env
+    target: .env,.env.example,.env.dev,.env.prod
+    anchor: "# <<<inject:module-env>>>"
+    template: observability_core.snippet.j2
+    features: [observability_core]
+    profiles: [fastapi/standard, fastapi/ddd, nestjs/standard]
+    description: Inject Observability Core environment defaults and override guidance.
+    version: "0.1.0"
+    priority: 15
+    dependencies: []
+    context:
+      fragment: env
+    schema:
+      type: object
+      properties: {}
+      additionalProperties: true
+      required: []
+    metadata:
+      author: "RapidKit Core Team"
+      created_at: "2025-12-17"
+      last_modified: "2025-12-17"
+    conflict_resolution: merge

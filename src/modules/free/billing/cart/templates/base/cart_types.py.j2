@@ -1,0 +1,179 @@
+"""Shared type definitions for {{ module_title }}."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field, replace
+from datetime import datetime, timezone
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+from typing import Any, Dict, Iterable, List, Mapping, MutableMapping, Optional, Sequence
+
+DecimalLike = Decimal | float | int | str
+MONEY_QUANTISATION = Decimal("0.01")
+
+
+def ensure_decimal(value: DecimalLike, *, allow_negative: bool = False) -> Decimal:
+    """Coerce numeric inputs into a Decimal with optional negativity guard."""
+
+    try:
+        if isinstance(value, Decimal):
+            amount = value
+        else:
+            amount = Decimal(str(value))
+    except (InvalidOperation, TypeError, ValueError) as exc:  # pragma: no cover - defensive
+        raise ValueError(f"Unable to convert {value!r} to Decimal") from exc
+
+    if not allow_negative and amount < 0:
+        raise ValueError("Negative values are not permitted")
+    return amount
+
+
+def quantize_amount(value: DecimalLike) -> Decimal:
+    """Quantise a monetary amount to two decimal places using banker rounding."""
+
+    amount = ensure_decimal(value, allow_negative=True)
+    return amount.quantize(MONEY_QUANTISATION, rounding=ROUND_HALF_UP)
+
+
+def format_decimal(value: DecimalLike) -> str:
+    """Return a string representation suitable for JSON responses."""
+
+    return f"{quantize_amount(value):.2f}"
+
+
+@dataclass(slots=True)
+class CartItem:
+    """Immutable representation of an item stored in a cart."""
+
+    sku: str
+    name: str
+    quantity: int
+    unit_price: Decimal
+    currency: str
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+    def subtotal(self) -> Decimal:
+        return quantize_amount(self.unit_price * ensure_decimal(self.quantity, allow_negative=False))
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "sku": self.sku,
+            "name": self.name,
+            "quantity": self.quantity,
+            "unit_price": format_decimal(self.unit_price),
+            "currency": self.currency,
+            "metadata": dict(self.metadata),
+        }
+
+    def clone(self, **overrides: Any) -> "CartItem":
+        return replace(self, **overrides)
+
+
+@dataclass(slots=True)
+class DiscountApplication:
+    """Details of an applied discount rule."""
+
+    code: str
+    amount: Decimal
+    description: str = ""
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "code": self.code,
+            "amount": format_decimal(self.amount),
+            "description": self.description,
+        }
+
+
+@dataclass(slots=True)
+class CartTotals:
+    """Calculated totals for a cart snapshot."""
+
+    currency: str
+    subtotal: Decimal
+    discount_total: Decimal
+    tax_total: Decimal
+    grand_total: Decimal
+    item_count: int = 0
+    requires_payment: bool = False
+    discounts: List[DiscountApplication] = field(default_factory=list)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "currency": self.currency,
+            "subtotal": format_decimal(self.subtotal),
+            "discount_total": format_decimal(self.discount_total),
+            "tax_total": format_decimal(self.tax_total),
+            "grand_total": format_decimal(self.grand_total),
+            "item_count": self.item_count,
+            "requires_payment": self.requires_payment,
+            "discounts": [discount.to_dict() for discount in self.discounts],
+        }
+
+
+@dataclass(slots=True)
+class CartSnapshot:
+    """Point-in-time view of cart contents and totals."""
+
+    cart_id: str
+    items: List[CartItem]
+    totals: CartTotals
+    discount_codes: List[str] = field(default_factory=list)
+    metadata: Dict[str, Any] = field(default_factory=dict)
+    updated_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "cart_id": self.cart_id,
+            "items": [item.to_dict() for item in self.items],
+            "totals": self.totals.to_dict(),
+            "discount_codes": list(self.discount_codes),
+            "metadata": dict(self.metadata),
+            "updated_at": self.updated_at.isoformat(),
+        }
+
+    def clone(self, **overrides: Any) -> "CartSnapshot":
+        payload: Dict[str, Any] = {
+            "cart_id": self.cart_id,
+            "items": [item.clone() for item in self.items],
+            "totals": replace(self.totals),
+            "discount_codes": list(self.discount_codes),
+            "metadata": dict(self.metadata),
+            "updated_at": self.updated_at,
+        }
+        payload.update(overrides)
+        return CartSnapshot(**payload)
+
+
+@dataclass(slots=True)
+class CartMetrics:
+    """Aggregated metrics emitted by the cart health surface."""
+
+    total_carts: int
+    active_carts: int
+    empty_carts: int
+    total_items: int
+    active_discounts: int
+    currency: str
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "total_carts": self.total_carts,
+            "active_carts": self.active_carts,
+            "empty_carts": self.empty_carts,
+            "total_items": self.total_items,
+            "active_discounts": self.active_discounts,
+            "currency": self.currency,
+        }
+
+
+__all__ = [
+    "CartItem",
+    "CartSnapshot",
+    "CartTotals",
+    "CartMetrics",
+    "DiscountApplication",
+    "DecimalLike",
+    "ensure_decimal",
+    "format_decimal",
+    "quantize_amount",
+]

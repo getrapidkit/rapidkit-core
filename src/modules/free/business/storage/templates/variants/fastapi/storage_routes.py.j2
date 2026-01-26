@@ -1,0 +1,83 @@
+"""FastAPI router for the {{ module_title }} module."""
+
+from __future__ import annotations
+
+from typing import Any, Dict
+
+from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
+from fastapi.responses import Response
+
+from ..storage import (
+    FileStorage,
+    FileValidationError,
+    UnsupportedAdapterError,
+    get_storage,
+)
+
+router = APIRouter(prefix="/api/v1/storage", tags=["storage"])
+
+
+def _handle_error(exc: Exception) -> None:
+    if isinstance(exc, FileValidationError):
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+    if isinstance(exc, FileNotFoundError):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, detail="File not found") from exc
+    if isinstance(exc, UnsupportedAdapterError):
+        raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc
+    raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Storage operation failed") from exc
+
+
+@router.post("/upload", status_code=status.HTTP_201_CREATED)
+async def upload_file(
+    request: Request,
+    filename: str | None = Header(default=None, alias="X-Filename"),
+    storage: FileStorage = Depends(get_storage),
+) -> Dict[str, Any]:
+    payload = await request.body()
+    resolved_name = filename or "upload.bin"
+    try:
+        result = await storage.upload_file(resolved_name, payload)
+    except Exception as exc:  # pragma: no cover - converted in helper
+        _handle_error(exc)
+    return {
+        "file_id": result.file_id,
+        "metadata": result.metadata.extra if result.metadata else {},
+    }
+
+
+@router.get("/{file_id}")
+async def download_file(
+    file_id: str,
+    storage: FileStorage = Depends(get_storage),
+) -> Response:
+    try:
+        content = await storage.download_file(file_id)
+        metadata = await storage.get_file_info(file_id)
+    except Exception as exc:  # pragma: no cover - converted in helper
+        _handle_error(exc)
+    media_type = metadata.mimetype or "application/octet-stream"
+    headers = {"X-Storage-File-ID": metadata.file_id}
+    return Response(content=content, media_type=media_type, headers=headers)
+
+
+@router.delete("/{file_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_file(
+    file_id: str,
+    storage: FileStorage = Depends(get_storage),
+) -> None:
+    try:
+        await storage.delete_file(file_id)
+    except Exception as exc:  # pragma: no cover - converted in helper
+        _handle_error(exc)
+
+
+@router.get("/health/status")
+async def storage_health(storage: FileStorage = Depends(get_storage)) -> Dict[str, Any]:
+    try:
+        result = await storage.health_check()
+    except Exception as exc:  # pragma: no cover - converted in helper
+        _handle_error(exc)
+    return {
+        "status": result.get("status", "unknown"),
+        "details": result.get("adapter", {}),
+    }

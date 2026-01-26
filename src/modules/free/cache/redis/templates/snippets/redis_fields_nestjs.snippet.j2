@@ -1,0 +1,17 @@
+  redis: {
+    url: process.env.REDIS_URL ?? "redis://localhost:6379/0",
+    preconnect:
+      process.env.REDIS_PRECONNECT !== undefined
+        ? ["1", "true", "yes", "on"].includes(
+            process.env.REDIS_PRECONNECT.toLowerCase(),
+          )
+        : false,
+    retries: Number.parseInt(
+      process.env.REDIS_CONNECT_RETRIES ?? "3",
+      10,
+    ),
+    backoffBase: Number.parseFloat(
+      process.env.REDIS_CONNECT_BACKOFF_BASE ?? "0.5",
+    ),
+    ttl: Number.parseInt(process.env.CACHE_TTL ?? "3600", 10),
+  },

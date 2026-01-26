@@ -1,0 +1,270 @@
+import { Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
+import { createHmac, randomBytes, timingSafeEqual } from "crypto";
+
+type SessionTemplate = {
+  secret_key_env: string;
+  secret_key?: string;
+  session_ttl_seconds: number;
+  refresh_ttl_seconds: number;
+  cookie_name: string;
+  cookie_domain?: string | null;
+  cookie_secure: boolean;
+  cookie_httponly: boolean;
+  cookie_same_site: string;
+  storage_backend: string;
+};
+
+type CookieSettings = {
+  name: string;
+  domain?: string | null;
+  secure: boolean;
+  httpOnly: boolean;
+  sameSite: "lax" | "strict" | "none";
+};
+
+type SessionSettings = {
+  secret: Buffer;
+  sessionTtlSeconds: number;
+  refreshTtlSeconds: number;
+  cookie: CookieSettings;
+  storageBackend: string;
+};
+
+type SessionRecord = {
+  sessionId: string;
+  userId: string;
+  issuedAt: number;
+  expiresAt: number;
+  payload: Record<string, unknown>;
+};
+
+type RefreshRecord = {
+  token: string;
+  sessionId: string;
+  issuedAt: number;
+  expiresAt: number;
+};
+
+type SessionEnvelope = {
+  session: SessionRecord;
+  token: string;
+  refreshToken: string;
+  cookie: {
+    name: string;
+    value: string;
+    domain?: string | null;
+    secure: boolean;
+    httpOnly: boolean;
+    sameSite: "lax" | "strict" | "none";
+    expires: number;
+  };
+};
+
+const RAW_SETTINGS: SessionTemplate = {{ module_defaults | default({}) | tojson(indent=2) }};
+
+const FEATURE_FLAGS = [
+  "signed_tokens",
+  "pluggable_storage",
+  "secure_cookies",
+  "refresh_token_rotation",
+] as const;
+
+type SessionMetadataSnapshot = {
+  module: string;
+  sessionTtlSeconds: number;
+  refreshTtlSeconds: number;
+  storageBackend: string;
+  cookie: CookieSettings;
+  supportsRefreshTokens: boolean;
+  features: string[];
+};
+
+const base64Url = (buffer: Buffer): string =>
+  buffer.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+
+const readEnv = (name: string, fallback = ""): string => {
+  if (!name) {
+    return fallback;
+  }
+  const value = process.env[name];
+  return typeof value === "string" && value.length > 0 ? value : fallback;
+};
+
+const buildSettings = (template: SessionTemplate): SessionSettings => {
+  const secretValue = readEnv(template.secret_key_env, template.secret_key ?? "");
+  if (!secretValue) {
+    throw new Error(
+      `Session secret missing. Set ${template.secret_key_env} or provide 'secret_key' override.`,
+    );
+  }
+
+  const cookieSameSite = template.cookie_same_site.toLowerCase();
+  return {
+    secret: Buffer.from(secretValue, "utf8"),
+    sessionTtlSeconds: template.session_ttl_seconds,
+    refreshTtlSeconds: template.refresh_ttl_seconds,
+    cookie: {
+      name: template.cookie_name,
+      domain: template.cookie_domain ?? undefined,
+      secure: template.cookie_secure,
+      httpOnly: template.cookie_httponly,
+      sameSite: (cookieSameSite === "strict" ? "strict" : cookieSameSite === "none" ? "none" : "lax"),
+    },
+    storageBackend: template.storage_backend,
+  };
+};
+
+class SessionSigner {
+  constructor(private readonly secret: Buffer) {}
+
+  sign(sessionId: string): string {
+    const hmac = createHmac("sha256", this.secret);
+    hmac.update(sessionId, "utf8");
+    return base64Url(hmac.digest());
+  }
+
+  verify(sessionId: string, signature: string): boolean {
+    const expected = this.sign(sessionId);
+    const expectedBuf = Buffer.from(expected, "utf8");
+    const providedBuf = Buffer.from(signature, "utf8");
+    if (expectedBuf.length != providedBuf.length) {
+      return false;
+    }
+    return timingSafeEqual(expectedBuf, providedBuf);
+  }
+}
+
+@Injectable()
+export class {{ module_class_name }}Service {
+  private readonly settings: SessionSettings = buildSettings(RAW_SETTINGS);
+  private readonly signer = new SessionSigner(this.settings.secret);
+  private readonly sessions = new Map<string, SessionRecord>();
+  private readonly refreshTokens = new Map<string, RefreshRecord>();
+  private readonly sessionIndex = new Map<string, Set<string>>();
+
+  issueSession(userId: string, payload: Record<string, unknown> = {}): SessionEnvelope {
+    const now = Date.now() / 1000;
+    const sessionId = base64Url(randomBytes(32));
+    const record: SessionRecord = {
+      sessionId,
+      userId,
+      issuedAt: now,
+      expiresAt: now + this.settings.sessionTtlSeconds,
+      payload,
+    };
+
+    this.sessions.set(sessionId, record);
+    const token = this.encodeToken(sessionId);
+    const refresh = this.issueRefreshToken(sessionId, now);
+
+    return {
+      session: record,
+      token,
+      refreshToken: refresh.token,
+      cookie: {
+        name: this.settings.cookie.name,
+        value: token,
+        domain: this.settings.cookie.domain,
+        secure: this.settings.cookie.secure,
+        httpOnly: this.settings.cookie.httpOnly,
+        sameSite: this.settings.cookie.sameSite,
+        expires: Math.trunc(record.expiresAt),
+      },
+    };
+  }
+
+  verifySessionToken(token: string): SessionRecord {
+    const sessionId = this.decodeToken(token);
+    const record = this.sessions.get(sessionId);
+    if (!record) {
+      throw new UnauthorizedException("Session token is invalid or has expired");
+    }
+    if (record.expiresAt <= Date.now() / 1000) {
+      this.sessions.delete(sessionId);
+      throw new UnauthorizedException("Session token is invalid or has expired");
+    }
+    return record;
+  }
+
+  rotateSession(refreshToken: string): SessionEnvelope {
+    const record = this.refreshTokens.get(refreshToken);
+    if (!record || record.expiresAt <= Date.now() / 1000) {
+      throw new UnauthorizedException("Refresh token is invalid or has expired");
+    }
+    const session = this.sessions.get(record.sessionId);
+    if (!session) {
+      throw new NotFoundException("Associated session was not found");
+    }
+    this.revokeRefreshToken(refreshToken);
+    return this.issueSession(session.userId, session.payload);
+  }
+
+  revokeSession(sessionId: string): void {
+    this.sessions.delete(sessionId);
+    const tokens = this.sessionIndex.get(sessionId);
+    if (tokens) {
+      for (const token of tokens) {
+        this.refreshTokens.delete(token);
+      }
+      this.sessionIndex.delete(sessionId);
+    }
+  }
+
+  getSettings(): SessionSettings {
+    return this.settings;
+  }
+
+  describe(): SessionMetadataSnapshot {
+    return {
+      module: "session",
+      sessionTtlSeconds: this.settings.sessionTtlSeconds,
+      refreshTtlSeconds: this.settings.refreshTtlSeconds,
+      storageBackend: this.settings.storageBackend,
+      cookie: this.settings.cookie,
+      supportsRefreshTokens: true,
+      features: this.listFeatures(),
+    };
+  }
+
+  listFeatures(): string[] {
+    return [...FEATURE_FLAGS.map((flag) => flag as string)];
+  }
+
+  private encodeToken(sessionId: string): string {
+    return `${sessionId}.${this.signer.sign(sessionId)}`;
+  }
+
+  private decodeToken(token: string): string {
+    const [sessionId, signature] = token.split(".");
+    if (!sessionId || !signature || !this.signer.verify(sessionId, signature)) {
+      throw new UnauthorizedException("Session token is invalid or has expired");
+    }
+    return sessionId;
+  }
+
+  private issueRefreshToken(sessionId: string, issuedAt: number): RefreshRecord {
+    const refreshToken = base64Url(randomBytes(48));
+    const record: RefreshRecord = {
+      token: refreshToken,
+      sessionId,
+      issuedAt,
+      expiresAt: issuedAt + this.settings.refreshTtlSeconds,
+    };
+    this.refreshTokens.set(refreshToken, record);
+    if (!this.sessionIndex.has(sessionId)) {
+      this.sessionIndex.set(sessionId, new Set());
+    }
+    this.sessionIndex.get(sessionId)!.add(refreshToken);
+    return record;
+  }
+
+  private revokeRefreshToken(refreshToken: string): void {
+    const record = this.refreshTokens.get(refreshToken);
+    if (!record) {
+      return;
+    }
+    this.refreshTokens.delete(refreshToken);
+    const tokens = this.sessionIndex.get(record.sessionId);
+    tokens?.delete(refreshToken);
+  }
+}

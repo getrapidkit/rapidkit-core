@@ -1,0 +1,36 @@
+{# Jinja snippet used to inject shared fragments into generated artefacts. #}
+{# Name this snippet when referencing from module.yaml generation entries. #}
+
+{% set module_name = "ai_assistant" %}
+
+## {{ module_title | default("AI Assistant") }} quickstart (FastAPI)
+
+Configure at least one provider (the built-in `echo` provider is great for smoke tests):
+
+```yaml
+# config/ai_assistant.yaml
+enabled: true
+default_provider: echo
+conversation_window: 20
+cache_enabled: true
+request_timeout_seconds: 30
+telemetry_enabled: true
+providers:
+	- name: echo
+		provider_type: echo
+		options:
+			prefix: "[echo] "
+```
+
+Run a completion request:
+
+```bash
+curl -sS -X POST 'http://localhost:8000/ai/assistant/completions' \
+	-H 'content-type: application/json' \
+	-d '{
+		"prompt": "Hello, assistant",
+		"provider": "echo",
+		"context": [{"role": "user", "content": "previous message"}],
+		"settings": {}
+	}'
+```

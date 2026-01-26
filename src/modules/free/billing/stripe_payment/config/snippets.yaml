@@ -1,0 +1,10 @@
+# Register snippet bundles for Stripe Payment
+# Each snippet can append framework-specific helpers during generation.
+
+snippets:
+  - name: enhanced-retries
+    description: Adds exponential backoff helpers for resilient retry logic.
+    file: snippets/enhanced-retries.yaml
+  - name: customer-portal-webhook
+    description: Registers webhook handlers for Stripe customer portal events.
+    file: snippets/customer-portal-webhook.yaml

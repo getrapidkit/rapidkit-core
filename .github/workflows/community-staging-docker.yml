@@ -1,0 +1,116 @@
+name: Community Docker Build (Staging)
+
+on:
+    push:
+        branches:
+            - main
+        tags:
+            - "v*"
+    pull_request:
+        branches:
+            - main
+    workflow_dispatch:
+
+concurrency:
+    group: community-staging-docker-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    changes:
+        name: Detect relevant changes
+        runs-on: ubuntu-latest
+        outputs:
+            should-build: ${{ steps.flags.outputs.should_build }}
+            owner-slug: ${{ steps.owner.outputs.slug }}
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+
+            - name: Normalize repository owner
+              id: owner
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  owner="${GITHUB_REPOSITORY_OWNER:-}"
+                  if [[ -z "$owner" ]]; then
+                    echo "repository owner missing" >&2
+                    exit 1
+                  fi
+                  slug=$(printf '%s' "$owner" | tr '[:upper:]' '[:lower:]')
+                  echo "slug=$slug" >> "$GITHUB_OUTPUT"
+
+            - name: Detect change set
+              id: flags
+              shell: bash
+              env:
+                  EVENT_NAME: ${{ github.event_name }}
+                  PR_BASE: ${{ github.event.pull_request.base.sha || '' }}
+                  PUSH_BEFORE: ${{ github.event.before || '' }}
+              run: |
+                  set -euo pipefail
+                  base=""
+                  if [[ "$EVENT_NAME" == "pull_request" && -n "$PR_BASE" ]]; then
+                    base="$PR_BASE"
+                  elif [[ "$EVENT_NAME" == "push" && -n "$PUSH_BEFORE" ]]; then
+                    base="$PUSH_BEFORE"
+                  fi
+
+                  if [[ -n "$base" ]]; then
+                    git fetch --no-tags --depth=1 origin "$base"
+                    git diff --name-only "$base" "$GITHUB_SHA" > changed.txt
+                  else
+                    git ls-files > changed.txt
+                  fi
+
+                  python <<'PY' > /tmp/should_build
+                  from pathlib import Path, PurePosixPath
+
+                  files = [line.strip() for line in Path('changed.txt').read_text().splitlines() if line.strip()]
+                  patterns = [
+                      'Dockerfile',
+                      'src/**',
+                      'scripts/**',
+                      'pyproject.toml',
+                      'poetry.lock',
+                      '.github/workflows/**',
+                  ]
+
+                  def matches():
+                      for file in files:
+                          path = PurePosixPath(file)
+                          for pattern in patterns:
+                              if path.match(pattern):
+                                  return True
+                      return False
+
+                  print('true' if matches() else 'false', end='')
+                  PY
+
+                  echo "should_build=$(cat /tmp/should_build)" >> "$GITHUB_OUTPUT"
+
+    skip:
+        name: Skip notice
+        needs: changes
+        if: ${{ needs.changes.outputs.should-build != 'true' && github.event_name != 'workflow_dispatch' }}
+        runs-on: ubuntu-latest
+        steps:
+            - run: echo "No Docker-impacting changes detected; staging distribution workflow skipped."
+
+    pipeline:
+        name: Community Staging Docker pipeline
+        needs: changes
+        if: ${{ needs.changes.outputs.should-build == 'true' || github.event_name == 'workflow_dispatch' }}
+        uses: ./.github/workflows/docker-build.yml
+        secrets: inherit
+        with:
+            image-name: ${{ format('ghcr.io/{0}/rapidkit-community', needs.changes.outputs.owner-slug) }}
+            test-tag: ${{ format('ghcr.io/{0}/rapidkit-community:staging-test', needs.changes.outputs.owner-slug) }}
+            publish-on-branch: false
+            enable-publish: false
+            metadata-tags: |
+                type=sha,prefix=sha-
+                type=ref,event=branch,suffix=-staging
+                type=ref,event=tag,prefix=staging-
+                type=raw,value=staging-latest,enable={{is_default_branch}}

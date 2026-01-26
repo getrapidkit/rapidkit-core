@@ -1,0 +1,239 @@
+name: fastapi.standard
+category: fastapi
+display_name: FastAPI Standard Kit
+description: Standard FastAPI starter that defers features to RapidKit modules.
+version: 0.1.0
+min_rapidkit_version: 0.1.0
+tier: standard
+repo_url: https://github.com/getrapidkit/core.git
+repo_branch: main
+tags: [fastapi, modular, minimal]
+support: standard
+license: Apache-2.0
+
+module_support:
+    free: true
+    paid: true
+    community: true
+    enterprise: true
+
+environments:
+    development:
+        debug: true
+        description: "Development environment with hot reload"
+    production:
+        debug: false
+        description: "Production environment optimized for performance"
+
+variables:
+    project_name:
+        type: string
+        required: true
+        description: "Name of your project (snake_case recommended)"
+        validation:
+            pattern: "^[a-z][a-z0-9_]*$"
+            max_length: 50
+
+    author:
+        type: string
+        default: "{{ getpass.getuser() }}"
+        description: "Project author name"
+
+    description:
+        type: string
+        default: "FastAPI service generated with RapidKit"
+        description: "Project description"
+
+    app_version:
+        type: string
+        default: "0.1.0"
+        description: "Application version"
+
+    python_version:
+        type: string
+        default: "3.10.14"
+        description: "Target Python version for runtime and CI pipelines"
+
+    enable_docker:
+        type: boolean
+        default: true
+        description: "Scaffold base Dockerfile and docker-compose.yml (independent of modules)"
+
+    enable_ci:
+        type: boolean
+        default: true
+        description: "Scaffold GitHub Actions CI workflow (independent of modules)"
+
+    install_settings:
+        type: boolean
+        default: true
+        description: "Install the RapidKit settings module"
+
+    install_logging:
+        type: boolean
+        default: true
+        description: "Install the RapidKit logging module"
+
+    install_deployment:
+        type: boolean
+        default: true
+        description: "Install the RapidKit deployment module for advanced Docker/CI assets"
+
+    enable_sqlite:
+        type: boolean
+        default: true
+        description: "Install RapidKit SQLite integration for local development"
+
+    enable_postgres:
+        type: boolean
+        default: false
+        description: "Install RapidKit PostgreSQL integration and docker-compose service"
+
+    enable_redis:
+        type: boolean
+        default: false
+        description: "Install RapidKit Redis caching integration"
+
+    enable_monitoring:
+        type: boolean
+        default: false
+        description: "Install RapidKit monitoring module for metrics and health checks"
+
+    enable_docs:
+        type: boolean
+        default: true
+        description: "Install RapidKit OpenAPI documentation helpers"
+
+    enable_testing:
+        type: boolean
+        default: true
+        description: "Include testing dependencies and helper scripts (scaffold only)"
+
+    enable_tracing:
+        type: boolean
+        default: false
+        description: "Install RapidKit tracing module"
+
+    auth_strategy:
+        type: choice
+        choices: [none, basic, jwt, oauth2]
+        default: none
+        description: "Authentication strategy to scaffold"
+
+    license:
+        type: choice
+        choices: [MIT, Apache-2.0, GPL-3.0, Proprietary]
+        default: MIT
+        description: "Project license"
+
+structure:
+    - path: src/
+      type: folder
+    - path: src/main.py
+      template: src/main.py.j2
+    - path: src/__init__.py
+      template: src/__init__.py.j2
+    - path: src/cli.py
+      template: src/cli.py.j2
+    - path: src/routing/__init__.py
+      template: src/routing/__init__.py.j2
+    - path: src/routing/health.py
+      template: src/routing/health.py.j2
+    - path: src/routing/examples.py
+      template: src/routing/examples.py.j2
+    - path: src/modules/__init__.py
+      template: src/modules/__init__.py.j2
+    - path: .rapidkit/
+      type: folder
+    - path: .rapidkit/cli.py
+      template: common/.rapidkit/cli.py.j2
+    - path: .rapidkit/rapidkit
+      template: common/.rapidkit/rapidkit.j2
+    - path: .rapidkit/context.json
+      template: common/.rapidkit/context.json.j2
+    - path: .rapidkit/activate
+      template: common/.rapidkit/activate.j2
+    - path: tests/
+      type: folder
+    - path: tests/__init__.py
+      template: tests/__init__.py.j2
+    - path: tests/test_health.py
+      template: tests/test_health.py.j2
+    - path: tests/test_examples.py
+      template: tests/test_examples.py.j2
+    - path: README.md
+      template: README.md.j2
+    - path: bootstrap.sh
+      template: common/bootstrap.sh.j2
+    - path: .gitignore
+      template: .gitignore.j2
+    - path: pyproject.toml
+      template: pyproject.toml.j2
+    - path: .python-version
+      template: common/.python-version.j2
+    - path: .pre-commit-config.yaml
+      template: common/.pre-commit-config.yaml.j2
+    - path: Makefile
+      template: common/Makefile.j2
+    - path: .dockerignore
+      template: common/.dockerignore.j2
+      conditions:
+          has_docker: true
+    - path: Dockerfile
+      template: common/Dockerfile.j2
+      conditions:
+          has_docker: true
+    - path: docker-compose.yml
+      template: common/docker-compose.yml.j2
+      conditions:
+          has_docker: true
+    - path: .env.example
+      template: env.example.j2
+    - path: LICENSE
+      template_if:
+          MIT: common/licenses/mit.j2
+          Apache-2.0: common/licenses/apache-2.0.j2
+          GPL-3.0: common/licenses/gpl-3.0.j2
+          Proprietary: common/licenses/mit.j2
+    - path: .github/workflows/ci.yml
+      template: common/.github/workflows/ci.yml.j2
+      conditions:
+          has_ci: true
+
+injection_points:
+    imports:
+        - file: src/main.py
+          anchor: "# <<<inject:imports>>>"
+          description: "Additional imports supplied by modules"
+    startup_hooks:
+        - file: src/main.py
+          anchor: "# <<<inject:startup>>>"
+          description: "Asynchronous startup tasks"
+    shutdown_hooks:
+        - file: src/main.py
+          anchor: "# <<<inject:shutdown>>>"
+          description: "Asynchronous shutdown tasks"
+    router_includes:
+        - file: src/main.py
+          anchor: "# <<<inject:routes>>>"
+          description: "Register API routers from modules"
+    module_init:
+        - file: src/modules/__init__.py
+          anchor: "# <<<inject:module-init>>>"
+          description: "Module bootstrapping logic"
+    router_registration:
+        - file: src/routing/__init__.py
+          anchor: "# <<<inject:router-imports>>>"
+          description: "Import routers provided by modules"
+    router_mount:
+        - file: src/routing/__init__.py
+          anchor: "# <<<inject:router-mount>>>"
+          description: "Attach module routers to api_router"
+    poetry_dependencies:
+        - file: pyproject.toml
+          anchor: "# <<<inject:poetry-dependencies>>>"
+          description: "Add dependencies contributed by modules"
+
+hooks:
+    pre_generate: pre_generate
+    post_generate: post_generate

@@ -1,0 +1,28 @@
+"""FastAPI route definitions for {{ module_title }}."""
+
+from __future__ import annotations
+
+from typing import Any
+
+from fastapi import APIRouter
+
+from ..{{ module_name }} import {{ module_class_name }}, get_api_keys_runtime
+
+
+def build_router(
+    *,
+    runtime: {{ module_class_name }} | None = None,
+    prefix: str = "/{{ module_kebab }}",
+) -> APIRouter:
+    runtime = runtime or get_api_keys_runtime()
+    router = APIRouter(prefix=prefix, tags=["{{ module_title }}"])
+
+    @router.get("/metadata", summary="{{ module_title }} metadata")
+    async def fetch_metadata() -> dict[str, Any]:
+        return runtime.metadata()
+
+    @router.get("/health", summary="{{ module_title }} health check")
+    async def read_health() -> dict[str, Any]:
+        return runtime.health_check()
+
+    return router

@@ -1,0 +1,15 @@
+import { Module } from "@nestjs/common";
+import { ConfigModule } from "@nestjs/config";
+
+import { {{ module_class_name }}Controller } from "./{{ module_name }}.controller";
+import { {{ module_class_name }}HealthController } from "../../../../health/{{ module_name }}.health";
+import cartConfiguration from "./{{ module_name }}.configuration";
+import { {{ module_class_name }}Service } from "./{{ module_name }}.service";
+
+@Module({
+  imports: [ConfigModule.forFeature(cartConfiguration)],
+  controllers: [{{ module_class_name }}Controller, {{ module_class_name }}HealthController],
+  providers: [{{ module_class_name }}Service],
+  exports: [{{ module_class_name }}Service],
+})
+export class {{ module_class_name }}Module {}

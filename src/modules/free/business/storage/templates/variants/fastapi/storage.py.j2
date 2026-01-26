@@ -1,0 +1,125 @@
+"""FastAPI integration helpers for the {{ module_title }} module."""
+
+from __future__ import annotations
+
+import importlib.util
+import os
+import sys
+from functools import lru_cache
+from pathlib import Path
+from types import ModuleType
+from typing import Any, Mapping
+
+from fastapi import Depends
+
+_VENDOR_MODULE = "{{ rapidkit_vendor_module }}"
+_VENDOR_VERSION = "{{ rapidkit_vendor_version }}"
+_VENDOR_RELATIVE_PATH = "{{ vendor_runtime_relative }}"
+_VENDOR_ROOT_ENV = "RAPIDKIT_VENDOR_ROOT"
+_MODULE_CACHE = "rapidkit_vendor_storage"
+
+
+def _project_root() -> Path:
+    current = Path(__file__).resolve()
+    for parent in (current.parent, *current.parents):
+        # Prefer real project markers so this keeps working even if
+        # the module path depth changes.
+        if (parent / ".rapidkit").exists():
+            return parent
+        if (parent / "pyproject.toml").exists() or (parent / "package.json").exists():
+            return parent
+    return current.parents[-1]
+
+
+def _vendor_root() -> Path:
+    override = os.getenv(_VENDOR_ROOT_ENV)
+    if override:
+        return Path(override).expanduser().resolve()
+    return _project_root() / ".rapidkit" / "vendor"
+
+
+def _vendor_base_dir() -> Path:
+    module_dir = _vendor_root() / _VENDOR_MODULE
+    preferred = module_dir / _VENDOR_VERSION if _VENDOR_VERSION else None
+    if preferred and preferred.exists():
+        return preferred
+    candidates = sorted((candidate for candidate in module_dir.glob("*") if candidate.is_dir()), reverse=True)
+    if candidates:
+        return candidates[0]
+    raise RuntimeError(
+        "RapidKit vendor storage payload missing. Re-run `rapidkit modules install storage`."
+    )
+
+
+def _vendor_file() -> Path:
+    if not _VENDOR_RELATIVE_PATH:
+        raise RuntimeError("Storage vendor relative path missing from generator context")
+    return _vendor_base_dir() / _VENDOR_RELATIVE_PATH
+
+
+@lru_cache(maxsize=1)
+def _load_vendor_module() -> ModuleType:
+    vendor_path = _vendor_file()
+    if not vendor_path.exists():
+        raise RuntimeError(
+            f"Storage vendor runtime missing at {vendor_path}. Re-run `rapidkit modules install storage`."
+        )
+
+    module_name = _MODULE_CACHE + _VENDOR_MODULE.replace("/", "_")
+    spec = importlib.util.spec_from_file_location(module_name, vendor_path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Unable to load storage vendor module from {vendor_path}")
+
+    module = importlib.util.module_from_spec(spec)
+    sys.modules.setdefault(module_name, module)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _resolve_export(name: str):
+    vendor = _load_vendor_module()
+    try:
+        return getattr(vendor, name)
+    except AttributeError as exc:  # pragma: no cover - guard against drift
+        raise RuntimeError(f"Vendor storage runtime missing attribute '{name}'") from exc
+
+
+FileStorage = _resolve_export("{{ module_class_name }}")
+StorageConfig = _resolve_export("StorageConfig")
+FileMetadata = _resolve_export("FileMetadata")
+UploadResult = _resolve_export("UploadResult")
+LocalStorageAdapter = _resolve_export("LocalStorageAdapter")
+FileValidationError = _resolve_export("FileValidationError")
+UnsupportedAdapterError = _resolve_export("UnsupportedAdapterError")
+
+
+try:  # Optional override system
+    from core.services.override_contracts import apply_module_overrides
+except ImportError:  # pragma: no cover - override subsystem optional
+    apply_module_overrides = None
+
+if apply_module_overrides is not None:  # pragma: no branch - trivial guard
+    apply_module_overrides(sys.modules[__name__], "storage")
+
+
+@lru_cache(maxsize=1)
+def _default_storage() -> Any:
+    return FileStorage()
+
+
+def get_storage() -> Any:
+    """Return the singleton storage facade for FastAPI dependency injection."""
+
+    return _default_storage()
+
+__all__ = [
+    "FileStorage",
+    "StorageConfig",
+    "FileMetadata",
+    "UploadResult",
+    "LocalStorageAdapter",
+    "FileValidationError",
+    "UnsupportedAdapterError",
+    "get_storage",
+    "_load_vendor_module",
+]

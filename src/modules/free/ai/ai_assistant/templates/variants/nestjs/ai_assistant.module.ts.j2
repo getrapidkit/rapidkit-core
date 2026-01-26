@@ -1,0 +1,44 @@
+import { DynamicModule, Module } from "@nestjs/common";
+import { {{ module_class_name }}Controller } from "./{{ module_name }}.controller";
+import {
+    AI_ASSISTANT_CONFIG,
+    AiAssistantModuleConfig,
+    {{ module_class_name }}Service,
+    defaultAiAssistantConfig,
+} from "./{{ module_name }}.service";
+
+function buildConfig(overrides?: Partial<AiAssistantModuleConfig>): AiAssistantModuleConfig {
+    return {
+        ...defaultAiAssistantConfig(),
+        ...overrides,
+        providers: overrides?.providers?.length ? overrides.providers : defaultAiAssistantConfig().providers,
+    };
+}
+
+@Module({
+    controllers: [{{ module_class_name }}Controller],
+    providers: [
+        {
+            provide: AI_ASSISTANT_CONFIG,
+            useFactory: () => defaultAiAssistantConfig(),
+        },
+        {{ module_class_name }}Service,
+    ],
+    exports: [{{ module_class_name }}Service],
+})
+export class {{ module_class_name }}Module {
+    static forRoot(config?: Partial<AiAssistantModuleConfig>): DynamicModule {
+        return {
+            module: {{ module_class_name }}Module,
+            controllers: [{{ module_class_name }}Controller],
+            providers: [
+                {
+                    provide: AI_ASSISTANT_CONFIG,
+                    useValue: buildConfig(config),
+                },
+                {{ module_class_name }}Service,
+            ],
+            exports: [{{ module_class_name }}Service],
+        };
+    }
+}

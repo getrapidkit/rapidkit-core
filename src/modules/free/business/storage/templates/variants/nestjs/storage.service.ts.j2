@@ -1,0 +1,189 @@
+import {
+  BadRequestException,
+  Injectable,
+  InternalServerErrorException,
+  NotFoundException,
+} from "@nestjs/common";
+import { createHash, randomUUID } from "crypto";
+import { constants as fsConstants, promises as fs } from "fs";
+import { dirname, extname, join, resolve } from "path";
+
+export interface StorageUploadedFile {
+  originalname: string;
+  mimetype: string;
+  size: number;
+  buffer?: Buffer;
+  path?: string;
+}
+
+export interface StorageMetadata {
+  fileId: string;
+  originalName: string;
+  size: number;
+  mimeType: string;
+  checksum: string;
+}
+
+export interface StorageHealthPayload {
+  module: string;
+  status: "healthy" | "degraded";
+  checkedAt: string;
+  adapter: Record<string, unknown>;
+}
+
+export interface StorageStatusSummary {
+  module: string;
+  status: "healthy" | "degraded";
+  writable: boolean;
+  free: number | null;
+}
+
+const DEFAULT_EXTENSIONS = "jpg,jpeg,png,gif,pdf,doc,docx,xls,xlsx,txt,csv,zip,tar,gz";
+
+@Injectable()
+export class {{ module_service_class }} {
+  private readonly clock: () => Date = () => new Date();
+  private readonly basePath: string;
+  private readonly allowedExtensions: Set<string>;
+  private readonly maxFileSize: number;
+
+  constructor() {
+    this.basePath = resolve(process.env.RAPIDKIT_STORAGE_PATH ?? "./storage/uploads");
+    this.allowedExtensions = new Set(
+      (process.env.RAPIDKIT_STORAGE_EXTENSIONS ?? DEFAULT_EXTENSIONS)
+        .split(",")
+        .map((ext) => ext.trim().toLowerCase())
+        .filter(Boolean),
+    );
+    this.maxFileSize = Number(process.env.RAPIDKIT_STORAGE_MAX_SIZE ?? 104_857_600);
+  }
+
+  async uploadFile(file: StorageUploadedFile): Promise<StorageMetadata> {
+    if (!file) {
+      throw new BadRequestException("File payload missing");
+    }
+    this.validateFile(file);
+    const fileId = this.buildFileId(file.originalname);
+    const target = join(this.basePath, fileId);
+    await fs.mkdir(dirname(target), { recursive: true });
+    try {
+      if (file.buffer) {
+        await fs.writeFile(target, file.buffer);
+      } else if (file.path) {
+        await fs.rename(file.path, target);
+      } else {
+        throw new BadRequestException("File payload missing content");
+      }
+    } catch {
+      throw new InternalServerErrorException("Unable to write storage file");
+    }
+
+    const checksumBuffer = file.buffer ?? (await fs.readFile(target));
+    return {
+      fileId,
+      originalName: file.originalname,
+      size: file.size,
+      mimeType: file.mimetype,
+      checksum: this.computeChecksum(checksumBuffer),
+    };
+  }
+
+  async downloadFile(fileId: string): Promise<Buffer> {
+    const target = join(this.basePath, fileId);
+    try {
+      return await fs.readFile(target);
+    } catch (caught) {
+      if ((caught as NodeJS.ErrnoException).code === "ENOENT") {
+        throw new NotFoundException("File not found");
+      }
+      throw new InternalServerErrorException("Unable to read storage file");
+    }
+  }
+
+  async deleteFile(fileId: string): Promise<void> {
+    const target = join(this.basePath, fileId);
+    try {
+      await fs.unlink(target);
+    } catch (caught) {
+      if ((caught as NodeJS.ErrnoException).code === "ENOENT") {
+        return;
+      }
+      throw new InternalServerErrorException("Unable to delete storage file");
+    }
+  }
+
+  async healthCheck(): Promise<StorageHealthPayload> {
+    const adapter = await this.buildAdapterSnapshot();
+    return {
+      module: "{{ module_name }}",
+      status: adapter.writable && adapter.free !== 0 ? "healthy" : "degraded",
+      checkedAt: this.clock().toISOString(),
+      adapter,
+    };
+  }
+
+  async getStatus(): Promise<StorageStatusSummary> {
+    const payload = await this.healthCheck();
+    return {
+      module: payload.module,
+      status: payload.status,
+      writable: Boolean(payload.adapter.writable),
+      free: (payload.adapter.free as number | null | undefined) ?? null,
+    };
+  }
+
+  getHealthPayload(): Promise<StorageHealthPayload> {
+    return this.healthCheck();
+  }
+
+  private async buildAdapterSnapshot(): Promise<Record<string, unknown>> {
+    await fs.mkdir(this.basePath, { recursive: true });
+
+    let writable = true;
+    try {
+      await fs.access(this.basePath, fsConstants.W_OK);
+    } catch {
+      writable = false;
+    }
+
+    let free: number | null = null;
+    const fsAny = fs as unknown as {
+      statfs?: (target: string) => Promise<{ bfree: number; bsize: number }>;
+    };
+
+    if (typeof fsAny.statfs === "function") {
+      try {
+        const stats = await fsAny.statfs(this.basePath);
+        free = stats.bfree * stats.bsize;
+      } catch {
+        free = null;
+      }
+    }
+
+    return {
+      adapter: "local",
+      path: this.basePath,
+      free,
+      writable,
+    };
+  }
+
+  private validateFile(file: StorageUploadedFile): void {
+    if (file.size > this.maxFileSize) {
+      throw new BadRequestException("File exceeds maximum size limit");
+    }
+    const ext = extname(file.originalname).replace(".", "").toLowerCase();
+    if (this.allowedExtensions.size && !this.allowedExtensions.has(ext)) {
+      throw new BadRequestException(`File extension .${ext || "unknown"} not allowed`);
+    }
+  }
+
+  private buildFileId(originalName: string): string {
+    const ext = extname(originalName).toLowerCase();
+    return ext ? `${randomUUID()}${ext}` : randomUUID();
+  }
+
+  private computeChecksum(buffer: Buffer): string {
+    return createHash("sha256").update(buffer).digest("hex");
+  }
+}

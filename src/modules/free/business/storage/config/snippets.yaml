@@ -1,0 +1,120 @@
+snippets:
+  - id: storage_env
+    target: .env,.env.dev,.env.prod,.env.example
+    anchor: "# <<<inject:module-env>>>"
+    template: env.snippet.j2
+    features: [storage]
+    profiles: [fastapi/standard, nestjs/standard]
+    description: Injects Storage-related environment variables
+    version: "1.0.0"
+    priority: 10
+    dependencies: []
+    context:
+      storage_defaults:
+        adapter: local
+        base_path: "./storage/uploads"
+        max_file_size: 104857600
+        s3_enabled: false
+        gcs_enabled: false
+    schema:
+      type: object
+      properties:
+        STORAGE_ADAPTER:
+          type: str
+          default: "local"
+          description: "Storage backend: local, s3, or gcs"
+          validation: "^(local|s3|gcs)$"
+        STORAGE_BASE_PATH:
+          type: str
+          default: "./storage/uploads"
+          description: "Base path for local storage"
+        STORAGE_MAX_FILE_SIZE:
+          type: int
+          default: 104857600
+          description: "Maximum file size in bytes (100MB)"
+        S3_BUCKET:
+          type: str
+          default: ""
+          description: "AWS S3 bucket name"
+        S3_REGION:
+          type: str
+          default: "us-east-1"
+          description: "AWS S3 region"
+        S3_ACCESS_KEY_ID:
+          type: str
+          default: ""
+          description: "AWS access key ID"
+        S3_SECRET_ACCESS_KEY:
+          type: str
+          default: ""
+          description: "AWS secret access key"
+        GCS_BUCKET:
+          type: str
+          default: ""
+          description: "Google Cloud Storage bucket name"
+        GCS_PROJECT_ID:
+          type: str
+          default: ""
+          description: "GCS project ID"
+        STORAGE_IMAGE_PROCESSING:
+          type: bool
+          default: true
+          description: "Enable image processing"
+        STORAGE_SCAN_ON_UPLOAD:
+          type: bool
+          default: true
+          description: "Scan files on upload"
+      additionalProperties: true
+      required: []
+    metadata:
+      author: "RapidKit Team"
+      created_at: "2025-11-02"
+      last_modified: "2025-11-02"
+    conflict_resolution: merge
+
+  - id: storage_settings_fields
+    target: src/modules/free/essentials/settings/settings.py
+    anchor: "# <<<inject:settings-fields>>>"
+    template: storage_fields.snippet.j2
+    features: [extendable_settings, storage]
+    profiles: [fastapi/standard]
+    description: Inject settings fields for Storage into core/settings.py
+    version: "1.0.0"
+    priority: 20
+    dependencies: []
+    context:
+      storage_defaults:
+        adapter: local
+        base_path: "./storage/uploads"
+        max_file_size: 104857600
+    schema:
+      type: object
+      properties: {}
+      additionalProperties: true
+      required: []
+    metadata:
+      author: "RapidKit Team"
+      created_at: "2025-11-02"
+      last_modified: "2025-11-02"
+    conflict_resolution: merge
+
+  - id: storage_config_fields_nestjs
+    target: src/config/configuration.ts
+    anchor: "// <<<inject:configuration>>>"
+    template: storage_config_nestjs.snippet.j2
+    features: [storage]
+    profiles: [nestjs/standard]
+    description: Inject Storage configuration fields into NestJS configuration
+    version: "1.0.0"
+    priority: 20
+    dependencies: []
+    schema:
+      type: object
+      properties: {}
+      additionalProperties: true
+      required: []
+    metadata:
+      author: "RapidKit Team"
+      created_at: "2025-11-02"
+      last_modified: "2025-11-02"
+    conflict_resolution: merge

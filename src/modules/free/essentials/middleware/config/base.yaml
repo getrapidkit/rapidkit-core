@@ -1,0 +1,21 @@
+name: middleware
+tier: free
+status: active
+
+defaults:
+  enabled: true
+  cors_enabled: false
+  cors_allow_origins:
+    - "*"
+  cors_allow_methods:
+    - "*"
+  cors_allow_headers:
+    - "*"
+  cors_allow_credentials: true
+  process_time_header: true
+  service_header: true
+  service_header_name: X-Service
+  service_name: ""
+  custom_headers: true
+  custom_header_name: X-Custom-Header
+  custom_header_value: RapidKit

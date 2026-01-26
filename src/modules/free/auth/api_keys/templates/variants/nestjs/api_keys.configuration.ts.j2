@@ -1,0 +1,174 @@
+import { registerAs } from "@nestjs/config";
+
+export type ApiKeysFeatureFlags = string[];
+
+export interface ApiKeysConfiguration {
+  enabled: boolean;
+  keyPrefix: string;
+  displayPrefix: string;
+  tokenSeparator: string;
+  secretBytes: number;
+  prefixBytes: number;
+  hashAlgorithm: string;
+  pepperEnv: string;
+  pepper: string | null;
+  defaultScopes: string[];
+  allowedScopes: string[];
+  allowScopeWildcards: boolean;
+  ttlHours: number | null;
+  rotationDays: number;
+  maxActivePerOwner: number;
+  leakWindowHours: number | null;
+  repositoryBackend: string;
+  features: ApiKeysFeatureFlags;
+}
+
+const DEFAULTS: Record<string, any> = {{ api_keys_defaults | tojson(indent=2) }};
+
+const truthy = new Set(["1", "true", "yes", "on"]);
+const falsy = new Set(["0", "false", "no", "off"]);
+
+const parseBoolean = (value: string | undefined, fallback: boolean): boolean => {
+  if (typeof value !== "string") {
+    return fallback;
+  }
+  const normalized = value.trim().toLowerCase();
+  if (truthy.has(normalized)) {
+    return true;
+  }
+  if (falsy.has(normalized)) {
+    return false;
+  }
+  return fallback;
+};
+
+const parseNumber = (value: string | undefined, fallback: number, minimum = 0): number => {
+  if (typeof value !== "string") {
+    return fallback;
+  }
+  const parsed = Number.parseInt(value.trim(), 10);
+  if (Number.isNaN(parsed) || parsed < minimum) {
+    return fallback;
+  }
+  return parsed;
+};
+
+const parseOptionalNumber = (value: string | undefined, fallback: number | null): number | null => {
+  if (typeof value !== "string") {
+    return fallback;
+  }
+  const trimmed = value.trim();
+  if (trimmed.length === 0) {
+    return fallback;
+  }
+  const parsed = Number.parseInt(trimmed, 10);
+  if (Number.isNaN(parsed)) {
+    return fallback;
+  }
+  return parsed;
+};
+
+const parseString = (value: string | undefined, fallback: string): string => {
+  if (typeof value !== "string") {
+    return fallback;
+  }
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : fallback;
+};
+
+const parseList = (value: string | undefined, fallback: string[]): string[] => {
+  if (typeof value !== "string") {
+    return fallback;
+  }
+  const trimmed = value.trim();
+  if (trimmed.length === 0) {
+    return fallback;
+  }
+  try {
+    const parsed = JSON.parse(trimmed);
+    if (Array.isArray(parsed) && parsed.every((item) => typeof item === "string")) {
+      return Array.from(new Set(parsed.map((item) => item.trim()).filter(Boolean)));
+    }
+  } catch {
+    // ignore and fall back to comma parsing
+  }
+  const segments = trimmed
+    .split(",")
+    .map((part) => part.trim())
+    .filter((part) => part.length > 0);
+  return segments.length > 0 ? Array.from(new Set(segments)) : fallback;
+};
+
+export default registerAs("apiKeys", (): ApiKeysConfiguration => {
+  const defaults = DEFAULTS;
+
+  return {
+    enabled: parseBoolean(process.env.RAPIDKIT_API_KEYS_ENABLED, Boolean(defaults.enabled)),
+    keyPrefix: parseString(process.env.RAPIDKIT_API_KEYS_PREFIX, defaults.key_prefix ?? "rk"),
+    displayPrefix: parseString(
+      process.env.RAPIDKIT_API_KEYS_DISPLAY_PREFIX,
+      defaults.display_prefix ?? "rk_live_",
+    ),
+    tokenSeparator: parseString(
+      process.env.RAPIDKIT_API_KEYS_TOKEN_SEPARATOR,
+      defaults.token_separator ?? ".",
+    ),
+    secretBytes: parseNumber(
+      process.env.RAPIDKIT_API_KEYS_SECRET_BYTES,
+      defaults.secret_bytes ?? 32,
+      8,
+    ),
+    prefixBytes: parseNumber(
+      process.env.RAPIDKIT_API_KEYS_PREFIX_BYTES,
+      defaults.prefix_bytes ?? 6,
+      4,
+    ),
+    hashAlgorithm: parseString(
+      process.env.RAPIDKIT_API_KEYS_HASH_ALGORITHM,
+      defaults.hash_algorithm ?? "sha256",
+    ),
+    pepperEnv: parseString(
+      process.env.RAPIDKIT_API_KEYS_PEPPER_ENV,
+      defaults.pepper_env ?? "RAPIDKIT_API_KEYS_PEPPER",
+    ),
+    pepper: parseString(process.env.RAPIDKIT_API_KEYS_PEPPER, defaults.pepper ?? "").trim() || null,
+    defaultScopes: parseList(
+      process.env.RAPIDKIT_API_KEYS_DEFAULT_SCOPES,
+      (defaults.default_scopes as string[]) ?? ["read"],
+    ),
+    allowedScopes: parseList(
+      process.env.RAPIDKIT_API_KEYS_ALLOWED_SCOPES,
+      (defaults.allowed_scopes as string[]) ?? ["read", "write", "admin"],
+    ),
+    allowScopeWildcards: parseBoolean(
+      process.env.RAPIDKIT_API_KEYS_ALLOW_SCOPE_WILDCARDS,
+      Boolean(defaults.allow_scope_wildcards),
+    ),
+    ttlHours: parseOptionalNumber(
+      process.env.RAPIDKIT_API_KEYS_TTL_HOURS,
+      (defaults.ttl_hours as number | null) ?? null,
+    ),
+    rotationDays: parseNumber(
+      process.env.RAPIDKIT_API_KEYS_ROTATION_DAYS,
+      defaults.rotation_days ?? 90,
+      0,
+    ),
+    maxActivePerOwner: parseNumber(
+      process.env.RAPIDKIT_API_KEYS_MAX_ACTIVE,
+      defaults.max_active_per_owner ?? 25,
+      0,
+    ),
+    leakWindowHours: parseOptionalNumber(
+      process.env.RAPIDKIT_API_KEYS_LEAK_WINDOW,
+      (defaults.leak_window_hours as number | null) ?? null,
+    ),
+    repositoryBackend: parseString(
+      process.env.RAPIDKIT_API_KEYS_REPOSITORY,
+      defaults.repository_backend ?? "memory",
+    ),
+    features: parseList(
+      process.env.RAPIDKIT_API_KEYS_FEATURES,
+      Array.isArray(defaults.features) ? defaults.features : [],
+    ),
+  };
+});

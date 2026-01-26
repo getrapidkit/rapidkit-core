@@ -1,0 +1,18 @@
+# Loyalty tier snippet overrides
+# Adds stacked discounts for loyalty members.
+
+defaults:
+  loyalty:
+    enable_stackable_discounts: true
+    tiers:
+      - name: gold
+        multiplier: '0.95'
+      - name: platinum
+        multiplier: '0.90'
+
+additional_discount_rules:
+  - code: LOYALTY5
+    description: 5% loyalty discount
+    percentage: '0.05'
+    applies_to: []
+    minimum_subtotal: '0.00'

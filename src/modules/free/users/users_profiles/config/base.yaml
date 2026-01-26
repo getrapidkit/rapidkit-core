@@ -1,0 +1,124 @@
+name: users_profiles
+display_name: Users Profiles
+description: >-
+  Extends the Users Core module with rich profile modelling, marketing preferences,
+  and privacy-aware APIs for FastAPI and NestJS applications.
+root_path: src/
+
+profiles:
+  fastapi/standard:
+    description: FastAPI runtime exposing dependency providers and REST endpoints for profiles.
+  nestjs/standard:
+    description: NestJS service mirroring the profile API for hybrid teams.
+
+defaults:
+  default_timezone: UTC
+  max_bio_length: 280
+  avatar_max_bytes: 2097152
+  allow_marketing_opt_in: true
+  social_links_limit: 5
+  default_visibility: public
+
+variables:
+  allow_marketing_opt_in:
+    type: boolean
+    default: true
+    description: Toggle marketing consent features in generated templates.
+  max_bio_length:
+    type: integer
+    default: 280
+    description: Maximum number of characters stored for biographies.
+  social_links_limit:
+    type: integer
+    default: 5
+    description: Maximum number of social URLs persisted per profile.
+  avatar_max_bytes:
+    type: integer
+    default: 2097152
+    description: Maximum binary size (bytes) accepted for avatar uploads.
+  default_visibility:
+    type: string
+    default: public
+    description: Default visibility value used when clients omit it.
+
+features:
+  profile_domain:
+    status: beta
+    enabled: true
+    description: Pydantic models, DTOs, and enums describing user profiles.
+    files:
+      - path: core/users/profiles/models.py
+        description: UserProfile entity and supporting enums.
+      - path: core/users/profiles/dto.py
+        description: Transport DTOs for create/update payloads.
+  profile_service:
+    status: beta
+    enabled: true
+    description: Service facade coordinating repository persistence and validations.
+    files:
+      - path: core/users/profiles/service.py
+        description: Core profile service implementation.
+      - path: core/users/profiles/errors.py
+        description: Domain-specific exceptions for profile workflows.
+  profile_repository:
+    status: beta
+    enabled: true
+    description: Repository protocol plus in-memory implementation for local testing.
+    files:
+      - path: core/users/profiles/repository.py
+        description: Abstraction for persistence backends.
+      - path: core/users/profiles/in_memory_repository.py
+        description: In-memory repository used by tests and demos.
+  fastapi_router:
+    status: beta
+    enabled: true
+    description: REST router, dependencies, and health hook for FastAPI deployments.
+    files:
+      - path: core/users/profiles/dependencies.py
+        description: Dependency providers exposing the profile service.
+      - path: core/users/profiles/router.py
+        description: CRUD endpoints for managing user profiles.
+      - path: core/health/users_profiles.py
+        description: Health endpoint registration function.
+  nestjs_service:
+    status: experimental
+    enabled: true
+    description: NestJS service and module matching the Python API contract.
+    files:
+      - path: users_profiles/users_profiles.service.ts
+        description: Injectable service for HTTP interaction with profile API.
+
+snippets:
+  - name: users_profiles_env
+    path: templates/snippets/users_profiles.snippet.j2
+    description: Environment variables and settings fragment for Users Profiles.
+
+depends_on:
+  fastapi/standard:
+    - name: pydantic
+      source: external
+      tool: pip
+      version: ">=2.12.2,<3.0"
+    - name: fastapi
+      source: external
+      tool: pip
+      version: ">=0.111.0,<1.0"
+  nestjs/standard:
+    - name: "@nestjs/common"
+      source: npm
+      tool: npm
+      version: ">=11.1.0"
+
+dev_dependencies:
+  - name: pytest
+    source: external
+    tool: pip
+    version: ">=8.3.0,<9.0"
+  - name: pytest-asyncio
+    source: external
+    tool: pip
+    version: ">=0.25.0,<1.0"
+  - name: ruff
+    source: external
+    tool: pip
+    version: ">=0.14.0,<1.0"

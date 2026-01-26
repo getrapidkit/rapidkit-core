@@ -1,0 +1,35 @@
+{% include "templates/base/cart_health.py.j2" %}
+
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, status
+
+from {{ module_import_base }}.cart import CartService
+
+
+def _get_cart_service(request: Request) -> CartService:
+    service = getattr(request.app.state, "cart_service", None)
+    if service is None:
+        service = CartService()
+        request.app.state.cart_service = service
+    return service
+
+
+def build_health_router() -> APIRouter:
+    router = APIRouter(prefix="/api/health/module", tags=["health", "{{ module_title }}"])
+
+    @router.get("/{{ module_kebab }}", response_model=dict)
+    async def cart_health(service: CartService = Depends(_get_cart_service)) -> dict:
+        payload = run_cart_health_check(service)
+        if payload.get("status") != "ok":
+            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=payload)
+        return payload
+
+    return router
+
+
+def register_cart_health(app: FastAPI) -> None:
+    """Register the {{ module_title }} health router against the provided app."""
+
+    app.include_router(build_health_router())
+
+
+__all__ = [*__all__, "build_health_router", "register_cart_health"]

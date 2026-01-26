@@ -1,0 +1,27 @@
+import { Controller, Get } from "@nestjs/common";
+
+import {
+  {{ module_class_name }}Service,
+  StripePaymentHealthPayload,
+  StripePaymentMetadata,
+} from "./{{ module_kebab }}.service";
+
+@Controller("{{ module_kebab }}")
+export class {{ module_class_name }}Controller {
+  constructor(private readonly service: {{ module_class_name }}Service) {}
+
+  @Get("health")
+  getHealth(): StripePaymentHealthPayload {
+    return this.service.getHealth();
+  }
+
+  @Get("metadata")
+  getMetadata(): StripePaymentMetadata {
+    return this.service.getMetadata();
+  }
+
+  @Get("status")
+  getStatus(): Record<string, unknown> {
+    return this.service.getStatus();
+  }
+}

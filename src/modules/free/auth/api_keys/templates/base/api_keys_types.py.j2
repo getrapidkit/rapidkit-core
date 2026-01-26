@@ -1,0 +1,203 @@
+"""Shared type definitions for {{ module_title }}."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from enum import Enum
+from typing import Any, Dict, Iterable, List, Mapping, Protocol, Sequence
+
+UTC = timezone.utc
+
+
+class {{ module_class_name }}Status(str, Enum):
+    """Possible lifecycle states for an API key."""
+
+    ACTIVE = "active"
+    EXPIRED = "expired"
+    REVOKED = "revoked"
+
+
+@dataclass(slots=True)
+class {{ module_class_name }}Config:
+    """Runtime configuration for {{ module_title }}."""
+
+    enabled: bool = True
+    key_prefix: str = "rk"
+    display_prefix: str = "rk_live_"
+    token_separator: str = "."  # noqa: S105
+    secret_bytes: int = 32
+    prefix_bytes: int = 6
+    prefix_charset: str = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+    hash_algorithm: str = "sha256"
+    pepper_env: str = "RAPIDKIT_API_KEYS_PEPPER"
+    pepper: str | None = None
+    default_scopes: tuple[str, ...] = ("read",)
+    allowed_scopes: tuple[str, ...] | None = None
+    allow_scope_wildcards: bool = False
+    ttl_hours: int | None = None
+    rotation_days: int = 90
+    max_active_per_owner: int = 25
+    leak_window_hours: int = 72
+    metadata: Dict[str, Any] = field(default_factory=dict)
+    repository_backend: str = "memory"
+    persist_last_used: bool = True
+    audit_trail: bool = True
+    features: tuple[str, ...] = (
+        "deterministic_hashing",
+        "scope_enforcement",
+        "usage_metrics",
+        "rotation_window",
+        "leak_detection",
+    )
+
+
+@dataclass(slots=True)
+class {{ module_class_name }}AuditEntry:
+    """Represents an audit log entry for key operations."""
+
+    event: str
+    key_id: str
+    owner_id: str
+    timestamp: datetime
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(slots=True)
+class {{ module_class_name }}Record:
+    """Represents a persisted API key."""
+
+    key_id: str
+    owner_id: str
+    prefix: str
+    hashed_key: str
+    scopes: tuple[str, ...]
+    label: str | None
+    created_at: datetime
+    expires_at: datetime | None
+    revoked_at: datetime | None = None
+    last_used_at: datetime | None = None
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+    def is_active(self, *, now: datetime | None = None) -> bool:
+        """Return True when this key is active and not expired."""
+
+        if self.revoked_at is not None:
+            return False
+        if self.expires_at is None:
+            return True
+        reference = now or datetime.now(tz=UTC)
+        return reference < self.expires_at
+
+    def status(self, *, now: datetime | None = None) -> {{ module_class_name }}Status:
+        """Return the lifecycle status for the key."""
+
+        if self.revoked_at is not None:
+            return {{ module_class_name }}Status.REVOKED
+        reference = now or datetime.now(tz=UTC)
+        if self.expires_at is not None and reference >= self.expires_at:
+            return {{ module_class_name }}Status.EXPIRED
+        return {{ module_class_name }}Status.ACTIVE
+
+
+@dataclass(slots=True)
+class {{ module_class_name }}IssueResult:
+    """Return payload when issuing a key."""
+
+    token: str
+    secret: str
+    record: {{ module_class_name }}Record
+
+
+@dataclass(slots=True)
+class {{ module_class_name }}Verification:
+    """Result payload from verifying an API key."""
+
+    record: {{ module_class_name }}Record | None
+    scopes_granted: tuple[str, ...]
+    required_scopes: tuple[str, ...]
+    matched: bool
+    reason: str | None = None
+
+
+@dataclass(slots=True)
+class {{ module_class_name }}Health:
+    """Health payload describing repository state."""
+
+    status: str
+    totals: Dict[str, int] = field(default_factory=dict)
+    rotation_due: List[str] = field(default_factory=list)
+    issues: List[str] = field(default_factory=list)
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(slots=True)
+class {{ module_class_name }}Telemetry:
+    """Simple telemetry bundle for reporting usage information."""
+
+    issued: int
+    verified: int
+    revoked: int
+    failures: Dict[str, int] = field(default_factory=dict)
+
+
+class {{ module_class_name }}Repository(Protocol):
+    """Repository contract for storing API keys."""
+
+    def persist(self, record: {{ module_class_name }}Record) -> None: ...
+
+    def update(self, record: {{ module_class_name }}Record) -> None: ...
+
+    def delete(self, key_id: str) -> None: ...
+
+    def get_by_id(self, key_id: str) -> {{ module_class_name }}Record | None: ...
+
+    def get_by_prefix(self, prefix: str) -> {{ module_class_name }}Record | None: ...
+
+    def list_for_owner(
+        self,
+        owner_id: str,
+        *,
+        include_inactive: bool = False,
+    ) -> List[{{ module_class_name }}Record]: ...
+
+    def stats(self) -> Dict[str, int]: ...
+
+    def load_recent(self, *, limit: int = 20) -> Sequence[{{ module_class_name }}Record]: ...
+
+    def count_active_for_owner(self, owner_id: str) -> int: ...
+
+    def audit(self, entry: {{ module_class_name }}AuditEntry) -> None: ...
+
+
+class {{ module_class_name }}AuditSink(Protocol):
+    """Hook for persisting audit events."""
+
+    def write(self, entry: {{ module_class_name }}AuditEntry) -> None: ...
+
+
+def summarise_scopes(scopes: Iterable[str]) -> tuple[str, ...]:
+    """Normalise and deduplicate the provided scopes."""
+
+    cleaned: list[str] = []
+    for scope in scopes:
+        candidate = scope.strip()
+        if not candidate:
+            continue
+        cleaned.append(candidate)
+    return tuple(dict.fromkeys(cleaned))
+
+
+__all__ = [
+    "{{ module_class_name }}Status",
+    "{{ module_class_name }}Config",
+    "{{ module_class_name }}AuditEntry",
+    "{{ module_class_name }}Record",
+    "{{ module_class_name }}IssueResult",
+    "{{ module_class_name }}Verification",
+    "{{ module_class_name }}Health",
+    "{{ module_class_name }}Telemetry",
+    "{{ module_class_name }}Repository",
+    "{{ module_class_name }}AuditSink",
+    "summarise_scopes",
+]

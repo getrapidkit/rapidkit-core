@@ -1,0 +1,18 @@
+{# RapidKit Email module environment snippet. #}
+{# Injected into .env files when scaffolding projects. #}
+
+{% set defaults = defaults | default({}) %}
+
+# RapidKit Email module configuration
+RAPIDKIT_EMAIL_ENABLED=true
+RAPIDKIT_EMAIL_PROVIDER={{ defaults.get("provider", "smtp") }}
+RAPIDKIT_EMAIL_FROM_ADDRESS={{ defaults.get("from_email", "noreply@rapidkit.top") }}
+RAPIDKIT_EMAIL_FROM_NAME={{ defaults.get("from_name", "RapidKit") }}
+RAPIDKIT_EMAIL_SMTP_HOST={{ defaults.get("smtp_host", "localhost") }}
+RAPIDKIT_EMAIL_SMTP_PORT={{ defaults.get("smtp_port", 1025) }}
+RAPIDKIT_EMAIL_SMTP_USERNAME=
+RAPIDKIT_EMAIL_SMTP_PASSWORD=
+RAPIDKIT_EMAIL_SMTP_USE_TLS=false
+RAPIDKIT_EMAIL_TEMPLATE_DIRECTORY={{ defaults.get("template_dir", "templates/email") }}
+# Set to true to log outgoing emails without sending
+RAPIDKIT_EMAIL_DRY_RUN=false

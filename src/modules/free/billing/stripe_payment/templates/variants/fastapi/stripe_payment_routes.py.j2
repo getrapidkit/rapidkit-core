@@ -1,0 +1,24 @@
+"""FastAPI route definitions for {{ module_title }}."""
+
+from __future__ import annotations
+
+from typing import Any
+
+from fastapi import APIRouter
+
+from ..stripe_payment import StripePayment
+
+
+def build_router() -> APIRouter:
+    router = APIRouter(prefix="/{{ module_kebab }}", tags=["{{ module_title }}"])
+    facade = StripePayment()
+
+    @router.get("/health", summary="{{ module_title }} health check")
+    async def read_health() -> dict[str, Any]:
+        return facade.health_check()
+
+    @router.get("/metadata", summary="{{ module_title }} metadata snapshot")
+    async def read_metadata() -> dict[str, Any]:
+        return facade.metadata()
+
+    return router

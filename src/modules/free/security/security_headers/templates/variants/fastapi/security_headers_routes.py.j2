@@ -1,0 +1,66 @@
+"""FastAPI route definitions for {{ module_title }}."""
+
+from __future__ import annotations
+
+from typing import Any, Dict
+
+from fastapi import APIRouter, Depends, Request, Response, status
+
+from ..{{ module_name }} import get_runtime as _get_runtime
+
+
+def get_runtime(request: Request) -> Any:
+    """Prefer the runtime instance attached by `register_fastapi`.
+
+    This keeps route behavior stable even if the test harness (or another test)
+    has an older cached import of this router module.
+    """
+
+    state = getattr(request.app, "state", None)
+    if state is not None:
+        runtime = getattr(state, "security_headers_runtime", None)
+        if runtime is not None:
+            return runtime
+    return _get_runtime()
+
+
+def build_router() -> APIRouter:
+    router = APIRouter(prefix="/{{ module_kebab }}", tags=["{{ module_title }}"])
+
+    @router.get(
+        "/health",
+        summary="{{ module_title }} health check",
+        status_code=status.HTTP_200_OK,
+    )
+    async def read_health(runtime: Any = Depends(get_runtime)) -> Dict[str, Any]:
+        return runtime.health_check()
+
+    @router.get(
+        "/headers",
+        summary="Preview resolved security headers",
+        status_code=status.HTTP_200_OK,
+    )
+    async def list_headers(runtime: Any = Depends(get_runtime)) -> Dict[str, str]:
+        return runtime.headers()
+
+    @router.get(
+        "/metadata",
+        summary="Module metadata",
+        status_code=status.HTTP_200_OK,
+    )
+    async def read_metadata(runtime: Any = Depends(get_runtime)) -> Dict[str, Any]:
+        return runtime.metadata()
+
+    @router.post(
+        "/apply",
+        summary="Apply security headers to the current response",
+        status_code=status.HTTP_204_NO_CONTENT,
+    )
+    async def apply_headers(
+        response: Response,
+        runtime: Any = Depends(get_runtime),
+    ) -> Response:
+        runtime.apply(response.headers)
+        return response
+
+    return router

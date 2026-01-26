@@ -1,0 +1,193 @@
+name: oauth
+description: OAuth flows and adapters for RapidKit authentication
+version: 0.1.0
+access: free
+status: stable
+category: auth
+tags:
+- auth
+generated_from_config: true
+depends_on:
+- free/essentials/settings
+profile_inherits:
+  fastapi.standard: fastapi
+  fastapi.ddd: fastapi
+  nestjs.standard: nestjs
+config_sources:
+- config/base.yaml
+- config/snippets.yaml
+generation:
+  vendor:
+    root: .rapidkit/vendor
+    files:
+    - template: templates/base/oauth.py.j2
+      relative: src/modules/free/auth/oauth/oauth.py
+    - template: templates/base/oauth_types.py.j2
+      relative: src/modules/free/auth/oauth/oauth_types.py
+    - template: templates/base/oauth_health.py.j2
+      relative: src/health/oauth.py
+    - template: templates/vendor/nestjs/configuration.js.j2
+      relative: nestjs/configuration.js
+  variants:
+    fastapi: &fastapi_variant
+      root: .
+      context:
+        framework: fastapi
+        module_class_name: Oauth
+      files:
+      - template: templates/variants/fastapi/oauth.py.j2
+        output: src/modules/free/auth/oauth/oauth.py
+      - template: templates/variants/fastapi/oauth_health.py.j2
+        output: src/health/oauth.py
+      - template: templates/base/oauth_types.py.j2
+        output: src/modules/free/auth/oauth/oauth_types.py
+      - template: templates/variants/fastapi/oauth_routes.py.j2
+        output: src/modules/free/auth/oauth/routers/oauth.py
+      - template: templates/variants/fastapi/oauth_config.yaml.j2
+        output: config/oauth.yaml
+      - template: templates/tests/integration/test_oauth_integration.j2
+        output: tests/modules/integration/auth/oauth/test_oauth_integration.py
+      - template: templates/variants/fastapi/tests/test_oauth_e2e.py
+        output: tests/modules/e2e/free/auth/oauth/test_oauth_e2e.py
+    fastapi.standard: *fastapi_variant
+    fastapi.ddd: *fastapi_variant
+    nestjs: &nestjs_variant
+      root: .
+      context:
+        framework: nestjs
+        vendor_configuration_relative: nestjs/configuration.js
+        module_class_name: Oauth
+        module_kebab: oauth
+      files:
+      - template: templates/variants/nestjs/configuration.ts.j2
+        output: src/modules/free/auth/oauth/configuration.ts
+      - template: templates/variants/nestjs/oauth.service.ts.j2
+        output: src/modules/free/auth/oauth/oauth.service.ts
+      - template: templates/variants/nestjs/oauth.module.ts.j2
+        output: src/modules/free/auth/oauth/oauth.module.ts
+      - template: templates/variants/nestjs/oauth.controller.ts.j2
+        output: src/modules/free/auth/oauth/oauth.controller.ts
+      - template: templates/variants/nestjs/index.ts.j2
+        output: src/modules/free/auth/oauth/index.ts
+      - template: templates/variants/nestjs/validation.ts.j2
+        output: src/modules/free/auth/oauth/config/oauth.validation.ts
+      - template: templates/variants/nestjs/oauth.health.ts.j2
+        output: src/modules/free/auth/oauth/oauth.health.ts
+      - template: templates/variants/nestjs/oauth.routes.ts.j2
+        output: src/modules/free/auth/oauth/oauth.routes.ts
+      - template: templates/variants/nestjs/oauth.spec.ts.j2
+        output: test/oauth/oauth.spec.ts
+      - template: templates/variants/nestjs/tests/oauth.e2e-spec.ts
+        output: tests/modules/e2e/free/auth/oauth/oauth.e2e-spec.ts
+    nestjs.standard: *nestjs_variant
+  snippets:
+    enabled: true
+    config: config/snippets.yaml
+    default: []
+compatibility:
+  python: '>=3.9,<4.0'
+  frameworks:
+  - fastapi
+  - nestjs
+  os:
+  - linux
+  - darwin
+  - windows
+testing:
+  coverage_min: 85
+  integration_tests: false
+  e2e_tests: false
+  unit_tests:
+  - tests/modules/free/auth/oauth/test_oauth_cli_entry.py
+  - tests/modules/free/auth/oauth/test_oauth_frameworks.py
+  - tests/modules/free/auth/oauth/test_oauth_generate.py
+  - tests/modules/free/auth/oauth/test_oauth_generate_behaviors.py
+  - tests/modules/free/auth/oauth/test_oauth_runtime.py
+  fixtures: []
+documentation:
+  changelog: docs/changelog.md
+  readme: README.md
+  overview: docs/overview.md
+  usage: docs/usage.md
+  advanced: docs/advanced.md
+  migration: docs/migration.md
+  troubleshooting: docs/troubleshooting.md
+  api_docs: null
+  examples: []
+support:
+  issues: https://github.com/getrapidkit/core/issues
+  discussions: https://github.com/getrapidkit/core/discussions
+  documentation: https://docs.rapidkit.top/modules/oauth
+changelog:
+- version: 0.1.0
+  date: '2025-12-14'
+  notes: See docs/changelog.md
+validation:
+  pre_install:
+  - check_python_version
+  post_install:
+  - validate_generated_code
+rollback:
+  strategy: uninstall
+  backup_path: .rapidkit/backups/
+  max_backups: 3
+performance:
+  lazy_loading: true
+  caching:
+    templates: true
+    ttl: 300
+tier: free
+capabilities:
+- oauth_provider_registry
+- oauth_router_scaffold
+- oauth_token_exchange_helpers
+signature:
+  signature: JpT/4gSSSJ+jBMXMhlbhRF6SNYgaoT9yjb+o9r2odRjHgy+S50qjPX5uxfjHAW1YFJsB1ct/3kcp6zC20qNWDA==
+  signer_id: c7eb213b1ac6d8c6
+  signature_version: v1
+signer_id: null
+signature_version: null
+file_hashes:
+  templates/variants/nestjs/tests/oauth.e2e-spec.ts: sha256:e2b2210760e88087bd8160895e1cc710054b21f9eb0b40f36eb6c739bfc836d3
+  templates/variants/fastapi/tests/test_oauth_e2e.py: sha256:ec98a8beee656de872118fc19161a3067fcdd4231df5c86c37252bad600b0ff9
+  scripts/run_demo.py: sha256:805b42ed1cb98a6d9e2597387dfe2b577e805774fd0e3885f27d5074e52b17db
+  README.md: sha256:f245aa3cd7b70f734ad2d43993bed54483c689bb547336c56528a9b12bfec2e0
+  __init__.py: sha256:e3d88e8e1b9506fcaee03d2bf488e1bbae225c967d0987ebe3d8e7ca860c146c
+  config/base.yaml: sha256:6df1d1ad057940cbc1105465e928cb35f667bb4152c4a241ee130a97755062be
+  config/snippets.yaml: sha256:685c5ad491920f27c8c1b5acd6b5a6dcfa8ead1d212287a82ced26ece4b1a5e7
+  docs/README.md: sha256:fc002fdba466a5b93d40fdf9b84116ab34ed7ed66a98aad07b96eeac8169f018
+  docs/advanced.md: sha256:2cb4e1bfdbfcee95925868f11538e45c4cd199fbf9e88d429942fe656ac7816f
+  docs/changelog.md: sha256:5fa62a1702891111fc774de2b50f8a50c9cb298f5e15c1eebb92dbc7510e4ebe
+  docs/migration.md: sha256:8d6624b2f73876b6cc2034976d82bc03d9af5a20c60bedb2dc81fed06b9f0ffd
+  docs/overview.md: sha256:79ee38aa25ae51183dcd85fe0a67bab7a8b8afbb3ae06a4a1221e0a83bda2d01
+  docs/troubleshooting.md: sha256:14b23c66b5f10ef177c4ad346e7ce95e183f2440be855530ca1643d596796bc7
+  docs/usage.md: sha256:dc208d6e0207d9407576cf7a07e6bca842b8e060eeea445baa018f987f221cae
+  frameworks/__init__.py: sha256:e6f450e5917dfffd848a931fc018830da301119b268e270e87d4f094f52d91ac
+  frameworks/fastapi.py: sha256:12cbd7038cb7bf6869fd8c3e6836da68c036ea020bf1c48fe6102831bfecdd2b
+  frameworks/nestjs.py: sha256:c11bfd4c6ee135e9e0050f8adbfd2a853faf58f6ce0581ec1a2225ed29e65941
+  generate.py: sha256:78f908fbe0c4387e993db253455ecc634d2c9c94434147bc2a78619793c68274
+  module.verify.json: sha256:a4259e947dabdf543d43dbd5aca91ab433e64be1ed4bd0a08ac50ddd019e572b
+  overrides.py: sha256:d9c6be005253d017454441594415937ac57615568f33b9fad12a689b3b236244
+  templates/base/oauth.py.j2: sha256:0fb64c70e4d5d03d9e96f4fefc368a0136e7f7c615cb59b37762cc88181291a7
+  templates/base/oauth_health.py.j2: sha256:044598217142e8fb09a17b39c9459743e21c94f850fc3583890e77c823e5ee4f
+  templates/base/oauth_types.py.j2: sha256:9958e6602bab15331fca5501557dcba9c420ccf7a2bb7e682c212c6b46aa31e3
+  templates/snippets/env.snippet.j2: sha256:4e164b9a5445352110862970e85ede40e688571f39f742a3c8caed8306fd7c3e
+  templates/snippets/oauth.snippet.j2: sha256:41c3fdfe8596f2608722b56a570735a0d7e56977ca53d575d96f7774c281414e
+  templates/snippets/settings_fields.snippet.j2: sha256:478477b901ebe7b813b8dd02d73774e22bbc4a025147e7558e797db04792c3d3
+  templates/snippets/settings_fields_nestjs.snippet.j2: sha256:fd1d6ddbd76fa582d2e80edaa27e2baceb362960d00d5f23c1d89e4ee2e6d4ff
+  templates/tests/__init__.py: sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+  templates/tests/integration/test_oauth_integration.j2: sha256:cd145a6f152267720086879869f59796934f3669f09a791a7ee072aa7f91697e
+  templates/variants/fastapi/oauth.py.j2: sha256:6a636d5466bb760b66f94a16faa3522d155f895d569be76646d4a94eaa44d610
+  templates/variants/fastapi/oauth_config.yaml.j2: sha256:30e067ce28f58e20ec821464573023b69e97e3e433de2d2d07285d8f4334317a
+  templates/variants/fastapi/oauth_health.py.j2: sha256:cce15590fede70072ca0182f08dce231cda30fd69a24d9c6d2c1e6c04bec27ca
+  templates/variants/fastapi/oauth_routes.py.j2: sha256:4353d99513e50756f964b116a8ede04c2ea0f7518ced7ac4f090fdef4d8f407a
+  templates/variants/nestjs/configuration.ts.j2: sha256:c0b4d68809eee47c066a7e1ceb2af692d713ae43107b418a397a7659edfcbc08
+  templates/variants/nestjs/index.ts.j2: sha256:3ddd647c93057edabf73af972dd84d3662890b8568306f3403b7a6d3139966c7
+  templates/variants/nestjs/oauth.controller.ts.j2: sha256:f29e295b4a11ce74ce32d46a67fc2f6f3d3d5c4d371818ec6b4272923021c9b4
+  templates/variants/nestjs/oauth.health.ts.j2: sha256:ded147c3a41d88bfcab11ea8697cb1c78455b8e41233688ab7e5ec542a5f93eb
+  templates/variants/nestjs/oauth.module.ts.j2: sha256:2918f103d864c5a740c7beca508fd3d26b4a2b9f9fd4461d62737d6a0c760ea4
+  templates/variants/nestjs/oauth.routes.ts.j2: sha256:99d91d007502487ef8748fe7ec278ce9400fe25dcb3c42598eb22172a3c59006
+  templates/variants/nestjs/oauth.service.ts.j2: sha256:347b2f46013428e7e75ab8d19315606dc60afacf3c6da639eb8e0db95744fff0
+  templates/variants/nestjs/oauth.spec.ts.j2: sha256:90d6b71e1d54b7944b4f390d781ef3636e9d4a0daa3f2fee1be30c1ca7516e38
+  templates/variants/nestjs/validation.ts.j2: sha256:3a6d02437012ffd9d103942b3c14abf88b07c4704124d2041d5dd9b2a5ac6f0c
+  templates/vendor/nestjs/configuration.js.j2: sha256:032bfafee98b8302212b9bc6daa855f17f24de6ef7849a2def40ef2713da06d5

@@ -1,0 +1,27 @@
+"""FastAPI shim exposing the canonical OAuth health router."""
+
+from __future__ import annotations
+
+from typing import Any
+
+from src.health.oauth import (
+    oauth_health_check,
+    register_oauth_health,
+    router as oauth_health_router,
+)
+
+
+def build_health_router() -> Any:
+    """Return the generated OAuth health router."""
+
+    return oauth_health_router
+
+
+router = oauth_health_router
+
+__all__ = [
+    "build_health_router",
+    "oauth_health_check",
+    "register_oauth_health",
+    "router",
+]

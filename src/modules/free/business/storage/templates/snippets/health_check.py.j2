@@ -1,0 +1,14 @@
+async def perform_health_check(adapter):
+    """Perform storage health check."""
+    try:
+        result = await adapter.health_check()
+        return {
+            "status": "healthy",
+            "adapter": str(adapter),
+            "details": result,
+        }
+    except Exception as e:
+        return {
+            "status": "unhealthy",
+            "error": str(e),
+        }

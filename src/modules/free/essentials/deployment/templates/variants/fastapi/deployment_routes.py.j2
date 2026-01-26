@@ -1,0 +1,21 @@
+"""FastAPI routes surfacing deployment assets."""
+
+from __future__ import annotations
+
+from fastapi import APIRouter
+
+from src.modules.free.essentials.deployment.deployment import describe_assets, describe_plan
+
+
+def build_router() -> APIRouter:
+    router = APIRouter(prefix="/{{ module_kebab }}", tags=["{{ module_title }}"])
+
+    @router.get("/plan", summary="Describe deployment plan")
+    async def read_plan() -> dict[str, object]:
+        return describe_plan()
+
+    @router.get("/assets", summary="List deployment assets")
+    async def read_assets() -> list[dict[str, object]]:
+        return describe_assets()
+
+    return router

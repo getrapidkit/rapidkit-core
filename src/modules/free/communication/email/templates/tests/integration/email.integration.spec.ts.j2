@@ -1,0 +1,30 @@
+import { Test } from '@nestjs/testing';
+import request from 'supertest';
+
+import { EmailModule } from '../../../../src/modules/free/communication/email/email.module';
+
+describe('EmailModule (Integration)', () => {
+  it('should send email successfully', async () => {
+    const moduleRef = await Test.createTestingModule({
+      imports: [EmailModule],
+    }).compile();
+
+    const app = moduleRef.createNestApplication();
+    await app.init();
+
+    const server = app.getHttpServer();
+    const response = await request(server)
+      .post('/communication/email/send')
+      .send({
+        to: ['test@example.com'],
+        subject: 'Test Email',
+        body: 'Hello from RapidKit',
+      });
+
+    expect(response.status).toBe(201);
+    expect(response.body.accepted).toBe(true);
+    expect(typeof response.body.provider).toBe('string');
+
+    await app.close();
+  });
+});

@@ -1,0 +1,2 @@
+# Auth Core signing pepper (generate with: openssl rand -base64 48)
+{{ auth_core_defaults.pepper_env | default('RAPIDKIT_AUTH_CORE_PEPPER') }}="please-set-a-long-random-secret"

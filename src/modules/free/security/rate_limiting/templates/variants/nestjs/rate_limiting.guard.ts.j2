@@ -1,0 +1,106 @@
+import {
+  CanActivate,
+  ExecutionContext,
+  HttpException,
+  HttpStatus,
+  Injectable,
+  SetMetadata,
+} from "@nestjs/common";
+import { Reflector } from "@nestjs/core";
+import type { Request, Response } from "express";
+
+import { {{ module_class_name }}Service } from "./rate-limiting.service";
+
+export const RATE_LIMIT_RULE_METADATA_KEY = "rate-limit:rule";
+export const RATE_LIMIT_COST_METADATA_KEY = "rate-limit:cost";
+
+export const RateLimitRule = (rule: string) => SetMetadata(RATE_LIMIT_RULE_METADATA_KEY, rule);
+export const RateLimitCost = (cost: number) => SetMetadata(RATE_LIMIT_COST_METADATA_KEY, cost);
+
+@Injectable()
+export class {{ module_class_name }}Guard implements CanActivate {
+  constructor(
+    private readonly rateLimiter: {{ module_class_name }}Service,
+    private readonly reflector: Reflector,
+  ) {}
+
+  async canActivate(context: ExecutionContext): Promise<boolean> {
+    const http = context.switchToHttp();
+    const request = http.getRequest<Request>();
+    const response = http.getResponse<Response>();
+
+    const rule = this.reflector.getAllAndOverride<string | null>(RATE_LIMIT_RULE_METADATA_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    const cost = this.reflector.getAllAndOverride<number | null>(RATE_LIMIT_COST_METADATA_KEY, [
+      context.getHandler(),
+      context.getClass(),
+    ]);
+    const identity = this.resolveIdentity(request);
+    const method = request.method ?? "GET";
+    const path = request.originalUrl ?? request.url ?? "/";
+
+    const result = await this.rateLimiter.consume({
+      identity,
+      method,
+      path,
+      cost: cost ?? undefined,
+      ruleName: rule ?? undefined,
+    });
+
+    const headers = this.rateLimiter.toHeaders(result);
+    if (response && typeof response.setHeader === "function") {
+      for (const [name, value] of Object.entries(headers)) {
+        response.setHeader(name, value);
+      }
+    }
+
+    if (!result.allowed) {
+      throw new HttpException(
+        {
+          statusCode: HttpStatus.TOO_MANY_REQUESTS,
+          error: "Too Many Requests",
+          message: `Rate limit exceeded for rule '${result.rule.name}'`,
+          rule: result.rule.name,
+          remaining: result.remaining,
+          resetAfter: result.resetAfter,
+          bucket: result.bucket,
+        },
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+
+    return true;
+  }
+
+  private resolveIdentity(request: Request): string | null {
+    const identityHeader = this.rateLimiter.getIdentityHeaderName();
+    if (identityHeader) {
+      const headerValue = request.get(identityHeader) ?? request.headers[identityHeader.toLowerCase()];
+      if (typeof headerValue === "string" && headerValue.trim().length > 0) {
+        return headerValue.trim();
+      }
+      if (Array.isArray(headerValue) && headerValue.length > 0) {
+        return headerValue[0];
+      }
+    }
+
+    if (this.rateLimiter.isForwardedForTrusted()) {
+      const forwarded = request.get(this.rateLimiter.getForwardedForHeader());
+      if (typeof forwarded === "string" && forwarded.trim()) {
+        const [first] = forwarded.split(",");
+        if (first) {
+          return first.trim();
+        }
+      }
+    }
+
+    if (request.ip) {
+      return request.ip;
+    }
+
+    const socketAddress = request.socket?.remoteAddress ?? null;
+    return socketAddress;
+  }
+}

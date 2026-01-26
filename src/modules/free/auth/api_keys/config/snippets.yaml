@@ -1,0 +1,20 @@
+# Register snippet bundles for Api Keys
+snippets:
+  - name: "api-keys-env"
+    description: "Environment variables required for deterministic hashing"
+    template: "templates/snippets/api_keys_env.snippet.j2"
+    context:
+      pepper_env: "RAPIDKIT_API_KEYS_PEPPER"
+      example_pepper: "change-me-please"
+
+  - name: "api-keys-fastapi"
+    description: "Register the Api Keys router inside a FastAPI application"
+    template: "templates/snippets/api_keys_fastapi.snippet.j2"
+    context:
+      route_prefix: "/api-keys"
+      dependency_name: "get_runtime"
+
+  - name: "api-keys-cli"
+    description: "Command-line workflow cheatsheet for issuing and revoking tokens"
+    template: "templates/snippets/api_keys.snippet.j2"
+    context: {}

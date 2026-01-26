@@ -1,0 +1,27 @@
+{%- set defaults = inventory_defaults or {} -%}
+{%- set pricing = inventory_pricing or {} -%}
+{%- set warehouses = inventory_warehouses or {} -%}
+{%- set notifications = inventory_notifications or {} -%}
+# RapidKit generated configuration for {{ module_title }}.
+# Customize values to fit your inventory sourcing and pricing rules.
+
+inventory:
+  enabled: {{ defaults.get("enabled", True) | tojson }}
+  default_currency: {{ defaults.get("default_currency", "usd") | tojson }}
+  log_level: {{ defaults.get("log_level", "INFO") | tojson }}
+  allow_backorders: {{ defaults.get("allow_backorders", False) | tojson }}
+  allow_negative_inventory: {{ defaults.get("allow_negative_inventory", False) | tojson }}
+  low_stock_threshold: {{ defaults.get("low_stock_threshold", 5) | tojson }}
+  reservation_expiry_minutes: {{ defaults.get("reservation_expiry_minutes", 30) | tojson }}
+  decimal_precision: {{ defaults.get("decimal_precision", 2) | tojson }}
+  metadata: {{ defaults.get("metadata", {}) | tojson(indent=2) }}
+
+pricing:
+  min_price: {{ pricing.get("min_price", 0.01) | tojson }}
+  max_price: {{ pricing.get("max_price", 250000) | tojson }}
+  tax_inclusive: {{ pricing.get("tax_inclusive", False) | tojson }}
+  rounding_mode: {{ pricing.get("rounding_mode", "half_up") | tojson }}
+
+warehouses: {{ warehouses | tojson(indent=2) }}
+
+notifications: {{ notifications | tojson(indent=2) }}

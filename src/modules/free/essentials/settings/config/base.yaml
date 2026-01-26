@@ -1,0 +1,104 @@
+name: settings
+display_name: Application Settings
+description: Centralized, modular configuration management using Pydantic Settings with support for dynamic extensions, multi-source loading, and standard-grade security.
+root_path: src/
+
+profiles:
+  fastapi/standard:
+    description: FastAPI settings backbone with environment, Vault, and Secrets Manager support.
+  fastapi/ddd:
+    inherits: fastapi/standard
+    description: FastAPI DDD settings profile inheriting standard defaults and integrations.
+  nestjs/standard:
+    description: NestJS configuration module exposing environment-aware settings.
+
+variables:
+  base_module:
+    type: string
+    default: src
+    description: Base module path for the project
+    validation: "^[a-zA-Z0-9_./:-]+$"
+  config_sources:
+    type: list
+    default: [".env", ".env.local", "config.yaml"]
+    description: List of configuration sources (e.g., .env, YAML, Vault)
+    item_validation: ^[a-zA-Z0-9_./-]+$
+  vault_url:
+    type: string
+    default: "http://localhost:8200"
+    description: URL for HashiCorp Vault (optional for secrets)
+    validation: ^https?://[a-zA-Z0-9_./:-]+$
+  aws_region:
+    type: string
+    default: "us-east-1"
+    description: AWS region for Secrets Manager (optional)
+    validation: ^[a-z0-9-]+$
+
+depends_on:
+  # Only declare delta (additional) dependencies not already provided by the base kits.
+  fastapi/standard:
+    - name: pyyaml
+      source: external
+      tool: pip
+      version: ">=6.0.2,<7.0"
+    - name: pydantic-settings
+      source: external
+      tool: pip
+      version: ">=2.5.0,<3.0"
+    - name: hvac
+      source: external
+      tool: pip
+      version: ">=2.3.0,<3.0"
+    - name: boto3
+      source: external
+      tool: pip
+      version: ">=1.35.0,<2.0"
+  nestjs/standard:
+    # Keep versions aligned with the NestJS standard kit template.
+    # This avoids downgrading peer deps (e.g. NestJS 11 expects @nestjs/config 4.x).
+    - name: '@nestjs/config'
+      source: external
+      tool: npm
+      version: "^4.0.2"
+    - name: joi
+      source: external
+      tool: npm
+      version: "^18.0.2"
+    - name: dotenv
+      source: external
+      tool: npm
+      version: "^17.2.3"
+    - name: yaml
+      source: external
+      tool: npm
+      version: "^2.4.2"
+
+dev_dependencies:
+  - name: black
+    source: external
+    tool: pip
+    version: ">=25.0.0,<26.0"
+  - name: isort
+    source: external
+    tool: pip
+    version: ">=5.13.2,<6.0"
+  - name: mypy
+    source: external
+    tool: pip
+    version: ">=1.10.0,<2.0"
+  - name: ruff
+    source: external
+    tool: pip
+    version: ">=0.4.4,<1.0"
+  - name: flake8
+    source: external
+    tool: pip
+    version: ">=7.1.0,<8.0"
+  - name: pytest
+    source: external
+    tool: pip
+    version: ">=8.3.0,<9.0"
+  - name: pytest-asyncio
+    source: external
+    tool: pip
+    version: ">=0.25.0,<1.0"

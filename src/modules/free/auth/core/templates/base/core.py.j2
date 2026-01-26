@@ -1,0 +1,325 @@
+"""Authentication primitives shared across RapidKit projects."""
+
+from __future__ import annotations
+
+import base64
+import hashlib
+import hmac
+import json
+import logging
+import os
+import secrets
+import time
+from dataclasses import dataclass
+from typing import Any, Dict, Iterable, Mapping, Optional
+
+logger = logging.getLogger("src.modules.free.auth.core.auth.core")
+
+DEFAULTS: Dict[str, Any] = json.loads(
+    """{{ auth_core_defaults | tojson(indent=2) }}"""
+)
+
+_FEATURE_FLAGS: tuple[str, ...] = (
+    "password_hashing",
+    "token_signing",
+    "peppered_digests",
+    "policy_enforcement",
+)
+
+
+def _base64url(data: bytes) -> str:
+    return base64.urlsafe_b64encode(data).rstrip(b"=").decode("ascii")
+
+
+def _base64url_decode(data: str) -> bytes:
+    padding = "=" * ((4 - len(data) % 4) % 4)
+    return base64.urlsafe_b64decode(data + padding)
+
+
+@dataclass(frozen=True)
+class PasswordPolicy:
+    """Password strength requirements for the application."""
+
+    min_length: int
+    require_uppercase: bool
+    require_lowercase: bool
+    require_digits: bool
+    require_symbols: bool
+
+    @classmethod
+    def from_mapping(cls, data: Mapping[str, Any]) -> "PasswordPolicy":
+        return cls(
+            min_length=int(data.get("min_length", 8)),
+            require_uppercase=bool(data.get("require_uppercase", True)),
+            require_lowercase=bool(data.get("require_lowercase", True)),
+            require_digits=bool(data.get("require_digits", True)),
+            require_symbols=bool(data.get("require_symbols", False)),
+        )
+
+    def validate(self, password: str) -> bool:
+        if len(password) < self.min_length:
+            return False
+        conditions: Iterable[tuple[bool, bool]] = (
+            (self.require_uppercase, any(ch.isupper() for ch in password)),
+            (self.require_lowercase, any(ch.islower() for ch in password)),
+            (self.require_digits, any(ch.isdigit() for ch in password)),
+            (
+                self.require_symbols,
+                any(not ch.isalnum() for ch in password),
+            ),
+        )
+        return all(expected is False or actual for expected, actual in conditions)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "min_length": self.min_length,
+            "require_uppercase": self.require_uppercase,
+            "require_lowercase": self.require_lowercase,
+            "require_digits": self.require_digits,
+            "require_symbols": self.require_symbols,
+        }
+
+
+@dataclass(frozen=True)
+class AuthCoreSettings:
+    """Configuration payload controlling hashing and token semantics."""
+
+    hash_name: str
+    iterations: int
+    salt_bytes: int
+    token_bytes: int
+    token_ttl_seconds: int
+    pepper_env: str
+    issuer: str
+    policy: PasswordPolicy
+
+    @classmethod
+    def from_mapping(cls, data: Mapping[str, Any]) -> "AuthCoreSettings":
+        policy_data = data.get("policy", {})
+        return cls(
+            hash_name=str(data.get("hash_name", DEFAULTS["hash_name"])),
+            iterations=int(data.get("iterations", DEFAULTS["iterations"])),
+            salt_bytes=int(data.get("salt_bytes", DEFAULTS["salt_bytes"])),
+            token_bytes=int(data.get("token_bytes", DEFAULTS["token_bytes"])),
+            token_ttl_seconds=int(
+                data.get("token_ttl_seconds", DEFAULTS["token_ttl_seconds"])
+            ),
+            pepper_env=str(data.get("pepper_env", DEFAULTS["pepper_env"])),
+            issuer=str(data.get("issuer", DEFAULTS["issuer"])),
+            policy=PasswordPolicy.from_mapping(policy_data),
+        )
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "hash_name": self.hash_name,
+            "iterations": self.iterations,
+            "salt_bytes": self.salt_bytes,
+            "token_bytes": self.token_bytes,
+            "token_ttl_seconds": self.token_ttl_seconds,
+            "pepper_env": self.pepper_env,
+            "issuer": self.issuer,
+            "policy": {
+                "min_length": self.policy.min_length,
+                "require_uppercase": self.policy.require_uppercase,
+                "require_lowercase": self.policy.require_lowercase,
+                "require_digits": self.policy.require_digits,
+                "require_symbols": self.policy.require_symbols,
+            },
+        }
+
+
+class AuthCoreRuntime:
+    """Hashing and token helpers exposing deterministic and auditable behaviour."""
+
+    def __init__(self, settings: AuthCoreSettings) -> None:
+        self.settings = settings
+        self._pepper_bytes: Optional[bytes] = None
+
+    # ------------------------------------------------------------------
+    # Password hashing helpers
+    # ------------------------------------------------------------------
+    def hash_password(self, password: str) -> str:
+        if not self.settings.policy.validate(password):
+            raise ValueError("Password does not satisfy configured policy requirements")
+
+        salt = secrets.token_bytes(self.settings.salt_bytes)
+        digest = hashlib.pbkdf2_hmac(
+            self.settings.hash_name,
+            password.encode("utf-8"),
+            salt,
+            self.settings.iterations,
+            dklen=64,
+        )
+        parts = [
+            "pbkdf2",
+            self.settings.hash_name,
+            str(self.settings.iterations),
+            _base64url(salt),
+            _base64url(digest),
+        ]
+        return "$".join(parts)
+
+    def verify_password(self, candidate: str, encoded: str) -> bool:
+        try:
+            scheme, hash_name, iteration_str, salt_b64, digest_b64 = encoded.split("$")
+        except ValueError:
+            logger.debug("Auth Core password hash malformed")
+            return False
+
+        if scheme != "pbkdf2":
+            return False
+
+        try:
+            iterations = int(iteration_str)
+            salt = _base64url_decode(salt_b64)
+            expected_digest = _base64url_decode(digest_b64)
+        except (ValueError, TypeError):
+            return False
+
+        computed = hashlib.pbkdf2_hmac(
+            hash_name,
+            candidate.encode("utf-8"),
+            salt,
+            iterations,
+            dklen=len(expected_digest),
+        )
+        return hmac.compare_digest(expected_digest, computed)
+
+    # ------------------------------------------------------------------
+    # Token helpers
+    # ------------------------------------------------------------------
+    def issue_token(
+        self,
+        subject: str,
+        *,
+        audience: Optional[str] = None,
+        scopes: Optional[Iterable[str]] = None,
+        ttl_seconds: Optional[int] = None,
+        custom_claims: Optional[Mapping[str, Any]] = None,
+    ) -> str:
+        issued_at = int(time.time())
+        ttl = ttl_seconds or self.settings.token_ttl_seconds
+        payload: Dict[str, Any] = {
+            "iss": self.settings.issuer,
+            "sub": subject,
+            "iat": issued_at,
+            "exp": issued_at + ttl,
+        }
+        if audience:
+            payload["aud"] = audience
+        if scopes:
+            payload["scopes"] = list(scopes)
+        if custom_claims:
+            payload.update({str(k): v for k, v in custom_claims.items()})
+
+        header = {"alg": "HS256", "typ": "JWT"}
+        header_segment = _base64url(json.dumps(header, separators=(",", ":")).encode("utf-8"))
+        payload_segment = _base64url(json.dumps(payload, separators=(",", ":")).encode("utf-8"))
+        signing_input = f"{header_segment}.{payload_segment}".encode("ascii")
+        signature = _base64url(self._sign(signing_input))
+        return f"{header_segment}.{payload_segment}.{signature}"
+
+    def verify_token(self, token: str) -> Dict[str, Any]:
+        try:
+            header_b64, payload_b64, signature_b64 = token.split(".")
+        except ValueError as exc:  # pragma: no cover - defensive guard
+            raise ValueError("Token has unexpected format") from exc
+
+        signing_input = f"{header_b64}.{payload_b64}".encode("ascii")
+        expected_signature = self._sign(signing_input)
+        provided_signature = _base64url_decode(signature_b64)
+
+        if not hmac.compare_digest(expected_signature, provided_signature):
+            raise ValueError("Token signature verification failed")
+
+        payload_json = _base64url_decode(payload_b64)
+        payload = json.loads(payload_json)
+
+        expires_at = int(payload.get("exp", 0))
+        if expires_at and int(time.time()) > expires_at:
+            raise ValueError("Token has expired")
+
+        return payload
+
+    # ------------------------------------------------------------------
+    # Metadata helpers
+    # ------------------------------------------------------------------
+    def metadata(self) -> Dict[str, Any]:
+        pepper = os.getenv(self.settings.pepper_env)
+        return {
+            "module": "{{ module_name }}",
+            "issuer": self.settings.issuer,
+            "hash": self.settings.hash_name,
+            "iterations": self.settings.iterations,
+            "token_ttl_seconds": self.settings.token_ttl_seconds,
+            "pepper_env": self.settings.pepper_env,
+            "pepper_configured": bool(pepper),
+        }
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+    def _sign(self, message: bytes) -> bytes:
+        return hmac.new(self._pepper(), msg=message, digestmod="sha256").digest()
+
+    def _pepper(self) -> bytes:
+        if self._pepper_bytes is not None:
+            return self._pepper_bytes
+
+        secret = os.getenv(self.settings.pepper_env)
+        if secret:
+            self._pepper_bytes = secret.encode("utf-8")
+            return self._pepper_bytes
+
+        logger.warning(
+            "Auth Core pepper env '%%s' missing. Falling back to generated key for runtime only.",
+            self.settings.pepper_env,
+        )
+        self._pepper_bytes = secrets.token_bytes(32)
+        return self._pepper_bytes
+
+
+def load_settings(overrides: Optional[Mapping[str, Any]] = None) -> AuthCoreSettings:
+    merged = dict(DEFAULTS)
+    if overrides:
+        merged.update(overrides)
+    return AuthCoreSettings.from_mapping(merged)
+
+
+def get_auth_core_metadata(settings: Optional[AuthCoreSettings] = None) -> Dict[str, Any]:
+    runtime = AuthCoreRuntime(settings or load_settings())
+    return runtime.metadata()
+
+
+def describe_auth_core(settings: Optional[AuthCoreSettings] = None) -> Dict[str, Any]:
+    """Return a metadata payload enriched with runtime configuration."""
+
+    runtime = AuthCoreRuntime(settings or load_settings())
+    payload = runtime.metadata()
+    payload.update(
+        {
+            "salt_bytes": runtime.settings.salt_bytes,
+            "token_bytes": runtime.settings.token_bytes,
+            "policy": runtime.settings.policy.to_dict(),
+            "features": list_auth_core_features(),
+        }
+    )
+    return payload
+
+
+def list_auth_core_features() -> list[str]:
+    """Enumerate high-level capabilities exposed by the Auth Core module."""
+
+    return list(_FEATURE_FLAGS)
+
+
+__all__ = [
+    "AuthCoreRuntime",
+    "AuthCoreSettings",
+    "PasswordPolicy",
+    "DEFAULTS",
+    "describe_auth_core",
+    "list_auth_core_features",
+    "load_settings",
+    "get_auth_core_metadata",
+]

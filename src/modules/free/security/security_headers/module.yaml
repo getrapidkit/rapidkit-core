@@ -1,0 +1,201 @@
+name: security_headers
+display_name: Security Headers
+description: Harden HTTP responses with industry-standard security headers
+version: 0.1.0
+access: free
+status: stable
+tier: free
+category: security
+generated_from_config: true
+tags:
+    - security
+    - security-headers
+depends_on:
+    - free/essentials/settings
+profile_inherits:
+    fastapi.standard: fastapi
+    fastapi.ddd: fastapi
+    nestjs.standard: nestjs
+config_sources:
+    - config/base.yaml
+    - config/snippets.yaml
+generation:
+    vendor:
+        root: .rapidkit/vendor
+        files:
+            - template: templates/base/security_headers.py.j2
+              relative: src/modules/free/security/security_headers/security_headers.py
+            - template: templates/base/security_headers_health.py.j2
+              relative: src/health/security_headers.py
+            - template: templates/base/security_headers_types.py.j2
+              relative: src/modules/free/security/security_headers/types/security_headers.py
+            - template: templates/vendor/nestjs/configuration.js.j2
+              relative: nestjs/configuration.js
+    variants:
+        fastapi: &fastapi_variant
+            root: .
+            context:
+                framework: fastapi
+                module_class_name: SecurityHeaders
+                vendor_runtime_relative: src/modules/free/security/security_headers/security_headers.py
+            files:
+                - template: templates/variants/fastapi/security_headers.py.j2
+                  output: src/modules/free/security/security_headers/security_headers.py
+                - template: templates/variants/fastapi/security_headers_routes.py.j2
+                  output: src/modules/free/security/security_headers/routers/security_headers.py
+                - template: templates/variants/fastapi/security_headers_config.yaml.j2
+                  output: config/security/security_headers.yaml
+                  description: FastAPI configuration defaults for Security Headers module
+                - template: templates/tests/integration/test_security_headers_integration.j2
+                  output: tests/modules/integration/security/test_security_headers_integration.py
+                  description: Integration test scaffold for Security Headers module
+                - template: templates/variants/fastapi/tests/test_security_headers_e2e.py
+                  output: tests/modules/e2e/free/security/security_headers/test_security_headers_e2e.py
+
+        # Compatibility aliases: the installer uses kit profile names.
+        fastapi.standard: *fastapi_variant
+        fastapi.ddd: *fastapi_variant
+
+        nestjs: &nestjs_variant
+            root: .
+            context:
+                framework: nestjs
+                vendor_configuration_relative: nestjs/configuration.js
+                vendor_runtime_relative: src/modules/free/security/security_headers/security_headers.py
+                module_class_name: SecurityHeaders
+                module_kebab: security-headers
+            files:
+                - template: templates/variants/nestjs/security_headers.service.ts.j2
+                  output: src/modules/free/security/security_headers/security-headers/security-headers.service.ts
+                - template: templates/variants/nestjs/security_headers.controller.ts.j2
+                  output: src/modules/free/security/security_headers/security-headers/security-headers.controller.ts
+                - template: templates/variants/nestjs/security_headers.module.ts.j2
+                  output: src/modules/free/security/security_headers/security-headers/security-headers.module.ts
+                - template: templates/variants/nestjs/security_headers.configuration.ts.j2
+                  output: src/modules/free/security/security_headers/security-headers/security-headers.configuration.ts
+                - template: templates/variants/nestjs/security_headers.health.controller.ts.j2
+                  output: src/health/security-headers-health.controller.ts
+                - template: templates/variants/nestjs/security_headers.health.module.ts.j2
+                  output: src/health/security-headers-health.module.ts
+                - template: templates/tests/integration/security_headers.integration.spec.ts.j2
+                  output: tests/modules/integration/security/security_headers.integration.spec.ts
+                - template: templates/variants/nestjs/tests/security_headers.e2e-spec.ts
+                  output: tests/modules/e2e/free/security/security_headers/security_headers.e2e-spec.ts
+
+        nestjs.standard: *nestjs_variant
+    snippets:
+        enabled: true
+        config: config/snippets.yaml
+        default: []
+compatibility:
+    python: ">=3.10,<4.0"
+    node: ">=18,<21"
+    frameworks:
+        - fastapi
+        - nestjs
+    os:
+        - linux
+        - darwin
+        - windows
+testing:
+    coverage_min: 85
+    integration_tests: true
+    e2e_tests: false
+    unit_tests:
+        - test_security_headers_generator.py
+        - test_security_headers_overrides.py
+        - test_security_headers_runtime.py
+        - test_security_headers_adapters.py
+        - test_security_headers_validation.py
+        - test_security_headers_error_handling.py
+        - test_security_headers_health_check.py
+        - test_security_headers_framework_variants.py
+        - test_security_headers_vendor_layer.py
+        - test_security_headers_configuration.py
+        - test_security_headers_versioning.py
+        - test_security_headers_integration.py
+        - test_security_headers_standard_module.py
+    fixtures:
+        - conftest.py
+documentation:
+    changelog: docs/changelog.md
+    readme: README.md
+    overview: docs/overview.md
+    usage: docs/usage.md
+    advanced: docs/advanced.md
+    migration: docs/migration.md
+    troubleshooting: docs/troubleshooting.md
+    api_docs: docs/api-reference.md
+    examples: []
+support:
+    issues: https://github.com/getrapidkit/core/issues
+    discussions: https://github.com/getrapidkit/core/discussions
+    documentation: https://docs.rapidkit.top/modules/security/security_headers
+changelog:
+    - version: "0.1.0"
+      date: "2025-12-14"
+      notes: "See docs/changelog.md"
+validation:
+    pre_install:
+        - check_python_version
+    post_install:
+        - validate_generated_code
+rollback:
+    strategy: uninstall
+    backup_path: .rapidkit/backups/
+    max_backups: 3
+performance:
+    lazy_loading: true
+    caching:
+        templates: true
+        ttl: 300
+capabilities:
+    - security-hardening
+    - http-middleware
+    - health-reporting
+signature:
+    signature: rvYZCyypVlpfcnrS9Af7H73d96cLoA5hOhJFumwGXXQ/JMKKHwwfCaPwdq92bMKJ6/hWbs72dJCG28cmz0cPBw==
+    signer_id: c7eb213b1ac6d8c6
+    signature_version: v1
+signer_id: null
+signature_version: null
+file_hashes:
+    templates/variants/nestjs/tests/security_headers.e2e-spec.ts: sha256:d34d82a9edeb9f5daa07511e0ed4dc80926b1db25484cc7e629b27fa8c50cc1d
+    templates/variants/fastapi/tests/test_security_headers_e2e.py: sha256:cb260f1cc43e2ed7078bb53f7c63daa14c081292a2222e0ff6f584a17649664a
+    scripts/run_demo.py: sha256:7fa22227c2b677c807dd853657e5739dbe3dcedbc3724f10447d61c36f5c2584
+    README.md: sha256:3b75fcde6e5ac9842d94ddafda56c599d9784b707b19980f8d028862df83913b
+    __init__.py: sha256:0dfdd9eb3bcc84d69287fbdff6e55d309fc4074508de5d6f147b219d9e4a4531
+    config/base.yaml: sha256:552ea5a0ead7b2726074cbe3220a364beddf02c70d88f2b3985aaa2237797ad4
+    config/snippets.yaml: sha256:0022ed6f93312deebd58ec9930676c51f506dee78b69e3b2931b8e6774bd7c8d
+    docs/README.md: sha256:281429572ed53c54a325ecf68d23581b4ef97c1619a847a59795ebcaa2d3728f
+    docs/advanced.md: sha256:fa9bad00a8bc2621eaf0999c891597ccef1f099534fd3fefbaa173e2a33fb48d
+    docs/api-reference.md: sha256:914345ff037d41e6162891536298b65a0fac75b0f85551c34a28b3f91b1a6b6b
+    docs/changelog.md: sha256:134f1b58c14d0b930a6a67fc05879254df8d3aa99f9eea86b6b14dada7abbaae
+    docs/migration.md: sha256:3e22e47e0ed356e45eb894c694190393822bec397c38e4428663bf24d765d334
+    docs/overview.md: sha256:9a945f80044ec80a01ec64d2046e035a71a690fed698c8aa2948ea00577e0c14
+    docs/troubleshooting.md: sha256:f0366463d8a6357b047f427967dc25360f142415746f13aed68b679b30b572d1
+    docs/usage.md: sha256:c85ebdba3e94469326542b62541424430466834a918c78a17070634b83240b6b
+    frameworks/__init__.py: sha256:f91c95721b34d84a38fccf8a258cc556d98dc64fc0bd5169aa0cc88c0479f4fc
+    frameworks/fastapi.py: sha256:855bdfc2f85a0d9daf5b4fdffa29640bdf7244be416d34ba72bf072c64ec2fcb
+    frameworks/nestjs.py: sha256:67be9df91ddaf3e3972cd74a6b7b415634e7ef6bb4e4f34a563d5d402586b2c5
+    generate.py: sha256:c890d39b33ade6d0c304fe7dedf12b094a4a61f900d5a56666e00c2ba1652338
+    module.verify.json: sha256:91bfc318485d742cd2ba85a9d0999442aba3cb23a5f2b9e4f9705582bff997d8
+    overrides.py: sha256:686f2f913732f9f99eb6eea563c12813cdc72a19b9ad8ee0c43fbb9de06fd057
+    templates/base/security_headers.py.j2: sha256:10efd6c2b22ad398af3f2df6178182604c0016654028fcd58e028e3221aadb9d
+    templates/base/security_headers_health.py.j2: sha256:96812a7927b12673babc254c8fe606683bb6b8eb3df2ebe26adf438511061a6e
+    templates/base/security_headers_types.py.j2: sha256:0c4e602bbae897f5d562a88872d25c463382b048c68540894a655bbe6b8ad306
+    templates/snippets/security_headers.snippet.j2: sha256:ae68c1359bd26e1f18487ab3d3561164aa42182c03b5c3a00e45b3290f2b49e8
+    templates/tests/__init__.py: sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+    templates/tests/integration/security_headers.integration.spec.ts.j2: sha256:f28b4e4f33c4520afe2ca5271aad6cef040f80ef3dd63af455066fa111e44e23
+    templates/tests/integration/test_security_headers_integration.j2: sha256:f86af9f8ee59d8e0ce5c1f8dbd580c87d095aee4623df8e910af946d519c9a2e
+    templates/variants/fastapi/security_headers.py.j2: sha256:0de6ca99777782cbcafc225c70cffd184afcf6fc1fb063863709edc8480bf744
+    templates/variants/fastapi/security_headers_config.yaml.j2: sha256:2284b32c109d6624f03bcd5114691eb80d8ee7a7aabcccad449ef8db3eaeeb0f
+    templates/variants/fastapi/security_headers_health.py.j2: sha256:484ea07a9a46e3a40ec6b75736d50ae5af672c531e6cd6122fd432b4a996603d
+    templates/variants/fastapi/security_headers_routes.py.j2: sha256:50b2b071be558a1c1096b09c000a3a71736156f9a5cade641b3170a602aaf6b5
+    templates/variants/nestjs/security_headers.configuration.ts.j2: sha256:704b56ff22eae13049a73a6c2e57f5a5eece2c5924f1781f3c1da423182ddc7c
+    templates/variants/nestjs/security_headers.controller.ts.j2: sha256:aabf9ea5d5dbec9492f880915e7841bb7d2a12d59e4fc3c4effeff72e2537d72
+    templates/variants/nestjs/security_headers.health.controller.ts.j2: sha256:6d2f2e1de21356f005fc51865b7fe94eb466f356adff38f74cad604d8ca9ad1e
+    templates/variants/nestjs/security_headers.health.module.ts.j2: sha256:5ab946f4eaaabc64a8db571d649223b8202328a00915060152f1afa913d088f1
+    templates/variants/nestjs/security_headers.module.ts.j2: sha256:76d06c03d9873bd1c795e1a0e6a670de4e7a330aa0e3ca683fb9d652fb486771
+    templates/variants/nestjs/security_headers.service.ts.j2: sha256:95829b273dd3d5986827993e740b0ad5c6af37543e4894afd6b6ffda7584e759
+    templates/vendor/nestjs/configuration.js.j2: sha256:9ce1d7474c44bbd500f7c322057eaccb3c40bc3b3f057aef1f1548a14c032ac9

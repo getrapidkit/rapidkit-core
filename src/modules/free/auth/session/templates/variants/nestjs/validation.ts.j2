@@ -1,0 +1,19 @@
+import * as Joi from "joi";
+
+export const sessionValidationSchema = Joi.object({
+  RAPIDKIT_SESSION_SECRET: Joi.string().min(1),
+  SESSION_TTL_SECONDS: Joi.number()
+    .integer()
+    .min(1)
+    .default({{ module_defaults.session_ttl_seconds | default(2592000) | tojson }}),
+  SESSION_REFRESH_TTL_SECONDS: Joi.number()
+    .integer()
+    .min(1)
+    .default({{ module_defaults.refresh_ttl_seconds | default(15552000) | tojson }}),
+  SESSION_COOKIE_NAME: Joi.string().default({{ module_defaults.cookie_name | default('rapidkit_session') | tojson }}),
+  SESSION_COOKIE_DOMAIN: Joi.string().allow(null, "").default({{ module_defaults.cookie_domain | default(null) | tojson }}),
+  SESSION_COOKIE_SECURE: Joi.boolean().default({{ module_defaults.cookie_secure | default(true) | tojson }}),
+  SESSION_COOKIE_HTTPONLY: Joi.boolean().default({{ module_defaults.cookie_httponly | default(true) | tojson }}),
+  SESSION_COOKIE_SAME_SITE: Joi.string().valid("lax", "strict", "none").default({{ module_defaults.cookie_same_site | default('lax') | tojson }}),
+  SESSION_STORAGE_BACKEND: Joi.string().default({{ module_defaults.storage_backend | default('memory') | tojson }}),
+});

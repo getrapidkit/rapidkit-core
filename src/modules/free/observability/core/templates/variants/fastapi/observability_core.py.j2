@@ -1,0 +1,23 @@
+{% include "templates/base/observability_core.py.j2" %}
+
+
+# --- FastAPI Adapter ---
+
+from fastapi import APIRouter, FastAPI
+
+
+def register_fastapi(app: FastAPI, config: {{ module_class_name }}Config | None = None) -> APIRouter:
+    """Attach the {{ module_title }} router to the given FastAPI app."""
+
+    # Lazy import to avoid circular imports at module import time.
+    from .routers.{{ module_name }} import build_router
+
+    router = build_router(config)
+    app.include_router(router)
+    return router
+
+
+def register_metrics_endpoint(app: FastAPI, config: {{ module_class_name }}Config | None = None) -> APIRouter:
+    """Compatibility alias: registers the module router (including /metrics)."""
+
+    return register_fastapi(app, config=config)

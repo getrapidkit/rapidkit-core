@@ -1,0 +1,23 @@
+"use strict";
+
+function loadConfiguration() {
+  return {
+    module: "db_mongo",
+    title: "Db Mongo",
+    enabled: true,
+    connection: {
+      uri: process.env.RAPIDKIT_DB_MONGO_URI || "{{ default_connection_uri }}",
+      database: process.env.RAPIDKIT_DB_MONGO_DATABASE || "{{ default_database_name }}",
+      authSource: process.env.RAPIDKIT_DB_MONGO_AUTH_SOURCE || "{{ default_auth_source }}",
+      readPreference: process.env.RAPIDKIT_DB_MONGO_READ_PREFERENCE || "{{ default_read_preference }}",
+    },
+    pool: {
+      min: Number(process.env.RAPIDKIT_DB_MONGO_MIN_POOL_SIZE || {{ default_pool_min_size }}),
+      max: Number(process.env.RAPIDKIT_DB_MONGO_MAX_POOL_SIZE || {{ default_pool_max_size }}),
+    },
+  };
+}
+
+module.exports = {
+  loadConfiguration,
+};

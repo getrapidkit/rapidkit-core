@@ -1,0 +1,142 @@
+"""Runtime helpers for {{ module_title }} metadata and configuration."""
+
+from __future__ import annotations
+
+import os
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from functools import lru_cache
+from typing import Any, Mapping, MutableMapping, Sequence
+
+
+DEFAULT_ENV_PREFIX = "RAPIDKIT_{{ module_name|upper }}_"
+MODULE_NAME = "{{ module_name }}"
+MODULE_TITLE = "{{ module_title }}"
+MODULE_FEATURES: tuple[str, ...] = (
+    "user_registration",
+    "profile_management",
+    "unique_email_enforcement",
+    "audit_logging",
+    "passwordless_opt_in",
+)
+
+
+def _coerce_bool(value: Any, default: bool) -> bool:
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return default
+    lowered = str(value).strip().lower()
+    if lowered in {"1", "true", "yes", "on"}:
+        return True
+    if lowered in {"0", "false", "no", "off"}:
+        return False
+    return default
+
+
+def _coerce_int(value: Any, default: int) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):  # pragma: no cover - defensive guard
+        return default
+
+
+def _coerce_str(value: Any, default: str) -> str:
+    if value is None:
+        return default
+    text = str(value).strip()
+    return text or default
+
+
+def _coerce_sequence(value: Any) -> tuple[str, ...]:
+    if value is None:
+        return ()
+    if isinstance(value, str):
+        return tuple(item.strip() for item in value.split(",") if item.strip())
+    if isinstance(value, Sequence):
+        return tuple(str(item).strip() for item in value if str(item).strip())
+    return ()
+
+
+@dataclass(slots=True)
+class {{ module_class_name }}Config:
+    """Normalized configuration for {{ module_title }}."""
+
+    allow_registration: bool = True
+    enforce_unique_email: bool = True
+    default_locale: str = "en"
+    audit_log_enabled: bool = True
+    max_results_per_page: int = 100
+    passwordless_supported: bool = False
+    supported_locales: tuple[str, ...] = field(default_factory=lambda: ("en",))
+
+    @classmethod
+    def from_mapping(cls, payload: Mapping[str, Any]) -> "{{ module_class_name }}Config":
+        defaults = cls()
+        return cls(
+            allow_registration=_coerce_bool(payload.get("allow_registration"), defaults.allow_registration),
+            enforce_unique_email=_coerce_bool(payload.get("enforce_unique_email"), defaults.enforce_unique_email),
+            default_locale=_coerce_str(payload.get("default_locale"), defaults.default_locale),
+            audit_log_enabled=_coerce_bool(payload.get("audit_log_enabled"), defaults.audit_log_enabled),
+            max_results_per_page=_coerce_int(payload.get("max_results_per_page"), defaults.max_results_per_page),
+            passwordless_supported=_coerce_bool(payload.get("passwordless_supported"), defaults.passwordless_supported),
+            supported_locales=_coerce_sequence(payload.get("supported_locales")) or ("en",),
+        )
+
+
+@lru_cache(maxsize=1)
+def load_config_from_env(
+    prefix: str = DEFAULT_ENV_PREFIX,
+    env: Mapping[str, str] | None = None,
+) -> {{ module_class_name }}Config:
+    source = env or os.environ
+    payload: MutableMapping[str, Any] = {
+        "allow_registration": source.get(f"{prefix}ALLOW_REGISTRATION"),
+        "enforce_unique_email": source.get(f"{prefix}ENFORCE_UNIQUE_EMAIL"),
+        "default_locale": source.get(f"{prefix}DEFAULT_LOCALE"),
+        "audit_log_enabled": source.get(f"{prefix}AUDIT_LOG_ENABLED"),
+        "max_results_per_page": source.get(f"{prefix}MAX_RESULTS_PER_PAGE"),
+        "passwordless_supported": source.get(f"{prefix}PASSWORDLESS_SUPPORTED"),
+        "supported_locales": source.get(f"{prefix}SUPPORTED_LOCALES"),
+    }
+    return {{ module_class_name }}Config.from_mapping(payload)
+
+
+def describe_{{ module_name }}(
+    config: {{ module_class_name }}Config | None = None,
+) -> MutableMapping[str, Any]:
+    """Return metadata describing the {{ module_title }} configuration."""
+
+    resolved = config or load_config_from_env()
+    metadata: MutableMapping[str, Any] = {
+        "module": MODULE_NAME,
+        "title": MODULE_TITLE,
+        "status": "ok",
+        "checked_at": datetime.now(timezone.utc).isoformat(),
+        "features": list(MODULE_FEATURES),
+        "allow_registration": resolved.allow_registration,
+        "enforce_unique_email": resolved.enforce_unique_email,
+        "default_locale": resolved.default_locale,
+        "audit_log_enabled": resolved.audit_log_enabled,
+        "max_results_per_page": resolved.max_results_per_page,
+        "passwordless_supported": resolved.passwordless_supported,
+        "supported_locales": list(resolved.supported_locales),
+    }
+    return metadata
+
+
+def get_{{ module_name }}_metadata() -> MutableMapping[str, Any]:
+    """Collect metadata using environment-backed configuration."""
+
+    return describe_{{ module_name }}()
+
+
+__all__ = [
+    "MODULE_FEATURES",
+    "MODULE_NAME",
+    "MODULE_TITLE",
+    "{{ module_class_name }}Config",
+    "describe_{{ module_name }}",
+    "get_{{ module_name }}_metadata",
+    "load_config_from_env",
+]

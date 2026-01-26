@@ -1,0 +1,307 @@
+from functools import lru_cache
+from typing import (
+    Any,
+    ClassVar,
+    List,
+    Optional,
+)
+from pydantic import Field, model_validator, field_validator
+from pydantic_settings import (
+    BaseSettings,
+    SettingsConfigDict,
+    PydanticBaseSettingsSource,
+    DotEnvSettingsSource,
+    SecretsSettingsSource,
+)
+import os
+from pathlib import Path
+import threading
+
+try:
+    # optional import; code guards around usage
+    from core.hot_reload import start_hot_reload
+except Exception:  # pragma: no cover
+    def start_hot_reload(*args, **kwargs):
+        return
+
+try:
+    from core.custom_sources import load_from_yaml, load_from_vault, load_from_aws_sm
+except Exception:  # pragma: no cover
+    def load_from_yaml(settings_cls, file_path: Path, field_name: str, field: Any):
+        return None
+    def load_from_vault(vault_url: Optional[str], field_name: str):
+        return None
+    def load_from_aws_sm(region: Optional[str], field_name: str):
+        return None
+
+
+SECRET_PLACEHOLDER = "{{ '' | generate_secret(48) }}"
+
+
+class CustomConfigSource(PydanticBaseSettingsSource):
+    """
+    Custom source to load settings from YAML, Vault, or AWS Secrets Manager.
+    The order is driven by Settings.model_config['config_files'].
+    """
+
+    def get_field_value(self, field_name: str, field: Any) -> Any:
+        cfg_files = self.settings_cls.model_config.get(
+            "config_files", [".env", ".env.local"]
+        )
+        for entry in cfg_files:
+            # YAML file
+            if isinstance(entry, str) and entry.endswith((".yaml", ".yml")):
+                value = load_from_yaml(self.settings_cls, Path(entry), field_name, field)
+                if value is not None:
+                    return value
+
+            # Vault secret (vault://<path_or_key>)
+            if isinstance(entry, str) and entry.startswith("vault://"):
+                value = load_from_vault(os.getenv("VAULT_URL"), field_name)
+                if value is not None:
+                    return value
+
+            # AWS Secrets Manager (aws-sm://<secret-id>)
+            if isinstance(entry, str) and entry.startswith("aws-sm://"):
+                value = load_from_aws_sm(os.getenv("AWS_REGION"), field_name)
+                if value is not None:
+                    return value
+
+        return None
+
+    def __call__(self) -> dict[str, Any]:  # pydantic v2 requires this
+        """Return mapping of field values discovered in custom sources.
+
+        We only supply keys we can resolve, letting earlier sources keep their
+        values. This is appended last in settings_customise_sources.
+        """
+        data: dict[str, Any] = {}
+        for name, field in self.settings_cls.model_fields.items():  # type: ignore[attr-defined]
+            try:
+                value = self.get_field_value(name, field)
+            except Exception:  # pragma: no cover - defensive
+                value = None
+            if value is not None:
+                data[name] = value
+        return data
+
+
+class Settings(BaseSettings):
+    """
+    Centralized application configuration with support for multi-source loading,
+    dynamic extensions, and standard-grade validation.
+    """
+
+    # Core project settings
+    ENV: str = Field(
+        default="development",
+        description="Application environment (development, staging, production)",
+    )
+    DEBUG: bool = Field(default=False, description="Enable/disable debug mode")
+    PROJECT_NAME: str = Field(default="RapidKit App", description="Name of the project")
+    SECRET_KEY: str = Field(
+        default=SECRET_PLACEHOLDER,
+        description="Secret key for cryptographic operations",
+        min_length=32,
+    )
+    VERSION: str = Field(default="1.0.0", description="Application version")
+    ALLOWED_HOSTS: List[str] = Field(
+        default=["*"], description="List of allowed hosts"
+    )
+    LOG_SINKS: List[str] = Field(
+        default=["stderr"],
+        description="List of configured logging sinks",
+    )
+    CONFIG_FILES: List[str] = Field(
+        default=[".env", ".env.local", "config.yaml"],
+        description="List of configuration sources",
+    )
+    CONFIG_REFRESH_INTERVAL: int = Field(
+        default=60, description="Interval (seconds) to check for config updates"
+    )
+    VAULT_URL: Optional[str] = Field(
+        default="http://localhost:8200",
+        description="HashiCorp Vault URL for secrets",
+    )
+    AWS_REGION: Optional[str] = Field(
+        default="us-east-1",
+        description="AWS region for Secrets Manager",
+    )
+    HOT_RELOAD_ENABLED: bool = Field(
+        default=True,
+        description="Enable background hot reload watcher in allowed environments",
+    )
+    HOT_RELOAD_ENV_ALLOWLIST: List[str] = Field(
+        default=["development", "staging"],
+        description="Environments that are permitted to launch the hot reload watcher",
+    )
+
+    # <<<inject:settings-fields>>>
+    # Dynamic snippets injected here
+
+    model_config = SettingsConfigDict(
+        env_file=[".env", ".env.local"],
+        env_file_encoding="utf-8",
+        extra="allow",  # Allow dynamic fields from other modules
+        case_sensitive=True,
+        validate_assignment=True,
+        secrets_dir="/run/secrets",  # For Docker/Kubernetes secrets
+        config_files=[".env", ".env.local", "config.yaml"],
+    )
+
+    # --- Legacy ENV name compatibility mapping ---
+    # Allows old LOG_* variable names to populate renamed / canonical fields.
+    # Remove once migration window passes.
+    LEGACY_ENV_MAP: ClassVar[dict[str, str]] = {
+        "LOG_SAMPLING_RATE": "SAMPLING_DEBUG_RATE",
+        "LOG_ASYNC_QUEUE": "ASYNC_QUEUE_ENABLED",
+        "LOG_ENABLE_REDACTION": "REDACT_SECRETS",
+        "LOG_OTEL_BRIDGE": "OTEL_BRIDGE_ENABLED",
+        "LOG_METRICS_BRIDGE": "METRICS_BRIDGE_ENABLED",
+    }
+
+    @model_validator(mode="before")
+    @classmethod
+    def _apply_legacy_env(cls, data: Any):  # type: ignore[override]
+        import os
+        if not isinstance(data, dict):
+            return data
+        for legacy, target in getattr(cls, "LEGACY_ENV_MAP", {}).items():
+            if target in data and data[target] not in (None, "", []):
+                continue
+            if legacy in os.environ:
+                raw = os.getenv(legacy)
+                if raw is None:
+                    continue
+                # Minimal type coercion based on target name semantics
+                if (
+                    target.endswith("_ENABLED")
+                    or target.startswith("REDACT_")
+                    or target.endswith("_BRIDGE_ENABLED")
+                ):
+                    val = raw.lower() in {"1", "true", "yes", "on"}
+                elif target.endswith("_RATE"):
+                    try:
+                        val = float(raw)
+                    except ValueError:
+                        continue
+                else:
+                    val = raw
+                data[target] = val
+        return data
+
+    @field_validator("ALLOWED_HOSTS", mode="before")
+    @classmethod
+    def _normalize_allowed_hosts(cls, v):  # type: ignore[override]
+        """Accept several convenient input forms:
+        - "*" -> ["*"]
+        - comma separated: "a,b" -> ["a","b"]
+        - JSON list string: "[\"a\", \"b\"]" -> ["a","b"]
+        - already list -> unchanged
+        Fallback to ["*"] if empty/None.
+        """
+        import json
+        if v in (None, "", []):
+            return ["*"]
+        if isinstance(v, list):
+            return v or ["*"]
+        if isinstance(v, str):
+            s = v.strip()
+            if s == "*":
+                return ["*"]
+            if s.startswith("[") and s.endswith("]"):
+                try:
+                    parsed = json.loads(s)
+                    if isinstance(parsed, list):
+                        return parsed
+                except Exception:
+                    pass
+            # comma separated
+            parts = [p.strip() for p in s.split(",") if p.strip()]
+            return parts or ["*"]
+        return v
+
+    @field_validator("LOG_SINKS", mode="before")
+    @classmethod
+    def _normalize_log_sinks(cls, v):  # type: ignore[override]
+        """Normalize LOG_SINKS from simple env strings.
+        Supports comma separated ("stderr,file"), single value, list, or JSON list.
+        Falls back to ["stderr"].
+        """
+        if v in (None, "", []):
+            return ["stderr"]
+        if isinstance(v, list):
+            return v or ["stderr"]
+        if isinstance(v, str):
+            parts = [p.strip() for p in v.split(",") if p.strip()]
+            return parts or ["stderr"]
+        return v
+
+    @field_validator("HOT_RELOAD_ENV_ALLOWLIST", mode="before")
+    @classmethod
+    def _normalize_hot_reload_envs(cls, v):  # type: ignore[override]
+        if v in (None, "", []):
+            return ["development", "staging"]
+        if isinstance(v, list):
+            return v
+        if isinstance(v, str):
+            parts = [p.strip() for p in v.split(",") if p.strip()]
+            return parts or ["development", "staging"]
+        return ["development", "staging"]
+
+    @classmethod
+    def settings_customise_sources(
+        cls,
+        settings_cls: type[BaseSettings],
+        init_settings: PydanticBaseSettingsSource,
+        env_settings: PydanticBaseSettingsSource,
+        dotenv_settings: DotEnvSettingsSource,
+        file_secret_settings: SecretsSettingsSource,
+    ) -> tuple[PydanticBaseSettingsSource, ...]:
+        return (
+            init_settings,
+            env_settings,
+            dotenv_settings,
+            file_secret_settings,
+            CustomConfigSource(settings_cls),
+        )
+
+    @model_validator(mode="after")
+    def validate_production_settings(self):
+        """Validate settings for production environment."""
+        if self.ENV == "production":
+            if self.SECRET_KEY == SECRET_PLACEHOLDER:
+                raise ValueError("SECRET_KEY must be changed in production")
+            if self.DEBUG:
+                raise ValueError("DEBUG must be False in production")
+        return self
+
+    def refresh(self) -> None:
+        """Refresh settings from sources (supports hot reloading)."""
+        self.__dict__.clear()
+        self.__init__()
+
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        # Enable hot reloading only for pro/standard environments.
+        # If you want tighter coupling to profiles, toggle via ENV or feature flag.
+        allow_hot_reload = (
+            self.HOT_RELOAD_ENABLED
+            and self.CONFIG_REFRESH_INTERVAL > 0
+            and self.ENV in set(self.HOT_RELOAD_ENV_ALLOWLIST)
+        )
+        if allow_hot_reload:
+            try:
+                threading.Thread(
+                    target=start_hot_reload, args=(self,), daemon=True
+                ).start()
+            except Exception:
+                pass
+
+
+@lru_cache()
+def get_settings() -> Settings:
+    return Settings()
+
+
+settings = get_settings()

@@ -1,0 +1,70 @@
+import { DynamicModule, Module, Provider } from '@nestjs/common';
+
+import {
+  EMAIL_MODULE_CONFIG,
+  EMAIL_TEMPLATE_OPTIONS,
+  EMAIL_TRANSPORT,
+  EmailModuleConfig,
+  EmailTemplateOptions,
+  EmailTransport,
+  {{ module_class_name }}Service,
+} from './email.service';
+import { {{ module_class_name }}Controller } from './email.controller';
+
+const DEFAULT_EMAIL_CONFIG: EmailModuleConfig = {
+  enabled: true,
+  provider: 'console',
+  fromAddress: 'noreply@example.com',
+  transport: {
+    host: 'localhost',
+    port: 1025,
+  },
+  metadata: {},
+  defaultHeaders: {},
+};
+
+const DEFAULT_TEMPLATE_OPTIONS: EmailTemplateOptions = {
+  cache: true,
+  autoReload: false,
+  strict: false,
+};
+
+function createBaseProviders(): Provider[] {
+  return [
+    {{ module_class_name }}Service,
+    { provide: EMAIL_MODULE_CONFIG, useValue: DEFAULT_EMAIL_CONFIG },
+    { provide: EMAIL_TEMPLATE_OPTIONS, useValue: DEFAULT_TEMPLATE_OPTIONS },
+  ];
+}
+
+@Module({
+  providers: createBaseProviders(),
+  controllers: [{{ module_class_name }}Controller],
+  exports: [{{ module_class_name }}Service],
+})
+export class {{ module_class_name }}Module {
+  static register(
+    config: EmailModuleConfig,
+    options: {
+      template?: EmailTemplateOptions;
+      transport?: EmailTransport;
+    } = {},
+  ): DynamicModule {
+    const providers: Provider[] = [
+      { provide: EMAIL_MODULE_CONFIG, useValue: config },
+      { provide: EMAIL_TEMPLATE_OPTIONS, useValue: options.template ?? DEFAULT_TEMPLATE_OPTIONS },
+      {{ module_class_name }}Service,
+    ];
+
+    if (options.transport) {
+      providers.push({ provide: EMAIL_TRANSPORT, useValue: options.transport });
+    }
+
+    return {
+      module: {{ module_class_name }}Module,
+      providers,
+      controllers: [{{ module_class_name }}Controller],
+      exports: [{{ module_class_name }}Service],
+    };
+  }
+}

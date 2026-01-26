@@ -1,0 +1,91 @@
+# Database (SQLite)
+
+{% set path_default = sqlite_defaults.database_path | default('./.rapidkit/runtime/sqlite/app.db') | tojson %}
+{% set create_default = 'True' if (sqlite_defaults.create_if_missing | default(true)) else 'False' %}
+{% set timeout_default = sqlite_defaults.timeout_seconds | default(30.0) | tojson %}
+{% set pool_max_default = sqlite_defaults.pool_max_size | default(4) | tojson %}
+{% set pool_recycle_default = sqlite_defaults.pool_recycle_seconds | default(600) | tojson %}
+{% set sqlite_defaults_dict = sqlite_defaults if sqlite_defaults is defined else {} %}
+{% set pragma_defaults = sqlite_defaults_dict.get('pragmas', {}) %}
+
+if "RAPIDKIT_DB_SQLITE_PATH" in locals():
+    RAPIDKIT_DB_SQLITE_PATH = Field(
+        default={{ path_default }},
+        description="Filesystem path or URI for the SQLite database",
+    )
+else:
+    RAPIDKIT_DB_SQLITE_PATH: str = Field(
+        default={{ path_default }},
+        description="Filesystem path or URI for the SQLite database",
+    )
+
+if "RAPIDKIT_DB_SQLITE_CREATE_IF_MISSING" in locals():
+    RAPIDKIT_DB_SQLITE_CREATE_IF_MISSING = Field(
+        default={{ create_default }},
+        description="Automatically create the SQLite database file when missing",
+    )
+else:
+    RAPIDKIT_DB_SQLITE_CREATE_IF_MISSING: bool = Field(
+        default={{ create_default }},
+        description="Automatically create the SQLite database file when missing",
+    )
+
+if "RAPIDKIT_DB_SQLITE_TIMEOUT_SECONDS" in locals():
+    RAPIDKIT_DB_SQLITE_TIMEOUT_SECONDS = Field(
+        default={{ timeout_default }},
+        description="Default connection timeout in seconds",
+    )
+else:
+    RAPIDKIT_DB_SQLITE_TIMEOUT_SECONDS: float = Field(
+        default={{ timeout_default }},
+        description="Default connection timeout in seconds",
+    )
+
+if "RAPIDKIT_DB_SQLITE_POOL_MAX_SIZE" in locals():
+    RAPIDKIT_DB_SQLITE_POOL_MAX_SIZE = Field(
+        default={{ pool_max_default }},
+        description="Maximum pooled SQLite connections",
+    )
+else:
+    RAPIDKIT_DB_SQLITE_POOL_MAX_SIZE: int = Field(
+        default={{ pool_max_default }},
+        description="Maximum pooled SQLite connections",
+    )
+
+if "RAPIDKIT_DB_SQLITE_POOL_RECYCLE_SECONDS" in locals():
+    RAPIDKIT_DB_SQLITE_POOL_RECYCLE_SECONDS = Field(
+        default={{ pool_recycle_default }},
+        description="Recycle pooled connections after N seconds",
+    )
+else:
+    RAPIDKIT_DB_SQLITE_POOL_RECYCLE_SECONDS: int = Field(
+        default={{ pool_recycle_default }},
+        description="Recycle pooled connections after N seconds",
+    )
+
+if "RAPIDKIT_DB_SQLITE_PRAGMAS" in locals():
+    RAPIDKIT_DB_SQLITE_PRAGMAS = Field(
+{% if pragma_defaults %}
+    default={
+{% for key, value in pragma_defaults.items() %}
+        "{{ key }}": {% if value is boolean %}{{ "True" if value else "False" }}{% else %}{{ value | tojson }}{% endif %}{% if not loop.last %}, {% endif %}
+{% endfor %}
+    },
+{% else %}
+    default={},
+{% endif %}
+        description="JSON encoded PRAGMA overrides applied on connection",
+    )
+else:
+    RAPIDKIT_DB_SQLITE_PRAGMAS: dict[str, object] = Field(
+{% if pragma_defaults %}
+    default={
+{% for key, value in pragma_defaults.items() %}
+        "{{ key }}": {% if value is boolean %}{{ "True" if value else "False" }}{% else %}{{ value | tojson }}{% endif %}{% if not loop.last %}, {% endif %}
+{% endfor %}
+    },
+{% else %}
+    default={},
+{% endif %}
+        description="JSON encoded PRAGMA overrides applied on connection",
+    )

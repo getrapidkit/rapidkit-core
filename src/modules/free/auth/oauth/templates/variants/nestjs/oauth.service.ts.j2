@@ -1,0 +1,209 @@
+import { Injectable, NotFoundException } from "@nestjs/common";
+
+type OauthProviderTemplate = {
+  name?: string;
+  client_id?: string;
+  client_id_env?: string;
+  client_secret?: string;
+  client_secret_env?: string;
+  authorize_url: string;
+  token_url: string;
+  userinfo_url?: string;
+  redirect_uri?: string;
+  scopes?: string[];
+  extra_authorize_params?: Record<string, string>;
+};
+
+type OauthProviderRuntime = {
+  name: string;
+  clientId: string;
+  clientSecret: string;
+  authorizeUrl: string;
+  tokenUrl: string;
+  userinfoUrl?: string;
+  redirectUri?: string;
+  scopes: string[];
+  extraAuthorizeParams: Record<string, string>;
+};
+
+type OauthSettingsTemplate = {
+  redirect_base_url: string;
+  state_ttl_seconds: number;
+  state_cleanup_interval: number;
+  providers: Record<string, OauthProviderTemplate>;
+};
+
+type PublicProviderSnapshot = {
+  name: string;
+  authorizeUrl: string;
+  tokenUrl: string;
+  scopes: string[];
+  userinfoUrl?: string;
+  redirectUri?: string;
+};
+
+type OauthMetadataSnapshot = {
+  module: string;
+  redirectBaseUrl: string;
+  stateTtlSeconds: number;
+  stateCleanupInterval: number;
+  providerCount: number;
+  features: string[];
+};
+
+type OauthHealthSnapshot = {
+  status: "ok" | "degraded";
+  providerCount: number;
+  metadata: OauthMetadataSnapshot;
+  issues: string[];
+};
+
+const RAW_SETTINGS: OauthSettingsTemplate = {{ module_defaults | default({}) | tojson(indent=2) }};
+
+const FEATURE_FLAGS = [
+  "provider_registry",
+  "state_management",
+  "redirect_templates",
+  "token_exchange_helpers",
+] as const;
+
+const coerceScopes = (value?: string[]): string[] => {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return value.filter((scope) => typeof scope === "string" && scope.trim().length > 0);
+};
+
+const readEnv = (name?: string, fallback = ""): string => {
+  if (!name || typeof name !== "string" || name.length === 0) {
+    return fallback;
+  }
+  const value = process.env[name];
+  return typeof value === "string" && value.length > 0 ? value : fallback;
+};
+
+const hydrateProvider = (
+  key: string,
+  template: OauthProviderTemplate,
+): OauthProviderRuntime | null => {
+  const clientId = readEnv(template.client_id_env, template.client_id ?? "").trim();
+  const clientSecret = readEnv(
+    template.client_secret_env,
+    template.client_secret ?? "",
+  ).trim();
+
+  if (!clientId || !clientSecret) {
+    return null;
+  }
+
+  return {
+    name: template.name ?? key,
+    clientId,
+    clientSecret,
+    authorizeUrl: template.authorize_url,
+    tokenUrl: template.token_url,
+    userinfoUrl: template.userinfo_url,
+    redirectUri: template.redirect_uri,
+    scopes: coerceScopes(template.scopes),
+    extraAuthorizeParams: template.extra_authorize_params ?? {},
+  };
+};
+
+const buildRuntimeSettings = (
+  template: OauthSettingsTemplate,
+): {
+  redirectBaseUrl: string;
+  stateTtlSeconds: number;
+  stateCleanupInterval: number;
+  providers: Record<string, OauthProviderRuntime>;
+} => {
+  const providers: Record<string, OauthProviderRuntime> = {};
+  for (const [key, value] of Object.entries(template.providers ?? {})) {
+    const hydrated = hydrateProvider(key, value);
+    if (hydrated) {
+      providers[key] = hydrated;
+    }
+  }
+
+  return {
+    redirectBaseUrl: template.redirect_base_url,
+    providers,
+    stateTtlSeconds: template.state_ttl_seconds,
+    stateCleanupInterval: template.state_cleanup_interval,
+  };
+};
+
+type OauthRuntimeSettings = ReturnType<typeof buildRuntimeSettings>;
+
+@Injectable()
+export class {{ module_class_name }}Service {
+  private readonly runtime: OauthRuntimeSettings;
+
+  constructor() {
+    this.runtime = buildRuntimeSettings(RAW_SETTINGS);
+  }
+
+  listProviders(): Record<string, PublicProviderSnapshot> {
+    const runtime = this.runtime;
+    const snapshot: Record<string, PublicProviderSnapshot> = {};
+    for (const [key, provider] of Object.entries(runtime.providers)) {
+      snapshot[key] = {
+        name: provider.name,
+        authorizeUrl: provider.authorizeUrl,
+        tokenUrl: provider.tokenUrl,
+        scopes: [...provider.scopes],
+        userinfoUrl: provider.userinfoUrl,
+        redirectUri: provider.redirectUri ?? `${runtime.redirectBaseUrl}/${key}/callback`,
+      };
+    }
+    return snapshot;
+  }
+
+  getProviderStrict(name: string): OauthProviderRuntime {
+    const provider = this.runtime.providers[name];
+    if (!provider) {
+      throw new NotFoundException(`Unknown OAuth provider: ${name}`);
+    }
+    return provider;
+  }
+
+  getStateTtlSeconds(): number {
+    return this.runtime.stateTtlSeconds;
+  }
+
+  describe(): OauthMetadataSnapshot {
+    return {
+      module: "oauth",
+      redirectBaseUrl: this.runtime.redirectBaseUrl,
+      stateTtlSeconds: this.runtime.stateTtlSeconds,
+      stateCleanupInterval: this.runtime.stateCleanupInterval,
+      providerCount: Object.keys(this.runtime.providers).length,
+      features: [...FEATURE_FLAGS],
+    };
+  }
+
+  listFeatures(): string[] {
+    return [...FEATURE_FLAGS];
+  }
+
+  metadata(): OauthMetadataSnapshot {
+    return this.describe();
+  }
+
+  health(): OauthHealthSnapshot {
+    const metadata = this.metadata();
+    const providerCount = metadata.providerCount;
+    const issues: string[] = [];
+
+    if (providerCount === 0) {
+      issues.push("no_providers_configured");
+    }
+
+    return {
+      status: issues.length === 0 ? "ok" : "degraded",
+      providerCount,
+      metadata,
+      issues,
+    };
+  }
+}

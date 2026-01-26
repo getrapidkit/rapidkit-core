@@ -1,0 +1,26 @@
+"""Public types re-exported by the {{ module_class_name }} module."""
+
+from __future__ import annotations
+
+from .storage import (
+    FileMetadata,
+    FileValidationError,
+    LocalStorageAdapter,
+    StorageAdapter,
+    StorageConfig,
+    UploadResult,
+    {{ module_class_name }},
+    UnsupportedAdapterError,
+)
+
+__all__ = [
+    "FileMetadata",
+    "FileValidationError",
+    "LocalStorageAdapter",
+    "StorageConfig",
+    "StorageAdapter",
+    "UploadResult",
+    "{{ module_class_name }}",
+    "UnsupportedAdapterError",
+]
+    """Storage adapter protocol."""

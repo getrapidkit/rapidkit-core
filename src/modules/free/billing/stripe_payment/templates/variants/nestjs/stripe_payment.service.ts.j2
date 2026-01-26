@@ -1,0 +1,286 @@
+import { Injectable } from "@nestjs/common";
+
+type Primitive = string | number | boolean | null | undefined;
+
+interface StripeDefaults extends Record<string, unknown> {
+  enabled?: Primitive;
+  mode?: string;
+  default_currency?: string;
+  capture_method?: string;
+  statement_descriptor?: string;
+  description_prefix?: string;
+  automatic_payment_methods?: Primitive;
+  metadata?: Record<string, unknown>;
+}
+
+interface StripeRetryPolicy extends Record<string, Primitive> {
+  max_attempts?: number;
+  base_delay_seconds?: number;
+  max_delay_seconds?: number;
+}
+
+interface StripeWebhookConfig extends Record<string, unknown> {
+  enabled?: Primitive;
+  endpoint_secret_env?: string;
+  tolerance_seconds?: number;
+  events?: string[];
+}
+
+interface StripeFeatureFlags extends Record<string, Primitive> {
+  allow_manual_capture?: Primitive;
+  enable_idempotency_keys?: Primitive;
+  verify_webhooks?: Primitive;
+  emit_metrics?: Primitive;
+}
+
+interface StripeBillingConfig extends Record<string, unknown> {
+  minimum_amount?: number;
+  maximum_amount?: number;
+  allowed_currencies?: string[];
+  default_payment_method_types?: string[];
+}
+
+interface StripeNetworkConfig extends Record<string, Primitive> {
+  timeout_seconds?: number;
+  max_connections?: number;
+}
+
+type StripeMetadataKeys = Record<string, Primitive>;
+
+interface StripeEnvironmentOverrides extends Record<string, Primitive> {
+  api_key?: Primitive;
+  webhook_secret?: Primitive;
+}
+
+interface StripeEnvironmentSnapshot {
+  has_api_key: boolean;
+  has_webhook_secret: boolean;
+}
+
+export interface StripePaymentConfigSnapshot extends StripeDefaults {
+  enabled: boolean;
+  metadata: Record<string, unknown>;
+}
+
+export interface StripePaymentMetadata {
+  module: string;
+  title: string;
+  generated_at: string;
+  defaults: StripeDefaults;
+  config: StripePaymentConfigSnapshot;
+  retry_policy: StripeRetryPolicy;
+  webhook: StripeWebhookConfig;
+  features: Record<string, boolean>;
+  billing: StripeBillingConfig;
+  network: StripeNetworkConfig;
+  metadata_keys: StripeMetadataKeys;
+  environment: StripeEnvironmentSnapshot;
+  snippets: Array<Record<string, unknown>>;
+}
+
+export interface StripePaymentHealthPayload {
+  module: string;
+  status: "ok" | "degraded";
+  checked_at: string;
+  mode: string;
+  default_currency: string;
+  automatic_payment_methods: boolean;
+  webhook_enabled: boolean;
+  manual_capture_available: boolean;
+}
+
+const DEFAULTS_RAW: StripeDefaults = {{ stripe_defaults | default({}) | tojson(indent=2) }};
+const RETRY_POLICY_RAW: StripeRetryPolicy = {{ stripe_retry_policy | default({}) | tojson(indent=2) }};
+const WEBHOOK_RAW: StripeWebhookConfig = {{ stripe_webhook | default({}) | tojson(indent=2) }};
+const FEATURE_FLAGS_RAW: StripeFeatureFlags = {{ stripe_features | default({}) | tojson(indent=2) }};
+const BILLING_RAW: StripeBillingConfig = {{ stripe_billing | default({}) | tojson(indent=2) }};
+const NETWORK_RAW: StripeNetworkConfig = {{ stripe_network | default({}) | tojson(indent=2) }};
+const METADATA_KEYS_RAW: StripeMetadataKeys = {{ stripe_metadata_keys | default({}) | tojson(indent=2) }};
+const ENV_OVERRIDES_RAW: StripeEnvironmentOverrides = {{ stripe_env_overrides | default({}) | tojson(indent=2) }};
+const SNIPPETS_RAW: Array<Record<string, unknown>> = {{ stripe_snippet_catalog | default([]) | tojson(indent=2) }};
+
+@Injectable()
+export class {{ module_class_name }}Service {
+  private readonly clock: () => Date = () => new Date();
+  private readonly config: StripePaymentConfigSnapshot;
+
+  constructor() {
+    this.config = buildConfig();
+  }
+
+  listAllowedCurrencies(): string[] {
+    return resolveStringArray(BILLING_RAW.allowed_currencies);
+  }
+
+  listPaymentMethodTypes(): string[] {
+    return resolveStringArray(BILLING_RAW.default_payment_method_types);
+  }
+
+  getRetryPolicy(): StripeRetryPolicy {
+    return cloneRecord(RETRY_POLICY_RAW);
+  }
+
+  getWebhookConfig(): StripeWebhookConfig {
+    const webhook = cloneRecord(WEBHOOK_RAW);
+    webhook.events = resolveStringArray(WEBHOOK_RAW.events);
+    return webhook;
+  }
+
+  getEnvironmentSnapshot(): StripeEnvironmentSnapshot {
+    return {
+      has_api_key: hasValue(ENV_OVERRIDES_RAW.api_key),
+      has_webhook_secret: hasValue(ENV_OVERRIDES_RAW.webhook_secret),
+    };
+  }
+
+  getStatus(): Record<string, unknown> {
+    const health = this.getHealthPayload();
+    return {
+      module: health.module,
+      status: health.status,
+      mode: health.mode,
+      default_currency: health.default_currency,
+      automatic_payment_methods: health.automatic_payment_methods,
+      webhook_enabled: health.webhook_enabled,
+    };
+  }
+
+  getMetadata(): StripePaymentMetadata {
+    const defaults = cloneRecord(DEFAULTS_RAW);
+    const retryPolicy = cloneRecord(RETRY_POLICY_RAW);
+    const billing = cloneRecord(BILLING_RAW);
+    const network = cloneRecord(NETWORK_RAW);
+    const metadataKeys = cloneRecord(METADATA_KEYS_RAW);
+
+    const configSnapshot = cloneRecord(DEFAULTS_RAW) as StripePaymentConfigSnapshot;
+    configSnapshot.enabled = this.config.enabled;
+    configSnapshot.metadata = { ...this.config.metadata };
+
+    return {
+      module: "{{ module_name }}",
+      title: "{{ module_title }}",
+      generated_at: this.clock().toISOString(),
+      defaults,
+      config: configSnapshot,
+      retry_policy: retryPolicy,
+      webhook: this.getWebhookConfig(),
+      features: mapFeatureFlags(FEATURE_FLAGS_RAW),
+      billing,
+      network,
+      metadata_keys: metadataKeys,
+      environment: this.getEnvironmentSnapshot(),
+      snippets: cloneRecordArray(SNIPPETS_RAW),
+    };
+  }
+
+  getHealthPayload(): StripePaymentHealthPayload {
+    return {
+      module: "{{ module_name }}",
+      status: this.config.enabled ? "ok" : "degraded",
+      checked_at: this.clock().toISOString(),
+      mode: normalizeMode(DEFAULTS_RAW.mode),
+      default_currency: normalizeCurrency(DEFAULTS_RAW.default_currency),
+      automatic_payment_methods: resolveBoolean(
+        DEFAULTS_RAW.automatic_payment_methods,
+        true,
+      ),
+      webhook_enabled: resolveBoolean(WEBHOOK_RAW.enabled, true),
+      manual_capture_available: resolveBoolean(
+        FEATURE_FLAGS_RAW["allow_manual_capture"],
+        true,
+      ),
+    };
+  }
+
+  getHealth(): StripePaymentHealthPayload {
+    return this.getHealthPayload();
+  }
+}
+
+function buildConfig(): StripePaymentConfigSnapshot {
+  return {
+    ...cloneRecord(DEFAULTS_RAW),
+    enabled: resolveBoolean(DEFAULTS_RAW.enabled, true),
+    metadata: ensureRecord(DEFAULTS_RAW.metadata),
+  };
+}
+
+function mapFeatureFlags(flags: StripeFeatureFlags): Record<string, boolean> {
+  const snapshot: Record<string, boolean> = {};
+  for (const [key, value] of Object.entries(flags ?? {})) {
+    snapshot[key] = resolveBoolean(value, false);
+  }
+  return snapshot;
+}
+
+function resolveStringArray(values: unknown): string[] {
+  if (!Array.isArray(values)) {
+    return [];
+  }
+  return values
+    .map((item) => `${item ?? ""}`.trim())
+    .filter((item) => item.length > 0);
+}
+
+function normalizeCurrency(currency: string | undefined): string {
+  if (!currency) {
+    return "usd";
+  }
+  return currency.trim().toLowerCase();
+}
+
+function normalizeMode(mode: string | undefined): string {
+  if (!mode) {
+    return "test";
+  }
+  return mode.trim().toLowerCase();
+}
+
+function resolveBoolean(value: Primitive, fallback: boolean): boolean {
+  if (typeof value === "boolean") {
+    return value;
+  }
+  if (typeof value === "number") {
+    return value > 0;
+  }
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (["1", "true", "yes", "on"].includes(normalized)) {
+      return true;
+    }
+    if (["0", "false", "no", "off"].includes(normalized)) {
+      return false;
+    }
+  }
+  return fallback;
+}
+
+function ensureRecord(value: unknown): Record<string, unknown> {
+  if (!value || typeof value !== "object" || Array.isArray(value)) {
+    return {};
+  }
+  return cloneRecord(value as Record<string, unknown>);
+}
+
+function cloneRecord<T extends Record<string, unknown>>(value: T | undefined): T {
+  if (!value) {
+    return {} as T;
+  }
+  return JSON.parse(JSON.stringify(value));
+}
+
+function cloneRecordArray(
+  value: Array<Record<string, unknown>> | undefined,
+): Array<Record<string, unknown>> {
+  if (!Array.isArray(value)) {
+    return [];
+  }
+  return JSON.parse(JSON.stringify(value));
+}
+
+function hasValue(value: Primitive): boolean {
+  if (typeof value === "string") {
+    return value.trim().length > 0;
+  }
+  return Boolean(value);
+}

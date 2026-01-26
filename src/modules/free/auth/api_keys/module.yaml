@@ -1,0 +1,206 @@
+name: api_keys
+display_name: API Keys
+description: Deterministic API key issuance, verification, and auditing
+version: 0.1.0
+access: free
+status: stable
+tier: free
+category: auth
+generated_from_config: true
+depends_on: []
+tags:
+    - api-keys
+    - auth
+    - security
+    - auditing
+profile_inherits:
+    fastapi.standard: fastapi
+    fastapi.ddd: fastapi
+    nestjs.standard: nestjs
+config_sources:
+    - config/base.yaml
+    - config/snippets.yaml
+generation:
+    vendor:
+        root: .rapidkit/vendor
+        files:
+            - template: templates/base/api_keys.py.j2
+              relative: src/modules/free/auth/api_keys/api_keys.py
+            - template: templates/base/api_keys_health.py.j2
+              relative: src/health/api_keys.py
+            - template: templates/base/api_keys_types.py.j2
+              relative: src/modules/free/auth/api_keys/types/api_keys.py
+            - template: templates/vendor/nestjs/configuration.js.j2
+              relative: nestjs/configuration.js
+    variants:
+        fastapi: &fastapi_variant
+            root: .
+            context:
+                framework: fastapi
+                module_class_name: ApiKeys
+                module_title: API Keys
+                vendor_runtime_relative: src/modules/free/auth/api_keys/api_keys.py
+            files:
+                - template: templates/variants/fastapi/api_keys.py.j2
+                  output: src/modules/free/auth/api_keys/api_keys.py
+                - template: templates/base/api_keys_types.py.j2
+                  output: src/modules/free/auth/api_keys/api_keys_types.py
+                - template: templates/base/api_keys_health.py.j2
+                  output: src/modules/free/auth/api_keys/api_keys_health.py
+                - template: templates/variants/fastapi/api_keys_routes.py.j2
+                  output: src/modules/free/auth/api_keys/routers/api_keys.py
+                - template: templates/variants/fastapi/api_keys_config.yaml.j2
+                  output: config/api_keys.yaml
+                - template: templates/tests/integration/test_api_keys_integration.j2
+                  output: tests/modules/integration/auth/api_keys/test_api_keys_integration.py
+                - template: templates/variants/fastapi/tests/test_api_keys_e2e.py
+                  output: tests/modules/e2e/free/auth/api_keys/test_api_keys_e2e.py
+        fastapi.standard: *fastapi_variant
+        fastapi.ddd: *fastapi_variant
+        nestjs: &nestjs_variant
+            root: .
+            context:
+                framework: nestjs
+                vendor_configuration_relative: nestjs/configuration.js
+                vendor_runtime_relative: src/modules/free/auth/api_keys/api_keys.py
+                module_class_name: ApiKeys
+                module_kebab: api-keys
+            files:
+                - template: templates/variants/nestjs/api_keys.service.ts.j2
+                  output: src/modules/free/auth/api_keys/api-keys.service.ts
+                - template: templates/variants/nestjs/api_keys.controller.ts.j2
+                  output: src/modules/free/auth/api_keys/api-keys.controller.ts
+                - template: templates/variants/nestjs/api_keys.module.ts.j2
+                  output: src/modules/free/auth/api_keys/api-keys.module.ts
+                - template: templates/variants/nestjs/api_keys.health.ts.j2
+                  output: src/modules/free/auth/api_keys/api-keys.health.ts
+                - template: templates/variants/nestjs/api_keys.configuration.ts.j2
+                  output: src/modules/free/auth/api_keys/api-keys.configuration.ts
+                - template: templates/variants/nestjs/api_keys.spec.ts.j2
+                  output: test/api-keys/api-keys.spec.ts
+                - template: templates/variants/nestjs/tests/api_keys.e2e-spec.ts
+                  output: tests/modules/e2e/free/auth/api_keys/api_keys.e2e-spec.ts
+        nestjs.standard: *nestjs_variant
+    snippets:
+        enabled: true
+        config: config/snippets.yaml
+        default: []
+compatibility:
+    python: ">=3.10,<4.0"
+    node: ">=18,<21"
+    frameworks:
+        - fastapi
+        - nestjs
+    os:
+        - linux
+        - darwin
+        - windows
+testing:
+    coverage_min: 85
+    integration_tests: true
+    e2e_tests: false
+    unit_tests:
+        - test_api_keys_generator.py
+        - test_api_keys_overrides.py
+        - test_api_keys_runtime.py
+        - test_api_keys_adapters.py
+        - test_api_keys_validation.py
+        - test_api_keys_error_handling.py
+        - test_api_keys_health_check.py
+        - test_api_keys_framework_variants.py
+        - test_api_keys_vendor_layer.py
+        - test_api_keys_configuration.py
+        - test_api_keys_versioning.py
+        - test_api_keys_integration.py
+        - test_api_keys_standard_module.py
+    fixtures:
+        - conftest.py
+documentation:
+    changelog: docs/changelog.md
+    readme: README.md
+    overview: docs/overview.md
+    usage: docs/usage.md
+    advanced: docs/advanced.md
+    migration: docs/migration.md
+    troubleshooting: docs/troubleshooting.md
+    api_docs: docs/api-reference.md
+    examples:
+        - templates/snippets/api_keys.snippet.j2
+support:
+    issues: https://github.com/getrapidkit/core/issues
+    discussions: https://github.com/getrapidkit/core/discussions
+    documentation: https://docs.rapidkit.top/modules/auth/api_keys
+changelog:
+    - version: 0.1.0
+      date: "2025-12-14"
+      notes: See docs/changelog.md
+validation:
+    pre_install:
+        - check_python_version
+        - check_dependencies
+    post_install:
+        - validate_generated_code
+        - run_tests
+rollback:
+    strategy: uninstall
+    backup_path: .rapidkit/backups/
+    max_backups: 5
+performance:
+    lazy_loading: true
+    caching:
+        templates: true
+        ttl: 300
+capabilities:
+    - deterministic_token_issuance
+    - scope_enforcement
+    - health_reporting
+    - audit_trail
+    - fastapi_router
+    - nestjs_provider
+signature:
+    signature: 7qaLtAV+uiBp08Nt77ir+agmozvYYtOfZ3CH2DPoWZ0EGu0540JTp3dbL1sSpiDv9KoKRNhuV77OfYYCmRMPAA==
+    signer_id: c7eb213b1ac6d8c6
+    signature_version: v1
+signer_id: null
+signature_version: null
+file_hashes:
+    templates/variants/nestjs/tests/api_keys.e2e-spec.ts: sha256:43021b25371131211b54e3f411c16dc3db6065c8d58859f667901c0374635caa
+    templates/variants/fastapi/tests/test_api_keys_e2e.py: sha256:78053bd8888aa34cdb0170a9ae207012bac961b7ce5f247ca58b031509db609d
+    scripts/run_demo.py: sha256:076f4061a627e8c9a7b04e92427906643364ecadb3d7e0551e872bb69263e964
+    README.md: sha256:314711458f42b621acb73e992f6ae60c83148cb8c2f462ac1dff1b2ec4bcfe62
+    __init__.py: sha256:dedac49e6ceea17e20be6d948d270be1e911ff7d33d64308e79fdb1a93f4dbe0
+    config/base.yaml: sha256:2539f8420c3db038ba226f7f48366521a7184c743d9ee42afcea9d2a5ac586f4
+    config/snippets.yaml: sha256:14dbdbe15fb5a55853f0b10e6a072035f7c0d6e4df9b1d135206b49e05683d9b
+    docs/README.md: sha256:4a119fbd52bf3a22dcf6142d3c5ae4bc7b72e1b9f23c7fffb6c0968b4be54889
+    docs/advanced.md: sha256:473470a3f11fbfb73c9504dc36c03e3f477071cd80504a2746adf2301a384006
+    docs/api-reference.md: sha256:3d300d7f7b0ea0969aaee3e7f66720b4abb05debb2761f82516dfdeafb9c955d
+    docs/changelog.md: sha256:2bebd0929570757a37886af56065f8814838756bc44d34163046eea60522d82e
+    docs/migration.md: sha256:fcdd6e0b02b1928052e8bec8bf8edf0e40475480b01e7d494aecb5a7ac35f639
+    docs/overview.md: sha256:682be8b26d61054a53cd060a170b58e80c9096a0dd7d2a3fa359a841c6c7aa36
+    docs/troubleshooting.md: sha256:473f0e0f707f15b2b5e79c026843f13114f7913ed2580c464fedcd890e18fbf2
+    docs/usage.md: sha256:2812c61a5167bc63b3de10fc74819bc355a7ddb04be4e825d73e767854fc5ad8
+    frameworks/__init__.py: sha256:204da67f632cbbba14e5eb2a67010936fbf685ba23ad3c8928d080fa27be7a5f
+    frameworks/fastapi.py: sha256:e5f6211c58db9de959ca9925c078d525bd2656b59dc82fec392aad2e6bd42a62
+    frameworks/nestjs.py: sha256:7f0f9eb8e655e9acf0d9509457dd1a3658df77f869a721540fc32abc54f2126b
+    generate.py: sha256:43a02933cf0edae16608f1a6d11aa8c78b7915efac9ea3984e3460938f8f0436
+    module.verify.json: sha256:b231b1ee308259ec5e8fe91bc4ca073af248d4ddc9422e6b2cacecc6b2641e6e
+    overrides.py: sha256:ccbb621d4c0e35bcf64ab19d6d89a94c5eb5127f36a66b539db9afc7ecbf116e
+    templates/base/api_keys.py.j2: sha256:2db6cd4f22f580302e55dfc4e1def1bb1901a296b9048738ae3e2ec55b6211bd
+    templates/base/api_keys_health.py.j2: sha256:eb30adff1845b04385268ec11c9263da3cfac782697e331901ba66847a46735e
+    templates/base/api_keys_types.py.j2: sha256:f124d6f2695f8b4f2641b629e8767c982931199721cf58b2bc1c34bbd62bd6fd
+    templates/snippets/api_keys.snippet.j2: sha256:cf45bc250b79e0f7b3d848fb4f1592da2b77f0bb0efb5136cc06011dd2b6414b
+    templates/snippets/api_keys_env.snippet.j2: sha256:4f44601661baadc8043198fc3e864c28c8115e4f2b7b54ae2b71298d3bb8d599
+    templates/snippets/api_keys_fastapi.snippet.j2: sha256:a170e99a40d5e71ac662cca45b2f6ff23ac9fcb8b64022ac160981b658ab43cc
+    templates/tests/__init__.py: sha256:1e07d45e54c6ceba756f53224ba53362ec54cac553fad424a3ae5d37c346e760
+    templates/tests/integration/test_api_keys_integration.j2: sha256:f86af9f8ee59d8e0ce5c1f8dbd580c87d095aee4623df8e910af946d519c9a2e
+    templates/variants/fastapi/api_keys.py.j2: sha256:b773d8085d3a205841b72239d8e50767a532129ed9f27a8311bfe181b6116695
+    templates/variants/fastapi/api_keys_config.yaml.j2: sha256:6e6206e33132ce3ca07926b41591fcf0cdd7e0bfca4400a9a662b80b2135bdee
+    templates/variants/fastapi/api_keys_health.py.j2: sha256:4a7d823b6b67dc9907c6bc96bfadd52086a758ab1918cc95661a0862ca6d7656
+    templates/variants/fastapi/api_keys_routes.py.j2: sha256:0275fb11418fa599d5db97cce2e8e4786dcac1a1319445e6d127f786839e7236
+    templates/variants/nestjs/api_keys.configuration.ts.j2: sha256:7221fd9a4cd19cb54be2a7462a75d68650d2c03c0366f7bd23c7087da827f92f
+    templates/variants/nestjs/api_keys.controller.ts.j2: sha256:85520973f161cbc6ec5d252b4c9d92d9284da426aee24e54676f3463011b81c6
+    templates/variants/nestjs/api_keys.health.ts.j2: sha256:2c029ea39c392be0c67617ba430a1b7790f5ab8956e0991d8e39a310ac52eb3d
+    templates/variants/nestjs/api_keys.module.ts.j2: sha256:de098f51b445402880bcdc61e088bc8f85ef9941cc52f83041634b554086781a
+    templates/variants/nestjs/api_keys.service.ts.j2: sha256:1b2ba7122d094e7c79908b6a35ae4adc172a7fd9c3a9528157113befe244adb3
+    templates/variants/nestjs/api_keys.spec.ts.j2: sha256:5a1fa78476db56317836c1ef44844d42bab716413e7f698badcdd504bd44e789
+    templates/vendor/nestjs/configuration.js.j2: sha256:38a4f6b629cef3c2828276334156e28b36951c06aa0a403169e758fbdb3df314

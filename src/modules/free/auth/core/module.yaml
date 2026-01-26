@@ -1,0 +1,227 @@
+name: auth_core
+description: Authentication core primitives (JWT, RBAC, dependencies) for RapidKit
+version: 0.1.0
+access: free
+status: stable
+tier: free
+category: auth
+tags:
+- auth
+- security
+- passwords
+- tokens
+generated_from_config: true
+depends_on:
+- free/essentials/settings
+profile_inherits:
+  fastapi.standard: fastapi
+  fastapi.ddd: fastapi
+  nestjs.standard: nestjs
+config_sources:
+- config/base.yaml
+- config/snippets.yaml
+generation:
+  vendor:
+    root: .rapidkit/vendor
+    files:
+    - template: templates/base/core.py.j2
+      relative: src/modules/free/auth/core/auth/core.py
+    - template: templates/base/dependencies.py.j2
+      relative: src/modules/free/auth/core/auth/dependencies.py
+    - template: templates/base/core_types.py.j2
+      relative: src/modules/free/auth/core/auth/core_types.py
+    - template: templates/base/jwt_advanced.py.j2
+      relative: src/modules/free/auth/core/auth/jwt_advanced.py
+    - template: templates/base/rbac.py.j2
+      relative: src/modules/free/auth/core/auth/rbac.py
+    - template: templates/base/core_health.py.j2
+      relative: src/health/auth_core.py
+    - template: templates/vendor/nestjs/configuration.js.j2
+      relative: nestjs/configuration.js
+  variants:
+    fastapi: &fastapi_variant
+      root: .
+      context:
+        framework: fastapi
+        module_slug: auth_core
+      files:
+      - template: templates/variants/fastapi/core.py.j2
+        output: src/modules/free/auth/core/auth/core.py
+      - template: templates/variants/fastapi/dependencies.py.j2
+        output: src/modules/free/auth/core/auth/dependencies.py
+      - template: templates/variants/fastapi/jwt_advanced.py.j2
+        output: src/modules/free/auth/core/auth/jwt_advanced.py
+      - template: templates/variants/fastapi/rbac.py.j2
+        output: src/modules/free/auth/core/auth/rbac.py
+      - template: templates/variants/fastapi/core_health_runtime.py.j2
+        output: src/health/auth_core.py
+      - template: templates/base/core_types.py.j2
+        output: src/modules/free/auth/core/auth/core_types.py
+      - template: templates/variants/fastapi/core_routes.py.j2
+        output: src/modules/free/auth/core/routers/auth_core.py
+      - template: templates/variants/fastapi/core_config.yaml.j2
+        output: src/modules/free/auth/core/config/auth_core.yaml
+      - template: templates/tests/integration/test_auth_core_integration.j2
+        output: tests/modules/free/auth/core/test_auth_core_integration.py
+      - template: templates/tests/integration/test_core_integration.j2
+        output: tests/modules/free/auth/core/test_core_integration.py
+      - template: templates/variants/fastapi/tests/test_core_e2e.py
+        output: tests/modules/e2e/free/auth/core/test_core_e2e.py
+    fastapi.standard: *fastapi_variant
+    fastapi.ddd: *fastapi_variant
+    nestjs: &nestjs_variant
+      root: .
+      context:
+        framework: nestjs
+        vendor_configuration_relative: nestjs/configuration.js
+      files:
+      - template: templates/variants/nestjs/core_health_runtime.py.j2
+        output: src/health/auth_core.py
+      - template: templates/variants/nestjs/configuration.ts.j2
+        output: src/modules/free/auth/core/configuration.ts
+      - template: templates/variants/nestjs/core.service.ts.j2
+        output: src/modules/free/auth/core/auth-core.service.ts
+      - template: templates/variants/nestjs/core.module.ts.j2
+        output: src/modules/free/auth/core/auth-core.module.ts
+      - template: templates/variants/nestjs/core.controller.ts.j2
+        output: src/modules/free/auth/core/auth-core.controller.ts
+      - template: templates/variants/nestjs/index.ts.j2
+        output: src/modules/free/auth/core/index.ts
+      - template: templates/variants/nestjs/validation.ts.j2
+        output: src/modules/free/auth/core/config/auth-core.validation.ts
+      - template: templates/variants/nestjs/core.health.ts.j2
+        output: src/modules/free/auth/core/auth-core.health.ts
+      - template: templates/variants/nestjs/core.routes.ts.j2
+        output: src/modules/free/auth/core/auth-core.routes.ts
+      - template: templates/variants/nestjs/core.spec.ts.j2
+        output: tests/modules/free/auth/core/auth-core.spec.ts
+      - template: templates/variants/nestjs/tests/core.e2e-spec.ts
+        output: tests/modules/e2e/free/auth/core/core.e2e-spec.ts
+    nestjs.standard: *nestjs_variant
+  snippets:
+    enabled: true
+    config: config/snippets.yaml
+    default: []
+compatibility:
+  python: '>=3.10,<4.0'
+  node: '>=18'
+  frameworks:
+  - fastapi
+  - nestjs
+  os:
+  - linux
+  - darwin
+  - windows
+testing:
+  coverage_min: 85
+  integration_tests: false
+  e2e_tests: false
+  unit_tests:
+  - tests/modules/free/auth/core/test_auth_core_cli_entry.py
+  - tests/modules/free/auth/core/test_auth_core_frameworks.py
+  - tests/modules/free/auth/core/test_auth_core_generate.py
+  - tests/modules/free/auth/core/test_auth_core_overrides.py
+  - tests/modules/free/auth/core/test_auth_core_runtime.py
+  - tests/modules/free/auth/core/test_core_generate.py
+  - tests/modules/free/auth/core/test_jwt_advanced.py
+  fixtures: []
+documentation:
+  changelog: docs/changelog.md
+  readme: README.md
+  overview: docs/overview.md
+  usage: docs/usage.md
+  advanced: docs/advanced.md
+  migration: docs/migration.md
+  troubleshooting: docs/troubleshooting.md
+  api_docs: null
+  examples: []
+support:
+  issues: https://github.com/getrapidkit/core/issues
+  discussions: https://github.com/getrapidkit/core/discussions
+  documentation: https://docs.rapidkit.top/modules/auth-core
+changelog:
+- version: 0.1.0
+  date: '2025-12-14'
+  notes: See docs/changelog.md
+validation:
+  pre_install:
+  - check_python_version
+  post_install:
+  - validate_generated_code
+  - run_tests
+rollback:
+  strategy: uninstall
+  backup_path: .rapidkit/backups/
+  max_backups: 5
+performance:
+  lazy_loading: true
+  caching:
+    templates: true
+    ttl: 300
+capabilities:
+- password_hashing
+- token_signing
+- health_checks
+- dependency_injection
+signature:
+  signature: h/ufTnOB33UzuRP+bDwkpdQi/mAIjG9P2DmQtiGLMgcnmx72+qaQcV2Bl0dwr1oq3TnO7Yu4qsQCHqbGTplZBw==
+  signer_id: c7eb213b1ac6d8c6
+  signature_version: v1
+signer_id: null
+signature_version: null
+file_hashes:
+  templates/variants/nestjs/tests/core.e2e-spec.ts: sha256:bef8d8f02354f99834abcbb4c0571c01b1eed844df8d45cbb76fee544b4c66bd
+  templates/variants/fastapi/tests/test_core_e2e.py: sha256:ff92b6a76a47a9418beb59f18174b5da145350bdd34404afce82230e7cd4f841
+  scripts/run_demo.py: sha256:d83cb2aa966d08d2b9c7a6b1d7c643806ae4ca28e867fc4369daefa761baf23c
+  README.md: sha256:77815687212a0644367c9a517bb83ffe13f6c95011a1133d0be81e6de3623e3e
+  __init__.py: sha256:2a262cc39c8e7c5cdfd6ea1bae63ac0f109335cc2d25c936df08311324abaeaa
+  config/base.yaml: sha256:e10eb2d3706f6ce1118e32c3227ae281a87a014d3805b4117ad51c09ac80e026
+  config/snippets.yaml: sha256:360ed3a4286811a6ad0e787d0239b2ec477114b0c8b8937f12442be80cbddf12
+  docs/README.md: sha256:2f2bd1e7c675ec06b29a5b7e77db55b7c65ad1d52ce971810f3a9bdb0794ba24
+  docs/advanced.md: sha256:05fbe0580a16359c2e00c34bd8d36a9061bb064cb0f5b1ab3f80f50ba4fe9003
+  docs/changelog.md: sha256:1ac4555545437d8cf0c854eca44f7000a0c58d3b0e0107359d4371904d2b132f
+  docs/migration.md: sha256:38b65f3b248bc19de8a4adf1bb8746c6a5e64b4f06c7a05d4366abf20a66d26f
+  docs/overview.md: sha256:7e609fac360931e2a21f02c86ce8aa1b1d2102430b50908ed5f032b59148b07b
+  docs/troubleshooting.md: sha256:4127c6bd99615f0ead21a809c3e5518cae6193d91dbdc106f81b9fe38960d3f6
+  docs/usage.md: sha256:44f1e53a55dd208b76a095cb235e4779b5c714b60b222a680ee493d58fc435f4
+  frameworks/__init__.py: sha256:130896b2b11d1a5859d4174c5655e5aa2672d0f2b27a129d50e8a4e79e63d5c5
+  frameworks/fastapi.py: sha256:b03666abe887920ba3b012bc013b9dbc35d81000796e15dcbbb4d7f03fd18759
+  frameworks/nestjs.py: sha256:ac25f7284a0a5f456420365afa0f152e742a5fef84c4a09afbf01c4f6d08dbea
+  generate.py: sha256:d4a3ca6fb3a894832b15876bdf15b6ed7ef14cfa3d676475ea4286cf19ea7106
+  module.verify.json: sha256:b059c86b0e1790a2e16c5f8b182da091d051c9f683034a45ad190fe5157d27a1
+  overrides.py: sha256:748e589cbf4ef7ee79ec97213f6940619b5c5888bca07e7d8dac0c4fa8fcd513
+  templates/base/core.py.j2: sha256:8dc1737355b81bbd20a8b79940eaae606bec275ba8c0054157df364c8938cbdf
+  templates/base/core_health.py.j2: sha256:cc75882b3bf65b06f28535554516fb9e2c7a3681ea42ec149288f3215f390fe8
+  templates/base/core_types.py.j2: sha256:83c8f7bdbe6e0e4986581dd08a8d0d6877edc77035f6c86bec6512512468c0ba
+  templates/base/dependencies.py.j2: sha256:f266fd51f7f398c2eafb044701c7f52663fdfa565d48c821035253111183dfab
+  templates/base/health.py.j2: sha256:1c5583579bdd823359ef80ea3f8f4a25bde5352161de8d47de61d99153c09a05
+  templates/base/jwt_advanced.py.j2: sha256:87ec623bf48eb0c1b1dda83eb8f464d1cae77ee759d9a0666055b7238201520c
+  templates/base/rbac.py.j2: sha256:fd8e78413b06785050db41f382bdfb3ad4a0a0e56c35c35bfd10d6a6a34da5cd
+  templates/snippets/auth_env.snippet.j2: sha256:da6716792f813ce27a5c0dc16c9f9e6a0120bfb66f667ec6d2dd8895a47bc6d8
+  templates/snippets/core.snippet.j2: sha256:10be720cb096091e2aa236f5d3b7eb9e742ae88978dabeab02b9853c1f77feae
+  templates/snippets/settings_fields.snippet.j2: sha256:fae7c3c5b665c05c6ce99c44280aea35e72b922ab3b9bbfef6c8591605db6c8d
+  templates/tests/__init__.py: sha256:e2d78d182288be546dee906be7894d4f46495c88b8cee37b30b012cd13d70635
+  templates/tests/integration/test_auth_core_integration.j2: sha256:28032db5e1f8774c0b563a4aee96b2dd544952f0add5266e9ed2052005607317
+  templates/tests/integration/test_core_integration.j2: sha256:8300e871d53683df7a5bed85a5b6a02c3319238017bb224c42faeb99e7d16593
+  templates/variants/fastapi/core.py.j2: sha256:8f0712040ba1c2247fa6612fb99687727b4c826024e8344c6098c4f3492b4458
+  templates/variants/fastapi/core_config.yaml.j2: sha256:16e109811f06c08627c93546af4ef57f241ae9c8733b010fb3c2cac747606c88
+  templates/variants/fastapi/core_health.py.j2: sha256:b9a9a2c75ba7a408cfa6ab5237d3853bc8020541ff0d6618ccf16a6a8b850410
+  templates/variants/fastapi/core_health_runtime.py.j2: sha256:f73ae5ea837358aa4f026ca31b6d8af7a56a5cfd67ded688843dbed2f556e9ba
+  templates/variants/fastapi/core_routes.py.j2: sha256:46f5855059fc03a31611035cee7d4b385ebd71a80d4114390e655aeb4629f62d
+  templates/variants/fastapi/dependencies.py.j2: sha256:b1da6eb2a6a355ec88fdb725c04d594edab5bc3a0539b84952255639bf1d9228
+  templates/variants/fastapi/health.py.j2: sha256:d6490021db3c33705ab9ad334430457764a407da5b1816dbd30758858860babf
+  templates/variants/fastapi/jwt_advanced.py.j2: sha256:a841971572b8f728ffdb05f0fbc8ebd0491edc3a972ea1355039925382d8b7f2
+  templates/variants/fastapi/rbac.py.j2: sha256:7d21a40a0ac7a4d2ca872aa101500de5ed57f9069afb1659d17a37edaca13113
+  templates/variants/nestjs/auth_core.module.ts.j2: sha256:35a08dc00c75f9d4dd9e707f28c9783279ba1882470dc4b5b229fb967ab10425
+  templates/variants/nestjs/auth_core.service.ts.j2: sha256:a2d8586e9e0d838ec5a224f11e4b6610231b746f99da549c491a8728512f0d3b
+  templates/variants/nestjs/configuration.ts.j2: sha256:b7a026b68b3012d7d6230f7fc36471b635c21b379f93be2af204446c433162df
+  templates/variants/nestjs/core.controller.ts.j2: sha256:124925c204869f90b1b5b0f51ad7a680020c8d44e97c5153e73aff7751b298d6
+  templates/variants/nestjs/core.health.ts.j2: sha256:0f7a402096a77c552236bd7ab70bc4d61ba0a3c014edaabb56015bc82b16aef8
+  templates/variants/nestjs/core.module.ts.j2: sha256:1387dc58cc1107799802fa538a322fdbc9116757b1a0835545ccf444339c5d66
+  templates/variants/nestjs/core.routes.ts.j2: sha256:43c4814101312340eddb91bd3f831463d6f3b39efed8aebce3d2d823713d2859
+  templates/variants/nestjs/core.service.ts.j2: sha256:b991a72d4afad4b81ea7a245eb2e01cc55501188ad672988c22ebe10884f363f
+  templates/variants/nestjs/core.spec.ts.j2: sha256:4d8fab0b017a82583f141b4bb291daaad7c3cc51b6104f6d0d84d7631653392f
+  templates/variants/nestjs/core_health_runtime.py.j2: sha256:f73ae5ea837358aa4f026ca31b6d8af7a56a5cfd67ded688843dbed2f556e9ba
+  templates/variants/nestjs/index.ts.j2: sha256:e195a6a0da14072a52141fdc739461a6f2d2ae99a9e7d5b907df135c957315bd
+  templates/variants/nestjs/validation.ts.j2: sha256:3023e97e79e5653607798673d5819bcdac3fd7ba712551170b18f9d3facc5ae2
+  templates/vendor/nestjs/configuration.js.j2: sha256:35351607c7d31cf946cc26e9544e64de180657807bcb17c24da5135c33b32284

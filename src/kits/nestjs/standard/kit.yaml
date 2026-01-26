@@ -1,0 +1,282 @@
+name: nestjs.standard
+category: nestjs
+display_name: NestJS Standard Kit
+description: Production-ready NestJS starter kit with modular RapidKit integration and TypeScript best practices.
+version: 0.1.0
+min_rapidkit_version: 0.1.0
+tier: standard
+repo_url: https://github.com/getrapidkit/core.git
+repo_branch: main
+tags: [nestjs, javascript, typescript, standard, modular, scalable]
+support: standard
+license: Apache-2.0
+
+module_support:
+    free: true
+    paid: true
+    community: true
+    enterprise: true
+
+environments:
+    development:
+        debug: true
+        description: "Development environment with hot reload"
+    production:
+        debug: false
+        description: "Production environment optimized for performance"
+
+variables:
+    project_name:
+        type: string
+        required: true
+        description: "Name of your project (kebab-case recommended)"
+        validation:
+            pattern: "^[a-zA-Z][a-zA-Z0-9-_]*$"
+            max_length: 50
+
+    author:
+        type: string
+        default: "{{ getpass.getuser() }}"
+        description: "Project author"
+
+    description:
+        type: string
+        default: "NestJS application generated with RapidKit"
+        description: "Project description"
+
+    app_version:
+        type: string
+        default: "0.1.0"
+        description: "Application version"
+
+    package_manager:
+        type: choice
+        choices: [npm, yarn, pnpm]
+        default: npm
+        description: "Preferred Node package manager"
+
+    node_version:
+        type: string
+        default: "20.19.6"
+        description: "Node.js version used for Docker images and CI"
+
+    database_type:
+        type: choice
+        choices: [none, sqlite, postgresql, mysql, mongodb]
+        default: none
+        description: "Database integration"
+
+    auth_type:
+        type: choice
+        choices: [none, jwt, oauth2]
+        default: none
+        description: "Authentication strategy"
+
+    include_caching:
+        type: boolean
+        default: false
+        description: "Include Redis caching"
+
+    include_monitoring:
+        type: boolean
+        default: false
+        description: "Expose monitoring endpoints"
+
+    include_logging:
+        type: boolean
+        default: true
+        description: "Enable structured application logging"
+
+    include_testing:
+        type: boolean
+        default: true
+        description: "Generate Jest unit and e2e tests"
+
+    include_docs:
+        type: boolean
+        default: true
+        description: "Generate documentation starter files"
+
+    docker_support:
+        type: boolean
+        default: true
+        description: "Include Dockerfile and docker-compose.yml"
+
+    include_ci:
+        type: boolean
+        default: true
+        description: "Generate GitHub Actions workflow"
+
+    license:
+        type: choice
+        choices: [MIT, Apache-2.0, GPL-3.0, Proprietary]
+        default: MIT
+        description: "Project license"
+
+structure:
+    - path: src/
+      type: folder
+    - path: test/
+      type: folder
+    - path: docs/
+      type: folder
+    - path: src/main.ts
+      template: src/main.ts.j2
+    - path: src/app.module.ts
+      template: src/app.module.ts.j2
+    - path: src/app.controller.ts
+      template: src/app.controller.ts.j2
+    - path: src/app.service.ts
+      template: src/app.service.ts.j2
+    - path: src/config/configuration.ts
+      template: src/config/configuration.ts.j2
+    - path: src/config/validation.ts
+      template: src/config/validation.ts.j2
+    - path: src/config/index.ts
+      template: src/config/index.ts.j2
+    - path: src/modules/index.ts
+      template: src/modules/index.ts.j2
+    - path: src/examples/examples.module.ts
+      template: src/examples/examples.module.ts.j2
+    - path: src/examples/examples.controller.ts
+      template: src/examples/examples.controller.ts.j2
+    - path: src/examples/examples.service.ts
+      template: src/examples/examples.service.ts.j2
+    - path: src/examples/dto/create-note.dto.ts
+      template: src/examples/dto/create-note.dto.ts.j2
+    - path: src/auth/auth.module.ts
+      template: src/auth/auth.module.ts.j2
+    - path: src/auth/auth.service.ts
+      template: src/auth/auth.service.ts.j2
+    - path: src/auth/auth.controller.ts
+      template: src/auth/auth.controller.ts.j2
+    - path: src/auth/entities/user.entity.ts
+      template: src/auth/entities/user.entity.ts.j2
+    - path: src/auth/entities/token.entity.ts
+      template: src/auth/entities/token.entity.ts.j2
+    - path: src/auth/entities/webauthn.entity.ts
+      template: src/auth/entities/webauthn.entity.ts.j2
+    - path: test/app.controller.spec.ts
+      template: test/app.controller.spec.ts.j2
+    - path: test/examples.controller.spec.ts
+      template: test/examples.controller.spec.ts.j2
+    - path: test/app.e2e-spec.ts
+      template: test/app.e2e-spec.ts.j2
+    - path: test/jest-e2e.json
+      template: test/jest-e2e.json.j2
+    - path: package.json
+      template: package.json.j2
+    - path: tsconfig.json
+      template: tsconfig.json.j2
+    - path: tsconfig.build.json
+      template: tsconfig.build.json.j2
+    - path: jest.config.ts
+      template: jest.config.ts.j2
+    - path: nest-cli.json
+      template: nest-cli.json.j2
+    - path: .eslintrc.js
+      template: .eslintrc.js.j2
+    - path: eslint.config.cjs
+      template: eslint.config.cjs.j2
+    - path: .prettierrc
+      template: .prettierrc.j2
+    - path: .env.example
+      template: env.example.j2
+    - path: LICENSE
+      template_if:
+          MIT: common/licenses/mit.j2
+          Apache-2.0: common/licenses/apache-2.0.j2
+          GPL-3.0: common/licenses/gpl-3.0.j2
+          Proprietary: common/licenses/mit.j2
+    - path: README.md
+      template: README.md.j2
+    - path: bootstrap.sh
+      template: common/bootstrap.sh.j2
+    - path: docs/README.md
+      template: docs/README.md.j2
+    - path: .gitignore
+      template: .gitignore.j2
+    - path: .nvmrc
+      template: .nvmrc.j2
+    - path: .node-version
+      template: .node-version.j2
+    - path: .dockerignore
+      template: .dockerignore.j2
+      conditions:
+          has_docker: true
+    - path: Dockerfile
+      template: Dockerfile.j2
+      conditions:
+          has_docker: true
+    - path: docker-compose.yml
+      template: docker-compose.yml.j2
+      conditions:
+          has_docker: true
+    - path: Makefile
+      template: common/Makefile.j2
+    - path: .github/workflows/ci.yml
+      template: common/.github/workflows/ci.yml.j2
+      conditions:
+          has_ci: true
+    - path: .rapidkit/
+      type: folder
+    - path: .rapidkit/vendor/.gitkeep
+      template: common/.rapidkit/vendor/.gitkeep
+    - path: .rapidkit/cli.py
+      template: common/.rapidkit/cli.py.j2
+    - path: .rapidkit/rapidkit
+      template: common/.rapidkit/rapidkit.j2
+    - path: .rapidkit/context.json
+      template: common/.rapidkit/context.json.j2
+    - path: .rapidkit/activate
+      template: common/.rapidkit/activate.j2
+
+injection_points:
+    global_middleware:
+        - file: src/main.ts
+          anchor: "// <<<inject:global-middleware>>>"
+          description: "Register global middleware"
+    bootstrap_hooks:
+        - file: src/main.ts
+          anchor: "// <<<inject:bootstrap-hooks>>>"
+          description: "Execute logic after application bootstrap"
+    module_imports:
+        - file: src/app.module.ts
+          anchor: "// <<<inject:module-imports>>>"
+          description: "Register NestJS modules"
+    controller_routes:
+        - file: src/app.controller.ts
+          anchor: "// <<<inject:controller-routes>>>"
+          description: "Add controller routes"
+    service_methods:
+        - file: src/app.service.ts
+          anchor: "// <<<inject:service-methods>>>"
+          description: "Extend service methods"
+    config_fields:
+        - file: src/config/configuration.ts
+          anchor: "// <<<inject:configuration>>>"
+          description: "Inject application configuration"
+    env_schema:
+        - file: src/config/validation.ts
+          anchor: "// <<<inject:env-schema>>>"
+          description: "Extend environment schema"
+    module_exports:
+        - file: src/modules/index.ts
+          anchor: "// <<<inject:module-exports>>>"
+          description: "Export generated modules"
+    env_file:
+        - file: .env.example
+          anchor: "# <<<inject:module-env>>>"
+          description: "Populate module environment variables"
+    unit_tests:
+        - file: test/app.controller.spec.ts
+          anchor: "// <<<inject:controller-tests>>>"
+          description: "Augment unit tests"
+    e2e_tests:
+        - file: test/app.e2e-spec.ts
+          anchor: "// <<<inject:e2e-tests>>>"
+          description: "Extend e2e test coverage"
+
+hooks:
+    pre_generate: pre_generate
+    post_generate: post_generate

@@ -1,0 +1,234 @@
+import fs from 'node:fs';
+import path from 'node:path';
+import { registerAs } from '@nestjs/config';
+
+/* eslint-disable @typescript-eslint/no-require-imports */
+
+// Dynamic vendor loader - resolve the canonical .rapidkit/vendor root (or use
+// RAPIDKIT_VENDOR_ROOT override) instead of a hard-coded relative import.
+const VENDOR_ROOT_ENV = 'RAPIDKIT_VENDOR_ROOT';
+const VENDOR_MODULE = 'settings';
+const DEFAULT_VENDOR_VERSION = '{{ rapidkit_vendor_version }}';
+const VENDOR_VERSION_ENV = 'RAPIDKIT_SETTINGS_VENDOR_VERSION';
+const VENDOR_CONFIGURATION_RELATIVE = 'nestjs/configuration.js';
+const SETTINGS_NAMESPACE = 'settings';
+
+function resolveVendorRoot(): string {
+  const override = process.env[VENDOR_ROOT_ENV];
+  if (override && override.trim().length > 0) {
+    return path.resolve(override);
+  }
+  return path.resolve(process.cwd(), '.rapidkit', 'vendor');
+}
+
+function resolveVendorVersion(): string {
+  const override = process.env[VENDOR_VERSION_ENV];
+  if (override && override.trim().length > 0) {
+    return override.trim();
+  }
+  const moduleRoot = path.join(resolveVendorRoot(), VENDOR_MODULE);
+  try {
+    const entries = fs
+      .readdirSync(moduleRoot, { withFileTypes: true })
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name)
+      .sort((a, b) => b.localeCompare(a, undefined, { numeric: true, sensitivity: 'base' }));
+    if (entries.length > 0) {
+      return entries[0];
+    }
+  } catch {
+    // ignore - fall back to default version
+  }
+  return DEFAULT_VENDOR_VERSION;
+}
+
+const VENDOR_VERSION = resolveVendorVersion();
+
+export interface SettingsConfig {
+  ENV: string;
+  DEBUG: boolean;
+  PROJECT_NAME: string;
+  SECRET_KEY: string;
+  VERSION: string;
+  ALLOWED_HOSTS: string[];
+  CONFIG_FILES: string[];
+  CONFIG_REFRESH_INTERVAL: number;
+  VAULT_URL: string | null;
+  AWS_REGION: string | null;
+  HOT_RELOAD_ENABLED: boolean;
+  HOT_RELOAD_ENV_ALLOWLIST: string[];
+  [key: string]: unknown;
+}
+
+type VendorSnapshot = {
+  getSettings?: () => SettingsConfig;
+  refreshSettings?: () => SettingsConfig;
+  loadSettings?: () => SettingsConfig;
+  settingsConfiguration?: () => SettingsConfig;
+  default?: VendorSnapshot;
+};
+
+function resolveVendorModule(): VendorSnapshot | null {
+  const vendorPath = path.join(
+    resolveVendorRoot(),
+    VENDOR_MODULE,
+    VENDOR_VERSION,
+    VENDOR_CONFIGURATION_RELATIVE,
+  );
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires, global-require
+    return require(vendorPath);
+  } catch (err: unknown) {
+    const e = err as { code?: string } | undefined;
+    if (e && (e.code === 'MODULE_NOT_FOUND' || e.code === 'ENOENT')) {
+      // eslint-disable-next-line no-console
+      console.warn(`WARN: vendor settings not found at ${vendorPath} - continuing without vendor settings`);
+      return null;
+    }
+    throw err;
+  }
+}
+
+const _vendor = resolveVendorModule();
+
+const resolveVendorFactory = (
+  key: keyof Omit<VendorSnapshot, 'default'>,
+): (() => SettingsConfig) | null => {
+  if (!_vendor) {
+    return null;
+  }
+  const candidate = _vendor[key];
+  if (typeof candidate === 'function') {
+    return candidate as () => SettingsConfig;
+  }
+  const fallback = _vendor.default?.[key];
+  if (typeof fallback === 'function') {
+    return fallback as () => SettingsConfig;
+  }
+  return null;
+};
+
+// Provide a minimal default for settingsConfiguration so consumers that
+// import 'settingsConfiguration' from logging templates don't fail when
+// the settings vendor snapshot is absent.
+const defaultSettings = (): SettingsConfig => ({
+  ENV: process.env.NODE_ENV ?? 'development',
+  DEBUG: process.env.DEBUG === '1' || process.env.DEBUG?.toLowerCase() === 'true',
+  PROJECT_NAME: process.env.APP_NAME ?? '{{ project_name | replace('-', ' ') | title }}',
+  SECRET_KEY: process.env.SECRET_KEY ?? '{{ '' | generate_secret(48) }}',
+  VERSION: process.env.APP_VERSION ?? '0.0.1',
+  ALLOWED_HOSTS: (process.env.ALLOWED_HOSTS ?? '*').split(',').map((s) => s.trim()).filter(Boolean),
+  CONFIG_FILES: [],
+  CONFIG_REFRESH_INTERVAL: Number.parseInt(process.env.CONFIG_REFRESH_INTERVAL ?? '60', 10),
+  VAULT_URL: null,
+  AWS_REGION: null,
+  HOT_RELOAD_ENABLED:
+    process.env.HOT_RELOAD_ENABLED === '1' || process.env.HOT_RELOAD_ENV_ALLOWLIST?.toLowerCase() === 'true',
+  HOT_RELOAD_ENV_ALLOWLIST: (process.env.HOT_RELOAD_ENV_ALLOWLIST ?? '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean),
+}) as SettingsConfig;
+
+const vendorGetSettings = resolveVendorFactory('getSettings') ?? resolveVendorFactory('settingsConfiguration');
+const vendorRefreshSettings = resolveVendorFactory('refreshSettings') ?? vendorGetSettings;
+const vendorLoadSettings = resolveVendorFactory('loadSettings') ?? vendorGetSettings;
+
+export const SETTINGS_VENDOR_MODULE = VENDOR_MODULE;
+export const SETTINGS_VENDOR_VERSION = VENDOR_VERSION;
+export const SETTINGS_CONFIG_KEY = SETTINGS_NAMESPACE;
+
+export const getSettings = (): SettingsConfig => (vendorGetSettings ? vendorGetSettings() : defaultSettings());
+
+export const refreshSettings = (): SettingsConfig =>
+  vendorRefreshSettings ? vendorRefreshSettings() : getSettings();
+
+export const loadSettings = (): SettingsConfig => (vendorLoadSettings ? vendorLoadSettings() : getSettings());
+
+const normalizeBoolean = (value: string | undefined, fallback: boolean): boolean => {
+  if (!value) {
+    return fallback;
+  }
+  return ['1', 'true', 'yes', 'on'].includes(value.toLowerCase());
+};
+
+const normalizeNumber = (value: string | undefined, fallback: number): number => {
+  if (!value) {
+    return fallback;
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const normalizeFormat = (value: string | undefined): 'json' | 'text' | 'colored' => {
+  if (!value) {
+    return 'json';
+  }
+  const normalized = value.toLowerCase();
+  return ['json', 'text', 'colored'].includes(normalized) ? (normalized as 'json' | 'text' | 'colored') : 'json';
+};
+
+const normalizeSinks = (value: string | undefined): string[] => {
+  if (!value) {
+    return ['stderr'];
+  }
+  if (value.trim().startsWith('[') && value.trim().endsWith(']')) {
+    try {
+      const parsed = JSON.parse(value);
+      if (Array.isArray(parsed)) {
+        return parsed.map((entry) => String(entry).trim()).filter(Boolean);
+      }
+    } catch {
+      return ['stderr'];
+    }
+  }
+  return value
+    .split(',')
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+};
+
+export type ApplicationConfiguration = {
+  name: string;
+  env: string;
+  host: string;
+  port: number;
+  logLevel: string;
+};
+
+export type LoggingConfiguration = {
+  level: string;
+  format: 'json' | 'text' | 'colored';
+  sinks: string[];
+  asyncQueue: boolean;
+  filePath: string;
+  samplingRate: number;
+  enableRedaction: boolean;
+  otelBridgeEnabled: boolean;
+  metricsBridgeEnabled: boolean;
+  requestContextEnabled: boolean;
+};
+
+export const appConfiguration = registerAs('app', (): ApplicationConfiguration => ({
+  name: process.env.APP_NAME ?? "{{ project_name | replace('-', ' ') | title }}",
+  env: process.env.NODE_ENV ?? 'development',
+  host: process.env.HOST ?? '0.0.0.0',
+  port: parseInt(process.env.PORT ?? '3000', 10),
+  logLevel: (process.env.LOG_LEVEL ?? 'info').toLowerCase(),
+}));
+
+export const loggingConfiguration = registerAs('logging', (): LoggingConfiguration => ({
+  level: (process.env.LOG_LEVEL ?? 'info').toLowerCase(),
+  format: normalizeFormat(process.env.LOG_FORMAT),
+  sinks: normalizeSinks(process.env.LOG_SINKS),
+  asyncQueue: normalizeBoolean(process.env.LOG_ASYNC_QUEUE, true),
+  filePath: process.env.LOG_FILE_PATH ?? 'logs/app.log',
+  samplingRate: normalizeNumber(process.env.LOG_SAMPLING_RATE, 1),
+  enableRedaction: normalizeBoolean(process.env.LOG_ENABLE_REDACTION, true),
+  otelBridgeEnabled: normalizeBoolean(process.env.OTEL_BRIDGE_ENABLED, false),
+  metricsBridgeEnabled: normalizeBoolean(process.env.METRICS_BRIDGE_ENABLED, false),
+  requestContextEnabled: normalizeBoolean(process.env.RAPIDKIT_LOGGING_REQUEST_CONTEXT, true),
+}));
+
+export default loggingConfiguration;
+export const settingsConfiguration = registerAs(SETTINGS_CONFIG_KEY, (): SettingsConfig => getSettings());

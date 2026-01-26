@@ -1,0 +1,27 @@
+"""FastAPI shim exposing the canonical email health router."""
+
+from __future__ import annotations
+
+from typing import Any
+
+from src.health.email import (
+    register_email_health,
+    router as email_health_router,
+    email_health_check,
+)
+
+
+def build_health_router() -> Any:
+    """Return the generated email health router."""
+
+    return email_health_router
+
+
+router = email_health_router
+
+__all__ = [
+    "build_health_router",
+    "register_email_health",
+    "email_health_check",
+    "router",
+]

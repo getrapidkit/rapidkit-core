@@ -1,0 +1,65 @@
+project_name:
+  type: string
+  required: true
+  description: "Name of your project (letters, numbers, hyphen, underscore)"
+  validation:
+    pattern: "^[a-zA-Z][a-zA-Z0-9_-]*$"
+    max_length: 64
+
+author:
+  type: string
+  default: "{{ getpass.getuser() }}"
+  description: "Project author"
+
+description:
+  type: string
+  default: "Application generated with RapidKit"
+  description: "Short project description"
+
+app_version:
+  type: string
+  default: "0.1.0"
+  description: "Initial application version"
+
+license:
+  type: choice
+  choices: [MIT, Apache-2.0, GPL-3.0, Proprietary]
+  default: Apache-2.0
+  description: "Project license"
+
+database_type:
+  type: choice
+  choices: [none, sqlite, postgresql, mysql, mongodb]
+  default: none
+  description: "Primary database integration"
+
+auth_type:
+  type: choice
+  choices: [none, jwt, oauth2]
+  default: none
+  description: "Authentication strategy"
+
+include_caching:
+  type: boolean
+  default: false
+  description: "Include Redis/Cache integration"
+
+include_monitoring:
+  type: boolean
+  default: false
+  description: "Include monitoring endpoints"
+
+include_logging:
+  type: boolean
+  default: true
+  description: "Enable application logging"
+
+include_testing:
+  type: boolean
+  default: true
+  description: "Generate test suite"
+
+docker_support:
+  type: boolean
+  default: true
+  description: "Include Docker artifacts"

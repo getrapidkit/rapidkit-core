@@ -1,0 +1,14 @@
+  OAUTH_REDIRECT_BASE_URL: process.env.OAUTH_REDIRECT_BASE_URL,
+
+  OAUTH_STATE_TTL_SECONDS:
+    process.env.OAUTH_STATE_TTL_SECONDS == null
+      ? undefined
+      : Number.parseInt(process.env.OAUTH_STATE_TTL_SECONDS, 10),
+
+  OAUTH_STATE_CLEANUP_INTERVAL:
+    process.env.OAUTH_STATE_CLEANUP_INTERVAL == null
+      ? undefined
+      : Number.parseInt(process.env.OAUTH_STATE_CLEANUP_INTERVAL, 10),
+
+  // Keep as raw string to avoid crashing on invalid JSON
+  OAUTH_PROVIDERS: process.env.OAUTH_PROVIDERS,

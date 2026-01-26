@@ -1,0 +1,157 @@
+import { registerAs } from "@nestjs/config";
+
+export type AuthCorePolicyConfiguration = {
+  minLength: number;
+  requireUppercase: boolean;
+  requireLowercase: boolean;
+  requireDigits: boolean;
+  requireSymbols: boolean;
+};
+
+export type AuthCoreConfiguration = {
+  hashName: string;
+  iterations: number;
+  saltBytes: number;
+  tokenBytes: number;
+  tokenTtlSeconds: number;
+  pepperEnv: string;
+  issuer: string;
+  policy: AuthCorePolicyConfiguration;
+};
+
+const DEFAULTS: Record<string, any> = {{ auth_core_defaults | default({}) | tojson(indent=2) }};
+
+const parseInteger = (value: string | undefined, fallback: number, minimum = 1): number => {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    return fallback;
+  }
+
+  const parsed = Number.parseInt(value, 10);
+  if (!Number.isFinite(parsed) || parsed < minimum) {
+    return fallback;
+  }
+
+  return parsed;
+};
+
+const parseString = (value: string | undefined, fallback: string): string => {
+  if (typeof value !== "string") {
+    return fallback;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : fallback;
+};
+
+const ensureNumber = (candidate: unknown, fallbackValue: number): number => {
+  if (typeof candidate === "number" && Number.isFinite(candidate)) {
+    return candidate;
+  }
+
+  if (typeof candidate === "string" && candidate.trim().length > 0) {
+    const parsed = Number.parseInt(candidate, 10);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+
+  return fallbackValue;
+};
+
+const ensureBoolean = (candidate: unknown, fallbackValue: boolean): boolean => {
+  if (typeof candidate === "boolean") {
+    return candidate;
+  }
+
+  if (typeof candidate === "string") {
+    const normalized = candidate.trim().toLowerCase();
+    if (["1", "true", "yes", "on"].includes(normalized)) {
+      return true;
+    }
+    if (["0", "false", "no", "off"].includes(normalized)) {
+      return false;
+    }
+  }
+
+  return fallbackValue;
+};
+
+const normalizePolicy = (
+  raw: Record<string, unknown>,
+  fallback: AuthCorePolicyConfiguration,
+): AuthCorePolicyConfiguration => ({
+  minLength: ensureNumber(raw.min_length ?? raw.minLength, fallback.minLength),
+  requireUppercase: ensureBoolean(
+    raw.require_uppercase ?? raw.requireUppercase,
+    fallback.requireUppercase,
+  ),
+  requireLowercase: ensureBoolean(
+    raw.require_lowercase ?? raw.requireLowercase,
+    fallback.requireLowercase,
+  ),
+  requireDigits: ensureBoolean(
+    raw.require_digits ?? raw.requireDigits,
+    fallback.requireDigits,
+  ),
+  requireSymbols: ensureBoolean(
+    raw.require_symbols ?? raw.requireSymbols,
+    fallback.requireSymbols,
+  ),
+});
+
+const parsePolicy = (
+  value: string | undefined,
+  fallback: AuthCorePolicyConfiguration,
+): AuthCorePolicyConfiguration => {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    return fallback;
+  }
+
+  try {
+    const parsed = JSON.parse(value);
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      return normalizePolicy(parsed as Record<string, unknown>, fallback);
+    }
+  } catch {
+    // ignore malformed overrides and fall back to defaults
+  }
+
+  return fallback;
+};
+
+export default registerAs("authCore", (): AuthCoreConfiguration => {
+  const policyDefaults = DEFAULTS.policy ?? {};
+  const fallbackPolicy: AuthCorePolicyConfiguration = {
+    minLength: policyDefaults.min_length ?? 12,
+    requireUppercase: policyDefaults.require_uppercase ?? true,
+    requireLowercase: policyDefaults.require_lowercase ?? true,
+    requireDigits: policyDefaults.require_digits ?? true,
+    requireSymbols: policyDefaults.require_symbols ?? false,
+  };
+
+  return {
+    hashName: parseString(process.env.RAPIDKIT_AUTH_CORE_HASH, DEFAULTS.hash_name ?? "sha256"),
+    iterations: parseInteger(
+      process.env.RAPIDKIT_AUTH_CORE_ITERATIONS,
+      DEFAULTS.iterations ?? 390000,
+    ),
+    saltBytes: parseInteger(
+      process.env.RAPIDKIT_AUTH_CORE_SALT_BYTES,
+      DEFAULTS.salt_bytes ?? 32,
+    ),
+    tokenBytes: parseInteger(
+      process.env.RAPIDKIT_AUTH_CORE_TOKEN_BYTES,
+      DEFAULTS.token_bytes ?? 32,
+    ),
+    tokenTtlSeconds: parseInteger(
+      process.env.RAPIDKIT_AUTH_CORE_TOKEN_TTL,
+      DEFAULTS.token_ttl_seconds ?? 1800,
+    ),
+    pepperEnv: parseString(
+      process.env.RAPIDKIT_AUTH_CORE_PEPPER_ENV,
+      DEFAULTS.pepper_env ?? "RAPIDKIT_AUTH_CORE_PEPPER",
+    ),
+    issuer: parseString(process.env.RAPIDKIT_AUTH_CORE_ISSUER, DEFAULTS.issuer ?? "RapidKit"),
+    policy: parsePolicy(process.env.RAPIDKIT_AUTH_CORE_POLICY, fallbackPolicy),
+  };
+});

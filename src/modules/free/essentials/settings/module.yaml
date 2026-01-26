@@ -1,0 +1,202 @@
+name: settings
+version: 0.1.32
+access: free
+status: stable
+category: essentials
+description: Configurable application settings module with FastAPI and NestJS adapters.
+tags:
+- config
+- settings
+- env
+generated_from_config: true
+depends_on: []
+profile_inherits:
+  fastapi.standard: fastapi
+  fastapi.ddd: fastapi
+  nestjs.standard: nestjs
+config_sources:
+- config/base.yaml
+- config/snippets.yaml
+generation:
+  vendor:
+    root: .rapidkit/vendor
+    files:
+    - template: templates/base/settings.py.j2
+      relative: src/modules/free/essentials/settings/settings.py
+    - template: templates/base/custom_sources.py.j2
+      relative: src/modules/free/essentials/settings/custom_sources.py
+    - template: templates/base/hot_reload.py.j2
+      relative: src/modules/free/essentials/settings/hot_reload.py
+    - template: templates/base/settings_health.py.j2
+      relative: src/health/settings.py
+    - template: templates/base/settings_types.py.j2
+      relative: src/modules/free/essentials/settings/settings_types.py
+    - template: templates/vendor/nestjs/configuration.js.j2
+      relative: nestjs/configuration.js
+    - template: templates/vendor/nestjs/settings.health.ts.j2
+      relative: nestjs/settings.health.ts
+  variants:
+    fastapi: &fastapi_variant
+      root: .
+      context:
+        framework: fastapi
+      files:
+      - template: templates/base/__init__.py.j2
+        output: src/modules/free/essentials/settings/__init__.py
+      - template: templates/variants/fastapi/settings.py.j2
+        output: src/modules/free/essentials/settings/settings.py
+      - template: templates/variants/fastapi/custom_sources.py.j2
+        output: src/modules/free/essentials/settings/custom_sources.py
+      - template: templates/variants/fastapi/hot_reload.py.j2
+        output: src/modules/free/essentials/settings/hot_reload.py
+      - template: templates/base/settings_health.py.j2
+        output: src/health/settings.py
+      - template: templates/base/settings_types.py.j2
+        output: src/modules/free/essentials/settings/settings_types.py
+      - template: templates/variants/fastapi/settings_routes.py.j2
+        output: src/modules/free/essentials/settings/routers/settings.py
+      - template: templates/tests/integration/test_settings_integration.j2
+        output: tests/modules/free/essentials/settings/test_settings_integration.py
+        description: Integration tests for Settings module
+      - template: templates/variants/fastapi/tests/test_settings_e2e.py
+        output: tests/modules/e2e/free/essentials/settings/test_settings_e2e.py
+    fastapi.standard: *fastapi_variant
+    fastapi.ddd: *fastapi_variant
+    nestjs: &nestjs_variant
+      root: .
+      context:
+        framework: nestjs
+        vendor_configuration_relative: nestjs/configuration.js
+      files:
+      - template: templates/variants/nestjs/configuration.ts.j2
+        output: src/modules/free/essentials/settings/configuration.ts
+      - template: templates/variants/nestjs/settings.service.ts.j2
+        output: src/modules/free/essentials/settings/settings.service.ts
+      - template: templates/variants/nestjs/settings.controller.ts.j2
+        output: src/modules/free/essentials/settings/settings.controller.ts
+      - template: templates/variants/nestjs/settings.module.ts.j2
+        output: src/modules/free/essentials/settings/settings.module.ts
+      - template: templates/vendor/nestjs/settings.health.module.ts.j2
+        output: src/health/settings.health.ts
+      - template: templates/variants/nestjs/settings.metadata.ts.j2
+        output: src/modules/free/essentials/settings/settings.metadata.ts
+        description: Settings metadata helpers for NestJS integration
+      - template: templates/tests/integration/settings.integration.spec.ts.j2
+        output: tests/modules/integration/essentials/settings/settings.integration.spec.ts
+        description: NestJS integration tests for Settings module
+      - template: templates/variants/nestjs/tests/settings.e2e-spec.ts
+        output: tests/modules/e2e/free/essentials/settings/settings.e2e-spec.ts
+    nestjs.standard: *nestjs_variant
+  snippets:
+    enabled: true
+    config: config/snippets.yaml
+    default: []
+compatibility:
+  breaking: 2.0.0
+  deprecated: 1.5.0
+  migration_guide: https://docs.rapidkit.top/modules/settings/migration
+  python: '>=3.10,<4.0'
+  frameworks:
+  - fastapi
+  - nestjs
+  os:
+  - linux
+  - darwin
+  - windows
+testing:
+  coverage_min: 85
+  integration_tests: true
+  e2e_tests: false
+  unit_tests:
+  - tests/modules/free/essentials/settings/test_settings_generate.py
+  - tests/modules/free/essentials/settings/test_settings_runtime.py
+  - tests/modules/free/essentials/settings/test_settings_overrides.py
+  - tests/modules/free/essentials/settings/test_settings_standard_module.py
+  integration_test_files:
+  - tests/modules/integration/settings/test_settings_integration.py
+  - tests/modules/integration/settings/settings.integration.spec.ts
+  fixtures: []
+documentation:
+  changelog: docs/changelog.md
+  readme: README.md
+  overview: docs/overview.md
+  usage: docs/usage.md
+  advanced: docs/advanced.md
+  migration: docs/migration.md
+  troubleshooting: docs/troubleshooting.md
+  api_docs: docs/api-reference.md
+  examples: []
+support:
+  issues: https://github.com/getrapidkit/core/issues
+  discussions: https://github.com/getrapidkit/core/discussions
+  documentation: https://docs.rapidkit.top/modules/settings
+changelog:
+  - version: "0.1.32"
+    date: "2026-01-04"
+    notes: "See docs/changelog.md"
+validation:
+  pre_install:
+  - check_python_version
+  - check_dependencies
+  - validate_configuration
+  post_install:
+  - run_tests
+  - check_integration
+  - validate_generated_code
+rollback:
+  strategy: uninstall
+  backup_path: .rapidkit/backups/
+  max_backups: 5
+performance:
+  lazy_loading: true
+  caching:
+    templates: true
+    configs: true
+    ttl: 300
+tier: free
+capabilities: []
+signature: null
+signer_id: null
+signature_version: null
+file_hashes:
+  templates/variants/nestjs/tests/settings.e2e-spec.ts: sha256:2b8de75ca7e49f821288799c8fa73dbe22f5a346c0ccbd7733a839ec9006b7b4
+  templates/variants/fastapi/tests/test_settings_e2e.py: sha256:55eadb4dfbaf61c7fb07ecce3dbb5cf6a5c9c02ac93bb3d58f7a4d2bde73dadc
+  scripts/run_demo.py: sha256:e042b1f9ef8ff0a9e9a84bbbead459a4dcc000ba08f7aa44abd8aa97bcfb6efa
+  README.md: sha256:44cb4b5d5d4ab305b29a3a7aeed099337edc8625cdc611219b4ab8188a52eb8b
+  __init__.py: sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+  config/base.yaml: sha256:d4bde2e1d52ff5700e983e1df0fc91398b97419bd2dceabd63574f501cf779fd
+  config/snippets.yaml: sha256:e89757798a3a8fb17f5374ca32db98bfe4a1df3daca47625a5f5d029bca1550d
+  docs/README.md: sha256:617c7728b965ea2a97954c2798a50274fdf476cbb35708082a85420073e47f98
+  docs/advanced.md: sha256:bab9eabd8a35ba260b31dd1f927ba8dc2b04c5bda906dea15e4dd76176f827ad
+  docs/api-reference.md: sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+  docs/changelog.md: sha256:48254e1409c540ed9cabffb25cfb2189d9f9442c6368a891a28131e6af6c448b
+  docs/migration.md: sha256:4a85922af7c41421b4994489afb8c8b25dc6fa7ce0f7c8fb03b43f94e1aff382
+  docs/overview.md: sha256:f13b81bef801974becd5d3a5c7562171f71bf52868cf593f267bbb9a79a31033
+  docs/troubleshooting.md: sha256:c793b5c2177221cbbc7dfae55505db22c65d2f224d38c39a59c860b90efdb39b
+  docs/usage.md: sha256:1df8964d014fc873b367cce7ca33cdd1f5cef54a0648733a2d1440afb47472b7
+  frameworks/__init__.py: sha256:1e8f4cc481462a59350a63bafffd96e8d821d273c2b2e6f7d34694bad446aadb
+  frameworks/fastapi.py: sha256:f2a3d075ff4c87a1cccc77d4c33f2e91919e12fb966949a9722a823a2f1677a5
+  frameworks/nestjs.py: sha256:65eff660f7d98577c43b5571cefb88f5ceaea706095be4be2a604a30da3cfe55
+  generate.py: sha256:920227ec5ca4c3c338f2c6af69587665c8ade143db6aa17ade356602c7492386
+  module.verify.json: sha256:b02dc049629191da4b7633b1da8aae2784622e1b4201f839bd2343fec48889e5
+  overrides.py: sha256:9509673c548b4c77e1c14fe8b3350b2dddc7d95f030965e76361c74f35d25e4d
+  templates/base/custom_sources.py.j2: sha256:41f1af70e6dccd4b7d4a51049f113f7e5035600c8fc0019f5d46005ab5ef99ea
+  templates/base/hot_reload.py.j2: sha256:270dafb7aa8fac16d2ec3066815c7e00e5bf551df3f86edb995abb36aa3b0a05
+  templates/base/settings.py.j2: sha256:89cf232b5f9aa3812b13d3b13eec51112923041bc96c272b027d3fd537961641
+  templates/base/settings_health.py.j2: sha256:43d49c3819dae2debe686f3179b594d93e1ba8d88d84849ea3cda0f5e21f8ff7
+  templates/base/settings_types.py.j2: sha256:8e6d4cd90ecf4e5eb020263137987261153e6d4992d14a8d89cb8467a1c6a470
+  templates/snippets/settings.snippet.j2: sha256:b3ba2d0fd9d51e9a09334691db316d31cec2b4f2d613c2e3f4e08600c0aaddbb
+  templates/tests/__init__.py: sha256:db380a56157b4a03cfe7ab66260add1168e4247680b64c1576185e8e16295640
+  templates/tests/integration/settings.integration.spec.ts.j2: sha256:4ac901e80309cb150e1b8bef00b98ab71dc99ffda965833f584f0dd0e5222379
+  templates/tests/integration/test_settings_integration.j2: sha256:b44ed835b945efac4c0f033b771a987d071448e38f2347165d2bd280c4ce93cb
+  templates/variants/fastapi/custom_sources.py.j2: sha256:7d9098bc597d945939587046cd9b0775db5114fbbbf0151cb93bf56d2aed1dca
+  templates/variants/fastapi/hot_reload.py.j2: sha256:4eb89b658da3c52365f4b03ed64bc3f9d10b65e140d591b0a15f0be2dde881e0
+  templates/variants/fastapi/settings.py.j2: sha256:a8552ed71b3163ace23240209a451ed72d7b4149884cfd2fc51a20f4341fba15
+  templates/variants/fastapi/settings_routes.py.j2: sha256:3d8d12eceb787b043adc8b7d210d81487251969744c75f9212af474655485a47
+  templates/variants/nestjs/configuration.ts.j2: sha256:0e3b6e152d32e92e63537d83ae6194fcab9eb1a46005b4e437fdaaffff8c2ecd
+  templates/variants/nestjs/settings.controller.ts.j2: sha256:1b92ed2c96a56b179f539a36c9f20b0969303b8bbf89af4f68e043fef605ae97
+  templates/variants/nestjs/settings.metadata.ts.j2: sha256:9da511e47053425f1bd0e97142315934fe303a7b249914bd34a7a46b4cd64d67
+  templates/variants/nestjs/settings.module.ts.j2: sha256:1073a8cb87154330d30140df15dfce4e5d9eb74684733023d3d9530026a1845e
+  templates/variants/nestjs/settings.service.ts.j2: sha256:903cce9e4504086762bb48ebdd02509058a4d0691b1d8c4e258dd376af846414
+  templates/vendor/nestjs/configuration.js.j2: sha256:ee55fea936751e67bfbebea7421439646327514b45be12e5a0182b3314625ac9
+  templates/vendor/nestjs/settings.health.ts.j2: sha256:e9877350bbeb2faa5096e86932a9d69226ec3383376c3fc5a41d9e70d04c88b8

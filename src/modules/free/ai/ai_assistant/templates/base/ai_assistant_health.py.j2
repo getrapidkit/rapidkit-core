@@ -1,0 +1,49 @@
+"""Health helpers for the {{ module_title }} runtime."""
+
+from __future__ import annotations
+
+import sys
+from types import ModuleType
+from typing import Any, Mapping
+
+try:
+    from ..ai_assistant import {{ module_class_name }}, {{ module_class_name }}Config  # type: ignore[import]
+except ImportError:  # pragma: no cover - fallback for isolated execution
+    # Pick the *most recently loaded* module that provides the expected symbols.
+    # This avoids nondeterminism when multiple modules in sys.modules expose the
+    # same attribute names (common in test environments).
+    _runtime_module: ModuleType | None = next(
+        (
+            module
+            for module in reversed(list(sys.modules.values()))
+            if isinstance(module, ModuleType)
+            and hasattr(module, "{{ module_class_name }}")
+            and hasattr(module, "{{ module_class_name }}Config")
+        ),
+        None,
+    )
+    if _runtime_module is None:  # pragma: no cover - defensive guard
+        raise
+
+    {{ module_class_name }} = getattr(_runtime_module, "{{ module_class_name }}")  # type: ignore[assignment]
+    {{ module_class_name }}Config = getattr(_runtime_module, "{{ module_class_name }}Config")  # type: ignore[assignment]
+
+
+def check_health(
+    config: {{ module_class_name }}Config | None = None,
+    *,
+    context: Mapping[str, Any] | None = None,
+) -> Mapping[str, Any]:
+    """Return a detailed health payload for the assistant runtime."""
+
+    assistant = {{ module_class_name }}(config or {{ module_class_name }}Config())
+    report = assistant.health_report()
+
+    if context:
+        enriched = dict(report)
+        enriched.setdefault("metadata", {}).update(dict(context))
+        return enriched
+    return report
+
+
+__all__ = ["check_health"]

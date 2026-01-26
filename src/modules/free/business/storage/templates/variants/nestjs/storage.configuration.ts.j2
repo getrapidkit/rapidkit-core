@@ -1,0 +1,121 @@
+{%- set defaults = storage_defaults or {} -%}
+{%- set local = defaults.get("local", {}) or {} -%}
+{%- set image_processing = defaults.get("image_processing", {}) or {} -%}
+{%- set security = defaults.get("security", {}) or {} -%}
+{%- set logging = storage_logging or {} -%}
+{%- set performance = storage_performance or {} -%}
+{%- set retry = storage_retry or {} -%}
+{%- set image_quality = image_processing.get("quality", 85) -%}
+{%- set security_scan_interval = security.get("scan_interval", 3600) -%}
+{%- set security_rate_limit = security.get("rate_limit_per_minute", 60) -%}
+{%- set security_require_auth = security.get("require_authentication", True) -%}
+{%- set security_scan_on_upload = security.get("scan_on_upload", True) -%}
+import { registerAs } from "@nestjs/config";
+
+const DEFAULTS = {{ defaults | tojson(indent=2) }};
+const LOGGING = {{ logging | tojson(indent=2) }};
+const PERFORMANCE = {{ performance | tojson(indent=2) }};
+const RETRY = {{ retry | tojson(indent=2) }};
+
+const parseBoolean = (value: string | undefined, fallback: boolean): boolean => {
+  if (typeof value !== "string") {
+    return fallback;
+  }
+  const normalized = value.trim().toLowerCase();
+  if (["1", "true", "yes", "on"].includes(normalized)) {
+    return true;
+  }
+  if (["0", "false", "no", "off"].includes(normalized)) {
+    return false;
+  }
+  return fallback;
+};
+
+const parseNumber = (value: string | undefined, fallback: number): number => {
+  if (typeof value !== "string") {
+    return fallback;
+  }
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const parseList = (value: string | undefined, fallback: string[]): string[] => {
+  if (typeof value !== "string") {
+    return [...fallback];
+  }
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0);
+};
+
+export interface StorageConfiguration {
+  adapter: string;
+  basePath: string;
+  allowedExtensions: string[];
+  maxFileSize: number;
+  chunkSize: number;
+  imageProcessing: {
+    enabled: boolean;
+    optimize: boolean;
+    quality: number;
+  };
+  security: {
+    scanOnUpload: boolean;
+    scanInterval: number;
+    requireAuthentication: boolean;
+    rateLimitPerMinute: number;
+  };
+  logging: Record<string, unknown>;
+  performance: Record<string, unknown>;
+  retry: Record<string, unknown>;
+}
+
+export default registerAs("storage", (): StorageConfiguration => {
+  const fallbackExt = Array.isArray(DEFAULTS.local?.allowed_extensions)
+    ? (DEFAULTS.local.allowed_extensions as string[])
+    : {{ (local.get("allowed_extensions") or []) | tojson(indent=2) }};
+
+  return {
+    adapter: process.env.RAPIDKIT_STORAGE_ADAPTER ?? (DEFAULTS.adapter ?? "local"),
+    basePath: process.env.RAPIDKIT_STORAGE_PATH ?? {{ local.get("base_path", "./storage/uploads") | tojson }},
+    allowedExtensions: parseList(process.env.RAPIDKIT_STORAGE_EXTENSIONS, fallbackExt),
+    maxFileSize: parseNumber(
+      process.env.RAPIDKIT_STORAGE_MAX_SIZE,
+      Number(DEFAULTS.local?.max_file_size ?? 104_857_600),
+    ),
+    chunkSize: Number((DEFAULTS as Record<string, unknown>)["chunk_size"] ?? 1_048_576),
+    imageProcessing: {
+      enabled: parseBoolean(
+        process.env.RAPIDKIT_STORAGE_IMAGE_PROCESSING,
+        Boolean(DEFAULTS.image_processing?.enabled ?? true),
+      ),
+      optimize: parseBoolean(
+        process.env.RAPIDKIT_STORAGE_IMAGE_OPTIMIZE,
+        Boolean(DEFAULTS.image_processing?.optimize ?? true),
+      ),
+      quality: Number({{ image_quality | tojson }}),
+    },
+    security: {
+      scanOnUpload: parseBoolean(
+        process.env.RAPIDKIT_STORAGE_SCAN_ON_UPLOAD,
+        Boolean({{ security_scan_on_upload | tojson }}),
+      ),
+      scanInterval: parseNumber(
+        process.env.RAPIDKIT_STORAGE_SCAN_INTERVAL,
+        Number({{ security_scan_interval | tojson }}),
+      ),
+      requireAuthentication: parseBoolean(
+        process.env.RAPIDKIT_STORAGE_REQUIRE_AUTH,
+        Boolean({{ security_require_auth | tojson }}),
+      ),
+      rateLimitPerMinute: parseNumber(
+        process.env.RAPIDKIT_STORAGE_RATE_LIMIT,
+        Number({{ security_rate_limit | tojson }}),
+      ),
+    },
+    logging: { ...LOGGING },
+    performance: { ...PERFORMANCE },
+    retry: { ...RETRY },
+  };
+});

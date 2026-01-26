@@ -1,0 +1,32 @@
+"""Runtime helpers exposing Redis module metadata and utilities."""
+
+from __future__ import annotations
+
+from typing import Any, Dict, Iterable, List
+
+from src.modules.free.cache.redis.client import DEFAULTS, get_redis_metadata
+
+
+def describe_cache(extras: Iterable[tuple[str, Any]] | None = None) -> Dict[str, Any]:
+    """Return a serialisable description of the Redis integration."""
+
+    payload = {
+        "module": "{{ rapidkit_vendor_module }}",
+        "module_version": "{{ rapidkit_vendor_version }}",
+        "defaults": dict(DEFAULTS),
+    }
+    payload.update(get_redis_metadata())
+    if extras:
+        payload.update(dict(extras))
+    return payload
+
+
+def list_features() -> List[str]:
+    """List Redis capabilities exposed by the module."""
+
+    metadata = get_redis_metadata()
+    features = metadata.get("features") or []
+    return list(features)
+
+
+__all__ = ["describe_cache", "list_features"]

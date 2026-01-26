@@ -1,0 +1,143 @@
+# Snippet registrations for the session auth module
+snippets:
+  - id: session_env
+    target: .env,.env.dev,.env.prod,.env.example
+    anchor: "# <<<inject:module-env>>>"
+    template: env.snippet.j2
+    features: [session]
+    profiles: [fastapi/standard, nestjs/standard]
+    description: Inject session module environment variables
+    version: "0.1.0"
+    priority: 10
+    dependencies: []
+    context:
+      session_defaults:
+        secret_key_env: RAPIDKIT_SESSION_SECRET
+        session_ttl_seconds: 2592000
+        refresh_ttl_seconds: 15552000
+        cookie_name: rapidkit_session
+        cookie_domain: ""
+        cookie_secure: true
+        cookie_httponly: true
+        cookie_same_site: lax
+        storage_backend: memory
+    schema:
+      type: object
+      properties:
+        RAPIDKIT_SESSION_SECRET:
+          type: str
+          default: ""
+          description: Signing secret for session tokens
+        SESSION_TTL_SECONDS:
+          type: int
+          default: 2592000
+          description: Primary session lifetime in seconds
+        SESSION_REFRESH_TTL_SECONDS:
+          type: int
+          default: 15552000
+          description: Refresh token lifetime in seconds
+        SESSION_COOKIE_NAME:
+          type: str
+          default: rapidkit_session
+          description: Name of the session cookie
+        SESSION_COOKIE_DOMAIN:
+          type: str
+          default: ""
+          description: Optional domain attribute for the session cookie
+        SESSION_COOKIE_SECURE:
+          type: bool
+          default: true
+          description: Mark session cookie as secure
+        SESSION_COOKIE_HTTPONLY:
+          type: bool
+          default: true
+          description: Mark session cookie as HTTPOnly
+        SESSION_COOKIE_SAME_SITE:
+          type: str
+          default: lax
+          description: SameSite policy for the session cookie
+        SESSION_STORAGE_BACKEND:
+          type: str
+          default: memory
+          description: Storage backend identifier for sessions
+      additionalProperties: true
+      required: []
+    metadata:
+      author: "RapidKit Core Team"
+      created_at: "2025-10-30"
+      last_modified: "2025-10-30"
+    conflict_resolution: merge
+
+  - id: session_settings_fields
+    target: src/modules/free/essentials/settings/settings.py
+    anchor: "# <<<inject:settings-fields>>>"
+    template: settings_fields.snippet.j2
+    features: [extendable_settings, session]
+    profiles: [fastapi/standard]
+    description: Inject session configuration fields into Python settings
+    version: "0.1.0"
+    priority: 20
+    dependencies: []
+    context:
+      session_defaults:
+        secret_key_env: RAPIDKIT_SESSION_SECRET
+        session_ttl_seconds: 2592000
+        refresh_ttl_seconds: 15552000
+        cookie_name: rapidkit_session
+        cookie_domain: ""
+        cookie_secure: true
+        cookie_httponly: true
+        cookie_same_site: lax
+        storage_backend: memory
+    schema:
+      type: object
+      properties: {}
+      additionalProperties: true
+      required: []
+    metadata:
+      author: "RapidKit Core Team"
+      created_at: "2025-10-30"
+      last_modified: "2025-10-30"
+    conflict_resolution: merge
+
+  - id: session_settings_fields_nestjs
+    target: src/config/configuration.ts
+    anchor: "// <<<inject:configuration>>>"
+    template: settings_fields_nestjs.snippet.j2
+    features: [session]
+    profiles: [nestjs/standard]
+    description: Extend NestJS settings interface with session fields
+    version: "0.1.0"
+    priority: 20
+    dependencies: []
+    schema:
+      type: object
+      properties: {}
+      additionalProperties: true
+      required: []
+    metadata:
+      author: "RapidKit Core Team"
+      created_at: "2025-10-30"
+      last_modified: "2025-10-30"
+    conflict_resolution: merge
+
+  - id: session_quickstart
+    target: README.md
+    anchor: "<!-- <<<inject:module-snippet>>> -->"
+    template: session.snippet.j2
+    features: [session]
+    profiles: [fastapi/standard, nestjs/standard]
+    description: Quick commands for validating the Session module installation
+    version: "0.1.0"
+    priority: 5
+    dependencies: []
+    schema:
+      type: object
+      properties: {}
+      additionalProperties: true
+      required: []
+    metadata:
+      author: "RapidKit Core Team"
+      created_at: "2025-11-02"
+      last_modified: "2025-11-02"
+    conflict_resolution: merge

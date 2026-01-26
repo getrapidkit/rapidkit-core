@@ -1,0 +1,21 @@
+import { Module } from '@nestjs/common';
+import { ConfigModule, ConfigType } from '@nestjs/config';
+
+import { {{ module_class_name }}Controller } from './celery.controller';
+import { CELERY_CONFIG_TOKEN, {{ module_class_name }}Service } from './celery.service';
+import { celeryConfiguration } from './celery.configuration';
+
+@Module({
+  imports: [ConfigModule.forFeature(celeryConfiguration)],
+  controllers: [{{ module_class_name }}Controller],
+  providers: [
+    {{ module_class_name }}Service,
+    {
+      provide: CELERY_CONFIG_TOKEN,
+      inject: [celeryConfiguration.KEY],
+      useFactory: (config: ConfigType<typeof celeryConfiguration>) => config,
+    },
+  ],
+  exports: [{{ module_class_name }}Service],
+})
+export class {{ module_class_name }}Module {}

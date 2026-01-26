@@ -1,0 +1,579 @@
+"""Runtime facade for the {{ module_title }} module."""
+
+from __future__ import annotations
+
+import json
+import logging
+import threading
+import time
+from collections import deque
+from contextlib import contextmanager, suppress
+from dataclasses import asdict, dataclass, field
+from typing import Any, Dict, Iterator, Mapping, MutableMapping, Optional, Tuple
+
+MODULE_NAME = "{{ module_name }}"
+MODULE_TITLE = "{{ module_title }}"
+
+try:  # pragma: no cover - optional dependency
+    from prometheus_client import (
+        CollectorRegistry,
+        Counter,
+        Gauge,
+        Histogram,
+        ProcessCollector,
+        PlatformCollector,
+        generate_latest,
+        CONTENT_TYPE_LATEST,
+    )
+except ImportError:  # pragma: no cover - gracefully degrade when prometheus_client missing
+    CollectorRegistry = None  # type: ignore[assignment]
+    Counter = None  # type: ignore[assignment]
+    Gauge = None  # type: ignore[assignment]
+    Histogram = None  # type: ignore[assignment]
+    ProcessCollector = None  # type: ignore[assignment]
+    PlatformCollector = None  # type: ignore[assignment]
+    generate_latest = None  # type: ignore[assignment]
+    CONTENT_TYPE_LATEST = "text/plain"
+
+
+from .{{ module_name }}_types import (
+    ObservabilityMetricSnapshot,
+    ObservabilitySummary,
+)
+
+
+@dataclass(slots=True)
+class MetricsConfig:
+    enabled: bool = True
+    exporter: str = "prometheus"
+    endpoint: str = "/metrics"
+    namespace: str = "rapidkit"
+    default_labels: Dict[str, str] = field(default_factory=dict)
+    buckets: Tuple[float, ...] = (0.1, 0.5, 1, 2.5, 5, 10)
+    retention_seconds: int = 600
+    register_process_metrics: bool = True
+
+
+@dataclass(slots=True)
+class TracingConfig:
+    enabled: bool = False
+    exporter: str = "console"
+    endpoint: Optional[str] = None
+    sample_ratio: float = 0.25
+    include_headers: bool = True
+
+
+@dataclass(slots=True)
+class LoggingConfig:
+    level: str = "INFO"
+    structured_logging: bool = True
+    include_trace_ids: bool = True
+
+
+@dataclass(slots=True)
+class EventConfig:
+    buffer_size: int = 1000
+    flush_interval_seconds: int = 5
+    audit_enabled: bool = False
+
+
+@dataclass(slots=True)
+class {{ module_class_name }}Config:
+    """Runtime configuration for {{ module_title }}."""
+
+    enabled: bool = True
+    service_name: str = "rapidkit-app"
+    environment: str = "local"
+    resource_attributes: Dict[str, str] = field(default_factory=dict)
+    retry_attempts: int = 3
+    metrics: MetricsConfig = field(default_factory=MetricsConfig)
+    tracing: TracingConfig = field(default_factory=TracingConfig)
+    logging: LoggingConfig = field(default_factory=LoggingConfig)
+    events: EventConfig = field(default_factory=EventConfig)
+
+    def as_dict(self) -> Dict[str, Any]:
+        return {
+            "enabled": self.enabled,
+            "service_name": self.service_name,
+            "environment": self.environment,
+            "resource_attributes": dict(self.resource_attributes),
+            "retry_attempts": self.retry_attempts,
+            "metrics": asdict(self.metrics),
+            "tracing": asdict(self.tracing),
+            "logging": asdict(self.logging),
+            "events": asdict(self.events),
+        }
+
+    @classmethod
+    def from_mapping(cls, payload: Mapping[str, Any]) -> "{{ module_class_name }}Config":
+        """Construct a runtime config from a mapping such as YAML defaults."""
+
+        def _build(section: str, factory: type[Any], overrides: Mapping[str, Any]) -> Any:
+            data = payload.get(section, {})
+            if isinstance(data, Mapping):
+                merged = dict(data)
+            else:
+                merged = {}
+            merged.update(overrides)
+            return factory(**merged)
+
+        logging_overrides: Dict[str, Any] = {}
+        if "log_level" in payload:
+            logging_overrides["level"] = payload["log_level"]
+        if "structured_logging" in payload:
+            logging_overrides["structured_logging"] = payload["structured_logging"]
+        if "include_trace_ids" in payload:
+            logging_overrides["include_trace_ids"] = payload["include_trace_ids"]
+
+        metrics = _build("metrics", MetricsConfig, {})
+        tracing = _build("tracing", TracingConfig, {})
+        logging_cfg = _build("logging", LoggingConfig, logging_overrides)
+        events = _build("events", EventConfig, {})
+
+        resource_attrs = payload.get("resource_attributes", {})
+        if isinstance(resource_attrs, Mapping):
+            resource_attributes = dict(resource_attrs)
+        else:
+            resource_attributes = {}
+
+        retry_attempts = payload.get("retry_attempts")
+        try:
+            retry_attempts = int(retry_attempts) if retry_attempts is not None else 3
+        except (TypeError, ValueError):
+            retry_attempts = 3
+
+        return cls(
+            enabled=payload.get("enabled", True),
+            service_name=payload.get("service_name", "rapidkit-app"),
+            environment=payload.get("environment", "local"),
+            resource_attributes=resource_attributes,
+            retry_attempts=retry_attempts,
+            metrics=metrics,
+            tracing=tracing,
+            logging=logging_cfg,
+            events=events,
+        )
+
+
+class _SimpleMetricsBackend:
+    """Lightweight in-memory metrics backend when prometheus_client is unavailable."""
+
+    def __init__(self, default_labels: Mapping[str, str]) -> None:
+        self.default_labels = dict(default_labels)
+        self._counters: MutableMapping[tuple[str, tuple[tuple[str, str], ...]], float] = {}
+        self._gauges: MutableMapping[tuple[str, tuple[tuple[str, str], ...]], float] = {}
+        self._histograms: MutableMapping[
+            tuple[str, tuple[tuple[str, str], ...]], list[float]
+        ] = {}
+        self._lock = threading.Lock()
+
+    def _normalise_labels(self, labels: Optional[Mapping[str, str]]) -> tuple[tuple[str, str], ...]:
+        combined: Dict[str, str] = dict(self.default_labels)
+        combined.update(labels or {})
+        return tuple(sorted((key, value) for key, value in combined.items()))
+
+    def increment_counter(
+        self, name: str, value: float = 1.0, labels: Optional[Mapping[str, str]] = None
+    ) -> None:
+        key = (name, self._normalise_labels(labels))
+        with self._lock:
+            self._counters[key] = self._counters.get(key, 0.0) + value
+
+    def set_gauge(
+        self, name: str, value: float, labels: Optional[Mapping[str, str]] = None
+    ) -> None:
+        key = (name, self._normalise_labels(labels))
+        with self._lock:
+            self._gauges[key] = value
+
+    def observe_histogram(
+        self, name: str, value: float, labels: Optional[Mapping[str, str]] = None
+    ) -> None:
+        key = (name, self._normalise_labels(labels))
+        with self._lock:
+            bucket = self._histograms.setdefault(key, [])
+            bucket.append(value)
+
+    def render(self) -> tuple[str, str]:
+        with self._lock:
+            payload = {
+                "counters": {
+                    f"{name}{dict(labels)}": value
+                    for (name, labels), value in self._counters.items()
+                },
+                "gauges": {
+                    f"{name}{dict(labels)}": value
+                    for (name, labels), value in self._gauges.items()
+                },
+                "histograms": {
+                    f"{name}{dict(labels)}": bucket
+                    for (name, labels), bucket in self._histograms.items()
+                },
+            }
+        return json.dumps(payload, indent=2, sort_keys=True), "application/json"
+
+
+class _PrometheusMetricsBackend:
+    """Prometheus exporter that leverages prometheus_client when available."""
+
+    def __init__(self, config: MetricsConfig, default_labels: Mapping[str, str]) -> None:
+        if CollectorRegistry is None:  # pragma: no cover - exercised in fallback backend
+            raise RuntimeError("prometheus_client is not installed")
+
+        self.registry = CollectorRegistry()
+        self.namespace = config.namespace
+        self.default_labels = dict(default_labels)
+        self._counters: Dict[str, Counter] = {}
+        self._gauges: Dict[str, Gauge] = {}
+        self._histograms: Dict[str, Histogram] = {}
+        self._lock = threading.Lock()
+
+        if config.register_process_metrics:
+            with suppress(Exception):  # pragma: no cover - optional telemetry support
+                if ProcessCollector is not None:
+                    ProcessCollector(registry=self.registry)
+                if PlatformCollector is not None:
+                    PlatformCollector(registry=self.registry)
+
+        self._buckets = config.buckets
+
+    def _labelled_name(self, name: str, labels: Optional[Mapping[str, str]]) -> tuple[str, Dict[str, str]]:
+        label_set = dict(self.default_labels)
+        label_set.update(labels or {})
+        return name, label_set
+
+    def _counter(self, name: str, labels: Optional[Mapping[str, str]]) -> Any:
+        metric_name, label_set = self._labelled_name(name, labels)
+        label_keys = sorted(label_set)
+        key = f"counter::{metric_name}::{','.join(label_keys)}"
+        with self._lock:
+            counter = self._counters.get(key)
+            if counter is None:
+                counter = Counter(
+                    metric_name,
+                    f"{metric_name} counter",
+                    label_keys,
+                    namespace=self.namespace,
+                    registry=self.registry,
+                )
+                self._counters[key] = counter
+            return counter.labels(**label_set)
+
+    def _gauge(self, name: str, labels: Optional[Mapping[str, str]]) -> Any:
+        metric_name, label_set = self._labelled_name(name, labels)
+        label_keys = sorted(label_set)
+        key = f"gauge::{metric_name}::{','.join(label_keys)}"
+        with self._lock:
+            gauge = self._gauges.get(key)
+            if gauge is None:
+                gauge = Gauge(
+                    metric_name,
+                    f"{metric_name} gauge",
+                    label_keys,
+                    namespace=self.namespace,
+                    registry=self.registry,
+                )
+                self._gauges[key] = gauge
+            return gauge.labels(**label_set)
+
+    def _histogram(self, name: str, labels: Optional[Mapping[str, str]]) -> Any:
+        metric_name, label_set = self._labelled_name(name, labels)
+        label_keys = sorted(label_set)
+        key = f"hist::{metric_name}::{','.join(label_keys)}"
+        with self._lock:
+            histogram = self._histograms.get(key)
+            if histogram is None:
+                histogram = Histogram(
+                    metric_name,
+                    f"{metric_name} histogram",
+                    label_keys,
+                    namespace=self.namespace,
+                    registry=self.registry,
+                    buckets=self._buckets,
+                )
+                self._histograms[key] = histogram
+            return histogram.labels(**label_set)
+
+    def increment_counter(
+        self, name: str, value: float = 1.0, labels: Optional[Mapping[str, str]] = None
+    ) -> None:
+        self._counter(name, labels).inc(value)
+
+    def set_gauge(
+        self, name: str, value: float, labels: Optional[Mapping[str, str]] = None
+    ) -> None:
+        self._gauge(name, labels).set(value)
+
+    def observe_histogram(
+        self, name: str, value: float, labels: Optional[Mapping[str, str]] = None
+    ) -> None:
+        self._histogram(name, labels).observe(value)
+
+    def render(self) -> tuple[str, str]:
+        if generate_latest is None:  # pragma: no cover - safety guard
+            return "", "text/plain"
+        return generate_latest(self.registry).decode("utf-8"), CONTENT_TYPE_LATEST  # type: ignore[return-value]
+
+
+class _TracingSpan:
+    """Simple span container used when full tracing backends are unavailable."""
+
+    __slots__ = ("name", "start", "end", "attributes")
+
+    def __init__(self, name: str, attributes: Optional[Mapping[str, Any]] = None) -> None:
+        self.name = name
+        self.start = time.time()
+        self.end: Optional[float] = None
+        self.attributes = dict(attributes or {})
+
+    def close(self) -> None:
+        self.end = time.time()
+
+    @property
+    def duration_ms(self) -> Optional[float]:
+        if self.end is None:
+            return None
+        return (self.end - self.start) * 1000
+
+
+class _TracingEngine:
+    """Lightweight tracing engine storing span metadata in memory."""
+
+    def __init__(self, config: TracingConfig) -> None:
+        self.config = config
+        self._lock = threading.Lock()
+        self._spans: deque[_TracingSpan] = deque(maxlen=500)
+
+    @contextmanager
+    def span(
+        self,
+        name: str,
+        *,
+        attributes: Optional[Mapping[str, Any]] = None,
+        sample_hint: Optional[float] = None,
+    ) -> Iterator[_TracingSpan]:
+        """Context manager capturing span start/end information."""
+
+        if not self.config.enabled:
+            yield _TracingSpan(name, attributes)
+            return
+
+        ratio = sample_hint if sample_hint is not None else self.config.sample_ratio
+        if ratio <= 0:
+            yield _TracingSpan(name, attributes)
+            return
+
+        span = _TracingSpan(name, attributes)
+        try:
+            yield span
+        finally:
+            span.close()
+            with self._lock:
+                self._spans.append(span)
+
+    def recent(self, limit: int = 25) -> list[dict[str, Any]]:
+        with self._lock:
+            spans = list(self._spans)[-limit:]
+        return [
+            {
+                "name": span.name,
+                "duration_ms": span.duration_ms,
+                "attributes": span.attributes,
+            }
+            for span in spans
+        ]
+
+
+class _EventBuffer:
+    def __init__(self, *, size: int) -> None:
+        self._events: deque[dict[str, Any]] = deque(maxlen=size)
+        self._lock = threading.Lock()
+
+    def append(self, payload: Mapping[str, Any]) -> dict[str, Any]:
+        event = {
+            "timestamp": time.time(),
+            **payload,
+        }
+        with self._lock:
+            self._events.append(event)
+        return event
+
+    def recent(self, limit: int = 50) -> list[dict[str, Any]]:
+        with self._lock:
+            return list(list(self._events)[-limit:])
+
+
+class {{ module_class_name }}:
+    """Primary facade exposing {{ module_title }} capabilities."""
+
+    def __init__(self, config: {{ module_class_name }}Config | None = None) -> None:
+        self.config = config or {{ module_class_name }}Config()
+        self.logger = logging.getLogger("rapidkit.observability")
+        self.logger.setLevel(self.config.logging.level)
+        if self.config.logging.structured_logging and not self.logger.handlers:
+            handler = logging.StreamHandler()
+            formatter = logging.Formatter(
+                "%(asctime)s %(levelname)s %(name)s %(message)s",
+                datefmt="%Y-%m-%dT%H:%M:%S",
+            )
+            handler.setFormatter(formatter)
+            self.logger.addHandler(handler)
+        self._event_buffer = _EventBuffer(size=self.config.events.buffer_size)
+        self._tracing = _TracingEngine(self.config.tracing)
+
+        default_labels = {
+            "service": self.config.service_name,
+            "environment": self.config.environment,
+            **self.config.metrics.default_labels,
+        }
+
+        self._metrics_backend: Any
+        try:
+            if self.config.metrics.enabled:
+                self._metrics_backend = _PrometheusMetricsBackend(
+                    self.config.metrics, default_labels
+                )
+            else:
+                raise RuntimeError("metrics disabled")
+        except Exception:  # pragma: no cover - fallback when prometheus unavailable
+            self._metrics_backend = _SimpleMetricsBackend(default_labels)
+
+        self.logger.debug(
+            "Observability runtime initialised",
+            extra={
+                "service": self.config.service_name,
+                "environment": self.config.environment,
+                "metrics_exporter": self.config.metrics.exporter,
+                "tracing_enabled": self.config.tracing.enabled,
+            },
+        )
+
+    # ------------------------------------------------------------------
+    # Metrics helpers
+    # ------------------------------------------------------------------
+    def increment_counter(
+        self,
+        name: str,
+        *,
+        value: float = 1.0,
+        labels: Optional[Mapping[str, str]] = None,
+    ) -> None:
+        self._metrics_backend.increment_counter(name, value=value, labels=labels)
+
+    def set_gauge(
+        self,
+        name: str,
+        value: float,
+        *,
+        labels: Optional[Mapping[str, str]] = None,
+    ) -> None:
+        self._metrics_backend.set_gauge(name, value, labels=labels)
+
+    def observe_histogram(
+        self,
+        name: str,
+        value: float,
+        *,
+        labels: Optional[Mapping[str, str]] = None,
+    ) -> None:
+        self._metrics_backend.observe_histogram(name, value, labels=labels)
+
+    def export_metrics(self) -> tuple[str, str]:
+        """Return rendered metrics payload and content type."""
+
+        return self._metrics_backend.render()
+
+    def export_metrics_snapshot(self) -> ObservabilityMetricSnapshot:
+        payload, content_type = self.export_metrics()
+        return ObservabilityMetricSnapshot(payload=payload, content_type=content_type)
+
+    # ------------------------------------------------------------------
+    # Tracing helpers
+    # ------------------------------------------------------------------
+    @contextmanager
+    def span(
+        self,
+        name: str,
+        *,
+        attributes: Optional[Mapping[str, Any]] = None,
+        sample_ratio: Optional[float] = None,
+    ) -> Iterator[_TracingSpan]:
+        with self._tracing.span(name, attributes=attributes, sample_hint=sample_ratio) as span:
+            yield span
+
+    def recent_spans(self, limit: int = 25) -> list[dict[str, Any]]:
+        return self._tracing.recent(limit)
+
+    # ------------------------------------------------------------------
+    # Event helpers
+    # ------------------------------------------------------------------
+    def emit_event(
+        self,
+        name: str,
+        *,
+        severity: str = "INFO",
+        attributes: Optional[Mapping[str, Any]] = None,
+    ) -> dict[str, Any]:
+        payload = {
+            "name": name,
+            "severity": severity,
+            "attributes": dict(attributes or {}),
+        }
+        event = self._event_buffer.append(payload)
+        if self.config.events.audit_enabled:
+            self.logger.info("observability.event", extra=event)
+        return event
+
+    def recent_events(self, limit: int = 50) -> list[dict[str, Any]]:
+        return self._event_buffer.recent(limit)
+
+    # ------------------------------------------------------------------
+    # Health & metadata
+    # ------------------------------------------------------------------
+    def health_check(self) -> dict[str, Any]:
+        metrics_payload, _content_type = self.export_metrics()
+        summary = ObservabilitySummary(
+            service_name=self.config.service_name,
+            environment=self.config.environment,
+            metrics={
+                "exporter": self.config.metrics.exporter,
+                "endpoint": self.config.metrics.endpoint,
+                "sample": metrics_payload[:128],
+            },
+            tracing={
+                "enabled": self.config.tracing.enabled,
+                "exporter": self.config.tracing.exporter,
+                "recent": self.recent_spans(limit=5),
+            },
+            events={
+                "buffer_size": self.config.events.buffer_size,
+                "audit_enabled": self.config.events.audit_enabled,
+                "recent": self.recent_events(limit=5),
+            },
+        )
+        return summary.model_dump()
+
+    def metadata(self) -> Dict[str, Any]:
+        return {
+            "module": MODULE_NAME,
+            "title": MODULE_TITLE,
+            "config": self.config.as_dict(),
+        }
+
+
+_RUNTIME_SINGLETON: Optional[{{ module_class_name }}] = None
+_RUNTIME_LOCK = threading.Lock()
+
+
+def get_runtime(
+    config: {{ module_class_name }}Config | None = None,
+    *,
+    refresh: bool = False,
+) -> {{ module_class_name }}:
+    """Return a cached {{ module_class_name }} runtime, optionally refreshing its configuration."""
+
+    global _RUNTIME_SINGLETON
+    with _RUNTIME_LOCK:
+        if refresh or _RUNTIME_SINGLETON is None:
+            _RUNTIME_SINGLETON = {{ module_class_name }}(config=config)
+        return _RUNTIME_SINGLETON

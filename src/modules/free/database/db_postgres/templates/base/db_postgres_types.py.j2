@@ -1,0 +1,31 @@
+"""Typed helpers for RapidKit PostgreSQL health reporting."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from datetime import datetime
+from typing import Any, Mapping, MutableMapping
+
+
+@dataclass(frozen=True)
+class DbPostgresHealthSnapshot:
+    """Normalized health payload consumed by framework adapters."""
+
+    status: str
+    checked_at: datetime
+    metadata: Mapping[str, Any]
+    detail: str | None = None
+
+
+def as_dict(snapshot: DbPostgresHealthSnapshot) -> MutableMapping[str, Any]:
+    """Convert a snapshot into a JSON-serializable mapping."""
+
+    return {
+        "status": snapshot.status,
+        "checked_at": snapshot.checked_at.isoformat(),
+        "metadata": dict(snapshot.metadata),
+        "detail": snapshot.detail,
+    }
+
+
+__all__ = ["DbPostgresHealthSnapshot", "as_dict"]

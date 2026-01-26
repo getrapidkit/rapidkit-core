@@ -1,0 +1,170 @@
+snippets:
+  - id: notifications_env
+    target: .env,.env.dev,.env.prod,.env.example
+    anchor: "# <<<inject:module-env>>>"
+    template: env.snippet.j2
+    features: [notifications]
+    profiles: [fastapi/standard, fastapi/ddd, nestjs/standard]
+    description: Injects notifications-related environment variables
+    version: "1.0.0"
+    priority: 10
+    dependencies: []
+    context:
+      notifications_defaults:
+        enabled: true
+        log_level: INFO
+        smtp:
+          host: localhost
+          port: 587
+          username: ""
+          password: ""
+          use_tls: true
+          timeout: 30
+        sender:
+          from_email: noreply@rapidkit.local
+          from_name: RapidKit Notifications
+          reply_to: ""
+        retry:
+          max_attempts: 3
+          backoff_seconds: 2.0
+          initial_delay_seconds: 1.0
+        templates:
+          directory: ./templates/notifications
+          auto_reload: false
+        rate_limit:
+          enabled: false
+          max_per_minute: 0
+          max_per_hour: 0
+    schema:
+      type: object
+      properties:
+        RAPIDKIT_NOTIFICATIONS_ENABLED:
+          type: bool
+          default: true
+          description: Toggle notifications module wiring
+        RAPIDKIT_NOTIFICATIONS_LOG_LEVEL:
+          type: str
+          default: INFO
+          description: Logging level for notifications runtime
+        RAPIDKIT_NOTIFICATIONS_SMTP_HOST:
+          type: str
+          default: localhost
+          description: SMTP host used for outbound email
+        RAPIDKIT_NOTIFICATIONS_SMTP_PORT:
+          type: int
+          default: 587
+          description: SMTP port used for outbound email
+        RAPIDKIT_NOTIFICATIONS_SMTP_USERNAME:
+          type: str
+          default: ""
+          description: Optional SMTP username
+        RAPIDKIT_NOTIFICATIONS_SMTP_PASSWORD:
+          type: str
+          default: ""
+          description: Optional SMTP password
+        RAPIDKIT_NOTIFICATIONS_SMTP_USE_TLS:
+          type: bool
+          default: true
+          description: Enable STARTTLS for SMTP connections
+        RAPIDKIT_NOTIFICATIONS_SMTP_TIMEOUT:
+          type: int
+          default: 30
+          description: Socket timeout in seconds
+        RAPIDKIT_NOTIFICATIONS_SENDER_FROM_EMAIL:
+          type: str
+          default: noreply@rapidkit.local
+          description: Default From email address
+        RAPIDKIT_NOTIFICATIONS_SENDER_FROM_NAME:
+          type: str
+          default: RapidKit Notifications
+          description: Sender display name
+        RAPIDKIT_NOTIFICATIONS_SENDER_REPLY_TO:
+          type: str
+          default: ""
+          description: Optional Reply-To header
+        RAPIDKIT_NOTIFICATIONS_TEMPLATE_DIRECTORY:
+          type: str
+          default: ./templates/notifications
+          description: Template directory used by EmailService
+        RAPIDKIT_NOTIFICATIONS_TEMPLATE_AUTO_RELOAD:
+          type: bool
+          default: false
+          description: Reload templates on every render
+        RAPIDKIT_NOTIFICATIONS_RETRY_MAX_ATTEMPTS:
+          type: int
+          default: 3
+          description: Maximum retry attempts for email delivery
+        RAPIDKIT_NOTIFICATIONS_RETRY_BACKOFF_SECONDS:
+          type: number
+          default: 2.0
+          description: Exponential backoff multiplier in seconds
+        RAPIDKIT_NOTIFICATIONS_RETRY_INITIAL_DELAY_SECONDS:
+          type: number
+          default: 1.0
+          description: Initial retry delay in seconds
+        RAPIDKIT_NOTIFICATIONS_RATE_LIMIT_ENABLED:
+          type: bool
+          default: false
+          description: Expose rate limiting metadata in health payloads
+        RAPIDKIT_NOTIFICATIONS_RATE_LIMIT_MAX_PER_MINUTE:
+          type: int
+          default: 0
+          description: Optional emails per minute cap
+        RAPIDKIT_NOTIFICATIONS_RATE_LIMIT_MAX_PER_HOUR:
+          type: int
+          default: 0
+          description: Optional emails per hour cap
+      additionalProperties: true
+      required: []
+    metadata:
+      author: "RapidKit Core Team"
+      created_at: "2025-10-26"
+      last_modified: "2025-10-26"
+    conflict_resolution: merge
+
+  - id: notifications_settings_fields
+    target: src/modules/free/essentials/settings/settings.py
+    anchor: "# <<<inject:settings-fields>>>"
+    template: settings_fields.snippet.j2
+    features: [extendable_settings, notifications]
+    profiles: [fastapi/standard, fastapi/ddd]
+    description: Inject notifications configuration into project settings
+    version: "1.0.0"
+    priority: 20
+    dependencies: []
+    context:
+      notifications_defaults:
+        enabled: true
+        log_level: INFO
+        smtp:
+          host: localhost
+          port: 587
+          username: ""
+          password: ""
+          use_tls: true
+          timeout: 30
+        sender:
+          from_email: noreply@rapidkit.local
+          from_name: RapidKit Notifications
+          reply_to: ""
+        retry:
+          max_attempts: 3
+          backoff_seconds: 2.0
+          initial_delay_seconds: 1.0
+        templates:
+          directory: ./templates/notifications
+          auto_reload: false
+        rate_limit:
+          enabled: false
+          max_per_minute: 0
+          max_per_hour: 0
+    schema:
+      type: object
+      properties: {}
+      additionalProperties: true
+      required: []
+    metadata:
+      author: "RapidKit Core Team"
+      created_at: "2025-10-26"
+      last_modified: "2025-10-26"
+    conflict_resolution: merge

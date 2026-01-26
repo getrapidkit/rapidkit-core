@@ -1,0 +1,96 @@
+"""Project-facing wrapper around the vendor {{ module_title }} type helpers."""
+
+from __future__ import annotations
+
+import importlib.util
+import os
+import sys
+from functools import lru_cache
+from pathlib import Path
+from types import ModuleType
+from typing import Any
+
+_VENDOR_MODULE = {{ rapidkit_vendor_module | tojson }}
+_VENDOR_VERSION = {{ rapidkit_vendor_version | tojson }}
+_VENDOR_RELATIVE_PATH = {{ vendor_types_relative | tojson }}
+_VENDOR_ROOT_ENV = "RAPIDKIT_VENDOR_ROOT"
+_CACHE_PREFIX = "rapidkit_vendor_users_core_types"
+
+
+def _project_root() -> Path:
+    current = Path(__file__).resolve()
+    for parent in (current.parent, *current.parents):
+        if (parent / ".rapidkit").exists():
+            return parent
+        if (parent / "pyproject.toml").exists() or (parent / "package.json").exists():
+            return parent
+    return current.parents[-1]
+
+
+def _vendor_root() -> Path:
+    override = os.getenv(_VENDOR_ROOT_ENV)
+    if override:
+        return Path(override).expanduser().resolve()
+    return _project_root() / ".rapidkit" / "vendor"
+
+
+def _vendor_base_dir() -> Path:
+    root = _vendor_root()
+    module_dir = root / _VENDOR_MODULE
+    preferred = module_dir / _VENDOR_VERSION if _VENDOR_VERSION else None
+    if preferred and preferred.exists():
+        return preferred
+    candidates = sorted((path for path in module_dir.glob("*") if path.is_dir()), reverse=True)
+    if candidates:
+        return candidates[0]
+    raise RuntimeError(
+        "RapidKit vendor payload for '{module}' not found under {root}. "
+        "Re-run `rapidkit modules install {module}`.".format(module=_VENDOR_MODULE, root=root)
+    )
+
+
+def _vendor_file() -> Path:
+    if not _VENDOR_RELATIVE_PATH:
+        raise RuntimeError("Users Core vendor types relative path missing from generator context")
+    return _vendor_base_dir() / _VENDOR_RELATIVE_PATH
+
+
+@lru_cache(maxsize=1)
+def _load_vendor_module() -> ModuleType:
+    vendor_path = _vendor_file()
+    if not vendor_path.exists():
+        raise RuntimeError(
+            "RapidKit vendor Users Core types module missing at {path}. "
+            "Re-run `rapidkit modules install {module}`.".format(
+                path=vendor_path,
+                module=_VENDOR_MODULE,
+            )
+        )
+
+    module_name = _CACHE_PREFIX + _VENDOR_MODULE.replace("/", "_")
+    spec = importlib.util.spec_from_file_location(module_name, vendor_path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Unable to load vendor Users Core types module from {vendor_path}")
+
+    module = importlib.util.module_from_spec(spec)
+    sys.modules.setdefault(module_name, module)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _resolve_export(name: str) -> Any:
+    vendor = _load_vendor_module()
+    try:
+        return getattr(vendor, name)
+    except AttributeError as exc:  # pragma: no cover - defensive guard against drift
+        raise RuntimeError(f"Vendor Users Core types module missing attribute '{name}'") from exc
+
+
+UsersCoreHealthSnapshot = _resolve_export("UsersCoreHealthSnapshot")
+as_dict = _resolve_export("as_dict")
+
+
+__all__ = [
+    "UsersCoreHealthSnapshot",
+    "as_dict",
+]

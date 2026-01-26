@@ -1,0 +1,10 @@
+import { Injectable } from '@nestjs/common';
+import { HealthIndicator, HealthIndicatorResult } from '@nestjs/terminus';
+
+@Injectable()
+export class EmailHealthIndicator extends HealthIndicator {
+  public async isHealthy(): Promise<HealthIndicatorResult> {
+    // Replace with real connectivity check when integrating a provider.
+    return this.getStatus('email', true);
+  }
+}

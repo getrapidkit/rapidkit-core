@@ -1,0 +1,45 @@
+# Register snippet bundles for Celery
+snippets:
+  - id: celery_env
+    target: .env,.env.example
+    anchor: "# <<<inject:module-env>>>"
+    template: celery.snippet.j2
+    features: [tasks, celery]
+    profiles: [fastapi/standard,fastapi/ddd,nestjs/standard]
+    description: Injects Celery broker/result backend configuration variables.
+    version: "1.0.0"
+    priority: 30
+    dependencies: []
+    context:
+      defaults:
+        broker_url: "redis://localhost:6379/0"
+        result_backend: "redis://localhost:6379/1"
+        default_queue: "default"
+    schema:
+      type: object
+      properties:
+        RAPIDKIT_CELERY_BROKER_URL:
+          type: string
+          default: "redis://localhost:6379/0"
+        RAPIDKIT_CELERY_RESULT_BACKEND:
+          type: string
+          default: "redis://localhost:6379/1"
+        RAPIDKIT_CELERY_DEFAULT_QUEUE:
+          type: string
+          default: "default"
+        RAPIDKIT_CELERY_ENABLE_UTC:
+          type: boolean
+          default: true
+        RAPIDKIT_CELERY_TIMEZONE:
+          type: string
+          default: "UTC"
+        RAPIDKIT_CELERY_IMPORTS:
+          type: string
+          default: "apps.workers.tasks"
+        RAPIDKIT_CELERY_INCLUDE:
+          type: string
+          default: ""
+        RAPIDKIT_CELERY_AUTODISCOVER:
+          type: string
+          default: "apps.workers"
+      additionalProperties: true

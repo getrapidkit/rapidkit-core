@@ -1,0 +1,119 @@
+# Register snippet bundles for Db Sqlite
+snippets:
+  - id: db_sqlite_env
+    target: .env,.env.dev,.env.prod,.env.example
+    anchor: "# <<<inject:module-env>>>"
+    template: db_sqlite_env.snippet.j2
+    features: [sqlite, database]
+    profiles: [fastapi/standard, nestjs/standard]
+    description: Injects Db Sqlite environment variable defaults
+    version: "1.0.0"
+    priority: 12
+    dependencies: []
+    context:
+      sqlite_defaults:
+        database_path: "./.rapidkit/runtime/sqlite/app.db"
+        create_if_missing: true
+        timeout_seconds: 30.0
+        pool_max_size: 4
+        pool_recycle_seconds: 600
+        pragmas:
+          journal_mode: wal
+          synchronous: normal
+          foreign_keys: on
+          cache_size_kib: -2000
+    schema:
+      type: object
+      properties:
+        RAPIDKIT_DB_SQLITE_PATH:
+          type: str
+          default: "./.rapidkit/runtime/sqlite/app.db"
+          description: "Filesystem path or URI for the SQLite database"
+        RAPIDKIT_DB_SQLITE_CREATE_IF_MISSING:
+          type: bool
+          default: true
+          description: "Automatically create the SQLite database file when missing"
+        RAPIDKIT_DB_SQLITE_TIMEOUT_SECONDS:
+          type: number
+          default: 30.0
+          description: "Default connection timeout in seconds"
+        RAPIDKIT_DB_SQLITE_POOL_MAX_SIZE:
+          type: int
+          default: 4
+          description: "Maximum pooled SQLite connections"
+        RAPIDKIT_DB_SQLITE_POOL_RECYCLE_SECONDS:
+          type: int
+          default: 600
+          description: "Recycle pooled connections after N seconds"
+        RAPIDKIT_DB_SQLITE_PRAGMAS:
+          type: str
+          default: '{"journal_mode":"wal","synchronous":"normal","foreign_keys":"on","cache_size_kib":-2000}'
+          description: "JSON encoded PRAGMA overrides applied on connection"
+      additionalProperties: true
+      required: []
+    metadata:
+      author: "RapidKit Team"
+      created_at: "2025-11-04"
+      last_modified: "2025-11-04"
+    conflict_resolution: merge
+
+  - id: db_sqlite_settings_fields
+    target: src/modules/free/essentials/settings/settings.py
+    anchor: "# <<<inject:settings-fields>>>"
+    template: db_sqlite_settings_fields.snippet.j2
+    features: [sqlite, database, extendable_settings]
+    profiles: [fastapi/standard]
+    description: Injects Db Sqlite configuration fields into the Python settings module
+    version: "1.0.0"
+    priority: 18
+    dependencies: []
+    context:
+      sqlite_defaults:
+        database_path: "./.rapidkit/runtime/sqlite/app.db"
+        create_if_missing: true
+        timeout_seconds: 30.0
+        pool_max_size: 4
+        pool_recycle_seconds: 600
+        pragmas:
+          journal_mode: wal
+          synchronous: normal
+          foreign_keys: on
+          cache_size_kib: -2000
+    schema:
+      type: object
+      properties: {}
+      additionalProperties: true
+      required: []
+    metadata:
+      author: "RapidKit Team"
+      created_at: "2025-11-04"
+      last_modified: "2025-11-04"
+    conflict_resolution: merge
+
+  - id: db_sqlite_settings_fields_nestjs
+    target: src/config/configuration.ts
+    anchor: "// <<<inject:configuration>>>"
+    template: db_sqlite_settings_fields_nestjs.snippet.j2
+    features: [sqlite, database]
+    profiles: [nestjs/standard]
+    description: Adds Db Sqlite configuration typings for NestJS configuration modules
+    version: "1.0.0"
+    priority: 18
+    dependencies: []
+    context:
+      sqlite_defaults:
+        database_path: "./.rapidkit/runtime/sqlite/app.db"
+        create_if_missing: true
+        timeout_seconds: 30.0
+        pool_max_size: 4
+        pool_recycle_seconds: 600
+    schema:
+      type: object
+      properties: {}
+      additionalProperties: true
+      required: []
+    metadata:
+      author: "RapidKit Team"
+      created_at: "2025-11-04"
+      last_modified: "2025-11-04"
+    conflict_resolution: merge

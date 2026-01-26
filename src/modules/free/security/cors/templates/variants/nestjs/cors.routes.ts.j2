@@ -1,0 +1,9 @@
+import { Type } from "@nestjs/common";
+
+import { {{ module_class_name }}Controller } from "./cors.controller";
+import { {{ module_class_name }}HealthController } from "../../../../health/cors.health";
+
+export const CORS_ROUTES: Type[] = [
+  {{ module_class_name }}Controller,
+  {{ module_class_name }}HealthController,
+];

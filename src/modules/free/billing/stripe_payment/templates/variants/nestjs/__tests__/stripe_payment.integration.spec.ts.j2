@@ -1,0 +1,83 @@
+import { Test } from "@nestjs/testing";
+
+import { {{ module_class_name }}Module } from "../../../../src/modules/free/billing/{{ module_name }}/{{ module_kebab }}.module";
+import {
+  {{ module_class_name }}Service,
+  StripePaymentHealthPayload,
+  StripePaymentMetadata,
+} from "../../../../src/modules/free/billing/{{ module_name }}/{{ module_kebab }}.service";
+
+describe("{{ module_class_name }}Service (integration)", () => {
+  let service: {{ module_class_name }}Service;
+
+  beforeAll(async () => {
+    const moduleRef = await Test.createTestingModule({
+      imports: [{{ module_class_name }}Module],
+    }).compile();
+
+    service = moduleRef.get({{ module_class_name }}Service);
+  });
+
+  it("returns a healthy status snapshot", () => {
+    const health: StripePaymentHealthPayload = service.getHealth();
+    expect(health.module).toBe("{{ module_name }}");
+    expect(health.status).toBe("ok");
+    expect(health.mode).toBe("{{ (stripe_defaults.mode | default('test')) | lower }}");
+    expect(health.default_currency).toBe("{{ (stripe_defaults.default_currency | default('usd')) | lower }}");
+    expect(typeof health.checked_at).toBe("string");
+    expect(new Date(health.checked_at).toString()).not.toBe("Invalid Date");
+  });
+
+  it("shares a status summary", () => {
+    const summary = service.getStatus();
+    expect(summary.module).toBe("{{ module_name }}");
+    expect(summary.status).toBe("ok");
+    expect(summary.mode).toBe("{{ (stripe_defaults.mode | default('test')) | lower }}");
+  });
+
+  it("exposes metadata with billing and feature configuration", () => {
+    const metadata: StripePaymentMetadata = service.getMetadata();
+    expect(metadata.module).toBe("{{ module_name }}");
+    expect(metadata.title).toContain("Stripe");
+    expect(metadata.defaults.enabled).toBe(true);
+    expect(metadata.config.enabled).toBe(true);
+    expect(metadata.config.metadata).toMatchObject({
+      product: "rapidkit",
+      source: "stripe-payment-module",
+    });
+    expect(metadata.billing.allowed_currencies).toEqual(
+      expect.arrayContaining({{ (stripe_billing.allowed_currencies or ['usd']) | tojson }}),
+    );
+    expect(metadata.features.verify_webhooks).toBe(true);
+    expect(metadata.environment.has_api_key).toBe(false);
+    expect(metadata.environment.has_webhook_secret).toBe(false);
+    expect(Array.isArray(metadata.snippets)).toBe(true);
+    expect(metadata.snippets.length).toBeGreaterThan(0);
+  });
+
+  it("provides payment method defaults", () => {
+    expect(service.listPaymentMethodTypes()).toEqual(
+      expect.arrayContaining({{ (stripe_billing.default_payment_method_types or ['card']) | tojson }}),
+    );
+  });
+
+  it("returns the configured allowed currencies", () => {
+    expect(service.listAllowedCurrencies()).toEqual(
+      expect.arrayContaining({{ (stripe_billing.allowed_currencies or ['usd']) | tojson }}),
+    );
+  });
+
+  it("confirms webhook configuration is hydrated", () => {
+    const webhook = service.getWebhookConfig();
+    expect(webhook.enabled).toBe(true);
+    expect(webhook.events).toEqual(
+      expect.arrayContaining({{ (stripe_webhook.events or ['payment_intent.succeeded']) | tojson }}),
+    );
+  });
+
+  it("shares environment awareness without secrets", () => {
+    const envSnapshot = service.getEnvironmentSnapshot();
+    expect(envSnapshot.has_api_key).toBe(false);
+    expect(envSnapshot.has_webhook_secret).toBe(false);
+  });
+});

@@ -1,0 +1,233 @@
+name: storage
+version: 0.1.0
+access: free
+status: stable
+tier: free
+category: business
+description: File Storage & Media Management Module - Upload, store, and manage files
+  with support for local and S3/GCS backends
+tags:
+- business
+- storage
+- file-upload
+- media-management
+- s3
+- gcs
+generated_from_config: true
+depends_on:
+- free/essentials/logging
+- free/essentials/settings
+profile_inherits:
+  fastapi.standard: fastapi
+  fastapi.ddd: fastapi
+  nestjs.standard: nestjs
+config_sources:
+- config/base.yaml
+- config/snippets.yaml
+generation:
+  vendor:
+    root: .rapidkit/vendor
+    files:
+    - template: templates/base/storage.py.j2
+      relative: src/modules/free/business/storage/storage.py
+    - template: templates/base/storage_health.py.j2
+      relative: src/health/storage.py
+    - template: templates/base/storage_types.py.j2
+      relative: src/modules/free/business/storage/types/storage.py
+    - template: templates/vendor/nestjs/configuration.js.j2
+      relative: nestjs/configuration.js
+  variants:
+    fastapi: &fastapi_variant
+      root: .
+      context:
+        framework: fastapi
+        module_class_name: FileStorage
+        vendor_runtime_relative: src/modules/free/business/storage/storage.py
+      files:
+      - template: templates/variants/fastapi/storage.py.j2
+        output: src/modules/free/business/storage/storage.py
+      - template: templates/variants/fastapi/storage_routes.py.j2
+        output: src/modules/free/business/storage/routers/storage.py
+      - template: templates/variants/fastapi/storage_config.yaml.j2
+        output: config/storage.yaml
+      - template: templates/tests/integration/test_storage_integration.j2
+        output: tests/modules/integration/business/storage/test_storage_integration.py
+      - template: templates/variants/fastapi/tests/test_storage_e2e.py
+        output: tests/modules/e2e/free/business/storage/test_storage_e2e.py
+    fastapi.standard: *fastapi_variant
+    fastapi.ddd: *fastapi_variant
+    nestjs: &nestjs_variant
+      root: .
+      context:
+        framework: nestjs
+        vendor_configuration_relative: nestjs/configuration.js
+        module_class_name: FileStorage
+        module_service_class: StorageService
+        module_controller_class: StorageController
+        module_health_controller_class: StorageHealthController
+        module_module_class: StorageModule
+        module_kebab: storage
+      files:
+      - template: templates/variants/nestjs/storage.service.ts.j2
+        output: src/modules/free/business/storage/storage.service.ts
+      - template: templates/variants/nestjs/storage.controller.ts.j2
+        output: src/modules/free/business/storage/storage.controller.ts
+      - template: templates/variants/nestjs/storage.module.ts.j2
+        output: src/modules/free/business/storage/storage.module.ts
+      - template: templates/variants/nestjs/storage.health.ts.j2
+        output: src/modules/free/business/storage/storage.health.ts
+      - template: templates/variants/nestjs/storage.routes.ts.j2
+        output: src/modules/free/business/storage/storage.routes.ts
+      - template: templates/variants/nestjs/storage.configuration.ts.j2
+        output: src/modules/free/business/storage/storage.configuration.ts
+      - template: templates/variants/nestjs/__tests__/storage.integration.spec.ts.j2
+        output: tests/modules/integration/business/storage/storage.integration.spec.ts
+      - template: templates/variants/nestjs/tests/storage.e2e-spec.ts
+        output: tests/modules/e2e/free/business/storage/storage.e2e-spec.ts
+    nestjs.standard: *nestjs_variant
+  snippets:
+    enabled: true
+    config: config/snippets.yaml
+    default: []
+compatibility:
+  python: '>=3.10,<4.0'
+  node: '>=18.0,<21.0'
+  frameworks:
+  - fastapi
+  - nestjs
+  os:
+  - linux
+  - darwin
+  - windows
+testing:
+  coverage_min: 85
+  integration_tests: false
+  e2e_tests: false
+  unit_tests:
+  - test_storage_generator.py
+  - test_storage_overrides.py
+  - test_storage_runtime.py
+  - test_storage_adapters.py
+  - test_storage_validation.py
+  - test_storage_error_handling.py
+  - test_storage_standard_module.py
+  - test_storage_health_check.py
+  - test_storage_vendor_layer.py
+  - test_storage_framework_variants.py
+  - test_storage_configuration.py
+  - test_storage_versioning.py
+  - test_storage_integration.py
+  fixtures:
+  - conftest.py
+documentation:
+  changelog: docs/changelog.md
+  readme: README.md
+  overview: docs/overview.md
+  usage: docs/usage.md
+  advanced: docs/advanced.md
+  migration: docs/migration.md
+  troubleshooting: docs/troubleshooting.md
+  api_docs: docs/api-reference.md
+  examples: []
+support:
+  issues: https://github.com/getrapidkit/core/issues
+  discussions: https://github.com/getrapidkit/core/discussions
+  documentation: https://docs.rapidkit.top/modules/business/storage
+changelog:
+- version: 0.1.0
+  date: '2025-12-14'
+  notes: See docs/changelog.md
+validation:
+  pre_install:
+  - check_python_version
+  - check_framework_version
+  post_install:
+  - validate_generated_code
+  - validate_dependencies
+rollback:
+  strategy: uninstall
+  backup_path: .rapidkit/backups/
+  max_backups: 3
+performance:
+  lazy_loading: true
+  caching:
+    templates: true
+    ttl: 300
+capabilities:
+- file_upload
+- file_storage
+- media_management
+- s3_support
+- gcs_support
+- image_processing
+- health_checks
+dependencies:
+- module: settings
+  version: '>=1.0.0'
+  reason: Configuration management
+- module: logging
+  version: '>=1.0.0'
+  reason: Audit trails and error logging
+related_modules:
+- name: settings
+  description: Configuration management for storage adapters
+- name: logging
+  description: Audit logging for file operations
+signature:
+  signature: guKZ78nBfEzxMpY1LUmRurQ8/HBLThovHgdMidXe867WVGDMah6qSMnHuOPMyRpM2nsk4l4cLEJxnVD1hihzCw==
+  signer_id: c7eb213b1ac6d8c6
+  signature_version: v1
+signer_id: null
+signature_version: null
+file_hashes:
+  templates/variants/nestjs/tests/storage.e2e-spec.ts: sha256:3a1482a6b2586cece3a3e31d09d94cbb1dfe28d064d44c66e4da5664101261ca
+  templates/variants/fastapi/tests/test_storage_e2e.py: sha256:f984c71893678bb4c0476620366fa6568d136e113390c2767d4baf54ab012582
+  scripts/run_demo.py: sha256:f32e4ba83ddedff59a2d7a1f1170ccfa7b7658ded82a14461dc29afa016b4326
+  README.md: sha256:d3e58ee580c8240b7aa3ef2275d9ab2e0f83ffec97dc266ae0ae2527b7303df8
+  __init__.py: sha256:4ba1d9f2e0a060952f713d7b84cccaf2ffe17f13fd6e1533eab42c69330adf76
+  config/base.yaml: sha256:88a9b07c05e8ee0c88df1035e48821e58b1a91af50e2826f339d87e866910bf2
+  config/snippets.yaml: sha256:b6ab10541722f9d03817d0a38df7db7217642158fc5a41abb69280d3ea72b016
+  docs/README.md: sha256:f41d1ed6ed08bec4621369b5957daf716c6ddca7761856cb590ae58850fa7c1d
+  docs/advanced.md: sha256:3c7272881be06312a4c2a6f6531b29b1235b51d27461774447fd2ec25302c8cf
+  docs/api-reference.md: sha256:f74096df2bf18aac65921b7e2e8ed078155ce786f874fe7c4e2ea376528e54ff
+  docs/changelog.md: sha256:b9cc925560e459907833b3c8f7d0b6d5cf4c5a1f0028bcb0728cf1f43bba0b52
+  docs/migration.md: sha256:df6340dd94dbca49857730e3a4960723bd592c360828baee6131163c70c258b7
+  docs/overview.md: sha256:c39116ca1b9f386062044925ffb78a9e55cd5cd59c3f8b400bfecc41dd41573c
+  docs/troubleshooting.md: sha256:b6964f781f4147e418bcca9776f1244fe70f841eab28cab991209d7fddcaf663
+  docs/usage.md: sha256:4e1e28a5f6af552b3a14ef1fde21bf961502dfa17e38aefd0b22f7889eb5bed7
+  frameworks/__init__.py: sha256:3097fcdf3f20bd4caf2c825df9bf0a43428ee407f6f7f55ba114c5e03d39acf4
+  frameworks/fastapi.py: sha256:0bf55a521f038ff81d52d3736245bc5302cc8cdec6e7bb636839355f1a4c54bf
+  frameworks/nestjs.py: sha256:561f14dc99d62097e353c5259054e352c56731ea977930c4e7fc9bc845a871fd
+  generate.py: sha256:2dacaf4e71d409b5629e854464452941c324aacda993cf9e39877e955e193529
+  module.verify.json: sha256:85c4baf0001aed553fd13a4c932d501d6feb9cb2980358737d78a3997600ac4f
+  overrides.py: sha256:60c22faf7cd947bd3e417cef370710f315cd31ea5c4ad75fcc1d99b896292c40
+  templates/base/storage.py.j2: sha256:547142daf8a14b54c170388001ebf05af28dd639ff345d668e74c6e83bc3f56f
+  templates/base/storage_health.py.j2: sha256:a1777e95684d07e5d633d3c07f155dbd518e9952f0c68a2e7ed62795e1ba2aeb
+  templates/base/storage_types.py.j2: sha256:177d614b775390f8e0376c57ce9240c9b95d6c2bad0b83bdebaa3555ceb0165e
+  templates/snippets/env.snippet.j2: sha256:7de8e0a23f07b01d97551d0247d20dba70ab5804406672dbda9c495c237eedd4
+  templates/snippets/file_validation.py.j2: sha256:29bddf9be3df777862c6c1aa637b45a23afc0174d0fcd98158e463f7147e2d5e
+  templates/snippets/gcs_adapter.py.j2: sha256:b0306a165f84bc3b65c61a8d87a6d3613b23fd358e30bc8b6f055cded9bce41f
+  templates/snippets/health_check.py.j2: sha256:693ade375aaf678786b934d6edb71f00362708284ccbb0818a4f6682946905ee
+  templates/snippets/image_processor.py.j2: sha256:9fd416381b56d426dfa1e5b4cdac055076a3eeaaf1fe51a7df6ea9aeae5607f4
+  templates/snippets/models.fastapi.py.j2: sha256:de87e2c6c148b2189af44022c6731c8b6bae0f387f20ad7c96903445c68c4a7d
+  templates/snippets/models.nestjs.ts.j2: sha256:8d8faea464a7093f2a8905e41db25ff7b3451f597b16e4141e42541668c41df1
+  templates/snippets/s3_adapter.py.j2: sha256:5913dc03c9a128af0f5a4fcae5da3b838e1b80d636b22a893ae1a11f59b64b93
+  templates/snippets/storage.snippet.j2: sha256:e3760aacb62e5f013a106b1e8aae6863e24010af2df6baa08bd49bb19666f3af
+  templates/snippets/storage_config_nestjs.snippet.j2: sha256:41ac1651bdefe2ad92302f6ed5e033a4dcc389711e928e5f4550fe436888f3fe
+  templates/snippets/storage_fields.snippet.j2: sha256:63d6ec7ad04c37b005947d5af3aa2aab71ae9d399cc25873e359b77a4e415781
+  templates/snippets/upload_endpoint.fastapi.py.j2: sha256:894a27d3e3559f6b7b696d4776907689aba333b71a93a5b1b3b31699a69bce2e
+  templates/snippets/upload_endpoint.nestjs.ts.j2: sha256:23d22451cb26add3a4451a5d975a844accab450fad6a5560e59f00b81d7b7d1a
+  templates/tests/__init__.py: sha256:2d75761c2255f2505762fcd934abf48e1c1922a415531cf2fb68f991a181d1f3
+  templates/tests/integration/test_storage_integration.j2: sha256:0fa8fa3a1ac86994f36b9e52e550f33c10eb47442540f1c516f53c1466630e4a
+  templates/variants/fastapi/storage.py.j2: sha256:fe9edeeb40c674e3fb87bc8ab21ea721c31ad14c5f1be954fed283a8650300d5
+  templates/variants/fastapi/storage_config.yaml.j2: sha256:3d1e5dbcb98d6ed8c02106d599e4c34b491730419ee9e98b92f2b2bc5f3a621e
+  templates/variants/fastapi/storage_health.py.j2: sha256:8b2cb3080374f2025201c4d38368ace9a065a326f1dc89f2d2a3be2a4b95dbec
+  templates/variants/fastapi/storage_routes.py.j2: sha256:1ba5a67b823131e896e0fb8a82efce8e873d96dd664647c28a96bdc34c385f78
+  templates/variants/nestjs/__tests__/storage.integration.spec.ts.j2: sha256:a0ccb1c6b4c4db9033c8c755250797ccd39d4f2d260f123fbb9545597601c38d
+  templates/variants/nestjs/storage.configuration.ts.j2: sha256:50006bbdb104f023b23c6d3ceb3199ec017eb6c9a2f01b2b125d4315ee38e70b
+  templates/variants/nestjs/storage.controller.ts.j2: sha256:e9aa3f287f5bc7943f429e08c04e07f371b84f893e294d1edb0dfefd0c847a31
+  templates/variants/nestjs/storage.health.ts.j2: sha256:18acd51578d15f570044f0ea5e3476849e40944ed2c99283665bb1c445b20f67
+  templates/variants/nestjs/storage.module.ts.j2: sha256:1628914d8680a3d4dec717fecab7fcfadf5dcbb174a33cdbb7834f332253af10
+  templates/variants/nestjs/storage.routes.ts.j2: sha256:08b0a1cd4704bcbcd085c13b1a064642b3cc625d5dc6b7b622c8276d15b9bb48
+  templates/variants/nestjs/storage.service.ts.j2: sha256:ef4874e275efa750a6c6f3a9610ad06cf36501f6f68c090ea04d7701fbb61178
+  templates/vendor/nestjs/configuration.js.j2: sha256:263150101d0040a9386718bd12e9deceec0863d96c9f7b9b7a82438ca4d45ced

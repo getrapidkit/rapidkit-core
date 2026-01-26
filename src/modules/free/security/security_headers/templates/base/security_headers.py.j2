@@ -1,0 +1,277 @@
+"""Runtime facade for the {{ module_title }} module."""
+
+from __future__ import annotations
+
+from dataclasses import asdict, dataclass, field
+from typing import Any, Dict, Iterable, Mapping, MutableMapping, Sequence
+
+PolicyValue = str | Sequence[str] | None
+HeaderMap = Dict[str, str]
+
+
+@dataclass(slots=True)
+class {{ module_class_name }}Config:
+    """Declarative configuration for {{ module_title }} middleware."""
+
+    enabled: bool = True
+    strict_transport_security: bool = True
+    strict_transport_security_max_age: int = 63072000
+    strict_transport_security_include_subdomains: bool = True
+    strict_transport_security_preload: bool = True
+    content_security_policy: str | None = None
+    content_security_policy_report_only: bool = False
+    referrer_policy: str = "strict-origin-when-cross-origin"
+    x_content_type_options: str | bool = "nosniff"
+    x_frame_options: str = "DENY"
+    x_xss_protection: bool = False
+    cross_origin_embedder_policy: str | None = "require-corp"
+    cross_origin_opener_policy: str | None = "same-origin"
+    cross_origin_resource_policy: str | None = "same-origin"
+    permissions_policy: Dict[str, PolicyValue] = field(default_factory=dict)
+    expect_ct: str | None = None
+    x_dns_prefetch_control: str | None = "off"
+    x_download_options: str | None = "noopen"
+    additional_headers: Dict[str, str] = field(default_factory=dict)
+
+
+@dataclass(slots=True)
+class {{ module_class_name }}Metrics:
+    """Runtime metrics captured for health reporting."""
+
+    enabled: bool
+    header_count: int
+    missing: list[str] = field(default_factory=list)
+
+    def as_dict(self) -> Dict[str, object]:
+        return {
+            "enabled": self.enabled,
+            "header_count": self.header_count,
+            "missing": list(self.missing),
+        }
+
+
+def _expected_headers(config: {{ module_class_name }}Config) -> Iterable[str]:
+    if config.strict_transport_security:
+        yield "Strict-Transport-Security"
+    if config.x_content_type_options:
+        yield "X-Content-Type-Options"
+    if config.x_frame_options:
+        yield "X-Frame-Options"
+    if config.referrer_policy:
+        yield "Referrer-Policy"
+    if config.permissions_policy:
+        yield "Permissions-Policy"
+    if config.content_security_policy:
+        header_name = (
+            "Content-Security-Policy-Report-Only"
+            if config.content_security_policy_report_only
+            else "Content-Security-Policy"
+        )
+        yield header_name
+    if config.cross_origin_embedder_policy:
+        yield "Cross-Origin-Embedder-Policy"
+    if config.cross_origin_opener_policy:
+        yield "Cross-Origin-Opener-Policy"
+    if config.cross_origin_resource_policy:
+        yield "Cross-Origin-Resource-Policy"
+    if config.expect_ct:
+        yield "Expect-CT"
+    if config.x_dns_prefetch_control:
+        yield "X-DNS-Prefetch-Control"
+    if config.x_download_options:
+        yield "X-Download-Options"
+    if config.x_xss_protection:
+        yield "X-XSS-Protection"
+    for name in config.additional_headers:
+        yield name
+
+
+def evaluate_completeness(
+    config: {{ module_class_name }}Config, headers: Mapping[str, str]
+) -> {{ module_class_name }}Metrics:
+    expected = set(_expected_headers(config))
+    present = set(headers)
+    missing = sorted(expected - present)
+    return {{ module_class_name }}Metrics(
+        enabled=config.enabled,
+        header_count=len(headers),
+        missing=list(missing),
+    )
+
+
+def build_health_payload(
+    *,
+    module: str,
+    status: str,
+    headers: Mapping[str, str],
+    metrics: {{ module_class_name }}Metrics,
+    extra: Mapping[str, Any] | None = None,
+) -> Dict[str, Any]:
+    payload: Dict[str, Any] = {
+        "module": module,
+        "status": status,
+        "headers": dict(sorted(headers.items())),
+        "metrics": metrics.as_dict(),
+    }
+    if extra:
+        payload.update(extra)
+    return payload
+
+MODULE_NAME = "{{ module_name }}"
+MODULE_TITLE = "{{ module_title }}"
+
+
+def _format_permissions_policy(policy: Mapping[str, PolicyValue]) -> str:
+    segments: list[str] = []
+    for directive, value in sorted(policy.items()):
+        if value is None or (isinstance(value, str) and not value.strip()):
+            segments.append(f"{directive}=()")
+            continue
+
+        if isinstance(value, str) and ("=" in value or value.strip().startswith("(")):
+            segments.append(f"{directive}={value.strip()}")
+            continue
+
+        if isinstance(value, str):
+            formatted = value.strip()
+        else:
+            values: Iterable[str] = (item.strip() for item in value)
+            formatted = " ".join(v for v in values if v)
+        segments.append(f"{directive}=({formatted})")
+
+    return ", ".join(segment for segment in segments if segment)
+
+
+def _build_hsts_value(config: {{ module_class_name }}Config) -> str:
+    parts = [f"max-age={config.strict_transport_security_max_age}"]
+    if config.strict_transport_security_include_subdomains:
+        parts.append("includeSubDomains")
+    if config.strict_transport_security_preload:
+        parts.append("preload")
+    return "; ".join(parts)
+
+
+class {{ module_class_name }}:
+    """Primary facade exposing {{ module_title }} capabilities."""
+
+    def __init__(self, config: {{ module_class_name }}Config | None = None) -> None:
+        self._config = config or {{ module_class_name }}Config()
+        self._cached_headers: HeaderMap | None = None
+
+    @property
+    def config(self) -> {{ module_class_name }}Config:
+        return self._config
+
+    def is_enabled(self) -> bool:
+        return bool(self._config.enabled)
+
+    def headers(self, *, refresh: bool = False) -> HeaderMap:
+        if not self.is_enabled():
+            return {}
+        if refresh or self._cached_headers is None:
+            self._cached_headers = self._build_headers()
+        return dict(self._cached_headers)
+
+    def _build_headers(self) -> HeaderMap:
+        headers: HeaderMap = {}
+
+        if self._config.strict_transport_security:
+            headers["Strict-Transport-Security"] = _build_hsts_value(self._config)
+
+        x_content_type = self._resolve_x_content_type_options()
+        if x_content_type:
+            headers["X-Content-Type-Options"] = x_content_type
+
+        if self._config.x_frame_options:
+            headers["X-Frame-Options"] = self._config.x_frame_options
+
+        if self._config.referrer_policy:
+            headers["Referrer-Policy"] = self._config.referrer_policy
+
+        if self._config.cross_origin_embedder_policy:
+            headers["Cross-Origin-Embedder-Policy"] = self._config.cross_origin_embedder_policy
+
+        if self._config.cross_origin_opener_policy:
+            headers["Cross-Origin-Opener-Policy"] = self._config.cross_origin_opener_policy
+
+        if self._config.cross_origin_resource_policy:
+            headers["Cross-Origin-Resource-Policy"] = self._config.cross_origin_resource_policy
+
+        if self._config.permissions_policy:
+            headers["Permissions-Policy"] = _format_permissions_policy(
+                self._config.permissions_policy
+            )
+
+        if self._config.content_security_policy:
+            header_name = (
+                "Content-Security-Policy-Report-Only"
+                if self._config.content_security_policy_report_only
+                else "Content-Security-Policy"
+            )
+            headers[header_name] = self._config.content_security_policy
+
+        if self._config.expect_ct:
+            headers["Expect-CT"] = self._config.expect_ct
+
+        if self._config.x_dns_prefetch_control:
+            headers["X-DNS-Prefetch-Control"] = self._config.x_dns_prefetch_control
+
+        if self._config.x_download_options:
+            headers["X-Download-Options"] = self._config.x_download_options
+
+        if self._config.x_xss_protection:
+            headers["X-XSS-Protection"] = "1; mode=block"
+
+        if self._config.additional_headers:
+            headers.update(dict(self._config.additional_headers))
+
+        return headers
+
+    def _resolve_x_content_type_options(self) -> str | None:
+        value = self._config.x_content_type_options
+        if isinstance(value, bool):
+            return "nosniff" if value else None
+        if value is None:
+            return None
+        resolved = str(value).strip()
+        return resolved or None
+
+    def apply(self, target: MutableMapping[str, str]) -> HeaderMap:
+        headers = self.headers()
+        for name, value in headers.items():
+            target[name] = value
+        return headers
+
+    def metadata(self) -> Dict[str, Any]:
+        headers = self.headers()
+        return {
+            "module": MODULE_NAME,
+            "title": MODULE_TITLE,
+            "enabled": self.is_enabled(),
+            "headers": headers,
+            "config": asdict(self._config),
+        }
+
+    def health_check(self) -> Dict[str, Any]:
+        headers = self.headers()
+        metrics = evaluate_completeness(self._config, headers)
+        payload = build_health_payload(
+            module=MODULE_NAME,
+            status="ok" if self.is_enabled() else "disabled",
+            headers=headers,
+            metrics=metrics,
+        )
+        payload["metadata"] = self.metadata()
+        return payload
+
+    def describe(self) -> Dict[str, Any]:
+        return self.metadata()
+
+
+__all__ = [
+    "{{ module_class_name }}",
+    "{{ module_class_name }}Config",
+    "{{ module_class_name }}Metrics",
+    "HeaderMap",
+    "PolicyValue",
+]

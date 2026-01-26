@@ -1,0 +1,129 @@
+# Snippet registrations for the passwordless auth module
+snippets:
+  - id: passwordless_env
+    target: .env,.env.dev,.env.prod,.env.example
+    anchor: "# <<<inject:module-env>>>"
+    template: env.snippet.j2
+    features: [passwordless]
+    profiles: [fastapi/standard, nestjs/standard]
+    description: Inject passwordless environment variables
+    version: "0.1.0"
+    priority: 10
+    dependencies: []
+    context:
+      passwordless_defaults:
+        magic_link_base_url: "https://example.com/auth/passwordless"
+        token_ttl_seconds: 900
+        token_length: 8
+        resend_cooldown_seconds: 60
+        max_attempts: 5
+        delivery_methods:
+          - email
+          - sms
+    schema:
+      type: object
+      properties:
+        PASSWORDLESS_MAGIC_LINK_BASE_URL:
+          type: str
+          default: "https://example.com/auth/passwordless"
+          description: Base URL used when building passwordless magic links
+        PASSWORDLESS_TOKEN_TTL_SECONDS:
+          type: int
+          default: 900
+          description: Lifetime (seconds) for issued passwordless codes
+        PASSWORDLESS_TOKEN_LENGTH:
+          type: int
+          default: 8
+          description: Length of generated passwordless codes
+        PASSWORDLESS_RESEND_COOLDOWN_SECONDS:
+          type: int
+          default: 60
+          description: Minimum delay between token resend attempts
+        PASSWORDLESS_MAX_ATTEMPTS:
+          type: int
+          default: 5
+          description: Maximum verification attempts per token
+        PASSWORDLESS_DELIVERY_METHODS:
+          type: string
+          default: "[\"email\", \"sms\"]"
+          description: JSON list of allowed delivery channels
+      additionalProperties: true
+      required: []
+    metadata:
+      author: "RapidKit Core Team"
+      created_at: "2025-10-30"
+      last_modified: "2025-10-30"
+    conflict_resolution: merge
+
+  - id: passwordless_settings_fields
+    target: src/modules/free/essentials/settings/settings.py
+    anchor: "# <<<inject:settings-fields>>>"
+    template: settings_fields.snippet.j2
+    features: [extendable_settings, passwordless]
+    profiles: [fastapi/standard]
+    description: Inject passwordless settings into Python configuration
+    version: "0.1.0"
+    priority: 20
+    dependencies: []
+    context:
+      passwordless_defaults:
+        magic_link_base_url: "https://example.com/auth/passwordless"
+        token_ttl_seconds: 900
+        token_length: 8
+        resend_cooldown_seconds: 60
+        max_attempts: 5
+        delivery_methods:
+          - email
+          - sms
+    schema:
+      type: object
+      properties: {}
+      additionalProperties: true
+      required: []
+    metadata:
+      author: "RapidKit Core Team"
+      created_at: "2025-10-30"
+      last_modified: "2025-10-30"
+    conflict_resolution: merge
+
+  - id: passwordless_settings_fields_nestjs
+    target: src/config/configuration.ts
+    anchor: "// <<<inject:configuration>>>"
+    template: settings_fields_nestjs.snippet.j2
+    features: [passwordless]
+    profiles: [nestjs/standard]
+    description: Extend NestJS settings interface with passwordless fields
+    version: "0.1.0"
+    priority: 20
+    dependencies: []
+    schema:
+      type: object
+      properties: {}
+      additionalProperties: true
+      required: []
+    metadata:
+      author: "RapidKit Core Team"
+      created_at: "2025-10-30"
+      last_modified: "2025-10-30"
+    conflict_resolution: merge
+
+  - id: passwordless_quickstart
+    target: README.md
+    anchor: "<!-- <<<inject:module-snippet>>> -->"
+    template: passwordless.snippet.j2
+    features: [passwordless]
+    profiles: [fastapi/standard, nestjs/standard]
+    description: Quick commands for validating the Passwordless module installation
+    version: "0.1.0"
+    priority: 5
+    dependencies: []
+    schema:
+      type: object
+      properties: {}
+      additionalProperties: true
+      required: []
+    metadata:
+      author: "RapidKit Core Team"
+      created_at: "2025-11-02"
+      last_modified: "2025-11-02"
+    conflict_resolution: merge

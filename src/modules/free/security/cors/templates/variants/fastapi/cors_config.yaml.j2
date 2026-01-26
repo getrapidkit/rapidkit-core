@@ -1,0 +1,33 @@
+{%- set defaults = cors_defaults or {} -%}
+{%- set override_meta = override_metadata or {} -%}
+# RapidKit generated configuration for the CORS security module.
+# Override any value via RAPIDKIT_CORS_* environment variables.
+
+cors:
+  enabled: {{ defaults.get("enabled", True) | tojson }}
+  allow_origins: {{ (defaults.get("allow_origins") or ["*"]) | tojson(indent=2) }}
+  allow_credentials: {{ defaults.get("allow_credentials", True) | tojson }}
+  allow_methods: {{ (defaults.get("allow_methods") or ["*"]) | tojson(indent=2) }}
+  allow_headers: {{ (defaults.get("allow_headers") or ["*"]) | tojson(indent=2) }}
+  expose_headers: {{ (defaults.get("expose_headers") or []) | tojson(indent=2) }}
+  max_age: {{ defaults.get("max_age", 600) | tojson }}
+  log_level: {{ defaults.get("log_level", "INFO") | tojson }}
+  metadata: {{ (defaults.get("metadata") or {}) | tojson(indent=2) }}
+
+overrides:
+  env:
+    enabled: RAPIDKIT_CORS_ENABLED
+    allow_origins: RAPIDKIT_CORS_ALLOW_ORIGINS
+    allow_credentials: RAPIDKIT_CORS_ALLOW_CREDENTIALS
+    allow_methods: RAPIDKIT_CORS_ALLOW_METHODS
+    allow_headers: RAPIDKIT_CORS_ALLOW_HEADERS
+    expose_headers: RAPIDKIT_CORS_EXPOSE_HEADERS
+    max_age: RAPIDKIT_CORS_MAX_AGE
+    log_level: RAPIDKIT_CORS_LOG_LEVEL
+    metadata: RAPIDKIT_CORS_METADATA
+
+meta:
+  env_overrides_active: {{ override_meta.get("cors_env_overrides", False) | tojson }}
+  sequence_overrides_active: {{ override_meta.get("cors_sequence_overrides", False) | tojson }}
+  metadata_overrides_active: {{ override_meta.get("cors_metadata_overrides", False) | tojson }}
+  log_level_override: {{ override_meta.get("cors_log_level_override", False) | tojson }}

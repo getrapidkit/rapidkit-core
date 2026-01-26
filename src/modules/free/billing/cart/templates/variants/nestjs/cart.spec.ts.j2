@@ -1,0 +1,60 @@
+import { Test } from "@nestjs/testing";
+
+import { {{ module_class_name }}Module } from "../../src/modules/free/billing/cart/{{ module_name }}.module";
+import { {{ module_class_name }}Controller } from "../../src/modules/free/billing/cart/{{ module_name }}.controller";
+import { {{ module_class_name }}HealthController } from "../../src/health/{{ module_name }}.health";
+import { {{ module_class_name }}Service } from "../../src/modules/free/billing/cart/{{ module_name }}.service";
+
+const resetEnv = () => {
+  delete process.env.RAPIDKIT_CART_CURRENCY;
+  delete process.env.RAPIDKIT_CART_TAX_RATE;
+  delete process.env.RAPIDKIT_CART_TAX_BEFORE_DISCOUNTS;
+  delete process.env.RAPIDKIT_CART_DEFAULT_DISCOUNT;
+  delete process.env.RAPIDKIT_CART_AUTO_APPLY_DEFAULT;
+  delete process.env.RAPIDKIT_CART_MAX_UNIQUE_ITEMS;
+};
+
+describe("{{ module_class_name }}Module", () => {
+  beforeEach(() => {
+    resetEnv();
+  });
+
+  afterEach(() => {
+    resetEnv();
+  });
+
+  it("registers controllers and service", async () => {
+    const moduleRef = await Test.createTestingModule({
+      imports: [{{ module_class_name }}Module],
+    }).compile();
+
+    expect(moduleRef.get({{ module_class_name }}Service)).toBeDefined();
+    expect(moduleRef.get({{ module_class_name }}Controller)).toBeDefined();
+    expect(moduleRef.get({{ module_class_name }}HealthController)).toBeDefined();
+  });
+
+  it("returns cart metadata", async () => {
+    const moduleRef = await Test.createTestingModule({
+      imports: [{{ module_class_name }}Module],
+    }).compile();
+
+    const controller = moduleRef.get({{ module_class_name }}Controller);
+    const metadata = controller.getMetadata();
+
+    expect(metadata.module).toBe("{{ module_name }}");
+    expect(metadata.title).toBe("{{ module_title }}");
+    expect(Array.isArray(metadata.discountRules)).toBe(true);
+  });
+
+  it("exposes health payload", async () => {
+    const moduleRef = await Test.createTestingModule({
+      imports: [{{ module_class_name }}Module],
+    }).compile();
+
+    const health = moduleRef.get({{ module_class_name }}HealthController);
+    const payload = health.getModuleHealth();
+
+    expect(payload.status).toBe("ok");
+    expect(payload.module).toBe("{{ module_name }}");
+  });
+});

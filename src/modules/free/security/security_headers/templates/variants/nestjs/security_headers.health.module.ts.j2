@@ -1,0 +1,10 @@
+import { Module } from '@nestjs/common';
+
+import { {{ module_class_name }}Module } from '../modules/free/security/security_headers/{{ module_kebab }}/{{ module_kebab }}.module';
+import { {{ module_class_name }}HealthController } from './{{ module_kebab }}-health.controller';
+
+@Module({
+  imports: [{{ module_class_name }}Module],
+  controllers: [{{ module_class_name }}HealthController],
+})
+export class {{ module_class_name }}HealthModule {}

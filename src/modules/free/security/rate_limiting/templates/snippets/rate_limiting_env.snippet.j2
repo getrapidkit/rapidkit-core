@@ -1,0 +1,10 @@
+{# Inject baseline rate limiting environment variables. #}
+RATE_LIMIT_ENABLED={{ defaults.enabled | default(true) | tojson }}
+RATE_LIMIT_BACKEND={{ defaults.backend | default('memory') | tojson }}
+RATE_LIMIT_REDIS_URL={{ defaults.redis_url | default('redis://localhost:6379/0') | tojson }}
+RATE_LIMIT_DEFAULT_LIMIT={{ defaults.default_limit | default(120) }}
+RATE_LIMIT_DEFAULT_WINDOW={{ defaults.default_window | default(60) }}
+RATE_LIMIT_TRUST_FORWARDED_FOR={{ defaults.trust_forwarded_for | default(false) | tojson }}
+RATE_LIMIT_IDENTITY_HEADER={{ defaults.identity_header | default('X-RateLimit-Identity') | tojson }}
+# RATE_LIMIT_RULES_JSON can contain an optional JSON payload with extra rules.
+RATE_LIMIT_RULES_JSON=""

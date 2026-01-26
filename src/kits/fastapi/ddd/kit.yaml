@@ -1,0 +1,293 @@
+name: fastapi.ddd
+category: fastapi
+display_name: FastAPI DDD Kit
+description: Opinionated FastAPI starter aligned with domain-driven design practices.
+version: 0.1.0
+min_rapidkit_version: 0.1.0
+tier: standard
+repo_url: https://github.com/getrapidkit/core.git
+repo_branch: main
+tags: [fastapi, modular, ddd, clean-architecture]
+support: standard
+license: Apache-2.0
+
+module_support:
+    free: true
+    paid: true
+    community: true
+    enterprise: true
+
+environments:
+    development:
+        debug: true
+        description: "Development environment with hot reload"
+    production:
+        debug: false
+        description: "Production environment optimized for performance"
+
+variables:
+    project_name:
+        type: string
+        required: true
+        description: "Name of your project (snake_case recommended)"
+        validation:
+            pattern: "^[a-z][a-z0-9_]*$"
+            max_length: 50
+
+    author:
+        type: string
+        default: "{{ getpass.getuser() }}"
+        description: "Project author name"
+
+    description:
+        type: string
+        default: "Domain-driven FastAPI service generated with RapidKit"
+        description: "Project description"
+
+    app_version:
+        type: string
+        default: "0.1.0"
+        description: "Application version"
+
+    python_version:
+        type: string
+        default: "3.10.14"
+        description: "Target Python version for runtime and CI pipelines"
+
+    enable_docker:
+        type: boolean
+        default: true
+        description: "Scaffold base Dockerfile and docker-compose.yml (independent of modules)"
+
+    enable_ci:
+        type: boolean
+        default: true
+        description: "Scaffold GitHub Actions CI workflow (independent of modules)"
+
+    install_settings:
+        type: boolean
+        default: true
+        description: "Install the RapidKit settings module"
+
+    install_logging:
+        type: boolean
+        default: true
+        description: "Install the RapidKit logging module"
+
+    install_deployment:
+        type: boolean
+        default: true
+        description: "Install the RapidKit deployment module for advanced Docker/CI assets"
+
+    enable_sqlite:
+        type: boolean
+        default: true
+        description: "Install RapidKit SQLite integration for local development"
+
+    enable_postgres:
+        type: boolean
+        default: false
+        description: "Install RapidKit PostgreSQL integration and docker-compose service"
+
+    enable_redis:
+        type: boolean
+        default: false
+        description: "Install RapidKit Redis caching integration"
+
+    enable_monitoring:
+        type: boolean
+        default: false
+        description: "Install RapidKit monitoring module for metrics and health checks"
+
+    enable_docs:
+        type: boolean
+        default: true
+        description: "Install RapidKit OpenAPI documentation helpers"
+
+    enable_testing:
+        type: boolean
+        default: true
+        description: "Include testing dependencies and helper scripts (scaffold only)"
+
+    enable_tracing:
+        type: boolean
+        default: false
+        description: "Install RapidKit tracing module"
+
+    auth_strategy:
+        type: choice
+        choices: [none, basic, jwt, oauth2]
+        default: none
+        description: "Authentication strategy to scaffold"
+
+    license:
+        type: choice
+        choices: [MIT, Apache-2.0, GPL-3.0, Proprietary]
+        default: MIT
+        description: "Project license"
+
+structure:
+    - path: src/
+      type: folder
+    - path: src/app/
+      type: folder
+    - path: src/app/__init__.py
+      template: src/app/__init__.py.j2
+    - path: src/app/main.py
+      template: src/app/main.py.j2
+    - path: src/app/config/__init__.py
+      template: src/app/config/__init__.py.j2
+    - path: src/app/application/__init__.py
+      template: src/app/application/__init__.py.j2
+    - path: src/app/application/interfaces.py
+      template: src/app/application/interfaces.py.j2
+    - path: src/app/application/use_cases/__init__.py
+      template: src/app/application/use_cases/__init__.py.j2
+    - path: src/app/application/use_cases/health.py
+      template: src/app/application/use_cases/health.py.j2
+    - path: src/app/application/use_cases/notes.py
+      template: src/app/application/use_cases/notes.py.j2
+    - path: src/app/domain/__init__.py
+      template: src/app/domain/__init__.py.j2
+    - path: src/app/domain/models/__init__.py
+      template: src/app/domain/models/__init__.py.j2
+    - path: src/app/domain/models/health.py
+      template: src/app/domain/models/health.py.j2
+    - path: src/app/domain/models/note.py
+      template: src/app/domain/models/note.py.j2
+    - path: src/app/infrastructure/__init__.py
+      template: src/app/infrastructure/__init__.py.j2
+    - path: src/app/infrastructure/repositories/__init__.py
+      template: src/app/infrastructure/repositories/__init__.py.j2
+    - path: src/app/infrastructure/repositories/health.py
+      template: src/app/infrastructure/repositories/health.py.j2
+    - path: src/app/infrastructure/repositories/notes.py
+      template: src/app/infrastructure/repositories/notes.py.j2
+    - path: src/app/presentation/__init__.py
+      template: src/app/presentation/__init__.py.j2
+    - path: src/app/presentation/api/__init__.py
+      template: src/app/presentation/api/__init__.py.j2
+    - path: src/app/presentation/api/router.py
+      template: src/app/presentation/api/router.py.j2
+    - path: src/app/presentation/api/routes/__init__.py
+      template: src/app/presentation/api/routes/__init__.py.j2
+    - path: src/app/presentation/api/routes/health.py
+      template: src/app/presentation/api/routes/health.py.j2
+    - path: src/app/presentation/api/routes/notes.py
+      template: src/app/presentation/api/routes/notes.py.j2
+    - path: src/app/presentation/api/dependencies/__init__.py
+      template: src/app/presentation/api/dependencies/__init__.py.j2
+    - path: src/app/shared/__init__.py
+      template: src/app/shared/__init__.py.j2
+    - path: src/app/shared/result.py
+      template: src/app/shared/result.py.j2
+    - path: src/__init__.py
+      template: src/__init__.py.j2
+    - path: src/cli.py
+      template: src/cli.py.j2
+    - path: src/main.py
+      template: src/main.py.j2
+    - path: src/modules/__init__.py
+      template: src/modules/__init__.py.j2
+    - path: src/routing/__init__.py
+      template: src/routing/__init__.py.j2
+    - path: src/routing/health.py
+      template: src/routing/health.py.j2
+    - path: src/routing/notes.py
+      template: src/routing/notes.py.j2
+    - path: tests/
+      type: folder
+    - path: tests/__init__.py
+      template: tests/__init__.py.j2
+    - path: tests/test_health.py
+      template: tests/test_health.py.j2
+    - path: tests/test_notes.py
+      template: tests/test_notes.py.j2
+    - path: tests/test_app_factory.py
+      template: tests/test_app_factory.py.j2
+    - path: README.md
+      template: README.md.j2
+    - path: bootstrap.sh
+      template: common/bootstrap.sh.j2
+    - path: .gitignore
+      template: .gitignore.j2
+    - path: pyproject.toml
+      template: pyproject.toml.j2
+    - path: .python-version
+      template: common/.python-version.j2
+    - path: .pre-commit-config.yaml
+      template: common/.pre-commit-config.yaml.j2
+    - path: Makefile
+      template: common/Makefile.j2
+    - path: .dockerignore
+      template: common/.dockerignore.j2
+      conditions:
+          has_docker: true
+    - path: .env
+      template: common/env.j2
+    - path: .env.example
+      template: common/env.example.j2
+    - path: LICENSE
+      template_if:
+          MIT: common/licenses/mit.j2
+          Apache-2.0: common/licenses/apache-2.0.j2
+          GPL-3.0: common/licenses/gpl-3.0.j2
+          Proprietary: common/licenses/mit.j2
+    - path: Dockerfile
+      template: common/Dockerfile.j2
+      conditions:
+          has_docker: true
+    - path: docker-compose.yml
+      template: common/docker-compose.yml.j2
+      conditions:
+          has_docker: true
+    - path: .github/workflows/ci.yml
+      template: common/.github/workflows/ci.yml.j2
+      conditions:
+          has_ci: true
+    - path: .rapidkit/cli.py
+      template: common/.rapidkit/cli.py.j2
+    - path: .rapidkit/rapidkit
+      template: common/.rapidkit/rapidkit.j2
+    - path: .rapidkit/context.json
+      template: common/.rapidkit/context.json.j2
+    - path: .rapidkit/activate
+      template: common/.rapidkit/activate.j2
+
+injection_points:
+    imports:
+        - file: src/main.py
+          anchor: "# <<<inject:imports>>>"
+          description: "Additional imports supplied by modules"
+    startup_hooks:
+        - file: src/main.py
+          anchor: "# <<<inject:startup>>>"
+          description: "Asynchronous startup tasks"
+    shutdown_hooks:
+        - file: src/main.py
+          anchor: "# <<<inject:shutdown>>>"
+          description: "Asynchronous shutdown tasks"
+    router_includes:
+        - file: src/main.py
+          anchor: "# <<<inject:routes>>>"
+          description: "Register API routers from modules"
+    module_init:
+        - file: src/modules/__init__.py
+          anchor: "# <<<inject:module-init>>>"
+          description: "Module bootstrapping logic"
+    router_registration:
+        - file: src/routing/__init__.py
+          anchor: "# <<<inject:router-imports>>>"
+          description: "Import routers provided by modules"
+    router_mount:
+        - file: src/routing/__init__.py
+          anchor: "# <<<inject:router-mount>>>"
+          description: "Attach module routers to api_router"
+    poetry_dependencies:
+        - file: pyproject.toml
+          anchor: "# <<<inject:poetry-dependencies>>>"
+          description: "Add dependencies contributed by modules"
+
+hooks:
+    pre_generate: pre_generate
+    post_generate: post_generate

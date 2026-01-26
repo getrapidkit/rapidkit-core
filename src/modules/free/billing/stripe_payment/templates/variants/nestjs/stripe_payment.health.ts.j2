@@ -1,0 +1,24 @@
+/** Health controller for the {{ module_title }} NestJS integration. */
+
+import {
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+} from "@nestjs/common";
+
+import {
+  {{ module_class_name }}Service,
+  StripePaymentHealthPayload,
+} from "./{{ module_kebab }}.service";
+
+@Controller("api/health/module")
+export class {{ module_class_name }}HealthController {
+  constructor(private readonly service: {{ module_class_name }}Service) {}
+
+  @Get("{{ module_kebab }}")
+  @HttpCode(HttpStatus.OK)
+  getModuleHealth(): StripePaymentHealthPayload {
+    return this.service.getHealthPayload();
+  }
+}

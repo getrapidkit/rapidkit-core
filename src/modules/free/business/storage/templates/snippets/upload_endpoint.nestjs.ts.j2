@@ -1,0 +1,12 @@
+import { Post, UseInterceptors, UploadedFiles } from '@nestjs/common';
+import { FilesInterceptor } from '@nestjs/platform-express';
+
+@Post('upload')
+@UseInterceptors(FilesInterceptor('files'))
+async uploadFiles(@UploadedFiles() files: Express.Multer.File[]) {
+  return files.map(f => ({
+    filename: f.filename,
+    size: f.size,
+    mimetype: f.mimetype,
+  }));
+}

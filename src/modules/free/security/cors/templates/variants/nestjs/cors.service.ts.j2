@@ -1,0 +1,366 @@
+import { Injectable, Optional } from "@nestjs/common";
+
+export interface CorsOptions {
+  origin?: string | string[] | boolean | ((origin: string) => boolean);
+  methods?: string[];
+  allowedHeaders?: string[];
+  exposedHeaders?: string[];
+  credentials?: boolean;
+  maxAge?: number;
+}
+
+export interface CorsPolicySummary {
+  allow_origins: string[];
+  allow_credentials: boolean;
+  allow_methods: string[];
+  allow_headers: string[];
+  expose_headers: string[];
+  max_age: number;
+}
+
+export interface CorsHealthPayload {
+  module: string;
+  status: "ok" | "disabled";
+  checked_at: string;
+  enabled: boolean;
+  policy: CorsPolicySummary;
+  features: string[];
+  log_level: string;
+  metadata: Record<string, unknown>;
+}
+
+export type CorsMetadataPayload = CorsHealthPayload;
+
+export const CORS_FEATURES: readonly string[] = [
+  "cors_middleware",
+  "http_security_headers",
+];
+
+const DEFAULTS = {{ cors_defaults | tojson(indent=2) }} as Record<string, unknown>;
+
+const toStringArray = (value: unknown, fallback: string[]): string[] => {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => String(item).trim())
+      .filter((item) => item.length > 0);
+  }
+  if (typeof value === "string" && value.trim().length > 0) {
+    return [value.trim()];
+  }
+  return [...fallback];
+};
+
+const parseBoolean = (value: string | undefined, fallback: boolean): boolean => {
+  if (typeof value !== "string") {
+    return fallback;
+  }
+  const normalized = value.trim().toLowerCase();
+  if (["1", "true", "yes", "on"].includes(normalized)) {
+    return true;
+  }
+  if (["0", "false", "no", "off"].includes(normalized)) {
+    return false;
+  }
+  return fallback;
+};
+
+const parseNumber = (value: string | undefined, fallback: number): number => {
+  if (typeof value !== "string") {
+    return fallback;
+  }
+  const parsed = Number.parseInt(value, 10);
+  if (Number.isNaN(parsed)) {
+    return fallback;
+  }
+  return parsed < 0 ? 0 : parsed;
+};
+
+const parseList = (value: string | undefined, fallback: string[]): string[] => {
+  if (typeof value !== "string") {
+    return [...fallback];
+  }
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return [...fallback];
+  }
+  if (trimmed.startsWith("[")) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) {
+        return toStringArray(parsed, fallback);
+      }
+    } catch {
+      // Fall back to comma-delimited parsing when JSON parsing fails
+    }
+  }
+  return trimmed
+    .split(",")
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0);
+};
+
+const parseRecord = (
+  value: string | undefined,
+  fallback: Record<string, unknown>,
+): Record<string, unknown> => {
+  if (typeof value !== "string") {
+    return { ...fallback };
+  }
+  try {
+    const parsed = JSON.parse(value);
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      return { ...fallback, ...(parsed as Record<string, unknown>) };
+    }
+  } catch {
+    // Ignore malformed payloads and fall back to defaults
+  }
+  return { ...fallback };
+};
+
+const fallbackAllowOrigins = toStringArray(DEFAULTS.allow_origins, ["*"]);
+const fallbackAllowMethods = toStringArray(DEFAULTS.allow_methods, ["*"]);
+const fallbackAllowHeaders = toStringArray(DEFAULTS.allow_headers, ["*"]);
+const fallbackExposeHeaders = toStringArray(DEFAULTS.expose_headers, []);
+const defaultMetadata =
+  DEFAULTS.metadata && typeof DEFAULTS.metadata === "object" && !Array.isArray(DEFAULTS.metadata)
+    ? (DEFAULTS.metadata as Record<string, unknown>)
+    : {};
+
+const defaultOriginValue: CorsOptions["origin"] =
+  fallbackAllowOrigins.length === 0 ||
+  (fallbackAllowOrigins.length === 1 && fallbackAllowOrigins[0] === "*")
+    ? true
+    : [...fallbackAllowOrigins];
+
+const DEFAULT_CREDENTIALS = Boolean(DEFAULTS.allow_credentials ?? true);
+const DEFAULT_MAX_AGE = Number.isFinite(Number(DEFAULTS.max_age))
+  ? Number(DEFAULTS.max_age)
+  : 600;
+
+@Injectable()
+export class {{ module_class_name }}Service {
+  private enabled: boolean;
+  private corsOptions: CorsOptions;
+  private readonly features: string[] = [...CORS_FEATURES];
+  private readonly metadata: Record<string, unknown>;
+  private readonly logLevel: string;
+  private readonly clock: () => Date;
+
+  constructor(@Optional() clock?: () => Date) {
+    this.clock = clock ?? (() => new Date());
+    this.enabled = parseBoolean(
+      process.env.RAPIDKIT_CORS_ENABLED,
+      Boolean(DEFAULTS.enabled ?? true),
+    );
+
+    const allowOrigins = parseList(
+      process.env.RAPIDKIT_CORS_ALLOW_ORIGINS,
+      fallbackAllowOrigins,
+    );
+    const allowMethods = parseList(
+      process.env.RAPIDKIT_CORS_ALLOW_METHODS,
+      fallbackAllowMethods,
+    );
+    const allowHeaders = parseList(
+      process.env.RAPIDKIT_CORS_ALLOW_HEADERS,
+      fallbackAllowHeaders,
+    );
+    const exposeHeaders = parseList(
+      process.env.RAPIDKIT_CORS_EXPOSE_HEADERS,
+      fallbackExposeHeaders,
+    );
+
+    this.corsOptions = this.normalizeCorsOptions({
+      origin:
+        allowOrigins.length === 0
+          ? defaultOriginValue
+          : allowOrigins.length === 1 && allowOrigins[0] === "*"
+            ? true
+            : allowOrigins,
+      methods: allowMethods,
+      allowedHeaders: allowHeaders,
+      exposedHeaders: exposeHeaders,
+      credentials: parseBoolean(
+        process.env.RAPIDKIT_CORS_ALLOW_CREDENTIALS,
+        DEFAULT_CREDENTIALS,
+      ),
+      maxAge: parseNumber(process.env.RAPIDKIT_CORS_MAX_AGE, DEFAULT_MAX_AGE),
+    });
+
+    this.metadata = parseRecord(process.env.RAPIDKIT_CORS_METADATA, defaultMetadata);
+    this.logLevel = (
+      process.env.RAPIDKIT_CORS_LOG_LEVEL ?? String(DEFAULTS.log_level ?? "INFO")
+    ).toUpperCase();
+  }
+
+  setCorsOptions(options: Partial<CorsOptions>): void {
+    this.corsOptions = this.normalizeCorsOptions({
+      ...this.corsOptions,
+      ...options,
+    });
+  }
+
+  getCorsOptions(): CorsOptions {
+    return {
+      origin: this.corsOptions.origin,
+      methods: this.corsOptions.methods ? [...this.corsOptions.methods] : undefined,
+      allowedHeaders: this.corsOptions.allowedHeaders
+        ? [...this.corsOptions.allowedHeaders]
+        : undefined,
+      exposedHeaders: this.corsOptions.exposedHeaders
+        ? [...this.corsOptions.exposedHeaders]
+        : undefined,
+      credentials: this.corsOptions.credentials,
+      maxAge: this.corsOptions.maxAge,
+    };
+  }
+
+  getStatus(): Record<string, string> {
+    return {
+      module: "{{ module_name }}",
+      status: this.enabled ? "ok" : "disabled",
+      corsEnabled: this.enabled ? "true" : "false",
+    };
+  }
+
+  getFeatures(): string[] {
+    return [...this.features];
+  }
+
+  getMetadata(): CorsMetadataPayload {
+    return this.buildHealthPayload();
+  }
+
+  getHealthPayload(): CorsHealthPayload {
+    return this.buildHealthPayload();
+  }
+
+  private buildHealthPayload(): CorsHealthPayload {
+    return {
+      module: "{{ module_name }}",
+      status: this.enabled ? "ok" : "disabled",
+      checked_at: this.clock().toISOString(),
+      enabled: this.enabled,
+      policy: this.buildPolicySummary(),
+      features: this.getFeatures(),
+      log_level: this.logLevel,
+      metadata: { ...this.metadata },
+    };
+  }
+
+  private buildPolicySummary(): CorsPolicySummary {
+    const allowOrigins = this.normalizeOrigins(this.corsOptions.origin);
+    const allowMethods = this.normalizeStringArray(
+      this.corsOptions.methods ?? fallbackAllowMethods,
+      fallbackAllowMethods,
+    );
+    const allowHeaders = this.normalizeStringArray(
+      this.corsOptions.allowedHeaders ?? fallbackAllowHeaders,
+      fallbackAllowHeaders,
+    );
+    const exposeHeaders = this.normalizeStringArray(
+      this.corsOptions.exposedHeaders ?? fallbackExposeHeaders,
+      fallbackExposeHeaders,
+    );
+
+    return {
+      allow_origins: allowOrigins,
+      allow_credentials: this.corsOptions.credentials ?? DEFAULT_CREDENTIALS,
+      allow_methods: allowMethods,
+      allow_headers: allowHeaders,
+      expose_headers: exposeHeaders,
+      max_age: this.corsOptions.maxAge ?? DEFAULT_MAX_AGE,
+    };
+  }
+
+  private normalizeCorsOptions(options: Partial<CorsOptions>): CorsOptions {
+    const origin = this.normalizeOriginValue(
+      options.origin ?? this.corsOptions?.origin ?? defaultOriginValue,
+    );
+    const methods = this.normalizeStringArray(
+      options.methods ?? this.corsOptions?.methods ?? fallbackAllowMethods,
+      fallbackAllowMethods,
+    );
+    const allowedHeaders = this.normalizeStringArray(
+      options.allowedHeaders ?? this.corsOptions?.allowedHeaders ?? fallbackAllowHeaders,
+      fallbackAllowHeaders,
+    );
+    const exposedHeaders = this.normalizeStringArray(
+      options.exposedHeaders ?? this.corsOptions?.exposedHeaders ?? fallbackExposeHeaders,
+      fallbackExposeHeaders,
+    );
+
+    const credentials =
+      options.credentials ?? this.corsOptions?.credentials ?? DEFAULT_CREDENTIALS;
+    const maxAge = Math.max(
+      options.maxAge ?? this.corsOptions?.maxAge ?? DEFAULT_MAX_AGE,
+      0,
+    );
+
+    return {
+      origin,
+      methods,
+      allowedHeaders,
+      exposedHeaders,
+      credentials,
+      maxAge,
+    };
+  }
+
+  private normalizeOriginValue(origin: CorsOptions["origin"]): CorsOptions["origin"] {
+    if (origin === undefined || origin === null) {
+      return defaultOriginValue;
+    }
+    if (origin === true || origin === false || typeof origin === "function") {
+      return origin;
+    }
+    if (Array.isArray(origin)) {
+      const normalized = origin
+        .map((item) => String(item).trim())
+        .filter((item) => item.length > 0);
+      if (normalized.length === 1 && normalized[0] === "*") {
+        return true;
+      }
+      return normalized;
+    }
+    const single = String(origin).trim();
+    if (!single) {
+      return defaultOriginValue;
+    }
+    if (single === "*") {
+      return true;
+    }
+    return single;
+  }
+
+  private normalizeOrigins(origin: CorsOptions["origin"] | undefined): string[] {
+    const resolved = this.normalizeOriginValue(origin ?? defaultOriginValue);
+    if (resolved === true) {
+      return ["*"];
+    }
+    if (resolved === false) {
+      return [];
+    }
+    if (Array.isArray(resolved)) {
+      return resolved.slice();
+    }
+    if (typeof resolved === "function") {
+      return ["<callable>"];
+    }
+    return [String(resolved)];
+  }
+
+  private normalizeStringArray(
+    values: string[] | undefined,
+    fallback: string[],
+  ): string[] {
+    const source = values ?? fallback;
+    const normalized = source
+      .map((item) => String(item).trim())
+      .filter((item) => item.length > 0);
+    if (!normalized.length) {
+      return [...fallback];
+    }
+    return normalized;
+  }
+}

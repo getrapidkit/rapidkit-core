@@ -1,0 +1,22 @@
+"use strict";
+
+const DEFAULTS = {{ auth_core_defaults | tojson(indent=2) }};
+
+function loadConfiguration() {
+  return {
+    module: "auth_core",
+    issuer: DEFAULTS.issuer,
+    hashName: DEFAULTS.hash_name,
+    iterations: DEFAULTS.iterations,
+    saltBytes: DEFAULTS.salt_bytes,
+    tokenBytes: DEFAULTS.token_bytes,
+    tokenTtlSeconds: DEFAULTS.token_ttl_seconds,
+    pepperEnv: DEFAULTS.pepper_env,
+    policy: DEFAULTS.policy,
+  };
+}
+
+module.exports = {
+  loadConfiguration,
+  DEFAULTS,
+};

@@ -1,0 +1,13 @@
+from fastapi import APIRouter
+
+
+def create_router() -> APIRouter:
+    """Sample FastAPI router for {{ module_title }}."""
+
+    router = APIRouter()
+
+    @router.get("/health")
+    def healthcheck() -> dict[str, str]:
+        return {"module": "{{ module_name }}", "status": "ok"}
+
+    return router

@@ -1,0 +1,8 @@
+# Webhook events for Stripe customer portal lifecycle notifications.
+webhook:
+  events:
+    - customer.subscription.created
+    - customer.subscription.updated
+    - customer.subscription.deleted
+metadata_keys:
+  portal_session_id: portal_session_id

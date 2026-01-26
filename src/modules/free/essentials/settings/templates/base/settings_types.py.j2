@@ -1,0 +1,55 @@
+"""Typed helpers for the settings module runtime."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Any, Dict, Tuple
+
+from src.modules.free.essentials.settings.settings import Settings, get_settings
+
+
+@dataclass(slots=True)
+class SettingsSnapshot:
+    """Immutable snapshot of key configuration attributes."""
+
+    environment: str
+    debug: bool
+    version: str
+    allowed_hosts: Tuple[str, ...]
+    config_files: Tuple[str, ...]
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+    @classmethod
+    def from_settings(cls, instance: Settings | None = None) -> "SettingsSnapshot":
+        """Capture values from the provided settings instance."""
+
+        active = instance or get_settings()
+        return cls(
+            environment=active.ENV,
+            debug=active.DEBUG,
+            version=active.VERSION,
+            allowed_hosts=tuple(active.ALLOWED_HOSTS),
+            config_files=tuple(active.CONFIG_FILES),
+            metadata={
+                "project_name": active.PROJECT_NAME,
+                "vault_url": active.VAULT_URL,
+                "aws_region": active.AWS_REGION,
+            },
+        )
+
+
+def as_dict(snapshot: SettingsSnapshot | None = None) -> Dict[str, Any]:
+    """Serialize a snapshot to a JSON-friendly mapping."""
+
+    current = snapshot or SettingsSnapshot.from_settings()
+    payload: Dict[str, Any] = {
+        "module": "{{ rapidkit_vendor_module }}",
+        "environment": current.environment,
+        "version": current.version,
+        "debug": current.debug,
+        "allowed_hosts": list(current.allowed_hosts),
+        "config_files": list(current.config_files),
+    }
+    if current.metadata:
+        payload["metadata"] = dict(current.metadata)
+    return payload

@@ -1,0 +1,48 @@
+"""FastAPI route definitions for {{ module_title }}."""
+
+from __future__ import annotations
+
+from typing import Any
+
+from fastapi import APIRouter, Depends, Request
+
+try:
+    from ..{{ module_name }} import {{ module_class_name }}
+except ImportError:  # pragma: no cover
+    try:
+        from database.{{ module_name }} import {{ module_class_name }}
+    except ImportError:  # pragma: no cover
+        from ..{{ module_name }} import {{ module_class_name }}
+
+
+def get_runtime_dependency(request: Request) -> {{ module_class_name }}:
+    runtime: {{ module_class_name }} = getattr(request.app.state, "{{ module_name }}_runtime", None)
+    if runtime is None:
+        runtime = {{ module_class_name }}()
+        request.app.state.{{ module_name }}_runtime = runtime
+    return runtime
+
+
+def build_router(*, runtime_dependency=get_runtime_dependency) -> APIRouter:
+    router = APIRouter(prefix="/{{ module_kebab }}", tags=["{{ module_title }}"])
+
+    @router.get("/health", summary="{{ module_title }} health check")
+    async def read_health(runtime: {{ module_class_name }} = Depends(runtime_dependency)) -> dict[str, Any]:
+        report = runtime.health_check()
+        return {
+            "module": "{{ module_name }}",
+            "status": report.status,
+            "detail": report.detail,
+            "warnings": list(report.warnings),
+            "pragmas": report.pragmas,
+        }
+
+    @router.get("/tables", summary="List SQLite tables")
+    async def list_tables(runtime: {{ module_class_name }} = Depends(runtime_dependency)) -> list[dict[str, str | None]]:
+        tables = runtime.list_tables()
+        return [{"name": table.name, "type": table.type, "sql": table.sql} for table in tables]
+
+    return router
+
+
+__all__ = ["build_router", "get_runtime_dependency"]

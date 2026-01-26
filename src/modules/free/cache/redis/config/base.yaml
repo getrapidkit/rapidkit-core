@@ -1,0 +1,172 @@
+name: redis
+display_name: Redis Cache
+description: >-
+  Production-ready Redis runtime with async and sync clients, FastAPI dependencies,
+  NestJS configuration helpers, and health probes built on resilient retry logic.
+root_path: src/
+
+profiles:
+  fastapi/standard:
+    description: Redis integration tailored for the RapidKit FastAPI starter.
+  fastapi/ddd:
+    inherits: fastapi/standard
+    description: Redis integration tailored for the RapidKit FastAPI DDD starter.
+  nestjs/standard:
+    description: NestJS configuration module exposing Redis settings and validation.
+
+defaults:
+  project_name: RapidKit App
+  url: redis://localhost:6379/0
+  host: localhost
+  port: 6379
+  db: 0
+  password: ""
+  use_tls: false
+  preconnect: false
+  connect_retries: 3
+  connect_backoff_base: 0.5
+  cache_ttl: 3600
+
+variables:
+  redis_url:
+    type: string
+    default: "redis://localhost:6379/0"
+    description: Fully-qualified Redis connection URL.
+    validation: ^redis://[a-zA-Z0-9_./:@-]+(:[0-9]+)?(/[0-9]+)?$
+  redis_host:
+    type: string
+    default: localhost
+    description: Redis host used when REDIS_URL is omitted.
+  redis_port:
+    type: integer
+    default: 6379
+    description: Redis port applied to connection URLs.
+  redis_db:
+    type: integer
+    default: 0
+    description: Redis logical database index.
+  redis_password:
+    type: string
+    default: ""
+    description: Redis password for authenticated deployments.
+  redis_use_tls:
+    type: boolean
+    default: false
+    description: If true the runtime emits rediss:// URLs.
+  redis_preconnect:
+    type: boolean
+    default: false
+    description: Pre-connect to Redis during application startup.
+  redis_connect_retries:
+    type: integer
+    default: 3
+    description: Number of retry attempts when establishing the async client.
+  redis_connect_backoff_base:
+    type: float
+    default: 0.5
+    description: Base backoff (seconds) between retry attempts.
+  cache_ttl:
+    type: integer
+    default: 3600
+    description: Default TTL (seconds) for cache helpers and fallbacks.
+
+features:
+  async_client:
+    status: stable
+    enabled: true
+    description: Shared async Redis client with retry/backoff support and health probes.
+    files:
+      - path: core/redis/client.py
+        description: Async Redis client implementation.
+  sync_client:
+    status: stable
+    enabled: true
+    description: Connection-pooled synchronous Redis client for background jobs and scripts.
+    files:
+      - path: core/redis/client.py
+        description: Sync Redis client singleton and lifecycle helpers.
+  fastapi_dependency:
+    status: stable
+    enabled: true
+    description: FastAPI dependency wiring, lifespan hooks, and vendor loader facade.
+    files:
+      - path: core/redis/__init__.py
+        description: Project-facing Redis package exporting async/sync helpers.
+      - path: core/redis.py
+        description: Convenience facade exposed at src/modules/free/cache/redis/redis.py.
+  health_probe:
+    status: beta
+    enabled: true
+    description: FastAPI health endpoint and helpers exposing a Redis connectivity check.
+    files:
+      - path: core/redis/client.py
+        description: check_redis_connection helper that powers the health endpoint.
+      - path: core/health/redis.py
+        description: FastAPI router attaching the Redis health endpoint.
+  nestjs_configuration:
+    status: beta
+    enabled: true
+    description: NestJS configuration module, schema validation, and DI service for Redis.
+    files:
+      - path: config/redis.configuration.ts
+        description: NestJS configuration factory for Redis settings.
+      - path: config/redis.module.ts
+        description: NestJS module exporting Redis providers.
+      - path: config/redis.service.ts
+        description: Injectable Redis service wrapper.
+      - path: config/redis.validation.ts
+        description: Joi validation schema for Redis configuration.
+
+snippets:
+  - name: redis_env
+    path: templates/snippets/env.snippet.j2
+    description: Injects Redis environment variables into .env files.
+  - name: redis_settings_fields
+    path: templates/snippets/redis_fields.snippet.j2
+    description: Adds Redis fields to Pydantic settings modules.
+  - name: redis_settings_fields_nestjs
+    path: templates/snippets/redis_fields_nestjs.snippet.j2
+    description: Decorates NestJS configuration files with Redis schemas.
+
+depends_on:
+  fastapi/standard:
+    - name: redis
+      source: external
+      tool: pip
+      version: ">=5.0.0,<6.0"
+  nestjs/standard:
+    - name: "@nestjs/common"
+      source: npm
+      tool: npm
+      version: ">=11.1.0"
+    - name: "@nestjs/core"
+      source: npm
+      tool: npm
+      version: ">=11.1.0"
+    - name: "@nestjs/config"
+      source: npm
+      tool: npm
+      version: ">=4.0.0"
+    - name: joi
+      source: npm
+      tool: npm
+      version: ">=17.0.0"
+    - name: ioredis
+      source: npm
+      tool: npm
+      version: ">=5.4.0"
+      description: Redis client powering the generated NestJS service
+
+dev_dependencies:
+  - name: pytest
+    source: external
+    tool: pip
+    version: ">=8.3.0,<9.0"
+  - name: pytest-asyncio
+    source: external
+    tool: pip
+    version: ">=0.25.0,<1.0"
+  - name: black
+    source: external
+    tool: pip
+    version: ">=25.0.0,<26.0"

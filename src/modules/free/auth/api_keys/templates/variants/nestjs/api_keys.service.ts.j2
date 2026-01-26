@@ -1,0 +1,383 @@
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from "@nestjs/common";
+import { createHmac, randomBytes, randomUUID } from "crypto";
+
+type ScopeList = string[];
+
+interface ApiKeyRecord {
+  keyId: string;
+  ownerId: string;
+  prefix: string;
+  hashedSecret: string;
+  scopes: ScopeList;
+  label?: string | null;
+  createdAt: Date;
+  expiresAt?: Date | null;
+  revokedAt?: Date | null;
+  lastUsedAt?: Date | null;
+  metadata: Record<string, unknown>;
+}
+
+interface IssuePayload {
+  ownerId: string;
+  scopes?: ScopeList;
+  label?: string | null;
+  metadata?: Record<string, unknown>;
+  ttlHours?: number | null;
+}
+
+interface IssueResult {
+  token: string;
+  secret: string;
+  record: ApiKeyRecord;
+}
+
+interface VerifyResult {
+  matched: boolean;
+  granted: ScopeList;
+  required: ScopeList;
+  record?: ApiKeyRecord | null;
+  reason?: string | null;
+}
+
+interface HealthPayload extends Record<string, unknown> {
+  status: string;
+  totals: Record<string, number>;
+  issues: string[];
+  metadata: Record<string, unknown>;
+}
+
+interface ApiKeysDefaults {
+  allow_scope_wildcards: boolean;
+  allowed_scopes: ScopeList;
+  audit_trail: boolean;
+  default_scopes: ScopeList;
+  display_prefix: string;
+  hash_algorithm: string;
+  key_prefix: string;
+  leak_window_hours: number;
+  max_active_per_owner: number;
+  pepper_env: string;
+  persist_last_used: boolean;
+  prefix_bytes: number;
+  prefix_charset: string;
+  rotation_days: number;
+  secret_bytes: number;
+  token_separator: string;
+  ttl_hours: number | null;
+  pepper?: string | null;
+}
+
+const DEFAULTS: ApiKeysDefaults = {{ api_keys_defaults | tojson(indent=2) }};
+
+function base64Url(data: Buffer): string {
+  return data.toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+
+function normaliseScopes(scopes?: ScopeList): ScopeList {
+  if (!scopes || scopes.length === 0) {
+    return [...(DEFAULTS.default_scopes as ScopeList)];
+  }
+  const seen = new Set<string>();
+  const cleaned: ScopeList = [];
+  for (const scope of scopes) {
+    const trimmed = scope.trim();
+    if (!trimmed || seen.has(trimmed)) {
+      continue;
+    }
+    seen.add(trimmed);
+    cleaned.push(trimmed);
+  }
+  if (cleaned.length === 0) {
+    cleaned.push(...(DEFAULTS.default_scopes as ScopeList));
+  }
+  return cleaned;
+}
+
+@Injectable()
+export class {{ module_class_name }}Service {
+  private readonly records = new Map<string, ApiKeyRecord>();
+  private readonly prefixIndex = new Map<string, string>();
+
+  issue(payload: IssuePayload): IssueResult {
+    const ownerId = payload.ownerId?.trim();
+    if (!ownerId) {
+      throw new BadRequestException("ownerId is required");
+    }
+
+    const activeLimit = DEFAULTS.max_active_per_owner as number;
+    if (typeof activeLimit === "number" && activeLimit > 0) {
+      const active = this.countActiveForOwner(ownerId);
+      if (active >= activeLimit) {
+        throw new BadRequestException(
+          `Owner '${ownerId}' reached the limit (${activeLimit}) of active API keys`,
+        );
+      }
+    }
+
+    const scopes = normaliseScopes(payload.scopes);
+    this.validateScopes(scopes);
+
+    const prefix = this.generatePrefix();
+    const secret = this.generateSecret();
+    const hashed = this.hashSecret(secret);
+
+    const now = new Date();
+    const ttlHours = payload.ttlHours ?? (DEFAULTS.ttl_hours as number | null);
+    const expiresAt = ttlHours && ttlHours > 0 ? new Date(now.getTime() + ttlHours * 3_600_000) : null;
+
+    const record: ApiKeyRecord = {
+      keyId: randomUUID(),
+      ownerId,
+      prefix,
+      hashedSecret: hashed,
+      scopes,
+      label: payload.label ?? null,
+      createdAt: now,
+      expiresAt,
+      metadata: {
+        ...((payload.metadata as Record<string, unknown>) ?? {}),
+        module: "{{ module_name }}",
+      },
+    };
+
+    this.records.set(record.keyId, record);
+    this.prefixIndex.set(prefix, record.keyId);
+
+    return {
+      token: `${prefix}${DEFAULTS.token_separator}${secret}`,
+      secret,
+      record,
+    };
+  }
+
+  verify(token: string, requiredScopes?: ScopeList): VerifyResult {
+    const separator = DEFAULTS.token_separator as string;
+    if (!token.includes(separator)) {
+      throw new BadRequestException("Token format is invalid");
+    }
+    const [prefix, providedSecret] = token.split(separator, 2);
+    const record = this.getByPrefix(prefix);
+    const required = normaliseScopes(requiredScopes ?? []);
+
+    if (!record) {
+      return {
+        matched: false,
+        granted: [],
+        required,
+        record: null,
+        reason: "not_found",
+      };
+    }
+
+    if (record.revokedAt) {
+      return {
+        matched: false,
+        granted: [],
+        required,
+        record,
+        reason: "revoked",
+      };
+    }
+
+    if (record.expiresAt && record.expiresAt.getTime() <= Date.now()) {
+      return {
+        matched: false,
+        granted: [],
+        required,
+        record,
+        reason: "expired",
+      };
+    }
+
+    const hashed = this.hashSecret(providedSecret);
+    if (!this.constantTimeCompare(hashed, record.hashedSecret)) {
+      throw new UnauthorizedException("API key secret mismatch");
+    }
+
+    const granted = this.resolveScopeGrants(required, record.scopes);
+    const matched = granted.length === required.length;
+    record.lastUsedAt = new Date();
+
+    return {
+      matched,
+      granted,
+      required,
+      record,
+      reason: matched ? null : "scope_mismatch",
+    };
+  }
+
+  revoke(keyId: string, reason?: string | null): ApiKeyRecord {
+    const record = this.records.get(keyId);
+    if (!record) {
+      throw new NotFoundException(`API key '${keyId}' not found`);
+    }
+    if (record.revokedAt) {
+      return record;
+    }
+    record.revokedAt = new Date();
+    if (reason) {
+      const history = (record.metadata.revocationReasons as string[] | undefined) ?? [];
+      history.push(reason);
+      record.metadata.revocationReasons = history;
+    }
+    return record;
+  }
+
+  getHealth(): HealthPayload {
+    const totals: Record<string, number> = {
+      total: this.records.size,
+      active: 0,
+      revoked: 0,
+      expired: 0,
+      stale: 0,
+    };
+    const issues: string[] = [];
+    const now = new Date();
+    const leakWindowHours = DEFAULTS.leak_window_hours as number | null;
+    const leakWindow = leakWindowHours ? leakWindowHours * 3_600_000 : null;
+
+    for (const record of this.records.values()) {
+      if (record.revokedAt) {
+        totals.revoked += 1;
+        continue;
+      }
+      if (record.expiresAt && record.expiresAt.getTime() <= now.getTime()) {
+        totals.expired += 1;
+        continue;
+      }
+      totals.active += 1;
+      if (leakWindow && record.lastUsedAt) {
+        if (now.getTime() - record.lastUsedAt.getTime() >= leakWindow) {
+          totals.stale += 1;
+        }
+      }
+    }
+
+    if (!this.getPepper()) {
+      issues.push("pepper_missing");
+    }
+
+    return {
+      status: issues.length > 0 ? "degraded" : "ok",
+      totals,
+      issues,
+      metadata: {
+        module: "{{ module_name }}",
+        version: "{{ rapidkit_vendor_version }}",
+      },
+    };
+  }
+
+  private getByPrefix(prefix: string): ApiKeyRecord | null {
+    const keyId = this.prefixIndex.get(prefix);
+    if (!keyId) {
+      return null;
+    }
+    return this.records.get(keyId) ?? null;
+  }
+
+  private countActiveForOwner(ownerId: string): number {
+    let count = 0;
+    for (const record of this.records.values()) {
+      if (record.ownerId !== ownerId) {
+        continue;
+      }
+      if (record.revokedAt) {
+        continue;
+      }
+      if (record.expiresAt && record.expiresAt.getTime() <= Date.now()) {
+        continue;
+      }
+      count += 1;
+    }
+    return count;
+  }
+
+  private validateScopes(scopes: ScopeList): void {
+    const allowed = (DEFAULTS.allowed_scopes as ScopeList | null) ?? null;
+    if (!allowed || allowed.length === 0) {
+      return;
+    }
+    const allowWildcards = Boolean(DEFAULTS.allow_scope_wildcards);
+    for (const scope of scopes) {
+      if (allowed.includes(scope)) {
+        continue;
+      }
+      if (allowWildcards && allowed.some((candidate) => candidate.endsWith("*") && scope.startsWith(candidate.replace("*", "")))) {
+        continue;
+      }
+      throw new BadRequestException(`Scope '${scope}' is not permitted`);
+    }
+  }
+
+  private resolveScopeGrants(required: ScopeList, granted: ScopeList): ScopeList {
+    if (required.length === 0) {
+      return granted;
+    }
+    const matches: ScopeList = [];
+    const allowWildcards = Boolean(DEFAULTS.allow_scope_wildcards);
+    for (const scope of required) {
+      if (granted.includes(scope)) {
+        matches.push(scope);
+        continue;
+      }
+      if (allowWildcards) {
+        const wildcard = granted.find((candidate) => candidate.endsWith("*") && scope.startsWith(candidate.replace("*", "")));
+        if (wildcard) {
+          matches.push(scope);
+        }
+      }
+    }
+    return matches;
+  }
+
+  private generatePrefix(): string {
+    const charset = (DEFAULTS.prefix_charset as string) || "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    const prefixBytes = Math.max(DEFAULTS.prefix_bytes as number, 4);
+    let body = "";
+    for (let i = 0; i < prefixBytes; i += 1) {
+      body += charset[Math.floor(Math.random() * charset.length)].toLowerCase();
+    }
+    return `${DEFAULTS.display_prefix}${body}`;
+  }
+
+  private generateSecret(): string {
+    const bytes = randomBytes(Math.max(DEFAULTS.secret_bytes as number, 16));
+    return base64Url(bytes);
+  }
+
+  private getPepper(): string {
+    if (DEFAULTS.pepper) {
+      return DEFAULTS.pepper as string;
+    }
+    const envName = (DEFAULTS.pepper_env as string) ?? "RAPIDKIT_API_KEYS_PEPPER";
+    return process.env[envName] ?? "";
+  }
+
+  private hashSecret(secret: string): string {
+    const pepper = this.getPepper();
+    if (!pepper) {
+      throw new BadRequestException("Pepper must be configured via environment variable");
+    }
+    const hmac = createHmac((DEFAULTS.hash_algorithm as string) || "sha256", `${pepper}{{ module_name }}`);
+    hmac.update(secret);
+    return base64Url(hmac.digest());
+  }
+
+  private constantTimeCompare(a: string, b: string): boolean {
+    if (a.length !== b.length) {
+      return false;
+    }
+    let mismatch = 0;
+    for (let i = 0; i < a.length; i += 1) {
+      mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i);
+    }
+    return mismatch === 0;
+  }
+}

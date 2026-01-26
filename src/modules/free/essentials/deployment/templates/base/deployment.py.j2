@@ -1,0 +1,70 @@
+"""Runtime helpers for the deployment toolkit."""
+
+from __future__ import annotations
+
+from typing import Iterable, List
+
+from .deployment_types import DeploymentAsset, DeploymentPlan
+
+
+_DEFAULT_ASSETS: List[DeploymentAsset] = [
+    DeploymentAsset(
+        name="fastapi",
+        path="deployment/fastapi",
+        runtime="python",
+        description="Docker, Compose, and CI assets tailored for RapidKit FastAPI services.",
+        metadata={
+            "dockerfile": "deployment/fastapi/Dockerfile",
+            "compose": "deployment/fastapi/docker-compose.yml",
+            "workflow": "deployment/fastapi/ci.yml",
+        },
+    ),
+    DeploymentAsset(
+        name="nestjs",
+        path="deployment/nestjs",
+        runtime="node",
+        description="Docker, Compose, and CI assets tailored for RapidKit NestJS services.",
+        metadata={
+            "dockerfile": "deployment/nestjs/Dockerfile",
+            "compose": "deployment/nestjs/docker-compose.yml",
+            "workflow": "deployment/nestjs/ci.yml",
+        },
+    ),
+]
+
+
+def build_plan(assets: Iterable[DeploymentAsset] | None = None) -> DeploymentPlan:
+    """Return the canonical deployment plan surfaced to downstream tooling."""
+
+    materialized = list(assets or _DEFAULT_ASSETS)
+    return DeploymentPlan(
+        module="{{ rapidkit_vendor_module }}",
+        version="{{ rapidkit_vendor_version }}",
+        assets=materialized,
+    )
+
+
+def describe_plan(assets: Iterable[DeploymentAsset] | None = None) -> dict[str, object]:
+    """Expose the deployment plan as a serialisable payload for APIs."""
+
+    plan = build_plan(assets=assets)
+    return {
+        "module": plan.module,
+        "version": plan.version,
+        "assets": [
+            {
+                "name": asset.name,
+                "path": asset.path,
+                "runtime": asset.runtime,
+                "description": asset.description,
+                "metadata": dict(asset.metadata),
+            }
+            for asset in plan.assets
+        ],
+    }
+
+
+def list_asset_paths() -> List[str]:
+    """Return filesystem paths for the generated deployment assets."""
+
+    return [asset.path for asset in build_plan().assets]

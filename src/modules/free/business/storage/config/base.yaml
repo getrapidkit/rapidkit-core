@@ -1,0 +1,91 @@
+# Default configuration for File Storage Module
+storage:
+  # Primary adapter: local, s3, gcs
+  adapter: local
+
+  # Local storage settings
+  local:
+    base_path: "./storage/uploads"
+    max_file_size: 104857600  # 100MB in bytes
+    allowed_extensions:
+      - jpg
+      - jpeg
+      - png
+      - gif
+      - pdf
+      - doc
+      - docx
+      - xls
+      - xlsx
+      - txt
+      - csv
+      - zip
+      - tar
+      - gz
+
+  # S3 storage settings (optional)
+  s3:
+    enabled: false
+    bucket: "your-bucket-name"
+    region: "us-east-1"
+    access_key_id: null  # From environment
+    secret_access_key: null  # From environment
+    endpoint_url: null  # For S3-compatible services
+
+  # Google Cloud Storage settings (optional)
+  gcs:
+    enabled: false
+    bucket: "your-bucket-name"
+    project_id: null  # From environment
+    credentials_path: null  # From environment
+
+  # Image processing settings
+  image_processing:
+    enabled: true
+    thumbnails:
+      small:
+        width: 150
+        height: 150
+      medium:
+        width: 300
+        height: 300
+      large:
+        width: 600
+        height: 600
+    quality: 85
+    optimize: true
+
+  # Security settings
+  security:
+    scan_on_upload: true
+    scan_interval: 3600
+    require_authentication: true
+    rate_limit_per_minute: 60
+
+  # Health check settings
+  health_check:
+    enabled: true
+    timeout: 5
+    check_space: true
+    check_connectivity: true
+
+# Logging configuration
+logging:
+  level: INFO
+  handlers:
+    - console
+    - file
+  file_path: "logs/storage.log"
+
+# Performance settings
+performance:
+  chunk_size: 1048576  # 1MB chunks for streaming
+  cache_ttl: 300
+  enable_caching: true
+  thread_pool_size: 4
+
+# Retry and timeout settings
+retry:
+  attempts: 3
+  backoff_factor: 1.5
+  timeout: 30

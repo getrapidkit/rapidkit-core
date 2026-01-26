@@ -1,0 +1,18 @@
+import { Controller, Get } from "@nestjs/common";
+
+import { {{ module_class_name }}Service } from "./{{ module_kebab }}.service";
+
+@Controller("{{ module_kebab }}")
+export class {{ module_class_name }}Controller {
+  constructor(private readonly service: {{ module_class_name }}Service) {}
+
+  @Get("health")
+  health(): Record<string, unknown> {
+    return this.service.health();
+  }
+
+  @Get("headers")
+  headers(): Record<string, string> {
+    return this.service.getHeaders();
+  }
+}

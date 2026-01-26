@@ -1,0 +1,43 @@
+import { Controller, Get, HttpCode, HttpStatus, Logger } from "@nestjs/common";
+import { hostname } from "node:os";
+
+import { USERS_PROFILES_CONFIGURATION_NAMESPACE } from "./users_profiles.configuration";
+import { {{ module_class_name }}Service } from "./users_profiles.service";
+
+@Controller("api/health/module")
+export class {{ module_class_name }}HealthController {
+  private readonly logger = new Logger({{ module_class_name }}HealthController.name);
+
+  constructor(private readonly usersProfilesService: {{ module_class_name }}Service) {}
+
+  @Get("{{ module_kebab }}")
+  @HttpCode(HttpStatus.OK)
+  async getModuleHealth(): Promise<Record<string, unknown>> {
+    try {
+      const snapshot = await this.usersProfilesService.resolveHealth();
+      const status = typeof snapshot?.status === "string" ? snapshot.status : "unknown";
+
+      return {
+        module: {{ rapidkit_vendor_module | tojson }},
+        namespace: USERS_PROFILES_CONFIGURATION_NAMESPACE,
+        hostname: hostname(),
+        checkedAt: new Date().toISOString(),
+        status,
+        details: snapshot,
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      this.logger.error(`Users Profiles health check failed: ${message}`);
+      return {
+        module: {{ rapidkit_vendor_module | tojson }},
+        namespace: USERS_PROFILES_CONFIGURATION_NAMESPACE,
+        hostname: hostname(),
+        checkedAt: new Date().toISOString(),
+        status: "error",
+        details: {
+          error: message,
+        },
+      };
+    }
+  }
+}

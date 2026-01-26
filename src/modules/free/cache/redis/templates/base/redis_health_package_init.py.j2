@@ -1,0 +1,9 @@
+"""Redis health helpers.
+
+This module exists primarily to make `src.modules.free.cache.redis.health` a proper
+Python package.
+"""
+
+from .redis import redis_health_check, register_redis_health, router
+
+__all__ = ["redis_health_check", "register_redis_health", "router"]

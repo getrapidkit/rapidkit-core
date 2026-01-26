@@ -1,0 +1,61 @@
+# Register snippet bundles for Db Mongo
+snippets:
+  - id: db_mongo_env
+    target: .env,.env.dev,.env.prod,.env.example
+    anchor: "# <<<inject:module-env>>>"
+    template: db_mongo_env.snippet.j2
+    features: [mongo, database]
+    profiles: [fastapi/standard, nestjs/standard]
+    description: Injects Db Mongo environment variable defaults
+    version: "1.0.0"
+    priority: 12
+    dependencies: []
+    schema:
+      type: object
+      properties: {}
+      additionalProperties: true
+    metadata:
+      author: "RapidKit Team"
+      created_at: "2025-11-04"
+      last_modified: "2025-11-04"
+    conflict_resolution: merge
+
+  - id: db_mongo_settings_fields
+    target: src/modules/free/essentials/settings/settings.py
+    anchor: "# <<<inject:settings-fields>>>"
+    template: db_mongo_settings_fields.snippet.j2
+    features: [mongo, database, extendable_settings]
+    profiles: [fastapi/standard]
+    description: Injects Db Mongo configuration fields into the Python settings module
+    version: "1.0.0"
+    priority: 18
+    dependencies: []
+    schema:
+      type: object
+      properties: {}
+      additionalProperties: true
+    metadata:
+      author: "RapidKit Team"
+      created_at: "2025-11-04"
+      last_modified: "2025-11-04"
+    conflict_resolution: merge
+
+  - id: db_mongo_settings_fields_nestjs
+    target: src/config/configuration.ts
+    anchor: "// <<<inject:configuration>>>"
+    template: db_mongo_settings_fields_nestjs.snippet.j2
+    features: [mongo, database]
+    profiles: [nestjs/standard]
+    description: Adds Db Mongo configuration typings for NestJS configuration modules
+    version: "1.0.0"
+    priority: 18
+    dependencies: []
+    schema:
+      type: object
+      properties: {}
+      additionalProperties: true
+    metadata:
+      author: "RapidKit Team"
+      created_at: "2025-11-04"
+      last_modified: "2025-11-04"
+    conflict_resolution: merge

@@ -1,0 +1,23 @@
+"""Module-local shim for the canonical Celery health router."""
+
+from __future__ import annotations
+
+from src.health.celery import (  # noqa: F401
+    DEFAULT_FEATURES,
+    build_health_snapshot,
+    build_metadata,
+    celery_health_check,
+    register_celery_health,
+    render_health_snapshot,
+    router,
+)
+
+__all__ = [
+    "DEFAULT_FEATURES",
+    "build_health_snapshot",
+    "build_metadata",
+    "celery_health_check",
+    "register_celery_health",
+    "render_health_snapshot",
+    "router",
+]

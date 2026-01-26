@@ -1,0 +1,9 @@
+import { Type } from "@nestjs/common";
+
+import { {{ module_class_name }}Controller } from "./{{ module_name }}.controller";
+import { {{ module_class_name }}HealthController } from "../../../../health/{{ module_name }}.health";
+
+export const CART_ROUTES: Type[] = [
+  {{ module_class_name }}Controller,
+  {{ module_class_name }}HealthController,
+];

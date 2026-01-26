@@ -1,0 +1,27 @@
+"""FastAPI shim exposing the canonical notifications health router."""
+
+from __future__ import annotations
+
+from typing import Any
+
+from src.health.notifications import (
+    register_notifications_health,
+    router as notifications_health_router,
+    notifications_health_check,
+)
+
+
+def build_health_router() -> Any:
+    """Return the generated notifications health router."""
+
+    return notifications_health_router
+
+
+router = notifications_health_router
+
+__all__ = [
+    "build_health_router",
+    "notifications_health_check",
+    "register_notifications_health",
+    "router",
+]

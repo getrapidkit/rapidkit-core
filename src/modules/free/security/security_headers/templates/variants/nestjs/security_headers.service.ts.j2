@@ -1,0 +1,228 @@
+import { Injectable } from "@nestjs/common";
+import type { Response } from "express";
+
+export interface {{ module_class_name }}Options {
+  enabled: boolean;
+  strictTransportSecurity: boolean;
+  strictTransportSecurityMaxAge: number;
+  strictTransportSecurityIncludeSubdomains: boolean;
+  strictTransportSecurityPreload: boolean;
+  contentSecurityPolicy: string | null;
+  contentSecurityPolicyReportOnly: boolean;
+  referrerPolicy: string;
+  xContentTypeOptions: boolean | string;
+  xFrameOptions: string;
+  xXssProtection: boolean;
+  crossOriginEmbedderPolicy: string | null;
+  crossOriginOpenerPolicy: string | null;
+  crossOriginResourcePolicy: string | null;
+  permissionsPolicy: Record<string, string | string[] | null>;
+  expectCt: string | null;
+  xDnsPrefetchControl: string | null;
+  xDownloadOptions: string | null;
+  additionalHeaders: Record<string, string>;
+}
+
+const DEFAULT_OPTIONS: {{ module_class_name }}Options = {
+  enabled: true,
+  strictTransportSecurity: true,
+  strictTransportSecurityMaxAge: 63072000,
+  strictTransportSecurityIncludeSubdomains: true,
+  strictTransportSecurityPreload: true,
+  contentSecurityPolicy: null,
+  contentSecurityPolicyReportOnly: false,
+  referrerPolicy: "strict-origin-when-cross-origin",
+  xContentTypeOptions: "nosniff",
+  xFrameOptions: "DENY",
+  xXssProtection: false,
+  crossOriginEmbedderPolicy: "require-corp",
+  crossOriginOpenerPolicy: "same-origin",
+  crossOriginResourcePolicy: "same-origin",
+  permissionsPolicy: {},
+  expectCt: null,
+  xDnsPrefetchControl: "off",
+  xDownloadOptions: "noopen",
+  additionalHeaders: {},
+};
+
+@Injectable()
+export class {{ module_class_name }}Service {
+  private readonly options: {{ module_class_name }}Options;
+  private readonly headers: Record<string, string>;
+
+  constructor(options?: Partial<{{ module_class_name }}Options> | null) {
+    const merged: {{ module_class_name }}Options = {
+      ...DEFAULT_OPTIONS,
+      ...(options ?? {}),
+      permissionsPolicy: {
+        ...DEFAULT_OPTIONS.permissionsPolicy,
+        ...(options?.permissionsPolicy ?? {}),
+      },
+      additionalHeaders: {
+        ...DEFAULT_OPTIONS.additionalHeaders,
+        ...(options?.additionalHeaders ?? {}),
+      },
+    };
+
+    this.options = merged;
+    this.headers = this.buildHeaders();
+  }
+
+  isEnabled(): boolean {
+    return this.options.enabled !== false;
+  }
+
+  getHeaders(): Record<string, string> {
+    if (!this.isEnabled()) {
+      return {};
+    }
+    return { ...this.headers };
+  }
+
+  apply(response: Response): void {
+    if (!this.isEnabled()) {
+      return;
+    }
+
+    for (const [name, value] of Object.entries(this.headers)) {
+      response.setHeader(name, value);
+    }
+  }
+
+  health(): Record<string, unknown> {
+    return {
+      module: "{{ module_name }}",
+      status: this.isEnabled() ? "ok" : "disabled",
+      enabled: this.isEnabled(),
+      headers: this.getHeaders(),
+    };
+  }
+
+  private buildHeaders(): Record<string, string> {
+    if (!this.isEnabled()) {
+      return {};
+    }
+
+    const headers: Record<string, string> = {};
+
+    if (this.options.strictTransportSecurity) {
+      const hstsSegments = [
+        `max-age=${this.options.strictTransportSecurityMaxAge}`,
+      ];
+      if (this.options.strictTransportSecurityIncludeSubdomains) {
+        hstsSegments.push("includeSubDomains");
+      }
+      if (this.options.strictTransportSecurityPreload) {
+        hstsSegments.push("preload");
+      }
+      headers["Strict-Transport-Security"] = hstsSegments.join("; ");
+    }
+
+    if (this.options.xContentTypeOptions) {
+      const value =
+        typeof this.options.xContentTypeOptions === "string"
+          ? this.options.xContentTypeOptions
+          : "nosniff";
+      headers["X-Content-Type-Options"] = value;
+    }
+
+    if (this.options.xFrameOptions) {
+      headers["X-Frame-Options"] = this.options.xFrameOptions;
+    }
+
+    if (this.options.referrerPolicy) {
+      headers["Referrer-Policy"] = this.options.referrerPolicy;
+    }
+
+    if (this.options.crossOriginEmbedderPolicy) {
+      headers["Cross-Origin-Embedder-Policy"] = this.options.crossOriginEmbedderPolicy;
+    }
+
+    if (this.options.crossOriginOpenerPolicy) {
+      headers["Cross-Origin-Opener-Policy"] = this.options.crossOriginOpenerPolicy;
+    }
+
+    if (this.options.crossOriginResourcePolicy) {
+      headers["Cross-Origin-Resource-Policy"] = this.options.crossOriginResourcePolicy;
+    }
+
+    const permissionsPolicy = this.formatPermissionsPolicy(this.options.permissionsPolicy);
+    if (permissionsPolicy) {
+      headers["Permissions-Policy"] = permissionsPolicy;
+    }
+
+    if (this.options.contentSecurityPolicy) {
+      const headerName = this.options.contentSecurityPolicyReportOnly
+        ? "Content-Security-Policy-Report-Only"
+        : "Content-Security-Policy";
+      headers[headerName] = this.options.contentSecurityPolicy;
+    }
+
+    if (this.options.expectCt) {
+      headers["Expect-CT"] = this.options.expectCt;
+    }
+
+    if (this.options.xDnsPrefetchControl) {
+      headers["X-DNS-Prefetch-Control"] = this.options.xDnsPrefetchControl;
+    }
+
+    if (this.options.xDownloadOptions) {
+      headers["X-Download-Options"] = this.options.xDownloadOptions;
+    }
+
+    if (this.options.xXssProtection) {
+      headers["X-XSS-Protection"] = "1; mode=block";
+    }
+
+    for (const [name, value] of Object.entries(this.options.additionalHeaders)) {
+      headers[name] = value;
+    }
+
+    return headers;
+  }
+
+  private formatPermissionsPolicy(
+    policy?: Record<string, string | string[] | null>,
+  ): string | undefined {
+    if (!policy) {
+      return undefined;
+    }
+
+    const segments = Object.entries(policy)
+      .map(([directive, value]) => {
+        if (!directive) {
+          return undefined;
+        }
+
+        if (!value || (Array.isArray(value) && value.length === 0)) {
+          return `${directive}=()`;
+        }
+
+        if (typeof value === "string") {
+          const trimmed = value.trim();
+          if (!trimmed) {
+            return `${directive}=()`;
+          }
+          if (trimmed.includes("=") || trimmed.startsWith("(")) {
+            return `${directive}=${trimmed}`;
+          }
+          return `${directive}=(${trimmed})`;
+        }
+
+        const tokens = value.map((item) => item.trim()).filter(Boolean).join(" ");
+        if (!tokens) {
+          return `${directive}=()`;
+        }
+        return `${directive}=(${tokens})`;
+      })
+      .filter((entry): entry is string => Boolean(entry));
+
+    if (!segments.length) {
+      return undefined;
+    }
+
+    return segments.join(", ");
+  }
+}
+
+export { DEFAULT_OPTIONS as DEFAULT_SECURITY_HEADERS_OPTIONS };

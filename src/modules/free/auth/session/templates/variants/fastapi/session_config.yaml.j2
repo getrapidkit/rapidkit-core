@@ -1,0 +1,14 @@
+{%- set defaults = session_defaults or {} -%}
+# RapidKit generated configuration for {{ module_title }}.
+# Update these values to align with your session storage and cookie policies.
+
+session:
+  secret_key_env: {{ defaults.get("secret_key_env", "RAPIDKIT_SESSION_SECRET") | tojson }}
+  session_ttl_seconds: {{ defaults.get("session_ttl_seconds", 2592000) | tojson }}
+  refresh_ttl_seconds: {{ defaults.get("refresh_ttl_seconds", 15552000) | tojson }}
+  cookie_name: {{ defaults.get("cookie_name", "rapidkit_session") | tojson }}
+  cookie_domain: {{ defaults.get("cookie_domain") | tojson }}
+  cookie_secure: {{ defaults.get("cookie_secure", True) | tojson }}
+  cookie_httponly: {{ defaults.get("cookie_httponly", True) | tojson }}
+  cookie_same_site: {{ defaults.get("cookie_same_site", "lax") | tojson }}
+  storage_backend: {{ defaults.get("storage_backend", "memory") | tojson }}

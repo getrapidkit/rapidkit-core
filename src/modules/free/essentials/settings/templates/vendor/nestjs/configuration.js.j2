@@ -1,0 +1,352 @@
+"use strict";
+
+const fs = require("node:fs");
+const path = require("node:path");
+
+let YAML;
+try {
+  YAML = require("yaml");
+} catch (error) {
+  YAML = null;
+}
+
+let dotenv;
+try {
+  dotenv = require("dotenv");
+} catch (error) {
+  dotenv = null;
+}
+
+const VENDOR_ROOT_ENV = "RAPIDKIT_VENDOR_ROOT";
+const HOT_RELOAD_DISABLE_ENV = "RAPIDKIT_DISABLE_HOT_RELOAD";
+const DEFAULT_CONFIG = {
+  ENV: "development",
+  DEBUG: false,
+  PROJECT_NAME: "RapidKit App",
+  SECRET_KEY: "{{ '' | generate_secret(48) }}",
+  VERSION: "1.0.0",
+  ALLOWED_HOSTS: ["*"],
+  CONFIG_FILES: [".env", ".env.local", "config.yaml"],
+  CONFIG_REFRESH_INTERVAL: 60,
+  VAULT_URL: "http://localhost:8200",
+  AWS_REGION: "us-east-1",
+  HOT_RELOAD_ENABLED: true,
+  HOT_RELOAD_ENV_ALLOWLIST: ["development", "staging"],
+  // <<<inject:settings-fields>>>
+};
+
+const LEGACY_ENV_MAP = {
+  LOG_SAMPLING_RATE: "SAMPLING_DEBUG_RATE",
+  LOG_ASYNC_QUEUE: "ASYNC_QUEUE_ENABLED",
+  LOG_ENABLE_REDACTION: "REDACT_SECRETS",
+  LOG_OTEL_BRIDGE: "OTEL_BRIDGE_ENABLED",
+  LOG_METRICS_BRIDGE: "METRICS_BRIDGE_ENABLED",
+};
+
+const INTERNAL_STATE = {
+  cache: null,
+  timer: null,
+};
+
+const HOT_RELOAD_DISABLED =
+  normalizeBoolean(process.env[HOT_RELOAD_DISABLE_ENV], false) ||
+  (process.env.NODE_ENV || "").toLowerCase() === "test" ||
+  Boolean(process.env.JEST_WORKER_ID);
+
+function clone(value) {
+  if (Array.isArray(value)) {
+    return value.map(clone);
+  }
+  if (value && typeof value === "object") {
+    return Object.keys(value).reduce((acc, key) => {
+      acc[key] = clone(value[key]);
+      return acc;
+    }, {});
+  }
+  return value;
+}
+
+function deepMerge(target, source) {
+  if (!source || typeof source !== "object") {
+    return target;
+  }
+  const output = Array.isArray(target) ? [...target] : { ...target };
+  for (const [key, value] of Object.entries(source)) {
+    if (Array.isArray(value)) {
+      output[key] = value.slice();
+    } else if (value && typeof value === "object") {
+      output[key] = deepMerge(
+        output[key] && typeof output[key] === "object" ? output[key] : {},
+        value,
+      );
+    } else {
+      output[key] = value;
+    }
+  }
+  return output;
+}
+
+function normalizeList(value, fallback) {
+  if (value === undefined || value === null || value === "" || value === false) {
+    return Array.isArray(fallback) ? fallback.slice() : fallback;
+  }
+  if (Array.isArray(value)) {
+    return value.length > 0 ? value : fallback;
+  }
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+      try {
+        const parsed = JSON.parse(trimmed);
+        return Array.isArray(parsed) && parsed.length > 0 ? parsed : fallback;
+      } catch (error) {
+        return fallback;
+      }
+    }
+    const segments = trimmed
+      .split(",")
+      .map((segment) => segment.trim())
+      .filter(Boolean);
+    return segments.length > 0 ? segments : fallback;
+  }
+  return fallback;
+}
+
+function normalizeBoolean(value, fallback) {
+  if (typeof value === "boolean") {
+    return value;
+  }
+  if (typeof value === "string") {
+    return ["1", "true", "yes", "on"].includes(value.toLowerCase());
+  }
+  return fallback;
+}
+
+function normalizeNumber(value, fallback) {
+  if (typeof value === "number") {
+    return value;
+  }
+  if (typeof value === "string") {
+    const parsed = Number.parseFloat(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  }
+  return fallback;
+}
+
+function resolveVendorRoot() {
+  if (process.env[VENDOR_ROOT_ENV]) {
+    return path.resolve(process.env[VENDOR_ROOT_ENV]);
+  }
+  return path.resolve(process.cwd(), ".rapidkit", "vendor");
+}
+
+function resolveConfigFiles(config) {
+  const files = Array.isArray(config.CONFIG_FILES)
+    ? config.CONFIG_FILES.filter((entry) => typeof entry === "string")
+    : [];
+  return files.length > 0 ? files : clone(DEFAULT_CONFIG.CONFIG_FILES);
+}
+
+function loadEnvFiles(files) {
+  if (!dotenv) {
+    return;
+  }
+  for (const entry of files) {
+    if (typeof entry !== "string") continue;
+    if (!entry.endsWith(".env") && !entry.endsWith(".env.local")) continue;
+    const absolutePath = path.isAbsolute(entry)
+      ? entry
+      : path.resolve(process.cwd(), entry);
+    if (!fs.existsSync(absolutePath)) continue;
+    dotenv.config({ path: absolutePath, override: false });
+  }
+}
+
+function loadYamlFiles(files) {
+  let aggregate = {};
+  if (!YAML) {
+    return aggregate;
+  }
+  for (const entry of files) {
+    if (typeof entry !== "string") continue;
+    if (!entry.endsWith(".yaml") && !entry.endsWith(".yml")) continue;
+    const absolutePath = path.isAbsolute(entry)
+      ? entry
+      : path.resolve(process.cwd(), entry);
+    if (!fs.existsSync(absolutePath)) continue;
+    try {
+      const raw = fs.readFileSync(absolutePath, { encoding: "utf-8" });
+      const parsed = YAML.parse(raw);
+      if (parsed && typeof parsed === "object") {
+        aggregate = deepMerge(aggregate, parsed);
+      }
+    } catch (error) {
+      console.warn(
+        `settings: YAML load failed for ${absolutePath} (${String(error)})`,
+      );
+    }
+  }
+  return aggregate;
+}
+
+function applyLegacyEnv(configuration) {
+  for (const [legacy, target] of Object.entries(LEGACY_ENV_MAP)) {
+    if (configuration[target] !== undefined && configuration[target] !== null) {
+      continue;
+    }
+    if (!process.env[legacy]) {
+      continue;
+    }
+    const value = process.env[legacy];
+    if (value === undefined) continue;
+    if (
+      target.endsWith("_ENABLED") ||
+      target.startsWith("REDACT_") ||
+      target.endsWith("_BRIDGE_ENABLED")
+    ) {
+      configuration[target] = normalizeBoolean(value, false);
+      continue;
+    }
+    if (target.endsWith("_RATE")) {
+      configuration[target] = normalizeNumber(value, undefined);
+      continue;
+    }
+    configuration[target] = value;
+  }
+}
+
+function applyEnvironmentOverrides(configuration) {
+  for (const [key, value] of Object.entries(process.env)) {
+    if (!value) continue;
+    if (!/^[A-Z0-9_]+$/.test(key)) continue;
+    if (key in DEFAULT_CONFIG) {
+      configuration[key] = value;
+      continue;
+    }
+    if (!key.includes("__")) continue;
+    const segments = key.split("__").map((segment) => segment.trim());
+    if (segments.some((segment) => segment.length === 0)) continue;
+    let cursor = configuration;
+    for (let index = 0; index < segments.length; index += 1) {
+      const segment = segments[index];
+      if (index === segments.length - 1) {
+        cursor[segment] = value;
+      } else {
+        if (!cursor[segment] || typeof cursor[segment] !== "object") {
+          cursor[segment] = {};
+        }
+        cursor = cursor[segment];
+      }
+    }
+  }
+}
+
+function finalizeConfiguration(configuration) {
+  configuration.ALLOWED_HOSTS = normalizeList(
+    configuration.ALLOWED_HOSTS,
+    DEFAULT_CONFIG.ALLOWED_HOSTS,
+  );
+  configuration.HOT_RELOAD_ENV_ALLOWLIST = normalizeList(
+    configuration.HOT_RELOAD_ENV_ALLOWLIST,
+    DEFAULT_CONFIG.HOT_RELOAD_ENV_ALLOWLIST,
+  );
+  if (configuration.LOG_SINKS !== undefined) {
+    configuration.LOG_SINKS = normalizeList(configuration.LOG_SINKS, ["stderr"]);
+  }
+  configuration.HOT_RELOAD_ENABLED = normalizeBoolean(
+    configuration.HOT_RELOAD_ENABLED,
+    DEFAULT_CONFIG.HOT_RELOAD_ENABLED,
+  );
+  configuration.DEBUG = normalizeBoolean(
+    configuration.DEBUG,
+    DEFAULT_CONFIG.DEBUG,
+  );
+  configuration.CONFIG_REFRESH_INTERVAL = normalizeNumber(
+    configuration.CONFIG_REFRESH_INTERVAL,
+    DEFAULT_CONFIG.CONFIG_REFRESH_INTERVAL,
+  );
+  if (
+    configuration.ENV === "production" &&
+    configuration.SECRET_KEY === DEFAULT_CONFIG.SECRET_KEY
+  ) {
+    throw new Error("SECRET_KEY must be changed in production");
+  }
+  if (configuration.ENV === "production" && configuration.DEBUG) {
+    throw new Error("DEBUG must be false in production");
+  }
+  return configuration;
+}
+
+function buildSettings() {
+  const configuration = clone(DEFAULT_CONFIG);
+  const configFiles = resolveConfigFiles(configuration);
+
+  loadEnvFiles(configFiles);
+  const yamlValues = loadYamlFiles(configFiles);
+  const merged = deepMerge(configuration, yamlValues);
+
+  applyLegacyEnv(merged);
+  applyEnvironmentOverrides(merged);
+
+  return finalizeConfiguration(merged);
+}
+
+function refreshSettings() {
+  INTERNAL_STATE.cache = buildSettings();
+  return INTERNAL_STATE.cache;
+}
+
+function stopHotReload() {
+  if (!INTERNAL_STATE.timer) {
+    return;
+  }
+  clearInterval(INTERNAL_STATE.timer);
+  INTERNAL_STATE.timer = null;
+}
+
+function startHotReload(settings) {
+  if (HOT_RELOAD_DISABLED || !settings.HOT_RELOAD_ENABLED) {
+    return;
+  }
+  const intervalSeconds = normalizeNumber(
+    settings.CONFIG_REFRESH_INTERVAL,
+    DEFAULT_CONFIG.CONFIG_REFRESH_INTERVAL,
+  );
+  if (!settings.HOT_RELOAD_ENV_ALLOWLIST.includes(settings.ENV)) {
+    return;
+  }
+  if (!Number.isFinite(intervalSeconds) || intervalSeconds <= 0) {
+    return;
+  }
+  if (INTERNAL_STATE.timer) {
+    return;
+  }
+  INTERNAL_STATE.timer = setInterval(() => {
+    try {
+      refreshSettings();
+    } catch (error) {
+      console.warn(`settings: refresh failed (${String(error)})`);
+    }
+  }, intervalSeconds * 1000);
+}
+
+function getSettings() {
+  if (!INTERNAL_STATE.cache) {
+    INTERNAL_STATE.cache = buildSettings();
+    startHotReload(INTERNAL_STATE.cache);
+  }
+  return INTERNAL_STATE.cache;
+}
+
+function loadSettings() {
+  return buildSettings();
+}
+
+module.exports = {
+  DEFAULT_CONFIG,
+  LEGACY_ENV_MAP,
+  getSettings,
+  loadSettings,
+  refreshSettings,
+  stopHotReload,
+};

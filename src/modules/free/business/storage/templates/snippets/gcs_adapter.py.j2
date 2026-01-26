@@ -1,0 +1,24 @@
+# Google Cloud Storage adapter
+from google.cloud import storage
+
+class GCSStorageAdapter:
+    """Google Cloud Storage adapter for file storage."""
+
+    def __init__(self, bucket_name: str, project_id: str = None):
+        self.client = storage.Client(project=project_id) if project_id else storage.Client()
+        self.bucket = self.client.bucket(bucket_name)
+
+    async def upload(self, file_id: str, content: bytes) -> bool:
+        try:
+            blob = self.bucket.blob(file_id)
+            blob.upload_from_string(content)
+            return True
+        except Exception:
+            return False
+
+    async def download(self, file_id: str) -> Optional[bytes]:
+        try:
+            blob = self.bucket.blob(file_id)
+            return blob.download_as_bytes()
+        except Exception:
+            return None

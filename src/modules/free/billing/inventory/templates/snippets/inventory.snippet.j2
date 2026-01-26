@@ -1,0 +1,8 @@
+{# Jinja snippet used to inject shared fragments into generated artefacts. #}
+{# Name this snippet when referencing from module.yaml generation entries. #}
+
+{% set module_name = "inventory" %}
+
+# Inventory module quick actions
+rapidkit module info inventory
+rapidkit module validate inventory

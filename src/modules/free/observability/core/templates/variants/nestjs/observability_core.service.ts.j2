@@ -1,0 +1,124 @@
+import { Injectable, Logger } from "@nestjs/common";
+
+export interface ObservabilityEvent {
+  name: string;
+  severity: string;
+  attributes: Record<string, unknown>;
+  timestamp: number;
+}
+
+export interface ObservabilitySpan {
+  name: string;
+  durationMs: number | null;
+  attributes: Record<string, unknown>;
+}
+
+export interface ObservabilityMetricSnapshot {
+  payload: string;
+  contentType: string;
+}
+
+export interface ObservabilitySummary {
+  module: string;
+  status: string;
+  serviceName: string;
+  environment: string;
+  metrics: Record<string, unknown>;
+  tracing: Record<string, unknown>;
+  events: Record<string, unknown>;
+}
+
+@Injectable()
+export class {{ module_class_name }}Service {
+  private readonly logger = new Logger("{{ module_class_name }}Service");
+  private readonly events: ObservabilityEvent[] = [];
+  private readonly spans: ObservabilitySpan[] = [];
+  private readonly counters: Map<string, number> = new Map();
+  private readonly gauges: Map<string, number> = new Map();
+  private serviceName = "rapidkit-app";
+  private environment = "local";
+
+  recordEvent(
+    name: string,
+    severity = "INFO",
+    attributes: Record<string, unknown> = {},
+  ): ObservabilityEvent {
+    const event: ObservabilityEvent = {
+      name,
+      severity: severity.toUpperCase(),
+      attributes,
+      timestamp: Date.now() / 1000,
+    };
+    this.events.push(event);
+    if (this.events.length > 1000) {
+      this.events.shift();
+    }
+    this.logger.log(`observability.event ${event.name}`);
+    return event;
+  }
+
+  recentEvents(limit = 50): ObservabilityEvent[] {
+    return this.events.slice(-limit);
+  }
+
+  recordSpan(
+    name: string,
+    durationMs: number | null,
+    attributes: Record<string, unknown> = {},
+  ): ObservabilitySpan {
+    const span: ObservabilitySpan = { name, durationMs, attributes };
+    this.spans.push(span);
+    if (this.spans.length > 500) {
+      this.spans.shift();
+    }
+    return span;
+  }
+
+  recentSpans(limit = 25): ObservabilitySpan[] {
+    return this.spans.slice(-limit);
+  }
+
+  incrementCounter(name: string, value = 1): number {
+    const next = (this.counters.get(name) ?? 0) + value;
+    this.counters.set(name, next);
+    return next;
+  }
+
+  setGauge(name: string, value: number): number {
+    this.gauges.set(name, value);
+    return value;
+  }
+
+  exportMetrics(): ObservabilityMetricSnapshot {
+    const payload = {
+      counters: Object.fromEntries(this.counters.entries()),
+      gauges: Object.fromEntries(this.gauges.entries()),
+    };
+    return {
+      payload: JSON.stringify(payload, null, 2),
+      contentType: "application/json",
+    };
+  }
+
+  getSummary(): ObservabilitySummary {
+    const metrics = this.exportMetrics();
+    return {
+      module: "{{ module_name }}",
+      status: "ok",
+      serviceName: this.serviceName,
+      environment: this.environment,
+      metrics: {
+        exporter: "memory",
+        sample: metrics.payload.slice(0, 128),
+      },
+      tracing: {
+        enabled: true,
+        recent: this.recentSpans(5),
+      },
+      events: {
+        bufferSize: this.events.length,
+        recent: this.recentEvents(5),
+      },
+    };
+  }
+}

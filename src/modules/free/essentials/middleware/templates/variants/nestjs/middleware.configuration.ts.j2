@@ -1,0 +1,35 @@
+import { registerAs } from '@nestjs/config';
+
+export interface MiddlewareConfiguration {
+  enabled: boolean;
+  processTimeHeader: boolean;
+  serviceHeader: boolean;
+  serviceHeaderName: string;
+  serviceName: string | null;
+  customHeaders: boolean;
+  customHeaderName: string;
+  customHeaderValue: string;
+  corsEnabled: boolean;
+  corsAllowOrigins: string[];
+  corsAllowMethods: string[];
+  corsAllowHeaders: string[];
+  corsAllowCredentials: boolean;
+  metadata: Record<string, unknown>;
+}
+
+export default registerAs('middleware', (): MiddlewareConfiguration => ({
+  enabled: {{ middleware_defaults.get('enabled', True) | tojson }},
+  processTimeHeader: {{ middleware_defaults.get('process_time_header', True) | tojson }},
+  serviceHeader: {{ middleware_defaults.get('service_header', True) | tojson }},
+  serviceHeaderName: {{ middleware_defaults.get('service_header_name', 'X-Service') | tojson }},
+  serviceName: {{ middleware_defaults.get('service_name') | tojson }},
+  customHeaders: {{ middleware_defaults.get('custom_headers', True) | tojson }},
+  customHeaderName: {{ middleware_defaults.get('custom_header_name', 'X-Custom-Header') | tojson }},
+  customHeaderValue: {{ middleware_defaults.get('custom_header_value', 'RapidKit') | tojson }},
+  corsEnabled: {{ middleware_defaults.get('cors_enabled', False) | tojson }},
+  corsAllowOrigins: {{ middleware_defaults.get('cors_allow_origins', ['*']) | tojson(indent=2) }},
+  corsAllowMethods: {{ middleware_defaults.get('cors_allow_methods', ['*']) | tojson(indent=2) }},
+  corsAllowHeaders: {{ middleware_defaults.get('cors_allow_headers', ['*']) | tojson(indent=2) }},
+  corsAllowCredentials: {{ middleware_defaults.get('cors_allow_credentials', True) | tojson }},
+  metadata: {{ middleware_defaults.get('metadata', {}) | tojson(indent=2) }},
+}));

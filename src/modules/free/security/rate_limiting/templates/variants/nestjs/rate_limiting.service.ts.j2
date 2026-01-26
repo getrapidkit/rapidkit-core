@@ -1,0 +1,372 @@
+import { Injectable, Logger } from "@nestjs/common";
+
+type RateLimitScope = "global" | "identity" | "route" | "route-identity";
+
+interface RateLimitRule {
+  readonly name: string;
+  readonly limit: number;
+  readonly windowSeconds: number;
+  readonly scope: RateLimitScope;
+  readonly priority: number;
+  readonly routes: string[];
+  readonly methods: string[];
+  readonly cost: number;
+  readonly blockSeconds?: number | null;
+  readonly includeHeaders: boolean;
+}
+
+interface RateLimitResult {
+  readonly allowed: boolean;
+  readonly remaining: number;
+  readonly resetAfter: number;
+  readonly resetAt: number;
+  readonly limit: number;
+  readonly rule: RateLimitRule;
+  readonly identity?: string | null;
+  readonly bucket: string;
+  readonly blocked: boolean;
+}
+
+interface BucketState {
+  count: number;
+  resetAt: number;
+  blockedUntil?: number;
+}
+
+const DEFAULTS = {{ rate_limiting_defaults | default({}) | tojson }};
+const RULES = (DEFAULTS.rules ?? []) as Record<string, unknown>[];
+const HEADERS = DEFAULTS.headers ?? {};
+
+function coerceBoolean(value: unknown, fallback: boolean): boolean {
+  if (typeof value === "boolean") {
+    return value;
+  }
+  if (typeof value === "string") {
+    const lowered = value.trim().toLowerCase();
+    if (["1", "true", "yes", "on"].includes(lowered)) {
+      return true;
+    }
+    if (["0", "false", "no", "off"].includes(lowered)) {
+      return false;
+    }
+  }
+  return fallback;
+}
+
+function coerceInteger(value: unknown, fallback: number): number {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return Math.trunc(value);
+  }
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number.parseInt(value, 10);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+  return fallback;
+}
+
+function coerceString(value: unknown, fallback: string | null = null): string | null {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : fallback;
+  }
+  return fallback;
+}
+
+function normalisePath(path: string): string {
+  if (!path) {
+    return "root";
+  }
+  return path.replace(/\?.*/, "").replace(/\//g, ":");
+}
+
+@Injectable()
+export class {{ module_class_name }}Service {
+  private readonly logger = new Logger("{{ module_class_name }}Service");
+  private readonly enabled: boolean;
+  private readonly defaultRule: RateLimitRule;
+  private readonly rules: RateLimitRule[];
+  private readonly headers = {
+    limit: coerceString(process.env.RATE_LIMIT_HEADER_LIMIT, HEADERS.limit ?? "X-RateLimit-Limit") ?? "X-RateLimit-Limit",
+    remaining:
+      coerceString(process.env.RATE_LIMIT_HEADER_REMAINING, HEADERS.remaining ?? "X-RateLimit-Remaining") ??
+      "X-RateLimit-Remaining",
+    reset: coerceString(process.env.RATE_LIMIT_HEADER_RESET, HEADERS.reset ?? "X-RateLimit-Reset") ?? "X-RateLimit-Reset",
+    retryAfter: coerceString(process.env.RATE_LIMIT_HEADER_RETRY_AFTER, HEADERS.retry_after ?? "Retry-After") ?? "Retry-After",
+    rule: coerceString(process.env.RATE_LIMIT_HEADER_RULE, HEADERS.rule ?? "X-RateLimit-Rule") ?? "X-RateLimit-Rule",
+  };
+  private readonly trustForwardedFor: boolean;
+  private readonly forwardedForHeader: string;
+  private readonly identityHeader: string | null;
+  private readonly store: Map<string, BucketState> = new Map();
+
+  constructor() {
+    this.enabled = coerceBoolean(process.env.RATE_LIMIT_ENABLED, DEFAULTS.enabled ?? true);
+    this.defaultRule = this.buildDefaultRule();
+    this.rules = this.mergeRules();
+    this.trustForwardedFor = coerceBoolean(
+      process.env.RATE_LIMIT_TRUST_FORWARDED_FOR,
+      DEFAULTS.trust_forwarded_for ?? false,
+    );
+    this.forwardedForHeader =
+      coerceString(process.env.RATE_LIMIT_FORWARDED_FOR_HEADER, DEFAULTS.forwarded_for_header ?? "X-Forwarded-For") ??
+      "X-Forwarded-For";
+    this.identityHeader = coerceString(process.env.RATE_LIMIT_IDENTITY_HEADER, DEFAULTS.identity_header ?? null);
+  }
+
+  private buildDefaultRule(): RateLimitRule {
+    const name = coerceString(process.env.RATE_LIMIT_DEFAULT_RULE_NAME, DEFAULTS.default_rule_name ?? "default") ?? "default";
+    const limit = Math.max(
+      coerceInteger(process.env.RATE_LIMIT_DEFAULT_LIMIT, DEFAULTS.default_limit ?? 120),
+      1,
+    );
+    const windowSeconds = Math.max(
+      coerceInteger(process.env.RATE_LIMIT_DEFAULT_WINDOW, DEFAULTS.default_window ?? 60),
+      1,
+    );
+    const scope = (coerceString(process.env.RATE_LIMIT_DEFAULT_SCOPE, DEFAULTS.default_scope ?? "identity") ?? "identity") as RateLimitScope;
+    const priority = coerceInteger(process.env.RATE_LIMIT_DEFAULT_PRIORITY, DEFAULTS.default_priority ?? 100);
+    const blockRaw = process.env.RATE_LIMIT_DEFAULT_BLOCK_SECONDS;
+    const blockSeconds = blockRaw !== undefined ? Math.max(coerceInteger(blockRaw, 0), 0) : DEFAULTS.default_block_seconds ?? null;
+    return {
+      name,
+      limit,
+      windowSeconds,
+      scope,
+      priority,
+      routes: [],
+      methods: [],
+      cost: 1,
+      blockSeconds: blockSeconds ?? undefined,
+      includeHeaders: true,
+    };
+  }
+
+  private parseRule(payload: Record<string, unknown>, fallbackName: string): RateLimitRule | null {
+    const name = coerceString(payload.name, fallbackName) ?? fallbackName;
+    const limit = Math.max(coerceInteger(payload.limit, 0), 0);
+    const windowSeconds = Math.max(coerceInteger(payload.window_seconds ?? payload.window, 0), 0);
+    if (limit <= 0 || windowSeconds <= 0) {
+      this.logger.warn(`Skipping rule '${name}' due to invalid limit/window configuration.`);
+      return null;
+    }
+    const scope = (coerceString(payload.scope, this.defaultRule.scope) ?? this.defaultRule.scope) as RateLimitScope;
+    const routes = Array.isArray(payload.routes)
+      ? payload.routes.map((value) => String(value)).filter(Boolean)
+      : [];
+    const methods = Array.isArray(payload.methods)
+      ? payload.methods.map((value) => String(value).toUpperCase()).filter(Boolean)
+      : [];
+    const priority = coerceInteger(payload.priority, this.defaultRule.priority);
+    const cost = Math.max(coerceInteger(payload.cost, 1), 1);
+    const blockSecondsRaw = payload.block_seconds;
+    const blockSeconds =
+      typeof blockSecondsRaw === "number"
+        ? Math.max(Math.trunc(blockSecondsRaw), 0)
+        : typeof blockSecondsRaw === "string"
+        ? Math.max(coerceInteger(blockSecondsRaw, 0), 0)
+        : undefined;
+    const includeHeaders = coerceBoolean(payload.include_headers, true);
+    return {
+      name,
+      limit,
+      windowSeconds,
+      scope,
+      priority,
+      routes,
+      methods,
+      cost,
+      blockSeconds,
+      includeHeaders,
+    };
+  }
+
+  private mergeRules(): RateLimitRule[] {
+    const parsed: RateLimitRule[] = [this.defaultRule];
+    RULES.forEach((rule, index) => {
+      const parsedRule = this.parseRule(rule, `rule-${index}`);
+      if (parsedRule) {
+        parsed.push(parsedRule);
+      }
+    });
+    parsed.sort((first, second) => first.priority - second.priority);
+    return parsed;
+  }
+
+  private resolveRule(method: string, path: string): RateLimitRule {
+    const upperMethod = method.toUpperCase();
+    for (const rule of this.rules) {
+      if (rule.methods.length > 0 && !rule.methods.includes(upperMethod)) {
+        continue;
+      }
+      if (rule.routes.length > 0) {
+        const matches = rule.routes.some((prefix) => path.startsWith(prefix));
+        if (!matches) {
+          continue;
+        }
+      }
+      return rule;
+    }
+    return this.defaultRule;
+  }
+
+  private buildBucket(rule: RateLimitRule, identity: string | null | undefined, path: string): string {
+    const target = identity ?? "anonymous";
+    const normalisedPath = normalisePath(path);
+    switch (rule.scope) {
+      case "global":
+        return `${rule.name}:global`;
+      case "route":
+        return `${rule.name}:${normalisedPath}`;
+      case "route-identity":
+        return `${rule.name}:${normalisedPath}:${target}`;
+      default:
+        return `${rule.name}:${target}`;
+    }
+  }
+
+  private acquireFromMemory(
+    bucket: string,
+    rule: RateLimitRule,
+    cost: number,
+  ): RateLimitResult {
+    const now = Date.now();
+    const bucketState = this.store.get(bucket) ?? {
+      count: 0,
+      resetAt: now + rule.windowSeconds * 1_000,
+    };
+
+    if (bucketState.blockedUntil && now < bucketState.blockedUntil) {
+      const resetAfter = (bucketState.blockedUntil - now) / 1_000;
+      return {
+        allowed: false,
+        remaining: 0,
+        resetAfter,
+        resetAt: bucketState.blockedUntil,
+        limit: rule.limit,
+        rule,
+        bucket,
+        blocked: true,
+      };
+    }
+
+    if (now >= bucketState.resetAt) {
+      bucketState.count = 0;
+      bucketState.resetAt = now + rule.windowSeconds * 1_000;
+      bucketState.blockedUntil = undefined;
+    }
+
+    bucketState.count += cost;
+
+    if (bucketState.count <= rule.limit) {
+      const remaining = Math.max(rule.limit - bucketState.count, 0);
+      const resetAfter = Math.max((bucketState.resetAt - now) / 1_000, 0);
+      this.store.set(bucket, bucketState);
+      return {
+        allowed: true,
+        remaining,
+        resetAfter,
+        resetAt: bucketState.resetAt,
+        limit: rule.limit,
+        rule,
+        bucket,
+        blocked: false,
+      };
+    }
+
+    bucketState.count = rule.limit;
+    const resetAfter = Math.max((bucketState.resetAt - now) / 1_000, 0);
+    if (rule.blockSeconds && rule.blockSeconds > 0) {
+      bucketState.blockedUntil = now + rule.blockSeconds * 1_000;
+    }
+    this.store.set(bucket, bucketState);
+    return {
+      allowed: false,
+      remaining: 0,
+      resetAfter: rule.blockSeconds ? Math.max(rule.blockSeconds, resetAfter) : resetAfter,
+      resetAt: bucketState.resetAt,
+      limit: rule.limit,
+      rule,
+      bucket,
+      blocked: Boolean(bucketState.blockedUntil),
+    };
+  }
+
+  async consume(options: {
+    identity?: string | null;
+    method: string;
+    path: string;
+    cost?: number | null;
+    ruleName?: string | null;
+  }): Promise<RateLimitResult> {
+    if (!this.enabled) {
+      return {
+        allowed: true,
+        remaining: this.defaultRule.limit,
+        resetAfter: this.defaultRule.windowSeconds,
+        resetAt: Date.now() + this.defaultRule.windowSeconds * 1_000,
+        limit: this.defaultRule.limit,
+        rule: this.defaultRule,
+        identity: options.identity ?? null,
+        bucket: this.buildBucket(this.defaultRule, options.identity ?? null, options.path),
+        blocked: false,
+      };
+    }
+
+    const rule = options.ruleName
+      ? this.rules.find((candidate) => candidate.name === options.ruleName) ?? this.defaultRule
+      : this.resolveRule(options.method, options.path);
+    const cost = Math.max(options.cost ?? rule.cost ?? 1, 1);
+    const bucket = this.buildBucket(rule, options.identity ?? null, options.path);
+    const result = this.acquireFromMemory(bucket, rule, cost);
+    return {
+      ...result,
+      identity: options.identity ?? null,
+    };
+  }
+
+  toHeaders(result: RateLimitResult): Record<string, string> {
+    if (!result.rule.includeHeaders) {
+      return {};
+    }
+    const headers: Record<string, string> = {
+      [this.headers.limit]: String(result.limit),
+      [this.headers.remaining]: String(Math.max(result.remaining, 0)),
+      [this.headers.reset]: String(Math.trunc(result.resetAt / 1_000)),
+      [this.headers.rule]: result.rule.name,
+    };
+    if (!result.allowed) {
+      headers[this.headers.retryAfter] = String(Math.ceil(Math.max(result.resetAfter, 0)));
+    }
+    return headers;
+  }
+
+  getMetadata(): Record<string, unknown> {
+    return {
+      enabled: this.enabled,
+      defaultRule: this.defaultRule,
+      rules: this.rules,
+      trustForwardedFor: this.trustForwardedFor,
+      forwardedForHeader: this.forwardedForHeader,
+      identityHeader: this.identityHeader,
+      headers: this.headers,
+    };
+  }
+
+  getHeaderNames(): Record<string, string> {
+    return this.headers;
+  }
+
+  getIdentityHeaderName(): string | null {
+    return this.identityHeader;
+  }
+
+  getForwardedForHeader(): string {
+    return this.forwardedForHeader;
+  }
+
+  isForwardedForTrusted(): boolean {
+    return this.trustForwardedFor;
+  }
+}

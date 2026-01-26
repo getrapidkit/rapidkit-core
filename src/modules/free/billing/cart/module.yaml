@@ -1,0 +1,204 @@
+name: cart
+display_name: Cart
+description: Shopping cart service for checkout flows
+version: 0.1.4
+access: free
+status: stable
+tier: free
+category: billing
+generated_from_config: true
+depends_on:
+    - free/essentials/settings
+    - free/users/users_core
+tags:
+    - billing
+    - cart
+profile_inherits:
+    fastapi.standard: fastapi
+    fastapi.ddd: fastapi
+    nestjs.standard: nestjs
+config_sources:
+    - config/base.yaml
+    - config/snippets.yaml
+generation:
+    vendor:
+        root: .rapidkit/vendor
+        files:
+            - template: templates/base/cart.py.j2
+              relative: src/modules/free/billing/cart/cart.py
+            - template: templates/base/cart_health.py.j2
+              relative: src/health/cart.py
+            - template: templates/base/cart_types.py.j2
+              relative: src/modules/free/billing/cart/types/cart.py
+            - template: templates/vendor/nestjs/configuration.js.j2
+              relative: nestjs/configuration.js
+    variants:
+        fastapi: &fastapi_variant
+            root: .
+            context:
+                framework: fastapi
+                framework_display_name: FastAPI
+                module_class_name: Cart
+                module_slug: cart
+                module_kebab: cart
+                base_module: src/modules/free/billing/cart
+            files:
+                - template: templates/variants/fastapi/cart.py.j2
+                  output: src/modules/free/billing/cart/cart.py
+                - template: templates/variants/fastapi/cart_routes.py.j2
+                  output: src/modules/free/billing/cart/routers/cart.py
+                - template: templates/variants/fastapi/cart_types.py.j2
+                  output: src/modules/free/billing/cart/types/cart.py
+                - template: templates/variants/fastapi/cart_config.yaml.j2
+                  output: config/cart.yaml
+                - template: templates/tests/integration/test_cart_integration.j2
+                  output: tests/modules/integration/billing/cart/test_cart_integration.py
+                - template: templates/variants/fastapi/tests/test_cart_e2e.py
+                  output: tests/modules/e2e/free/billing/cart/test_cart_e2e.py
+        fastapi.standard: *fastapi_variant
+        fastapi.ddd: *fastapi_variant
+        nestjs: &nestjs_variant
+            root: .
+            context:
+                framework: nestjs
+                framework_display_name: NestJS
+                vendor_configuration_relative: nestjs/configuration.js
+                vendor_runtime_relative: src/modules/free/billing/cart/cart.py
+                module_class_name: Cart
+                module_kebab: cart
+            files:
+                - template: templates/variants/nestjs/cart.service.ts.j2
+                  output: src/modules/free/billing/cart/cart.service.ts
+                - template: templates/variants/nestjs/cart.controller.ts.j2
+                  output: src/modules/free/billing/cart/cart.controller.ts
+                - template: templates/variants/nestjs/cart.module.ts.j2
+                  output: src/modules/free/billing/cart/cart.module.ts
+                - template: templates/variants/nestjs/cart.configuration.ts.j2
+                  output: src/modules/free/billing/cart/cart.configuration.ts
+                - template: templates/variants/nestjs/cart.health.ts.j2
+                  output: src/modules/free/billing/cart/cart.health.ts
+                - template: templates/variants/nestjs/cart.routes.ts.j2
+                  output: src/modules/free/billing/cart/cart.routes.ts
+                - template: templates/variants/nestjs/cart.spec.ts.j2
+                  output: test/cart/cart.spec.ts
+                - template: templates/variants/nestjs/tests/cart.e2e-spec.ts
+                  output: tests/modules/e2e/free/billing/cart/cart.e2e-spec.ts
+        nestjs.standard: *nestjs_variant
+    snippets:
+        enabled: true
+        config: config/snippets.yaml
+        default: []
+compatibility:
+    python: ">=3.10,<4.0"
+    node: ">=18,<21"
+    frameworks:
+        - fastapi
+        - nestjs
+    os:
+        - linux
+        - darwin
+        - windows
+testing:
+    coverage_min: 85
+    integration_tests: true
+    e2e_tests: false
+    unit_tests:
+        - test_cart_generator.py
+        - test_cart_overrides.py
+        - test_cart_runtime.py
+        - test_cart_adapters.py
+        - test_cart_validation.py
+        - test_cart_error_handling.py
+        - test_cart_health_check.py
+        - test_cart_framework_variants.py
+        - test_cart_vendor_layer.py
+        - test_cart_configuration.py
+        - test_cart_versioning.py
+        - test_cart_integration.py
+        - test_cart_standard_module.py
+    fixtures:
+        - conftest.py
+documentation:
+    changelog: docs/changelog.md
+    readme: README.md
+    overview: docs/overview.md
+    usage: docs/usage.md
+    advanced: docs/advanced.md
+    migration: docs/migration.md
+    troubleshooting: docs/troubleshooting.md
+    api_docs: docs/api-reference.md
+    examples: []
+support:
+    issues: https://github.com/getrapidkit/core/issues
+    discussions: https://github.com/getrapidkit/core/discussions
+    documentation: https://docs.rapidkit.top/modules/billing/cart
+changelog:
+  - version: "0.1.4"
+    date: "2026-01-04"
+    notes: "See docs/changelog.md"
+validation:
+    pre_install:
+        - check_python_version
+    post_install:
+        - validate_generated_code
+rollback:
+    strategy: uninstall
+    backup_path: .rapidkit/backups/
+    max_backups: 3
+performance:
+    lazy_loading: true
+    caching:
+        templates: true
+        ttl: 300
+capabilities:
+    - cart_management
+    - pricing_rules
+    - discount_engine
+    - tax_calculation
+    - health_checks
+signature: null
+signer_id: null
+signature_version: null
+file_hashes:
+    templates/variants/nestjs/tests/cart.e2e-spec.ts: sha256:f3c9649d952251c88c80e9f2acd581bd31ced86ec140cce46c29a2fc0a713606
+    templates/variants/fastapi/tests/test_cart_e2e.py: sha256:5448315441b601156440a384827fda5f0488e0050335cbb75379dfdcc3d33fcf
+    scripts/run_demo.py: sha256:7db2f1007841424abd127d9f320a58fdd2d417ded0514f7e603ab86c75ad048d
+    README.md: sha256:ae27586c4d6eb97e11a4d3bdb718c6c9847c662ab7f0dbc2b270a9e01ffdebe7
+    __init__.py: sha256:41c58d575bdb2c7200d75912580ff5164985a3d89a61cab0a51dd574395ce120
+    config/base.yaml: sha256:371a87a72a7889228fd07ac178e09aa6bb8ebffd75a2b49391b9991bd5bf76b8
+    config/snippets/b2b-wholesale.yaml: sha256:8e1ce733bf2a7a645495a7d25486904d293f433fc3a316b291d3f89952749e8e
+    config/snippets/loyalty-tier.yaml: sha256:d89a306c0774c1950e8e98895279d7af1c75f16e70910ae522dffdf51e6d395d
+    config/snippets.yaml: sha256:83a94c325adf91bb808fa606b408b9bf295cf111d112572203d6c513f63af463
+    docs/README.md: sha256:7e4824ed74a041c739347de1a29ba2af9b0818ced84fe8f7ea53f20ea14d739a
+    docs/advanced.md: sha256:e577731134074fe8dfa365a5ec048760a349f0997b230be1aaea0c6f472dbde3
+    docs/api-reference.md: sha256:adb385520ed7892d5165312fec77adf1c2a7060af30abafce000e86da53131d2
+    docs/changelog.md: sha256:4ec2746f9b6323762e8370bac016407eb7191f092f9aef682773bd516c6904e9
+    docs/migration.md: sha256:0e468027a4f6c96bd3975938f7f1173bb4794f6cf095f3ea3a3f4995e7757c10
+    docs/overview.md: sha256:41b2881eeca48ca71900d30d3e4523ea53f3a53dab222aa18cbbf191a8d13448
+    docs/troubleshooting.md: sha256:a57fb11998017ed5d4a7b2816644f9bac14b5d1e088d0d22cdced8189deeeda7
+    docs/usage.md: sha256:9032d851924388798dfebda55a833f248ff39edc87247e6183fdc7dfd941a590
+    frameworks/__init__.py: sha256:62bf1c523b17ed3dbfddc4b58c253e578d057b0017187a2270d58d6c34f31f6a
+    frameworks/fastapi.py: sha256:5b1aa638aac61b54b68c1fdca81cdc16e6186560c9922bfce9c7b91e4b70eea6
+    frameworks/nestjs.py: sha256:23cd13eb3242f875e92c51923980412e677100a6b81856c0726bee060d1081e0
+    generate.py: sha256:ad7c4e99e8c17a03c6168fe9a0a54d266fbe692f4581eeccab53d7c7349e2d57
+    module.verify.json: sha256:59294ca9ae65bba169ec9944033b95d614b809ac6320c206246d7e61395640d4
+    overrides.py: sha256:7be5b23494b03adb2662f0e6a9a90eb509251ddd3322cfd6818143eaf4c95095
+    templates/base/cart.py.j2: sha256:67bbeb6bf96227158484a4b5c67c5ca34055159066c472437705269f99a8a1fc
+    templates/base/cart_health.py.j2: sha256:6b61ee70f78351c6570c7bb69c2f8867af07a96ba0a2c5067b7d70e3881c9890
+    templates/base/cart_types.py.j2: sha256:639a1997f0f6bd8315463bbb3b7cd714b1ab8f47bdd5e4898c4d554a709571f3
+    templates/snippets/cart.snippet.j2: sha256:37b94cd314569a3c9d814d9e3b5d9c3c6a4779f1481899d611391d37752eb5e9
+    templates/tests/__init__.py: sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+    templates/tests/integration/test_cart_integration.j2: sha256:f86af9f8ee59d8e0ce5c1f8dbd580c87d095aee4623df8e910af946d519c9a2e
+    templates/variants/fastapi/cart.py.j2: sha256:1309e755e026524b0b8675701d0c21f57867223fc4f1860a26cc5fdcc49f1e37
+    templates/variants/fastapi/cart_config.yaml.j2: sha256:82c8d7d637dbac39212239c07ddeb90a99f63736cff80c4ce39bfa29093347b7
+    templates/variants/fastapi/cart_health.py.j2: sha256:b6f96f02b8574cc7828ac3e2fc9462603620069d33bbdab3cd9e802da9f7b181
+    templates/variants/fastapi/cart_routes.py.j2: sha256:bfc027218be042f2cdd6a58f3b140bb363842402d5ae84b6006122f6b5c0489b
+    templates/variants/fastapi/cart_types.py.j2: sha256:f3c293ad9c6d0ab3cfb7cf53185b274a418fea09765e87fa808105d61a1d43dd
+    templates/variants/nestjs/cart.configuration.ts.j2: sha256:3868a3f6bde2e9d0e13f94a8e866d7e84e1cfbb4f670adf24e021fae581531c2
+    templates/variants/nestjs/cart.controller.ts.j2: sha256:b17745fe98673a316d5dbe2f4cd71f5158a2a803ce71bb41c2eeb5a486f1a324
+    templates/variants/nestjs/cart.health.ts.j2: sha256:ee45c22d7c00a266a2a27a83c212a63d25a66a5c32f6fe898010d74340ae12d5
+    templates/variants/nestjs/cart.module.ts.j2: sha256:554429ccc80b181f65bbd348aa92109ae480954569bfc6b41a962ee0727b1894
+    templates/variants/nestjs/cart.routes.ts.j2: sha256:6b68a86286ede43e6e393559bfbbda98205f4f05708fb02c75439ff42a823ee0
+    templates/variants/nestjs/cart.service.ts.j2: sha256:393643b13c9a1c6cbf6fb15ae2c3091d5195ffd48fc29469e318f8544082544a
+    templates/variants/nestjs/cart.spec.ts.j2: sha256:2d1f10d4a669502433db59ab75d10d3eca4c279c8a82d7905fa4dcfa4204dfb0
+    templates/vendor/nestjs/configuration.js.j2: sha256:4c91e8327f2787e4895f509d391e00685e1820359c5f18e9e37bcc6ab041012e

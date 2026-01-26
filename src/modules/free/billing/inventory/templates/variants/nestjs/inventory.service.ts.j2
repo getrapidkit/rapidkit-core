@@ -1,0 +1,222 @@
+import { Inject, Injectable, Optional } from "@nestjs/common";
+
+export interface InventoryItem {
+  sku: string;
+  name: string;
+  quantity: number;
+  reserved: number;
+  price: number;
+  currency: string;
+  metadata: Record<string, unknown>;
+  attributes: Record<string, unknown>;
+}
+
+export interface InventoryReservation {
+  reference: string;
+  sku: string;
+  quantity: number;
+  createdAt: Date;
+  expiresAt?: Date;
+  metadata: Record<string, unknown>;
+}
+
+export interface InventoryConfig {
+  enabled: boolean;
+  defaultCurrency: string;
+  allowBackorders: boolean;
+  allowNegativeInventory: boolean;
+  lowStockThreshold: number;
+  reservationExpiryMinutes: number;
+  decimalPrecision: number;
+  warehouses: Record<string, Record<string, unknown>>;
+}
+
+export interface InventoryPricing {
+  min_price: number;
+  max_price: number;
+  tax_inclusive: boolean;
+  rounding_mode: string;
+}
+
+export interface InventoryMetrics {
+  totalSkus: number;
+  totalOnHand: number;
+  totalReserved: number;
+  lowStockItems: number;
+  backorderSkus: number;
+  currency: string;
+}
+
+export interface InventoryConfigBundle {
+  defaults?: Partial<InventoryConfig>;
+  warehouses?: Record<string, Record<string, unknown>>;
+  pricing?: Partial<InventoryPricing>;
+  notifications?: Record<string, unknown>;
+}
+
+export const INVENTORY_CONFIG_TOKEN = "INVENTORY_CONFIG";
+
+const DEFAULT_CONFIG: InventoryConfig = {
+  enabled: {{ inventory_defaults.enabled | default(True) | lower }},
+  defaultCurrency: "{{ inventory_defaults.default_currency | default('usd') | upper }}",
+  allowBackorders: {{ inventory_defaults.allow_backorders | default(False) | lower }},
+  allowNegativeInventory: {{ inventory_defaults.allow_negative_inventory | default(False) | lower }},
+  lowStockThreshold: {{ inventory_defaults.low_stock_threshold | default(5) }},
+  reservationExpiryMinutes: {{ inventory_defaults.reservation_expiry_minutes | default(30) }},
+  decimalPrecision: {{ inventory_defaults.decimal_precision | default(2) }},
+  warehouses: {{ inventory_warehouses | tojson }} as Record<string, Record<string, unknown>>,
+};
+
+const PRICING: InventoryPricing = {{ inventory_pricing | tojson(indent=2) }} as InventoryPricing;
+const NOTIFICATIONS: Record<string, unknown> = {{ inventory_notifications | tojson(indent=2) }};
+
+function cloneItem(item: InventoryItem): InventoryItem {
+  return {
+    ...item,
+    metadata: { ...item.metadata },
+    attributes: { ...item.attributes },
+  };
+}
+
+@Injectable()
+export class {{ module_class_name }}Service {
+  private readonly items = new Map<string, InventoryItem>();
+  private readonly reservations = new Map<string, InventoryReservation>();
+
+  private readonly config: InventoryConfig;
+  private readonly pricing: InventoryPricing = PRICING;
+  private readonly notifications: Record<string, unknown> = NOTIFICATIONS;
+
+  constructor(
+    @Optional()
+    @Inject(INVENTORY_CONFIG_TOKEN)
+    bundle?: InventoryConfigBundle,
+  ) {
+    const merged: InventoryConfig = {
+      ...DEFAULT_CONFIG,
+      ...(bundle?.defaults ?? {}),
+      warehouses: {
+        ...DEFAULT_CONFIG.warehouses,
+        ...(bundle?.warehouses ?? {}),
+      },
+    };
+    this.config = merged;
+    if (bundle?.pricing) {
+      this.pricing = {
+        ...this.pricing,
+        ...bundle.pricing,
+      } as InventoryPricing;
+    }
+    if (bundle?.notifications) {
+      this.notifications = {
+        ...this.notifications,
+        ...bundle.notifications,
+      };
+    }
+  }
+
+  getStatus(): Record<string, unknown> {
+    return {
+      module: "{{ module_name }}",
+      currency: this.config.defaultCurrency,
+      enabled: this.config.enabled,
+      warehouses: Object.keys(this.config.warehouses),
+      pricing: this.pricing,
+    };
+  }
+
+  getMetadata(): Record<string, unknown> {
+    return {
+      module: "{{ module_name }}",
+      defaults: this.config,
+      pricing: this.pricing,
+      notifications: this.notifications,
+    };
+  }
+
+  listWarehouses(): Array<Record<string, unknown>> {
+    return Object.values(this.config.warehouses ?? {});
+  }
+
+  list(): InventoryItem[] {
+    return Array.from(this.items.values()).map(cloneItem);
+  }
+
+  upsert(payload: {
+    sku: string;
+    name: string;
+    quantity: number;
+    price: number;
+    currency?: string;
+    metadata?: Record<string, unknown>;
+    attributes?: Record<string, unknown>;
+  }): InventoryItem {
+    const currency = (payload.currency ?? this.config.defaultCurrency).toUpperCase();
+    const existing = this.items.get(payload.sku);
+    const reserved = existing?.reserved ?? 0;
+    if (payload.quantity < 0 && !this.config.allowNegativeInventory) {
+      throw new Error("Quantity cannot be negative");
+    }
+    if (payload.quantity - reserved < 0 && !this.config.allowBackorders) {
+      throw new Error("Backorders are disabled for this module");
+    }
+    const item: InventoryItem = {
+      sku: payload.sku,
+      name: payload.name,
+      quantity: payload.quantity,
+      reserved,
+      price: Number(payload.price),
+      currency,
+      metadata: { ...(payload.metadata ?? {}) },
+      attributes: { ...(payload.attributes ?? {}) },
+    };
+    this.items.set(item.sku, item);
+    return cloneItem(item);
+  }
+
+  adjustStock(sku: string, delta: number): InventoryItem {
+    const item = this.items.get(sku);
+    if (!item) {
+      throw new Error(`Item '${sku}' not found`);
+    }
+    const quantity = item.quantity + delta;
+    if (quantity < 0 && !this.config.allowNegativeInventory) {
+      throw new Error("Adjustment would drop inventory below zero");
+    }
+    const updated = {
+      ...item,
+      quantity,
+    };
+    if (updated.quantity - updated.reserved < 0 && !this.config.allowBackorders) {
+      throw new Error("Adjustment would trigger backorders while disabled");
+    }
+    this.items.set(sku, updated);
+    return cloneItem(updated);
+  }
+
+  getHealthPayload(): { status: string; metrics: InventoryMetrics; module: string } {
+    const items = Array.from(this.items.values());
+    const totalOnHand = items.reduce((acc, item) => acc + Math.max(item.quantity, 0), 0);
+    const totalReserved = items.reduce((acc, item) => acc + Math.max(item.reserved, 0), 0);
+    const lowStock = items.filter((item) => item.quantity - item.reserved <= this.config.lowStockThreshold).length;
+    const backorders = items.filter((item) => item.quantity - item.reserved < 0).length;
+    const metrics: InventoryMetrics = {
+      totalSkus: items.length,
+      totalOnHand,
+      totalReserved,
+      lowStockItems: lowStock,
+      backorderSkus: backorders,
+      currency: this.config.defaultCurrency,
+    };
+    const status = !this.config.enabled
+      ? "disabled"
+      : metrics.lowStockItems > 0
+      ? "degraded"
+      : "ok";
+    return { module: "{{ module_name }}", status, metrics };
+  }
+
+  getHealth(): { status: string; metrics: InventoryMetrics; module: string } {
+    return this.getHealthPayload();
+  }
+}

@@ -1,0 +1,8 @@
+"""Redis health helpers.
+
+Kept as a small wrapper so `src.modules.free.cache.redis.health` is importable.
+"""
+
+from .redis import redis_health_check, register_redis_health, router
+
+__all__ = ["redis_health_check", "register_redis_health", "router"]

@@ -1,0 +1,126 @@
+"""Canonical Celery health router shared across frameworks."""
+
+from __future__ import annotations
+
+import logging
+import time
+from datetime import datetime, timezone
+from types import SimpleNamespace
+from typing import Any, Dict, Mapping, MutableMapping, Sequence, cast
+
+from src.modules.free.tasks.celery.celery import MODULE_FEATURES, describe_celery, get_celery_metadata
+
+APIRouter: Any
+FastAPIApp: Any
+RequestType: Any
+status: Any
+
+try:  # pragma: no cover - FastAPI optional
+    from fastapi import APIRouter, FastAPI as FastAPIApp, Request as RequestType, status
+except ImportError:  # pragma: no cover - allow import without FastAPI installed
+    APIRouter = cast(Any, None)
+    FastAPIApp = cast(Any, None)
+    RequestType = cast(Any, None)
+    status = SimpleNamespace(HTTP_200_OK=200, HTTP_503_SERVICE_UNAVAILABLE=503)
+    _FASTAPI_AVAILABLE = False
+else:
+    _FASTAPI_AVAILABLE = True
+
+logger = logging.getLogger("tasks.celery.health")
+
+_START_TS = time.monotonic()
+
+DEFAULT_FEATURES: tuple[str, ...] = tuple(MODULE_FEATURES)
+
+
+def build_health_snapshot(
+    metadata: Mapping[str, Any] | None = None,
+    *,
+    module_name: str = "{{ module_name }}",
+    status: str | None = None,
+    detail: str | None = None,
+    features: Sequence[str] | None = None,
+) -> MutableMapping[str, Any]:
+    payload: MutableMapping[str, Any]
+    if metadata is None:
+        payload = dict(get_celery_metadata(include_tasks=True))
+    else:
+        payload = dict(metadata)
+
+    feature_set = tuple(features) if features is not None else DEFAULT_FEATURES
+    payload.setdefault("module", module_name)
+    payload.setdefault("checked_at", datetime.now(timezone.utc).isoformat())
+    payload.setdefault("version", "{{ rapidkit_vendor_version }}")
+    payload.setdefault("uptime", max(0.0, time.monotonic() - _START_TS))
+    if detail is not None:
+        payload["detail"] = detail
+    if status is not None:
+        payload["status"] = status
+    else:
+        payload.setdefault("status", "ok")
+    if feature_set:
+        payload["features"] = list(feature_set)
+    return payload
+
+
+def render_health_snapshot(snapshot: Mapping[str, Any]) -> MutableMapping[str, Any]:
+    return dict(snapshot)
+
+
+def build_metadata(metadata: Mapping[str, Any] | None = None) -> MutableMapping[str, Any]:
+    snapshot = build_health_snapshot(metadata)
+    return render_health_snapshot(snapshot)
+
+
+def _resolve_health_snapshot(app: Any) -> Dict[str, Any]:
+    celery_app = getattr(getattr(app, "state", None), "celery_app", None)
+    metadata = describe_celery(celery_app)
+    return dict(build_health_snapshot(metadata))
+
+
+def build_health_router() -> Any:
+    if not _FASTAPI_AVAILABLE:
+        raise RuntimeError("FastAPI must be installed to expose Celery health endpoints")
+
+    router = APIRouter(prefix="/api/health/module", tags=["health"])
+
+    @router.get(
+        "/celery",
+        summary="Celery module health check",
+        status_code=status.HTTP_200_OK,
+    )
+    async def celery_health_check(  # pragma: no cover - exercised in integration tests
+        request: RequestType,
+    ) -> Dict[str, Any]:
+        payload = _resolve_health_snapshot(request.app)
+        logger.debug("Celery health snapshot", extra={"payload": payload})
+        return payload
+
+    return router
+
+
+if _FASTAPI_AVAILABLE:
+    router = build_health_router()
+else:  # pragma: no cover
+    router = None
+
+
+def register_celery_health(app: Any) -> None:
+    if not _FASTAPI_AVAILABLE:
+        raise RuntimeError("FastAPI must be installed to register Celery health routes")
+    if FastAPIApp is not None and not isinstance(app, FastAPIApp):  # pragma: no cover
+        raise TypeError("register_celery_health expects a FastAPI application instance")
+    if router is None:  # pragma: no cover
+        raise RuntimeError("Celery health router unavailable")
+    app.include_router(router)
+
+
+__all__ = [
+    "DEFAULT_FEATURES",
+    "build_health_router",
+    "build_health_snapshot",
+    "build_metadata",
+    "register_celery_health",
+    "render_health_snapshot",
+    "router",
+]

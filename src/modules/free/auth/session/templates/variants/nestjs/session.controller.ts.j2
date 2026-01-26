@@ -1,0 +1,70 @@
+import { Body, Controller, Delete, Get, Param, Post } from "@nestjs/common";
+
+import { {{ module_class_name }}Service } from "./session.service";
+
+type IssuePayload = {
+  userId: string;
+  payload?: Record<string, unknown>;
+};
+
+type RefreshPayload = {
+  refreshToken: string;
+};
+
+type VerifyPayload = {
+  token: string;
+};
+
+@Controller("sessions")
+export class {{ module_class_name }}Controller {
+  constructor(private readonly service: {{ module_class_name }}Service) {}
+
+  @Get("metadata")
+  getMetadata(): Record<string, unknown> {
+    return this.service.describe();
+  }
+
+  @Get("features")
+  getFeatures(): { features: string[] } {
+    return { features: this.service.listFeatures() };
+  }
+
+  @Post()
+  issueSession(@Body() payload: IssuePayload): Record<string, unknown> {
+    const envelope = this.service.issueSession(payload.userId, payload.payload ?? {});
+    return {
+      sessionId: envelope.session.sessionId,
+      expiresAt: envelope.session.expiresAt,
+      refreshToken: envelope.refreshToken,
+      cookie: envelope.cookie,
+    };
+  }
+
+  @Post("refresh")
+  refreshSession(@Body() payload: RefreshPayload): Record<string, unknown> {
+    const envelope = this.service.rotateSession(payload.refreshToken);
+    return {
+      sessionId: envelope.session.sessionId,
+      expiresAt: envelope.session.expiresAt,
+      refreshToken: envelope.refreshToken,
+      cookie: envelope.cookie,
+    };
+  }
+
+  @Post("verify")
+  verifySession(@Body() payload: VerifyPayload): Record<string, unknown> {
+    const session = this.service.verifySessionToken(payload.token);
+    return {
+      sessionId: session.sessionId,
+      userId: session.userId,
+      payload: session.payload,
+      expiresAt: session.expiresAt,
+    };
+  }
+
+  @Delete(":sessionId")
+  revokeSession(@Param("sessionId") sessionId: string): { revoked: boolean } {
+    this.service.revokeSession(sessionId);
+    return { revoked: true };
+  }
+}

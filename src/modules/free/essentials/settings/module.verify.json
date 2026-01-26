@@ -1,0 +1,46 @@
+{
+  "checked_at": "2025-12-25T12:01:52.431760+00:00",
+  "description": "Lean module layout blueprint (v3)",
+  "extra_directories": [
+    "scripts"
+  ],
+  "extra_files": [
+    "scripts/run_demo.py",
+    "templates/base/__init__.py.j2",
+    "templates/base/custom_sources.py.j2",
+    "templates/base/hot_reload.py.j2",
+    "templates/base/settings_health.py.j2"
+  ],
+  "missing_directories": [],
+  "missing_files": [],
+  "module": "free/essentials/settings",
+  "parity": {
+    "fastapi": {
+      "declared": true,
+      "has_config": true,
+      "has_health": true,
+      "has_metadata": true,
+      "has_tests": true,
+      "issues": [],
+      "plugin": true,
+      "status": "ok"
+    },
+    "nestjs": {
+      "declared": true,
+      "has_config": true,
+      "has_health": true,
+      "has_metadata": true,
+      "has_tests": true,
+      "issues": [],
+      "plugin": true,
+      "status": "ok"
+    }
+  },
+  "parity_checked_at": "2025-11-23T14:25:21.819065+00:00",
+  "parity_valid": true,
+  "spec_version": 4,
+  "structure_tree_hash": "808098649cb0ca185cc2d0f7763d08fc190040a0b4e094ed0ea4c50377073b4c",
+  "structure_valid": true,
+  "tree_hash": "808098649cb0ca185cc2d0f7763d08fc190040a0b4e094ed0ea4c50377073b4c",
+  "valid": true
+}

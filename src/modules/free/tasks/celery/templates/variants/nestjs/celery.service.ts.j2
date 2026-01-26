@@ -1,0 +1,180 @@
+import { Inject, Injectable, Logger, Optional } from '@nestjs/common';
+
+export interface CeleryConnectionOptions {
+  brokerUrl: string;
+  resultBackend?: string;
+  defaultQueue?: string;
+}
+
+export interface CeleryTaskOptions {
+  countdown?: number;
+  eta?: Date | string;
+  expires?: number | Date;
+  queue?: string;
+  priority?: number;
+}
+
+export interface {{ module_class_name }}ModuleConfig {
+  enabled: boolean;
+  name?: string;
+  namespace?: string;
+  autodiscover?: string[];
+  resultExpires?: number | null;
+  connection: CeleryConnectionOptions;
+  defaultHeaders?: Record<string, string>;
+}
+
+export const CELERY_CONFIG_TOKEN = 'CELERY_MODULE_CONFIG';
+
+export const CELERY_FEATURES = [
+  'task_execution',
+  'beat_schedule',
+  'worker_monitoring',
+] as const;
+
+export type CeleryFeature = (typeof CELERY_FEATURES)[number];
+
+export interface CeleryMetadata {
+  module: string;
+  status: string;
+  checked_at: string;
+  enabled: boolean;
+  broker_url: string | null;
+  result_backend: string | null;
+  default_queue: string | null;
+  namespace: string | null;
+  autodiscover: string[];
+  result_expires: number | null;
+  features: CeleryFeature[];
+}
+
+type CeleryModuleLoader = (name: string) => Promise<any>;
+
+@Injectable()
+export class {{ module_class_name }}Service {
+  private readonly logger = new Logger('{{ module_class_name }}Service');
+  private client: any | null = null;
+
+  constructor(
+    @Inject(CELERY_CONFIG_TOKEN) private readonly config: {{ module_class_name }}ModuleConfig,
+    @Optional() private readonly lazyImport: CeleryModuleLoader = (name) => import(name),
+  ) {}
+
+  private async ensureClient(): Promise<any> {
+    if (!this.config.enabled) {
+      throw new Error('Celery module disabled via configuration.');
+    }
+    if (this.client) {
+      return this.client;
+    }
+
+    try {
+      const celery = await this.lazyImport('celery-node');
+      const client = celery.createClient(
+        this.config.connection.brokerUrl,
+        this.config.connection.resultBackend,
+      );
+      this.client = client;
+      return client;
+    } catch (error) {
+      this.logger.error('Failed to initialise Celery client.', error as Error);
+      throw error;
+    }
+  }
+
+  async sendTask<T = unknown>(
+    name: string,
+    args: unknown[] = [],
+    kwargs: Record<string, unknown> = {},
+    options: CeleryTaskOptions = {},
+  ): Promise<T> {
+    const client = await this.ensureClient();
+    const queue = client.createTask(name, {
+      queue: options.queue ?? this.config.connection.defaultQueue,
+    });
+    const payloadHeaders = {
+      ...this.config.defaultHeaders,
+    };
+
+    return queue.applyAsync(args, kwargs, {
+      headers: payloadHeaders,
+      countdown: options.countdown,
+      eta: options.eta,
+      expires: options.expires,
+      priority: options.priority,
+    });
+  }
+
+  async ping(): Promise<boolean> {
+    if (!this.config.enabled) {
+      return false;
+    }
+    try {
+      const client = await this.ensureClient();
+      const control = client.control || client;
+      if (typeof control.ping === 'function') {
+        const result = await control.ping();
+        return Array.isArray(result) ? result.length > 0 : Boolean(result);
+      }
+      await this.sendTask('celery.ping');
+      return true;
+    } catch (error) {
+      this.logger.warn('Celery ping failed.', error as Error);
+      return false;
+    }
+  }
+
+  status(): Record<string, unknown> {
+    return {
+      enabled: this.config.enabled,
+      brokerUrl: this.config.connection.brokerUrl,
+      resultBackend: this.config.connection.resultBackend ?? null,
+      defaultQueue: this.config.connection.defaultQueue ?? null,
+      namespace: this.config.namespace ?? null,
+      autodiscover: Array.isArray(this.config.autodiscover) ? [...this.config.autodiscover] : [],
+      resultExpires: this.config.resultExpires ?? null,
+    };
+  }
+
+  getConfiguration(): {{ module_class_name }}ModuleConfig {
+    return { ...this.config, autodiscover: this.config.autodiscover ?? [] };
+  }
+
+  buildMetadata(moduleName: string): CeleryMetadata {
+    const state = this.status();
+    const enabled = Boolean(state.enabled ?? true);
+    return {
+      module: moduleName,
+      status: enabled ? 'ok' : 'disabled',
+      checked_at: new Date().toISOString(),
+      enabled,
+      broker_url: (state.brokerUrl as string | undefined) ?? null,
+      result_backend: (state.resultBackend as string | undefined) ?? null,
+      default_queue: (state.defaultQueue as string | undefined) ?? null,
+      namespace: (state.namespace as string | undefined) ?? this.config.namespace ?? null,
+      autodiscover: Array.isArray(state.autodiscover)
+        ? (state.autodiscover as string[])
+        : this.config.autodiscover ?? [],
+      result_expires:
+        typeof state.resultExpires === 'number' ? (state.resultExpires as number) : this.config.resultExpires ?? null,
+      features: Array.from(CELERY_FEATURES) as CeleryFeature[],
+    };
+  }
+}
+
+export type CeleryHealthSummary = {
+  status: 'up' | 'down';
+  details: Record<string, unknown>;
+};
+
+export async function createCeleryHealthCheck(
+  service: {{ module_class_name }}Service,
+): Promise<Record<string, CeleryHealthSummary>> {
+  const status = (await service.ping()) ? 'up' : 'down';
+  return {
+    celery: {
+      status,
+      details: service.status(),
+    },
+  };
+}

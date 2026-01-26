@@ -1,0 +1,59 @@
+"""FastAPI router exposing CORS health metadata."""
+
+from __future__ import annotations
+
+from typing import Any, Dict, Mapping
+
+from fastapi import APIRouter, FastAPI, Request, status
+
+from src.health.cors import build_health_snapshot, render_health_snapshot
+
+router = APIRouter(prefix="/api/health/module", tags=["health"])
+
+
+def _extract_cors_config(app: FastAPI) -> Mapping[str, Any]:
+    state = getattr(app, "state", None)
+    if state is None:
+        return {}
+    config = getattr(state, "cors_settings", None)
+    if isinstance(config, Mapping):
+        return config
+    config_obj = getattr(state, "cors_config", None)
+    if config_obj is None:
+        return {}
+    if hasattr(config_obj, "model_dump"):
+        return config_obj.model_dump()
+    if hasattr(config_obj, "dict"):
+        return config_obj.dict()
+    return {}
+
+
+@router.get(
+    "/cors",
+    summary="CORS module health check",
+    status_code=status.HTTP_200_OK,
+)
+async def cors_health_check(request: Request) -> Dict[str, Any]:
+    """Return normalized metadata describing the configured CORS policy."""
+
+    config = _extract_cors_config(request.app)
+    enabled = bool(getattr(getattr(request.app, "state", None), "cors_enabled", True))
+    snapshot = build_health_snapshot(config, status="ok" if enabled else "disabled")
+    payload = render_health_snapshot(snapshot)
+    payload["enabled"] = snapshot.enabled
+    payload["log_level"] = snapshot.log_level or payload.get("log_level", "INFO")
+    payload["metadata"] = dict(payload.get("metadata", {}))
+    return payload
+
+
+def register_cors_health(app: FastAPI) -> None:
+    """Attach the CORS health routes to a FastAPI application."""
+
+    app.include_router(router)
+
+
+__all__ = [
+    "cors_health_check",
+    "register_cors_health",
+    "router",
+]

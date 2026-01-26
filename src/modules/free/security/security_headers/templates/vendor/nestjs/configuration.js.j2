@@ -1,0 +1,167 @@
+"use strict";
+
+const DEFAULT_SECURITY_HEADERS = {
+  enabled: true,
+  strictTransportSecurity: true,
+  strictTransportSecurityMaxAge: 63072000,
+  strictTransportSecurityIncludeSubdomains: true,
+  strictTransportSecurityPreload: true,
+  contentSecurityPolicy: null,
+  contentSecurityPolicyReportOnly: false,
+  referrerPolicy: "strict-origin-when-cross-origin",
+  xContentTypeOptions: "nosniff",
+  xFrameOptions: "DENY",
+  xXssProtection: false,
+  crossOriginEmbedderPolicy: "require-corp",
+  crossOriginOpenerPolicy: "same-origin",
+  crossOriginResourcePolicy: "same-origin",
+  permissionsPolicy: {},
+  expectCt: null,
+  xDnsPrefetchControl: "off",
+  xDownloadOptions: "noopen",
+  additionalHeaders: {},
+};
+
+function formatPermissionsPolicy(policy) {
+  if (!policy) {
+    return undefined;
+  }
+
+  const segments = Object.entries(policy)
+    .map(([directive, value]) => {
+      if (!value || (Array.isArray(value) && value.length === 0)) {
+        return `${directive}=()`;
+      }
+
+      if (typeof value === "string") {
+        const trimmed = value.trim();
+        if (!trimmed) {
+          return `${directive}=()`;
+        }
+        if (trimmed.includes("=") || trimmed.startsWith("(")) {
+          return `${directive}=${trimmed}`;
+        }
+        return `${directive}=(${trimmed})`;
+      }
+
+      const tokens = value.map((entry) => entry.trim()).filter(Boolean).join(" ");
+      if (!tokens) {
+        return `${directive}=()`;
+      }
+      return `${directive}=(${tokens})`;
+    })
+    .filter(Boolean);
+
+  if (!segments.length) {
+    return undefined;
+  }
+
+  return segments.join(", ");
+}
+
+function buildHeaders(options = DEFAULT_SECURITY_HEADERS) {
+  if (!options.enabled) {
+    return {};
+  }
+
+  const headers = {};
+
+  if (options.strictTransportSecurity) {
+    const segments = [`max-age=${options.strictTransportSecurityMaxAge}`];
+    if (options.strictTransportSecurityIncludeSubdomains) {
+      segments.push("includeSubDomains");
+    }
+    if (options.strictTransportSecurityPreload) {
+      segments.push("preload");
+    }
+    headers["Strict-Transport-Security"] = segments.join("; ");
+  }
+
+  if (options.xContentTypeOptions) {
+    const value =
+      typeof options.xContentTypeOptions === "string"
+        ? options.xContentTypeOptions
+        : "nosniff";
+    headers["X-Content-Type-Options"] = value;
+  }
+
+  if (options.xFrameOptions) {
+    headers["X-Frame-Options"] = options.xFrameOptions;
+  }
+
+  if (options.referrerPolicy) {
+    headers["Referrer-Policy"] = options.referrerPolicy;
+  }
+
+  if (options.crossOriginEmbedderPolicy) {
+    headers["Cross-Origin-Embedder-Policy"] = options.crossOriginEmbedderPolicy;
+  }
+
+  if (options.crossOriginOpenerPolicy) {
+    headers["Cross-Origin-Opener-Policy"] = options.crossOriginOpenerPolicy;
+  }
+
+  if (options.crossOriginResourcePolicy) {
+    headers["Cross-Origin-Resource-Policy"] = options.crossOriginResourcePolicy;
+  }
+
+  const permissionsPolicy = formatPermissionsPolicy(options.permissionsPolicy);
+  if (permissionsPolicy) {
+    headers["Permissions-Policy"] = permissionsPolicy;
+  }
+
+  if (options.contentSecurityPolicy) {
+    const headerName = options.contentSecurityPolicyReportOnly
+      ? "Content-Security-Policy-Report-Only"
+      : "Content-Security-Policy";
+    headers[headerName] = options.contentSecurityPolicy;
+  }
+
+  if (options.expectCt) {
+    headers["Expect-CT"] = options.expectCt;
+  }
+
+  if (options.xDnsPrefetchControl) {
+    headers["X-DNS-Prefetch-Control"] = options.xDnsPrefetchControl;
+  }
+
+  if (options.xDownloadOptions) {
+    headers["X-Download-Options"] = options.xDownloadOptions;
+  }
+
+  if (options.xXssProtection) {
+    headers["X-XSS-Protection"] = "1; mode=block";
+  }
+
+  Object.assign(headers, options.additionalHeaders || {});
+
+  return headers;
+}
+
+function loadConfiguration(customOptions) {
+  const options = {
+    ...DEFAULT_SECURITY_HEADERS,
+    ...(customOptions || {}),
+    permissionsPolicy: {
+      ...DEFAULT_SECURITY_HEADERS.permissionsPolicy,
+      ...(customOptions && customOptions.permissionsPolicy ? customOptions.permissionsPolicy : {}),
+    },
+    additionalHeaders: {
+      ...DEFAULT_SECURITY_HEADERS.additionalHeaders,
+      ...(customOptions && customOptions.additionalHeaders ? customOptions.additionalHeaders : {}),
+    },
+  };
+
+  return {
+    module: "{{ module_name }}",
+    title: "{{ module_title }}",
+    enabled: options.enabled,
+    headers: buildHeaders(options),
+  };
+}
+
+module.exports = {
+  buildHeaders,
+  DEFAULT_SECURITY_HEADERS,
+  loadConfiguration,
+};

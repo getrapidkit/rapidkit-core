@@ -1,0 +1,47 @@
+import {
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Logger,
+  ServiceUnavailableException,
+} from '@nestjs/common';
+import { hostname } from 'node:os';
+
+import { CELERY_CONFIGURATION_NAMESPACE } from '../modules/free/tasks/celery/celery.configuration';
+import { {{ module_class_name }}Service, createCeleryHealthCheck } from '../modules/free/tasks/celery/celery.service';
+
+@Controller('api/health/module')
+export class {{ module_class_name }}HealthController {
+  private readonly logger = new Logger({{ module_class_name }}HealthController.name);
+
+  constructor(private readonly celeryService: {{ module_class_name }}Service) {}
+
+  @Get('{{ module_kebab }}')
+  @HttpCode(HttpStatus.OK)
+  async getModuleHealth(): Promise<Record<string, unknown>> {
+    try {
+      const summary = await createCeleryHealthCheck(this.celeryService);
+      const celery = summary.celery ?? {
+        status: 'down' as const,
+        details: {},
+      };
+      return {
+        module: {{ rapidkit_vendor_module | tojson }},
+        namespace: CELERY_CONFIGURATION_NAMESPACE,
+        hostname: hostname(),
+        checkedAt: new Date().toISOString(),
+        status: celery.status,
+        details: celery.details,
+      };
+    } catch (error) {
+      const detail = error instanceof Error && error.message ? error.message : 'celery health check failed';
+      this.logger.error(`Celery health check failed: ${detail}`);
+      throw new ServiceUnavailableException({
+        status: 'error',
+        module: {{ rapidkit_vendor_module | tojson }},
+        detail,
+      });
+    }
+  }
+}

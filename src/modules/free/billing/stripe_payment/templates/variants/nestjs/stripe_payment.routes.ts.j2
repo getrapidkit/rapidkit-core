@@ -1,0 +1,9 @@
+import { Type } from "@nestjs/common";
+
+import { {{ module_class_name }}Controller } from "./{{ module_kebab }}.controller";
+import { {{ module_class_name }}HealthController } from "../../../../health/{{ module_kebab }}.health";
+
+export const STRIPE_PAYMENT_ROUTES: Type[] = [
+  {{ module_class_name }}Controller,
+  {{ module_class_name }}HealthController,
+];

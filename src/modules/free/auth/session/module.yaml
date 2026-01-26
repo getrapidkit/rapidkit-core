@@ -1,0 +1,191 @@
+name: session
+description: Session management utilities (cookies/tokens, persistence hooks) for
+  RapidKit
+version: 0.1.0
+access: free
+status: stable
+category: auth
+tags:
+- auth
+generated_from_config: true
+depends_on:
+- free/essentials/settings
+profile_inherits:
+  fastapi.standard: fastapi
+  fastapi.ddd: fastapi
+  nestjs.standard: nestjs
+config_sources:
+- config/base.yaml
+- config/snippets.yaml
+generation:
+  vendor:
+    root: .rapidkit/vendor
+    files:
+    - template: templates/base/session.py.j2
+      relative: src/modules/free/auth/session/session.py
+    - template: templates/base/session_types.py.j2
+      relative: src/modules/free/auth/session/session_types.py
+    - template: templates/base/session_health.py.j2
+      relative: src/health/session.py
+    - template: templates/vendor/nestjs/configuration.js.j2
+      relative: nestjs/configuration.js
+  variants:
+    fastapi: &fastapi_variant
+      root: .
+      context:
+        framework: fastapi
+        module_class_name: Session
+      files:
+      - template: templates/variants/fastapi/session.py.j2
+        output: src/modules/free/auth/session/session.py
+      - template: templates/variants/fastapi/session_health.py.j2
+        output: src/health/session.py
+      - template: templates/base/session_types.py.j2
+        output: src/modules/free/auth/session/session_types.py
+      - template: templates/variants/fastapi/session_routes.py.j2
+        output: src/modules/free/auth/session/routers/session.py
+      - template: templates/variants/fastapi/session_config.yaml.j2
+        output: config/session.yaml
+      - template: templates/tests/integration/test_session_integration.j2
+        output: tests/modules/integration/auth/session/test_session_integration.py
+      - template: templates/variants/fastapi/tests/test_session_e2e.py
+        output: tests/modules/e2e/free/auth/session/test_session_e2e.py
+    fastapi.standard: *fastapi_variant
+    fastapi.ddd: *fastapi_variant
+    nestjs: &nestjs_variant
+      root: .
+      context:
+        framework: nestjs
+        vendor_configuration_relative: nestjs/configuration.js
+        module_class_name: Session
+        module_kebab: session
+      files:
+      - template: templates/variants/nestjs/configuration.ts.j2
+        output: src/modules/free/auth/session/configuration.ts
+      - template: templates/variants/nestjs/session.service.ts.j2
+        output: src/modules/free/auth/session/session.service.ts
+      - template: templates/variants/nestjs/session.module.ts.j2
+        output: src/modules/free/auth/session/session.module.ts
+      - template: templates/variants/nestjs/session.controller.ts.j2
+        output: src/modules/free/auth/session/session.controller.ts
+      - template: templates/variants/nestjs/index.ts.j2
+        output: src/modules/free/auth/session/index.ts
+      - template: templates/variants/nestjs/validation.ts.j2
+        output: src/modules/free/auth/session/config/session.validation.ts
+      - template: templates/variants/nestjs/session.health.ts.j2
+        output: src/modules/free/auth/session/session.health.ts
+      - template: templates/variants/nestjs/session.routes.ts.j2
+        output: src/modules/free/auth/session/session.routes.ts
+      - template: templates/variants/nestjs/session.spec.ts.j2
+        output: test/session/session.spec.ts
+      - template: templates/variants/nestjs/tests/session.e2e-spec.ts
+        output: tests/modules/e2e/free/auth/session/session.e2e-spec.ts
+    nestjs.standard: *nestjs_variant
+  snippets:
+    enabled: true
+    config: config/snippets.yaml
+    default: []
+compatibility:
+  python: '>=3.9,<4.0'
+  frameworks:
+  - fastapi
+  - nestjs
+  os:
+  - linux
+  - darwin
+  - windows
+testing:
+  coverage_min: 85
+  integration_tests: true
+  e2e_tests: false
+  unit_tests:
+  - tests/modules/free_auth_session/test_session_generator.py
+  - tests/modules/free_auth_session/test_session_runtime.py
+  fixtures: []
+documentation:
+  changelog: docs/changelog.md
+  readme: README.md
+  overview: docs/overview.md
+  usage: docs/usage.md
+  advanced: docs/advanced.md
+  migration: docs/migration.md
+  troubleshooting: docs/troubleshooting.md
+  api_docs: null
+  examples: []
+support:
+  issues: https://github.com/getrapidkit/core/issues
+  discussions: https://github.com/getrapidkit/core/discussions
+  documentation: https://docs.rapidkit.top/modules/session
+changelog:
+- version: 0.1.0
+  date: '2025-12-14'
+  notes: See docs/changelog.md
+validation:
+  pre_install:
+  - check_python_version
+  post_install:
+  - validate_generated_code
+rollback:
+  strategy: uninstall
+  backup_path: .rapidkit/backups/
+  max_backups: 3
+performance:
+  lazy_loading: true
+  caching:
+    templates: true
+    ttl: 300
+tier: free
+capabilities:
+- session_token_runtime
+- session_cookie_helpers
+- session_router_scaffold
+signature:
+  signature: 6FCdS/f2u2hXU5C04/vltZuQuB6GjimwdBQNPFGHuM/JRmvZJg+XgamyKYKn4Z+cjJvvYQebLMEXIGuN5c27BQ==
+  signer_id: c7eb213b1ac6d8c6
+  signature_version: v1
+signer_id: null
+signature_version: null
+file_hashes:
+  templates/variants/nestjs/tests/session.e2e-spec.ts: sha256:f494f9303921d772d8473d2c8ba7cd7bd5515722832f65ee37c2b38016103f9e
+  templates/variants/fastapi/tests/test_session_e2e.py: sha256:c4238cc46dd5dbb6887a728c282e0f8d050c47b8842fad25562e2c737060c1e1
+  scripts/run_demo.py: sha256:b910f40f5a6b3e07e97c6b7ac91d3be288bfbb87f5004690c24de7cfc8748c1e
+  README.md: sha256:51816df9b4cf76ea9e9dfe86581f06f2495242b64aaaf5f46ec1402e8b29cc5c
+  __init__.py: sha256:2ece17b504984f17281b66871883bb6becf8e1ee31602e8b0a0e7e891e07d4f4
+  config/base.yaml: sha256:005ca1095aae15a4ebfe646c90b3867e385644d3fd6f0c15e844777feaaaed14
+  config/snippets.yaml: sha256:084cc23e74c9fc52ead6cf72671a864f991b2a62e92d7124c1b376e12cb36b63
+  docs/README.md: sha256:d02b2a3b629d68f6f1f1399759f3e5d0e3e76b18b7b990053cba132b85e9aba2
+  docs/advanced.md: sha256:ace2a6197aa0fbaf14cc9da5b0a60efd8623e5d93235bb9743684cc4921abd2b
+  docs/changelog.md: sha256:a2c4d266814780764e6294d7c9969793e08f1342895f6c99b90bcb5d9a29d77a
+  docs/migration.md: sha256:39636f763d33c6c60eadc8f027dc1ee2fd5be89a14b00383261a01885512b2e8
+  docs/overview.md: sha256:05c49c4c553169e341c7c22d7a21d496480555701240d30f8df6c59fd8332dbb
+  docs/troubleshooting.md: sha256:5a4efc71bca8bad8000cac7fc99f6e15e6bb766d3c9b95525e8195a9b964742a
+  docs/usage.md: sha256:f275fd2f8e86db861c7b56e75c0bbafa8b917e6982b39f3151e1e3b7fcf7f3c1
+  frameworks/__init__.py: sha256:e000795cceeb1699c176d548879540a3cfb6f09337ea884f5460f246a6d23af4
+  frameworks/fastapi.py: sha256:91ebd7dbbb6d1717f00302a9f345def354e5fc53645d66ab58214a0fb819b3e9
+  frameworks/nestjs.py: sha256:2e3785705a28ffaaaa834f0970fe18b41056090de9f14b38b69cf44648da5ff2
+  generate.py: sha256:1ece81e8f85e084627ff1d8193581bde645b1835f9556196b58469952b138616
+  module.verify.json: sha256:820e35adf5c11ef36d36f66e2a7e9a240b25af3817ae3719b51f2a68dcc7f627
+  overrides.py: sha256:3bd160eeeb1e2ad0bf3e01d50e737f9795215119943f054685d457a4caed653e
+  templates/base/session.py.j2: sha256:53988369b3f154d03ad447c5c99ac8548d47d46748075df088f586cdbe493d45
+  templates/base/session_health.py.j2: sha256:2fd8404e28a2ece05dd58bc40bb79b8df8d35ccac5443d4224830c7eeb325bf7
+  templates/base/session_types.py.j2: sha256:6f3dba30ce032f3cd95ac61d0bb822853781edf9889ae49f40ce50bebc4f399c
+  templates/snippets/env.snippet.j2: sha256:f24cab4bdade0fd56d52451f06089b6f427d03d703b972992a9b0dd7cdf0d0ad
+  templates/snippets/session.snippet.j2: sha256:1a6b767f445a956c9a679fd31321c66ee6bf98db799b1894427bf4436dfec159
+  templates/snippets/settings_fields.snippet.j2: sha256:7d0321d3f3ed496e356470e53af29665357ef9c90e64cc40f9e6759c715403ff
+  templates/snippets/settings_fields_nestjs.snippet.j2: sha256:e14f8d933cb9c4cac1ef44933aced88e91bd20ffe478f9eaac5fd804de2b6dd3
+  templates/tests/__init__.py: sha256:016cf2b8d5bd5219979f5ad54bca152d43d300ce8fc764059acfede26b835094
+  templates/tests/integration/test_session_integration.j2: sha256:b46ea2d34bf4131189bf969e5b4731c3825252a20a6bf814c379ed3852d0aaf7
+  templates/variants/fastapi/session.py.j2: sha256:c1aa0ded765bb38c069d4813a6cf68286934b31d909b950adfb867f879faca9f
+  templates/variants/fastapi/session_config.yaml.j2: sha256:5983ddeb28e81781d75c6f1397b684cf48fe5f1021d829a53624ce6b6c422d33
+  templates/variants/fastapi/session_health.py.j2: sha256:885b5696dbcc5d8043b0d266ef08528d365c95067e79f5ad6f056e1275c1bb25
+  templates/variants/fastapi/session_routes.py.j2: sha256:b81d1af44083ce08d1fe3a83d00085a3df94f3d397c67262541d40aca5db226f
+  templates/variants/nestjs/configuration.ts.j2: sha256:1695f3b5dde65c5972a06b83aebf5d5c601c916ea30b37b129f1a3f49ac3a991
+  templates/variants/nestjs/index.ts.j2: sha256:79adeb3c2633783342be55f82f4e6d52d479f6286ceb408ef86a08ddf9f9926d
+  templates/variants/nestjs/session.controller.ts.j2: sha256:e09550d6e705d85795814ab959ecd67e4eeb13ae7670152b37688cbf4a3d4e9a
+  templates/variants/nestjs/session.health.ts.j2: sha256:98d6c471141481cb58af3ea0c7362d75dd1d7e10203cdcbee17fad3ec37a7b14
+  templates/variants/nestjs/session.module.ts.j2: sha256:6807f9cc2159c97f391688ba7272702d1ac8beee5d8008e5d2947bdbe99f1bfb
+  templates/variants/nestjs/session.routes.ts.j2: sha256:372d23950d073e37094ad6efc333d6b20a468f9bd4ed5b3f549db43c47b4f4c5
+  templates/variants/nestjs/session.service.ts.j2: sha256:163f1b212c85023e2effecb4d85442b4f14862513a80ddda641cdbf2da8cd646
+  templates/variants/nestjs/session.spec.ts.j2: sha256:94e62793e47a73171cad82720681e2bf00b537b48baaa1f2162d283dd3821a7e
+  templates/variants/nestjs/validation.ts.j2: sha256:f8520234947a61d2aa457bffe58348419efd342d312d4f2e826a10cc2e01f482
+  templates/vendor/nestjs/configuration.js.j2: sha256:3c1e8618fa9e28248fba96f67cec039132586685cf0893382c3b73f5e1e19c13

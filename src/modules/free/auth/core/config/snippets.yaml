@@ -1,0 +1,86 @@
+# Snippet registrations for the auth core module
+snippets:
+  - id: auth_core_env
+    target: .env,.env.dev,.env.prod,.env.example
+    anchor: "# <<<inject:module-env>>>"
+    template: auth_env.snippet.j2
+    features: [auth_core]
+    profiles: [fastapi/standard, fastapi/ddd, nestjs/standard]
+    description: Provide guidance for the Auth Core pepper secret
+    version: "0.1.0"
+    priority: 10
+    dependencies: []
+    context:
+      auth_core_defaults:
+        pepper_env: RAPIDKIT_AUTH_CORE_PEPPER
+    schema:
+      type: object
+      properties:
+        RAPIDKIT_AUTH_CORE_PEPPER:
+          type: str
+          default: ""
+          description: Strong pepper secret used when hashing tokens and passwords
+      additionalProperties: true
+      required: []
+    metadata:
+      author: "RapidKit Core Team"
+      created_at: "2025-10-30"
+      last_modified: "2025-10-30"
+    conflict_resolution: merge
+
+  - id: auth_core_settings_fields
+    target: src/modules/free/essentials/settings/settings.py
+    anchor: "# <<<inject:settings-fields>>>"
+    template: settings_fields.snippet.j2
+    features: [extendable_settings, auth_core]
+    profiles: [fastapi/standard, fastapi/ddd]
+    description: Inject Auth Core configuration into Pydantic settings
+    version: "0.1.0"
+    priority: 20
+    dependencies: []
+    context:
+      auth_core_defaults:
+        hash_name: sha256
+        iterations: 390000
+        salt_bytes: 32
+        token_bytes: 32
+        token_ttl_seconds: 1800
+        pepper_env: RAPIDKIT_AUTH_CORE_PEPPER
+        issuer: RapidKit
+        policy:
+          min_length: 12
+          require_uppercase: true
+          require_lowercase: true
+          require_digits: true
+          require_symbols: false
+    schema:
+      type: object
+      properties: {}
+      additionalProperties: true
+      required: []
+    metadata:
+      author: "RapidKit Core Team"
+      created_at: "2025-10-30"
+      last_modified: "2025-10-30"
+    conflict_resolution: merge
+
+  - id: auth_core_quickstart
+    target: README.md
+    anchor: "<!-- <<<inject:module-snippet>>> -->"
+    template: core.snippet.j2
+    features: [auth_core]
+    profiles: [fastapi/standard, fastapi/ddd, nestjs/standard]
+    description: Quick commands for validating the Auth Core module installation
+    version: "0.1.0"
+    priority: 5
+    dependencies: []
+    schema:
+      type: object
+      properties: {}
+      additionalProperties: true
+      required: []
+    metadata:
+      author: "RapidKit Core Team"
+      created_at: "2025-11-02"
+      last_modified: "2025-11-02"
+    conflict_resolution: merge

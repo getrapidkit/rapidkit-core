@@ -1,0 +1,25 @@
+{# Jinja snippet used to inject shared fragments into generated artefacts. #}
+{# Name this snippet when referencing from module.yaml generation entries. #}
+
+# Security Headers FastAPI Setup Snippet
+# This snippet demonstrates how to register the Security Headers middleware
+
+from fastapi import FastAPI
+
+from src.modules.free.security.security_headers.security_headers import (
+	SecurityHeadersSettings,
+	register_fastapi,
+)
+
+app = FastAPI()
+
+security_headers_config = SecurityHeadersSettings(
+	content_security_policy="default-src 'self'; img-src 'self' data:; object-src 'none'",
+	permissions_policy={
+		"geolocation": [],
+		"camera": [],
+		"microphone": [],
+	},
+)
+
+register_fastapi(app, config=security_headers_config)

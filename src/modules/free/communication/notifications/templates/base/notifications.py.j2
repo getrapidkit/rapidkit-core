@@ -1,0 +1,111 @@
+"""Vendor runtime helpers for the RapidKit Notifications module."""
+
+from __future__ import annotations
+
+from datetime import datetime, timezone
+from typing import Any, Dict, Mapping, MutableMapping
+
+
+_FEATURE_FLAGS: tuple[str, ...] = (
+	"email_channel",
+	"push_channel",
+	"sms_channel",
+	"templated_delivery",
+	"provider_metadata",
+	"health_reporting",
+)
+
+_DEFAULT_PROVIDERS: tuple[str, ...] = ("email", "push", "sms")
+
+
+def list_notification_features() -> list[str]:
+	"""Return the feature flags advertised by the notifications module."""
+
+	return list(_FEATURE_FLAGS)
+
+
+def _normalize_provider_payload(name: str, payload: Mapping[str, Any] | None) -> MutableMapping[str, Any]:
+	data = dict(payload or {})
+	data.setdefault("name", name)
+	data["enabled"] = bool(data.get("enabled", False))
+	data["handler_registered"] = bool(data.get("handler_registered", False))
+	metadata = data.get("metadata")
+	if not isinstance(metadata, Mapping):
+		metadata = {}
+	data["metadata"] = dict(metadata)
+	return data
+
+
+def describe_notifications(
+	manager: Any | None = None,
+	*,
+	provider_overrides: Mapping[str, Mapping[str, Any]] | None = None,
+	module_name: str = "{{ module_name | default('notifications') }}",
+	module_version: str | None = "{{ version | default('0.0.0') }}",
+) -> Dict[str, Any]:
+	"""Return a metadata snapshot describing configured notification providers."""
+
+	providers: MutableMapping[str, MutableMapping[str, Any]] = {}
+
+	raw_providers: Mapping[str, Mapping[str, Any]] = {}
+	if manager is not None and hasattr(manager, "describe_providers"):
+		try:
+			described = manager.describe_providers()  # type: ignore[call-arg]
+			if isinstance(described, Mapping):
+				raw_providers = described  # type: ignore[assignment]
+		except Exception:  # pragma: no cover - defensive guard around user hooks
+			raw_providers = {}
+
+	overrides = provider_overrides or {}
+
+	provider_names = set(_DEFAULT_PROVIDERS)
+	provider_names.update(str(name) for name in raw_providers.keys())
+	provider_names.update(str(name) for name in overrides.keys())
+
+	for name in sorted(provider_names):
+		providers[name] = _normalize_provider_payload(name, raw_providers.get(name))
+		if name in overrides:
+			providers[name].update(_normalize_provider_payload(name, overrides.get(name)))
+
+	if "email" in providers:
+		email_entry = providers["email"]
+		provider_obj = getattr(manager, "email_service", None)
+		if provider_obj is not None:
+			email_entry["enabled"] = True
+			describe_callable = getattr(provider_obj, "describe", None)
+			metadata_value = "configured"
+			if callable(describe_callable):
+				try:
+					metadata_value = describe_callable()
+				except Exception:  # pragma: no cover - defensive guard for custom describe impls
+					metadata_value = "configured"
+			email_entry.setdefault("metadata", {})["email_service"] = metadata_value
+
+	status = "ok" if providers.get("email", {}).get("enabled") else "degraded"
+
+	snapshot: Dict[str, Any] = {
+		"module": module_name,
+		"version": module_version,
+		"status": status,
+		"checked_at": datetime.now(timezone.utc).isoformat(),
+		"providers": providers,
+		"features": list_notification_features(),
+	}
+
+	if status != "ok":
+		snapshot["detail"] = "Email provider not initialized"
+
+	return snapshot
+
+
+def get_notifications_metadata(manager: Any | None = None) -> Dict[str, Any]:
+	"""Convenience wrapper mirroring the runtime metadata signature."""
+
+	return describe_notifications(manager)
+
+
+__all__ = [
+	"describe_notifications",
+	"get_notifications_metadata",
+	"list_notification_features",
+]

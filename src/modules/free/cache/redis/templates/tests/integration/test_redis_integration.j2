@@ -1,0 +1,71 @@
+"""Integration tests for the Redis cache module."""
+
+from __future__ import annotations
+
+import pytest
+from fastapi import FastAPI
+from httpx import ASGITransport, AsyncClient
+
+from src.health import register_health_routes
+import importlib
+
+from src.health import redis as redis_health
+from src.health.redis import register_redis_health
+from src.modules.free.cache.redis import describe_cache
+from src.modules.free.cache.redis.routers.redis import build_router  # type: ignore[import]
+
+pytestmark = [pytest.mark.integration, pytest.mark.core_integration]
+
+
+async def _fake_dependency():
+    class _Client:
+        async def ping(self) -> str:
+            return "PONG"
+
+    yield _Client()
+
+
+@pytest.mark.asyncio
+async def test_redis_routes_ping(monkeypatch):
+    app = FastAPI()
+
+    monkeypatch.setattr("src.modules.free.cache.redis.routers.redis.redis_dependency", _fake_dependency)
+
+    app.include_router(build_router())
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get("/{{ module_kebab }}/ping")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "ok"
+    assert payload["result"] in ("PONG", True)
+
+
+@pytest.mark.asyncio
+async def test_redis_health_registration(monkeypatch):
+    async def fake_check(*_args, **_kwargs):
+        return None
+
+    health_impl = importlib.import_module(redis_health.register_redis_health.__module__)
+    monkeypatch.setattr(health_impl, "check_redis_connection", fake_check)
+
+    app = FastAPI()
+    register_health_routes(app)
+    register_redis_health(app)
+
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get("/api/health/module/redis")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert payload["status"] == "ok"
+    assert payload["module"] == "{{ rapidkit_vendor_module }}"
+
+
+def test_describe_cache_includes_metadata():
+    payload = describe_cache()
+    assert payload["module"] == "{{ rapidkit_vendor_module }}"
+    assert payload.get("module_version") == "{{ rapidkit_vendor_version }}"

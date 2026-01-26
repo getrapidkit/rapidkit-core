@@ -1,0 +1,680 @@
+{% set defaults = rate_limiting_defaults | default({}) %}
+{% set default_rules = defaults.get("rules", []) %}
+{% set header_defaults = defaults.get("headers", {}) %}
+"""Runtime primitives for {{ module_title }}.
+
+This module delivers an extensible, framework-agnostic rate limiting engine with
+global and per-identity quotas, Redis integration, and FastAPI helpers. It is
+designed to be reused by multiple frameworks via the generated variants.
+"""
+
+from __future__ import annotations
+
+import asyncio
+import json
+import logging
+import math
+import os
+import time
+from dataclasses import dataclass, field, replace
+from typing import Any, Dict, Iterable, Mapping, MutableMapping, Optional, Protocol, Sequence, Tuple, Literal
+
+try:  # Optional redis backend; gracefully degraded when unavailable.
+    import redis.asyncio as redis_async  # type: ignore
+    from redis.asyncio import Redis as AsyncRedis  # type: ignore
+except Exception:  # pragma: no cover - optional dependency not installed
+    redis_async = None  # type: ignore
+    AsyncRedis = None  # type: ignore
+
+LOGGER = logging.getLogger("rate_limiting")
+
+_DEFAULT_NAMESPACE = json.loads(r"""{{ defaults | tojson }}""")
+_DEFAULT_RULES = json.loads(r"""{{ default_rules | tojson }}""")
+_HEADER_DEFAULTS = {
+    "limit": {{ header_defaults.get("limit", "X-RateLimit-Limit") | tojson }},
+    "remaining": {{ header_defaults.get("remaining", "X-RateLimit-Remaining") | tojson }},
+    "reset": {{ header_defaults.get("reset", "X-RateLimit-Reset") | tojson }},
+    "retry_after": {{ header_defaults.get("retry_after", "Retry-After") | tojson }},
+    "rule": {{ header_defaults.get("rule", "X-RateLimit-Rule") | tojson }},
+}
+
+RateLimitScope = Literal["global", "identity", "route", "route-identity"]
+
+
+def _as_bool(value: str | bool | None, default: bool) -> bool:
+    if isinstance(value, bool):
+        return value
+    if not value:
+        return default
+    lowered = str(value).strip().lower()
+    if lowered in {"1", "true", "yes", "on"}:
+        return True
+    if lowered in {"0", "false", "no", "off"}:
+        return False
+    return default
+
+
+def _as_int(value: Any, default: int) -> int:
+    if isinstance(value, bool):
+        return default
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _as_float(value: Any, default: float) -> float:
+    if isinstance(value, bool):
+        return default
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _as_str(value: Any, default: str | None = None) -> str | None:
+    if value in (None, ""):
+        return default
+    cleaned = str(value).strip()
+    return cleaned if cleaned else default
+
+
+@dataclass(slots=True)
+class RateLimitHeaders:
+    """HTTP header names emitted when rate limiting responses."""
+
+    limit: str = _HEADER_DEFAULTS["limit"]
+    remaining: str = _HEADER_DEFAULTS["remaining"]
+    reset: str = _HEADER_DEFAULTS["reset"]
+    retry_after: str = _HEADER_DEFAULTS["retry_after"]
+    rule: str = _HEADER_DEFAULTS["rule"]
+
+
+@dataclass(slots=True)
+class RateLimitRule:
+    """Declarative rule describing a rate limit window."""
+
+    name: str
+    limit: int
+    window_seconds: int
+    scope: RateLimitScope = "identity"
+    priority: int = 100
+    methods: Tuple[str, ...] = ()
+    routes: Tuple[str, ...] = ()
+    cost: int = 1
+    block_seconds: int | None = None
+    include_headers: bool = True
+    enabled: bool = True
+    annotations: Mapping[str, Any] = field(default_factory=dict)
+
+    def with_updates(self, **overrides: Any) -> "RateLimitRule":
+        return replace(self, **overrides)
+
+    @classmethod
+    def from_mapping(cls, payload: Mapping[str, Any], *, default_name: str = "rule") -> "RateLimitRule":
+        name = _as_str(payload.get("name"), default_name) or default_name
+        limit = max(_as_int(payload.get("limit"), 1), 1)
+        window = max(_as_int(payload.get("window"), payload.get("window_seconds", 60)), 1)
+        scope = _as_str(payload.get("scope"), "identity") or "identity"
+        priority = _as_int(payload.get("priority"), 100)
+        cost = max(_as_int(payload.get("cost"), 1), 1)
+        block_seconds_raw = payload.get("block_seconds")
+        block_seconds = _as_int(block_seconds_raw, 0) if block_seconds_raw is not None else None
+        include_headers = _as_bool(payload.get("include_headers"), True)
+        enabled = _as_bool(payload.get("enabled"), True)
+        methods = tuple(str(item).upper() for item in payload.get("methods", []) if item)
+        routes = tuple(str(item) for item in payload.get("routes", []) if item)
+        annotations = payload.get("annotations", {})
+        if not isinstance(annotations, Mapping):
+            annotations = {"metadata": annotations}
+        return cls(
+            name=name,
+            limit=limit,
+            window_seconds=window,
+            scope=scope,
+            priority=priority,
+            methods=methods,
+            routes=routes,
+            cost=cost,
+            block_seconds=block_seconds,
+            include_headers=include_headers,
+            enabled=enabled,
+            annotations=dict(annotations),
+        )
+
+
+@dataclass(slots=True)
+class RateLimitState:
+    """Backend-agnostic bucket state returned after an increment operation."""
+
+    allowed: bool
+    remaining: int
+    limit: int
+    reset_after: float
+    reset_at: float
+    blocked: bool = False
+
+
+class RateLimitBackend(Protocol):
+    """Abstraction implemented by concrete rate limit storage providers."""
+
+    async def hit(
+        self,
+        bucket_key: str,
+        *,
+        limit: int,
+        window_seconds: int,
+        cost: int = 1,
+        block_seconds: int | None = None,
+    ) -> RateLimitState:
+        ...
+
+
+@dataclass(slots=True)
+class RateLimiterConfig:
+    """Resolved configuration for {{ module_title }}."""
+
+    enabled: bool = _as_bool(_DEFAULT_NAMESPACE.get("enabled"), True)
+    backend: str = _as_str(_DEFAULT_NAMESPACE.get("backend"), "memory") or "memory"
+    redis_url: str | None = _as_str(_DEFAULT_NAMESPACE.get("redis_url"))
+    redis_prefix: str = _as_str(_DEFAULT_NAMESPACE.get("redis_prefix"), "rate-limit") or "rate-limit"
+    trust_forwarded_for: bool = _as_bool(_DEFAULT_NAMESPACE.get("trust_forwarded_for"), False)
+    forwarded_for_header: str = _as_str(_DEFAULT_NAMESPACE.get("forwarded_for_header"), "X-Forwarded-For") or "X-Forwarded-For"
+    identity_header: str | None = _as_str(_DEFAULT_NAMESPACE.get("identity_header"), "X-RateLimit-Identity")
+    default_scope: RateLimitScope = _as_str(_DEFAULT_NAMESPACE.get("default_scope"), "identity") or "identity"
+    default_rule_name: str = _as_str(_DEFAULT_NAMESPACE.get("default_rule_name"), "default") or "default"
+    default_limit: int = max(_as_int(_DEFAULT_NAMESPACE.get("default_limit"), 120), 1)
+    default_window: int = max(_as_int(_DEFAULT_NAMESPACE.get("default_window"), 60), 1)
+    default_priority: int = _as_int(_DEFAULT_NAMESPACE.get("default_priority"), 100)
+    default_block_seconds: int | None = (
+        _as_int(_DEFAULT_NAMESPACE.get("default_block_seconds"), 0)
+        if _DEFAULT_NAMESPACE.get("default_block_seconds") is not None
+        else None
+    )
+    headers: RateLimitHeaders = field(default_factory=lambda: RateLimitHeaders(**_HEADER_DEFAULTS))
+    rules: Tuple[RateLimitRule, ...] = field(default_factory=tuple)
+
+    def build_default_rule(self) -> RateLimitRule:
+        return RateLimitRule(
+            name=self.default_rule_name,
+            limit=self.default_limit,
+            window_seconds=self.default_window,
+            scope=self.default_scope,
+            priority=self.default_priority,
+            block_seconds=self.default_block_seconds,
+        )
+
+
+class _MemoryBucket:
+    __slots__ = ("count", "reset_at", "blocked_until")
+
+    def __init__(self, *, count: int, reset_at: float, blocked_until: float | None = None) -> None:
+        self.count = count
+        self.reset_at = reset_at
+        self.blocked_until = blocked_until
+
+
+class MemoryRateLimitBackend:
+    """Simple in-memory backend suitable for single-process deployments."""
+
+    def __init__(self) -> None:
+        self._buckets: MutableMapping[str, _MemoryBucket] = {}
+        self._lock = asyncio.Lock()
+
+    async def hit(
+        self,
+        bucket_key: str,
+        *,
+        limit: int,
+        window_seconds: int,
+        cost: int = 1,
+        block_seconds: int | None = None,
+    ) -> RateLimitState:
+        now_monotonic = time.monotonic()
+        now_epoch = time.time()
+        async with self._lock:
+            bucket = self._buckets.get(bucket_key)
+            if bucket is not None and bucket.blocked_until and now_monotonic < bucket.blocked_until:
+                retry_after = bucket.blocked_until - now_monotonic
+                return RateLimitState(
+                    allowed=False,
+                    remaining=0,
+                    limit=limit,
+                    reset_after=retry_after,
+                    reset_at=now_epoch + retry_after,
+                    blocked=True,
+                )
+
+            if bucket is None or now_monotonic >= bucket.reset_at:
+                bucket = _MemoryBucket(
+                    count=0,
+                    reset_at=now_monotonic + window_seconds,
+                )
+
+            bucket.count += cost
+            if bucket.count <= limit:
+                remaining = max(limit - bucket.count, 0)
+                reset_after = max(bucket.reset_at - now_monotonic, 0.0)
+                self._buckets[bucket_key] = bucket
+                return RateLimitState(
+                    allowed=True,
+                    remaining=remaining,
+                    limit=limit,
+                    reset_after=reset_after,
+                    reset_at=now_epoch + reset_after,
+                )
+
+            bucket.count = limit  # Clamp for subsequent calculations
+            reset_after = max(bucket.reset_at - now_monotonic, 0.0)
+            blocked_until = None
+            if block_seconds is not None and block_seconds > 0:
+                blocked_until = now_monotonic + block_seconds
+                bucket.blocked_until = blocked_until
+                reset_after = max(reset_after, block_seconds)
+            self._buckets[bucket_key] = bucket
+            return RateLimitState(
+                allowed=False,
+                remaining=0,
+                limit=limit,
+                reset_after=reset_after,
+                reset_at=now_epoch + reset_after,
+                blocked=blocked_until is not None,
+            )
+
+
+class RedisRateLimitBackend:
+    """Redis-backed rate limiting leveraging atomic increment + TTL semantics."""
+
+    def __init__(self, redis_url: str, *, prefix: str = "rate-limit") -> None:
+        if redis_async is None or AsyncRedis is None:
+            raise RuntimeError(
+                "Redis backend requested but redis.asyncio is unavailable. Install the 'redis' package."
+            )
+        self._redis: AsyncRedis = redis_async.Redis.from_url(redis_url, decode_responses=False)
+        self._prefix = prefix.rstrip(":")
+
+    def _format_key(self, bucket_key: str) -> str:
+        return f"{self._prefix}:{bucket_key}"
+
+    def _format_block_key(self, bucket_key: str) -> str:
+        return f"{self._prefix}:blocked:{bucket_key}"
+
+    async def hit(
+        self,
+        bucket_key: str,
+        *,
+        limit: int,
+        window_seconds: int,
+        cost: int = 1,
+        block_seconds: int | None = None,
+    ) -> RateLimitState:
+        if cost <= 0:
+            cost = 1
+
+        key = self._format_key(bucket_key)
+        block_key = self._format_block_key(bucket_key)
+
+        if block_seconds:
+            ttl = await self._redis.pttl(block_key)
+            if ttl and ttl > 0:
+                seconds = ttl / 1000.0
+                return RateLimitState(
+                    allowed=False,
+                    remaining=0,
+                    limit=limit,
+                    reset_after=seconds,
+                    reset_at=time.time() + seconds,
+                    blocked=True,
+                )
+
+        pipe = self._redis.pipeline()
+        pipe.incrby(key, cost)
+        pipe.pttl(key)
+        count, ttl = await pipe.execute()
+
+        if ttl is None or ttl < 0:
+            ttl = window_seconds * 1000
+            await self._redis.pexpire(key, ttl)
+
+        reset_after = max(ttl / 1000.0, 0.0)
+        reset_at = time.time() + reset_after
+
+        if count <= limit:
+            remaining = max(limit - int(count), 0)
+            return RateLimitState(
+                allowed=True,
+                remaining=remaining,
+                limit=limit,
+                reset_after=reset_after,
+                reset_at=reset_at,
+            )
+
+        remaining = 0
+        blocked = False
+        if block_seconds:
+            await self._redis.set(block_key, b"1", ex=block_seconds)
+            reset_after = max(reset_after, float(block_seconds))
+            reset_at = time.time() + reset_after
+            blocked = True
+
+        return RateLimitState(
+            allowed=False,
+            remaining=remaining,
+            limit=limit,
+            reset_after=reset_after,
+            reset_at=reset_at,
+            blocked=blocked,
+        )
+
+
+def _normalize_path(path: str) -> str:
+    if not path:
+        return "root"
+    cleaned = path.strip() or "/"
+    return cleaned.replace("?", "_").replace("/", ":")
+
+
+def _matches_rule(rule: RateLimitRule, *, method: str, path: str) -> bool:
+    if not rule.enabled:
+        return False
+    if rule.methods and method.upper() not in rule.methods:
+        return False
+    if rule.routes:
+        for prefix in rule.routes:
+            if path.startswith(prefix):
+                return True
+        return False
+    return True
+
+
+def _parse_rules(payload: Iterable[Mapping[str, Any]]) -> Tuple[RateLimitRule, ...]:
+    rules: list[RateLimitRule] = []
+    for idx, item in enumerate(payload):
+        if not isinstance(item, Mapping):
+            LOGGER.warning("Ignoring rule[%s] because it is not a mapping", idx)
+            continue
+        try:
+            rules.append(RateLimitRule.from_mapping(item, default_name=f"rule-{idx}"))
+        except Exception as exc:  # pragma: no cover - defensive against bad config
+            LOGGER.warning("Failed to parse rate limit rule %s: %s", idx, exc)
+    return tuple(sorted(rules, key=lambda rule: rule.priority))
+
+
+def _merge_rules(base_rules: Sequence[RateLimitRule], extra_rules: Sequence[RateLimitRule]) -> Tuple[RateLimitRule, ...]:
+    combined = {rule.name: rule for rule in base_rules}
+    for rule in extra_rules:
+        combined[rule.name] = rule
+    return tuple(sorted(combined.values(), key=lambda rule: rule.priority))
+
+
+def load_rate_limiter_config(*, env: Mapping[str, str] | None = None) -> RateLimiterConfig:
+    env_map = env or os.environ
+
+    def _get(name: str, default: str | None = None) -> str | None:
+        return _as_str(env_map.get(name), default)
+
+    config = RateLimiterConfig()
+    config.enabled = _as_bool(env_map.get("RATE_LIMIT_ENABLED"), config.enabled)
+    config.backend = _get("RATE_LIMIT_BACKEND", config.backend) or config.backend
+    config.redis_url = _get("RATE_LIMIT_REDIS_URL", config.redis_url)
+    config.redis_prefix = _get("RATE_LIMIT_REDIS_PREFIX", config.redis_prefix) or config.redis_prefix
+    config.trust_forwarded_for = _as_bool(
+        env_map.get("RATE_LIMIT_TRUST_FORWARDED_FOR"),
+        config.trust_forwarded_for,
+    )
+    config.forwarded_for_header = _get("RATE_LIMIT_FORWARDED_FOR_HEADER", config.forwarded_for_header) or config.forwarded_for_header
+    config.identity_header = _get("RATE_LIMIT_IDENTITY_HEADER", config.identity_header)
+    config.default_rule_name = _get("RATE_LIMIT_DEFAULT_RULE_NAME", config.default_rule_name) or config.default_rule_name
+    config.default_limit = max(_as_int(env_map.get("RATE_LIMIT_DEFAULT_LIMIT"), config.default_limit), 1)
+    config.default_window = max(_as_int(env_map.get("RATE_LIMIT_DEFAULT_WINDOW"), config.default_window), 1)
+    config.default_scope = _get("RATE_LIMIT_DEFAULT_SCOPE", config.default_scope) or config.default_scope
+    config.default_priority = _as_int(env_map.get("RATE_LIMIT_DEFAULT_PRIORITY"), config.default_priority)
+    block_env = env_map.get("RATE_LIMIT_DEFAULT_BLOCK_SECONDS")
+    config.default_block_seconds = (
+        max(_as_int(block_env, config.default_block_seconds or 0), 0)
+        if block_env is not None
+        else config.default_block_seconds
+    )
+
+    header_limit = _get("RATE_LIMIT_HEADER_LIMIT", config.headers.limit)
+    header_remaining = _get("RATE_LIMIT_HEADER_REMAINING", config.headers.remaining)
+    header_reset = _get("RATE_LIMIT_HEADER_RESET", config.headers.reset)
+    header_retry = _get("RATE_LIMIT_HEADER_RETRY_AFTER", config.headers.retry_after)
+    header_rule = _get("RATE_LIMIT_HEADER_RULE", config.headers.rule)
+    config.headers = RateLimitHeaders(
+        limit=header_limit or config.headers.limit,
+        remaining=header_remaining or config.headers.remaining,
+        reset=header_reset or config.headers.reset,
+        retry_after=header_retry or config.headers.retry_after,
+        rule=header_rule or config.headers.rule,
+    )
+
+    base_rules = _parse_rules(_DEFAULT_RULES)
+    extra_rules = ()
+    rules_blob = _get("RATE_LIMIT_RULES_JSON")
+    if rules_blob:
+        try:
+            parsed = json.loads(rules_blob)
+            if isinstance(parsed, Mapping):
+                parsed = [parsed]
+            if isinstance(parsed, list):
+                extra_rules = _parse_rules(parsed)  # type: ignore[arg-type]
+        except json.JSONDecodeError as exc:
+            LOGGER.warning("Invalid RATE_LIMIT_RULES_JSON payload: %s", exc)
+
+    config.rules = _merge_rules(base_rules, extra_rules)
+    return config
+
+
+def create_backend(config: RateLimiterConfig) -> RateLimitBackend:
+    backend_name = (config.backend or "memory").lower()
+    if backend_name == "redis":
+        if not config.redis_url:
+            raise RuntimeError("Redis backend selected but RATE_LIMIT_REDIS_URL is not configured.")
+        return RedisRateLimitBackend(config.redis_url, prefix=config.redis_prefix)
+    return MemoryRateLimitBackend()
+
+
+@dataclass(slots=True)
+class RateLimitResult:
+    """Outcome returned after attempting to consume a rate limit token."""
+
+    rule: RateLimitRule
+    allowed: bool
+    remaining: int
+    reset_after: float
+    reset_at: float
+    limit: int
+    identity: str | None
+    bucket: str
+    blocked: bool = False
+
+    @property
+    def retry_after(self) -> float:
+        return 0.0 if self.allowed else max(self.reset_after, 0.0)
+
+    def to_headers(self, headers: RateLimitHeaders) -> Dict[str, str]:
+        if not self.rule.include_headers:
+            return {}
+        out: Dict[str, str] = {
+            headers.limit: str(self.limit),
+            headers.remaining: str(max(self.remaining, 0)),
+            headers.reset: str(int(math.ceil(max(self.reset_at, 0)))),
+            headers.rule: self.rule.name,
+        }
+        if not self.allowed:
+            out[headers.retry_after] = str(int(math.ceil(self.retry_after)))
+        return out
+
+
+class RateLimitExceeded(RuntimeError):
+    """Raised when a consumer requests more tokens than allowed."""
+
+    def __init__(self, result: RateLimitResult) -> None:
+        super().__init__(f"Rate limit exceeded for rule '{result.rule.name}'")
+        self.result = result
+
+
+class RateLimiter:
+    """High-level service coordinating rule selection and backend operations."""
+
+    def __init__(
+        self,
+        config: RateLimiterConfig,
+        *,
+        backend: RateLimitBackend | None = None,
+    ) -> None:
+        self._config = config
+        self._backend = backend or create_backend(config)
+        self._default_rule = config.build_default_rule()
+        self._rules = _merge_rules((self._default_rule,), config.rules)
+        self._rule_index = {rule.name: rule for rule in self._rules}
+
+    @property
+    def config(self) -> RateLimiterConfig:
+        return self._config
+
+    @property
+    def backend(self) -> RateLimitBackend:
+        return self._backend
+
+    def resolve_rule(self, *, method: str, path: str) -> RateLimitRule:
+        for rule in self._rules:
+            if _matches_rule(rule, method=method, path=path):
+                return rule
+        return self._default_rule
+
+    def get_rule(self, name: str) -> RateLimitRule:
+        try:
+            return self._rule_index[name]
+        except KeyError as exc:  # pragma: no cover - defensive
+            raise KeyError(f"Unknown rate limit rule '{name}'") from exc
+
+    def _build_bucket(self, *, rule: RateLimitRule, identity: str | None, path: str) -> str:
+        normalized_path = _normalize_path(path)
+        scope = (rule.scope or self._config.default_scope or "identity").lower()
+        if scope == "global":
+            return f"{rule.name}:global"
+        if scope == "route":
+            return f"{rule.name}:{normalized_path}"
+        resolved_identity = identity or "anonymous"
+        if scope == "route-identity":
+            return f"{rule.name}:{normalized_path}:{resolved_identity}"
+        return f"{rule.name}:{resolved_identity}"
+
+    async def consume(
+        self,
+        *,
+        identity: str | None,
+        method: str,
+        path: str,
+        cost: int | None = None,
+        rule_name: str | None = None,
+        raise_on_failure: bool = True,
+    ) -> RateLimitResult:
+        if not self._config.enabled:
+            rule = self._rule_index.get(rule_name) if rule_name else self._default_rule
+            rule = rule or self._default_rule
+            return RateLimitResult(
+                rule=rule,
+                allowed=True,
+                remaining=rule.limit,
+                reset_after=float(rule.window_seconds),
+                reset_at=time.time() + float(rule.window_seconds),
+                limit=rule.limit,
+                identity=identity,
+                bucket=self._build_bucket(rule=rule, identity=identity, path=path),
+            )
+
+        if rule_name:
+            rule = self.get_rule(rule_name)
+        else:
+            rule = self.resolve_rule(method=method, path=path)
+
+        bucket = self._build_bucket(rule=rule, identity=identity, path=path)
+        tokens = cost if cost not in (None, 0) else rule.cost
+        state = await self._backend.hit(
+            bucket,
+            limit=rule.limit,
+            window_seconds=rule.window_seconds,
+            cost=max(tokens, 1),
+            block_seconds=rule.block_seconds,
+        )
+        result = RateLimitResult(
+            rule=rule,
+            allowed=state.allowed,
+            remaining=state.remaining,
+            reset_after=state.reset_after,
+            reset_at=state.reset_at,
+            limit=state.limit,
+            identity=identity,
+            bucket=bucket,
+            blocked=state.blocked,
+        )
+        if not result.allowed and raise_on_failure:
+            raise RateLimitExceeded(result)
+        return result
+
+    def get_metadata(self) -> Dict[str, Any]:
+        return {
+            "enabled": self._config.enabled,
+            "backend": self._config.backend,
+            "redis_url": "***" if self._config.redis_url else None,
+            "default_rule": {
+                "name": self._default_rule.name,
+                "limit": self._default_rule.limit,
+                "window_seconds": self._default_rule.window_seconds,
+                "scope": self._default_rule.scope,
+            },
+            "rules": [
+                {
+                    "name": rule.name,
+                    "limit": rule.limit,
+                    "window_seconds": rule.window_seconds,
+                    "scope": rule.scope,
+                    "priority": rule.priority,
+                    "routes": rule.routes,
+                    "methods": rule.methods,
+                }
+                for rule in self._rules
+            ],
+        }
+
+
+_LIMITER_INSTANCE: RateLimiter | None = None
+
+
+def configure_rate_limiter(config: RateLimiterConfig | None = None) -> RateLimiter:
+    global _LIMITER_INSTANCE
+    resolved_config = config or load_rate_limiter_config()
+    _LIMITER_INSTANCE = RateLimiter(resolved_config)
+    return _LIMITER_INSTANCE
+
+
+def get_rate_limiter() -> RateLimiter:
+    global _LIMITER_INSTANCE
+    if _LIMITER_INSTANCE is None:
+        _LIMITER_INSTANCE = RateLimiter(load_rate_limiter_config())
+    return _LIMITER_INSTANCE
+
+
+def get_rate_limiter_metadata() -> Dict[str, Any]:
+    return get_rate_limiter().get_metadata()
+
+
+__all__ = [
+    "RateLimitHeaders",
+    "RateLimitScope",
+    "RateLimitRule",
+    "RateLimitResult",
+    "RateLimitExceeded",
+    "RateLimiter",
+    "RateLimiterConfig",
+    "RateLimitBackend",
+    "MemoryRateLimitBackend",
+    "RedisRateLimitBackend",
+    "configure_rate_limiter",
+    "get_rate_limiter",
+    "get_rate_limiter_metadata",
+    "load_rate_limiter_config",
+]

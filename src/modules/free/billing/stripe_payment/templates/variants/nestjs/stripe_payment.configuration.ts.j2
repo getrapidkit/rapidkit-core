@@ -1,0 +1,176 @@
+{%- set defaults = stripe_defaults or {} -%}
+{%- set retry_policy = stripe_retry_policy or {} -%}
+{%- set webhook = stripe_webhook or {} -%}
+{%- set features = stripe_features or {} -%}
+{%- set billing = stripe_billing or {} -%}
+{%- set network = stripe_network or {} -%}
+{%- set metadata_keys = stripe_metadata_keys or {} -%}
+import { registerAs } from "@nestjs/config";
+
+const DEFAULTS = {{ defaults | tojson(indent=2) }};
+const RETRY_POLICY = {{ retry_policy | tojson(indent=2) }};
+const WEBHOOK = {{ webhook | tojson(indent=2) }};
+const FEATURES = {{ features | tojson(indent=2) }};
+const BILLING = {{ billing | tojson(indent=2) }};
+const NETWORK = {{ network | tojson(indent=2) }};
+const METADATA_KEYS = {{ metadata_keys | tojson(indent=2) }};
+
+const parseBoolean = (value: string | undefined, fallback: boolean): boolean => {
+  if (typeof value !== "string") {
+    return fallback;
+  }
+  const normalized = value.trim().toLowerCase();
+  if (["1", "true", "yes", "on"].includes(normalized)) {
+    return true;
+  }
+  if (["0", "false", "no", "off"].includes(normalized)) {
+    return false;
+  }
+  return fallback;
+};
+
+const parseNumber = (value: string | undefined, fallback: number): number => {
+  if (typeof value !== "string") {
+    return fallback;
+  }
+  const parsed = Number.parseFloat(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const parseInteger = (value: string | undefined, fallback: number): number => {
+  const parsed = parseNumber(value, fallback);
+  if (!Number.isFinite(parsed)) {
+    return fallback;
+  }
+  const normalized = Math.trunc(parsed);
+  return normalized > 0 ? normalized : fallback;
+};
+
+const parseList = (value: string | undefined, fallback: string[]): string[] => {
+  if (typeof value !== "string") {
+    return fallback;
+  }
+  return value
+    .split(",")
+    .map((item) => item.trim().toLowerCase())
+    .filter((item) => item.length > 0);
+};
+
+export interface StripePaymentConfiguration {
+  enabled: boolean;
+  mode: string;
+  default_currency: string;
+  capture_method: string;
+  statement_descriptor: string;
+  description_prefix: string;
+  automatic_payment_methods: boolean;
+  retry_policy: {
+    max_attempts: number;
+    base_delay_seconds: number;
+    max_delay_seconds: number;
+  };
+  webhook: {
+    enabled: boolean;
+    endpoint_secret_env: string;
+    tolerance_seconds: number;
+    events: string[];
+  };
+  features: Record<string, boolean>;
+  billing: {
+    minimum_amount: number;
+    maximum_amount: number;
+    allowed_currencies: string[];
+    default_payment_method_types: string[];
+  };
+  network: {
+    timeout_seconds: number;
+    max_connections: number;
+  };
+  metadata_keys: Record<string, string>;
+}
+
+export default registerAs("stripePayment", (): StripePaymentConfiguration => {
+  const normalizedFeatures: Record<string, boolean> = {};
+  for (const [key, value] of Object.entries(FEATURES ?? {})) {
+    normalizedFeatures[key] = Boolean(value);
+  }
+
+  return {
+    enabled: parseBoolean(process.env.RAPIDKIT_STRIPE_ENABLED, Boolean(DEFAULTS.enabled ?? true)),
+    mode: process.env.RAPIDKIT_STRIPE_MODE?.trim().toLowerCase() ?? (DEFAULTS.mode ?? "test"),
+    default_currency:
+      process.env.RAPIDKIT_STRIPE_DEFAULT_CURRENCY?.trim().toLowerCase() ??
+      (DEFAULTS.default_currency ?? "usd"),
+    capture_method:
+      process.env.RAPIDKIT_STRIPE_CAPTURE_METHOD?.trim().toLowerCase() ??
+      (DEFAULTS.capture_method ?? "automatic"),
+    statement_descriptor:
+      process.env.RAPIDKIT_STRIPE_STATEMENT_DESCRIPTOR ??
+      (DEFAULTS.statement_descriptor ?? "RapidKit"),
+    description_prefix:
+      process.env.RAPIDKIT_STRIPE_DESCRIPTION_PREFIX ??
+      (DEFAULTS.description_prefix ?? "RapidKit"),
+    automatic_payment_methods: parseBoolean(
+      process.env.RAPIDKIT_STRIPE_AUTOMATIC_PAYMENT_METHODS,
+      Boolean(DEFAULTS.automatic_payment_methods ?? true),
+    ),
+    retry_policy: {
+      max_attempts: parseInteger(
+        process.env.RAPIDKIT_STRIPE_MAX_RETRIES,
+        Number(RETRY_POLICY.max_attempts ?? 3),
+      ),
+      base_delay_seconds: parseNumber(
+        process.env.RAPIDKIT_STRIPE_RETRY_BASE_DELAY,
+        Number(RETRY_POLICY.base_delay_seconds ?? 2.0),
+      ),
+      max_delay_seconds: parseNumber(
+        process.env.RAPIDKIT_STRIPE_RETRY_MAX_DELAY,
+        Number(RETRY_POLICY.max_delay_seconds ?? 30.0),
+      ),
+    },
+    webhook: {
+      enabled: parseBoolean(
+        process.env.RAPIDKIT_STRIPE_WEBHOOK_ENABLED,
+        Boolean(WEBHOOK.enabled ?? true),
+      ),
+      endpoint_secret_env:
+        process.env.RAPIDKIT_STRIPE_WEBHOOK_SECRET_ENV ??
+        (WEBHOOK.endpoint_secret_env ?? "RAPIDKIT_STRIPE_WEBHOOK_SECRET"),
+      tolerance_seconds: parseNumber(
+        process.env.RAPIDKIT_STRIPE_WEBHOOK_TOLERANCE_SECONDS,
+        Number(WEBHOOK.tolerance_seconds ?? 300),
+      ),
+      events: Array.isArray(WEBHOOK.events)
+        ? (WEBHOOK.events as string[])
+        : parseList(process.env.RAPIDKIT_STRIPE_WEBHOOK_EVENTS, ["payment_intent.succeeded"]),
+    },
+    features: normalizedFeatures,
+    billing: {
+      minimum_amount: parseNumber(
+        process.env.RAPIDKIT_STRIPE_BILLING_MINIMUM,
+        Number(BILLING.minimum_amount ?? 50),
+      ),
+      maximum_amount: parseNumber(
+        process.env.RAPIDKIT_STRIPE_BILLING_MAXIMUM,
+        Number(BILLING.maximum_amount ?? 5_000_000),
+      ),
+      allowed_currencies: Array.isArray(BILLING.allowed_currencies)
+        ? (BILLING.allowed_currencies as string[])
+        : parseList(process.env.RAPIDKIT_STRIPE_ALLOWED_CURRENCIES, ["usd", "eur", "gbp"]),
+      default_payment_method_types: Array.isArray(BILLING.default_payment_method_types)
+        ? (BILLING.default_payment_method_types as string[])
+        : parseList(process.env.RAPIDKIT_STRIPE_PAYMENT_METHOD_TYPES, ["card"]),
+    },
+    network: {
+      timeout_seconds: parseNumber(
+        process.env.RAPIDKIT_STRIPE_TIMEOUT_SECONDS,
+        Number(NETWORK.timeout_seconds ?? 10),
+      ),
+      max_connections: parseNumber(
+        process.env.RAPIDKIT_STRIPE_MAX_CONNECTIONS,
+        Number(NETWORK.max_connections ?? 4),
+      ),
+    },
+    metadata_keys: { ...(METADATA_KEYS ?? {}) },
+  };
+});

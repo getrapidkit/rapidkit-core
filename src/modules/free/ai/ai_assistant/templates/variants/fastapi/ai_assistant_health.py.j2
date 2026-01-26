@@ -1,0 +1,35 @@
+"""Project health helpers for {{ module_title }}.
+
+This module is imported by the FastAPI router glue.
+"""
+
+from __future__ import annotations
+
+from typing import Any, Mapping
+
+from src.modules.free.ai.ai_assistant.ai_assistant import AiAssistant, AiAssistantConfig
+
+
+def check_health(
+    config: AiAssistantConfig | None = None,
+    *,
+    context: Mapping[str, Any] | None = None,
+) -> Mapping[str, Any]:
+    """Return a lightweight health payload for the assistant runtime."""
+
+    assistant = AiAssistant(config or AiAssistantConfig())
+    report = assistant.health_report()
+    if context:
+        enriched = dict(report)
+        enriched.setdefault("metadata", {}).update(dict(context))
+        return enriched
+    return report
+
+
+def module_health_status() -> Mapping[str, Any]:
+    """Backward-compatible alias used by some older snippets."""
+
+    return check_health()
+
+
+__all__ = ["check_health", "module_health_status"]

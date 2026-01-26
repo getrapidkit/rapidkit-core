@@ -1,0 +1,55 @@
+# Default configuration profile for the Stripe Payment module.
+
+defaults:
+  enabled: true
+  mode: test
+  default_currency: usd
+  capture_method: automatic
+  retry_attempts: 3
+  statement_descriptor: RapidKit Order
+  description_prefix: RapidKit Checkout
+  automatic_payment_methods: true
+  metadata:
+    product: rapidkit
+    source: stripe-payment-module
+
+retry_policy:
+  max_attempts: 3
+  base_delay_seconds: 2.0
+  max_delay_seconds: 30.0
+
+webhook:
+  enabled: true
+  endpoint_secret_env: RAPIDKIT_STRIPE_WEBHOOK_SECRET
+  tolerance_seconds: 300
+  events:
+    - payment_intent.succeeded
+    - payment_intent.payment_failed
+    - charge.refunded
+    - charge.dispute.created
+
+features:
+  allow_manual_capture: true
+  enable_idempotency_keys: true
+  verify_webhooks: true
+  emit_metrics: true
+
+billing:
+  minimum_amount: 50
+  maximum_amount: 5000000
+  allowed_currencies:
+    - usd
+    - eur
+    - gbp
+  default_payment_method_types:
+    - card
+    - us_bank_account
+
+network:
+  timeout_seconds: 10.0
+  max_connections: 4
+
+metadata_keys:
+  customer_id: customer_id
+  tenant_id: tenant_id
+  order_id: order_id

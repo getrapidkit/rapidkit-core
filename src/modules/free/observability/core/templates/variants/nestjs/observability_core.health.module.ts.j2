@@ -1,0 +1,10 @@
+import { Module } from '@nestjs/common';
+
+import { ObservabilityCoreModule } from '../modules/free/observability/core/observability-core/observability-core.module';
+import { ObservabilityCoreHealthController } from './observability-core-health.controller';
+
+@Module({
+  imports: [ObservabilityCoreModule],
+  controllers: [ObservabilityCoreHealthController],
+})
+export class ObservabilityCoreHealthModule {}

@@ -1,0 +1,49 @@
+import {
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Res,
+  UploadedFile,
+  UseInterceptors,
+} from "@nestjs/common";
+import { FileInterceptor } from "@nestjs/platform-express";
+import { Response } from "express";
+import { StreamableFile } from "@nestjs/common";
+
+import { {{ module_service_class }}, StorageUploadedFile } from "./{{ module_kebab }}.service";
+
+@Controller("api/v1/{{ module_kebab }}")
+export class {{ module_controller_class }} {
+  constructor(private readonly storageService: {{ module_service_class }}) {}
+
+  @Post("upload")
+  @UseInterceptors(FileInterceptor("file"))
+  async uploadFile(@UploadedFile() file: StorageUploadedFile) {
+    return await this.storageService.uploadFile(file);
+  }
+
+  @Get(":id")
+  async downloadFile(@Param("id") fileId: string, @Res({ passthrough: true }) res: Response) {
+    const payload = await this.storageService.downloadFile(fileId);
+    res.setHeader("X-Storage-File-ID", fileId);
+    return new StreamableFile(payload);
+  }
+
+  @Delete(":id")
+  async deleteFile(@Param("id") fileId: string) {
+    await this.storageService.deleteFile(fileId);
+    return { success: true };
+  }
+
+  @Get("health/status")
+  async health() {
+    const payload = await this.storageService.healthCheck();
+    return {
+      status: payload.status,
+      adapter: payload.adapter,
+      checkedAt: payload.checkedAt,
+    };
+  }
+}

@@ -1,0 +1,15 @@
+"""Shared type definitions for {{ module_title }}."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Any, Dict
+
+
+@dataclass(slots=True)
+class {{ module_class_name }}Result:
+    """Standard result envelope for {{ module_title }} operations."""
+
+    success: bool
+    message: str = ""
+    extra: Dict[str, Any] = field(default_factory=dict)

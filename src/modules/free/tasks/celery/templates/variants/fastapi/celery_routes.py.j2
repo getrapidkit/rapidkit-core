@@ -1,0 +1,42 @@
+"""FastAPI router exposing {{ module_title }} metadata and features."""
+
+from __future__ import annotations
+
+from typing import Dict
+
+from fastapi import APIRouter, FastAPI
+
+from src.health.celery import build_health_snapshot, render_health_snapshot
+from src.modules.free.tasks.celery.celery import MODULE_FEATURES, get_celery_metadata
+
+router = APIRouter(prefix="/tasks/{{ module_name }}", tags=["tasks", "{{ module_name }}"])
+
+
+@router.get("/metadata", response_model=Dict[str, object])
+async def get_{{ module_name }}_metadata() -> Dict[str, object]:
+    """Expose the configured {{ module_title }} metadata."""
+
+    metadata = get_celery_metadata(include_tasks=True)
+    snapshot = build_health_snapshot(metadata)
+    return render_health_snapshot(snapshot)
+
+
+@router.get("/features", response_model=Dict[str, object])
+async def list_{{ module_name }}_features() -> Dict[str, object]:
+    """List capabilities advertised by the {{ module_title }} module."""
+
+    return {"features": list(MODULE_FEATURES)}
+
+
+def register_{{ module_name }}_routes(app: FastAPI) -> None:
+    """Attach the {{ module_title }} metadata routes to a FastAPI application."""
+
+    app.include_router(router)
+
+
+__all__ = [
+    "get_{{ module_name }}_metadata",
+    "list_{{ module_name }}_features",
+    "register_{{ module_name }}_routes",
+    "router",
+]

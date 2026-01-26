@@ -1,0 +1,149 @@
+name: Docker Distribution (Reusable)
+
+on:
+    workflow_call:
+        inputs:
+            image-name:
+                type: string
+                required: true
+            test-tag:
+                type: string
+                required: false
+                default: rapidkit-distribution:test
+            metadata-tags:
+                type: string
+                required: false
+                default: |
+                    type=ref,event=tag
+                    type=raw,value=latest,enable={{is_default_branch}}
+            publish-on-branch:
+                type: boolean
+                required: false
+                default: false
+            registry:
+                type: string
+                required: false
+                default: ghcr.io
+            run-smoke:
+                type: boolean
+                required: false
+                default: true
+            enable-publish:
+                type: boolean
+                required: false
+                default: true
+        secrets:
+            GHCR_PAT:
+                required: false
+
+concurrency:
+    group: docker-distribution-${{ github.ref }}
+    cancel-in-progress: true
+
+permissions:
+    contents: read
+
+jobs:
+    build:
+        name: Build & Smoke Test
+        runs-on: ubuntu-latest
+        outputs:
+            test-tag: ${{ steps.prepare.outputs.test_tag }}
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Prepare container metadata
+              id: prepare
+              run: |
+                  echo "image=${{ inputs.image-name }}" >> "$GITHUB_OUTPUT"
+                  echo "registry=${{ inputs.registry }}" >> "$GITHUB_OUTPUT"
+                  echo "test_tag=${{ inputs.test-tag }}" >> "$GITHUB_OUTPUT"
+
+            - name: Set up Python 3.10.14
+              uses: actions/setup-python@v5
+              with:
+                  python-version: "3.10.14"
+
+            - name: Install Poetry
+              uses: snok/install-poetry@v1
+              with:
+                  version: "1.8.3"
+                  virtualenvs-in-project: true
+                  virtualenvs-create: true
+
+            - name: Ensure poetry.lock exists
+              run: |
+                  if [ ! -f poetry.lock ]; then
+                    echo "poetry.lock missing; generating lockfile..."
+                    poetry lock --no-interaction --no-update
+                  else
+                    echo "poetry.lock found."
+                  fi
+
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v3
+
+            - name: Build Docker image (load for test)
+              uses: docker/build-push-action@v5
+              with:
+                  context: .
+                  file: ./Dockerfile
+                  push: false
+                  load: true
+                  tags: ${{ inputs.test-tag }}
+                  cache-from: type=gha
+                  cache-to: type=gha,mode=max
+
+            - name: Test Docker image
+              if: ${{ inputs.run-smoke }}
+              run: |
+                  echo "🧪 Testing Docker image functionality..."
+                  if docker run --rm ${{ inputs.test-tag }} --ci --help 2>&1 | grep -q "RapidKit\|Usage\|Commands"; then
+                    echo "✅ Docker image tests passed!"
+                  else
+                    echo "❌ Docker image test failed"
+                    docker run --rm ${{ inputs.test-tag }} --ci --help || true
+                    exit 1
+                  fi
+
+    publish:
+        name: Publish Image
+        runs-on: ubuntu-latest
+        needs: build
+        if: inputs.enable-publish && (inputs.publish-on-branch || startsWith(github.ref, 'refs/tags/'))
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Docker meta
+              id: meta
+              uses: docker/metadata-action@v5
+              with:
+                  images: ${{ inputs.image-name }}
+                  tags: ${{ inputs.metadata-tags }}
+
+            - name: Login to registry
+              uses: docker/login-action@v3
+              with:
+                  registry: ${{ inputs.registry }}
+                  username: ${{ github.repository_owner }}
+                  password: ${{ secrets.GHCR_PAT != '' && secrets.GHCR_PAT || github.token }}
+
+            - name: Build & Push
+              uses: docker/build-push-action@v5
+              with:
+                  context: .
+                  file: ./Dockerfile
+                  push: true
+                  tags: ${{ steps.meta.outputs.tags }}
+                  labels: ${{ steps.meta.outputs.labels }}
+                  cache-from: type=gha
+                  cache-to: type=gha,mode=max
+
+            - name: Verify pull works
+              run: |
+                  REF=$(echo "${{ steps.meta.outputs.tags }}" | head -n1)
+                  echo "Pulling $REF"
+                  docker pull "$REF"
+                  docker image ls | grep rapidkit-community || (echo 'Image not found after push'; exit 1)

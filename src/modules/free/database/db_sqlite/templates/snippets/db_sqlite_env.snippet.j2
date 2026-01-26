@@ -1,0 +1,7 @@
+# Db Sqlite module environment variables
+RAPIDKIT_DB_SQLITE_PATH={{ sqlite_defaults.database_path | default('./.rapidkit/runtime/sqlite/app.db') }}
+RAPIDKIT_DB_SQLITE_CREATE_IF_MISSING={{ sqlite_defaults.create_if_missing | default(true) | tojson }}
+RAPIDKIT_DB_SQLITE_TIMEOUT_SECONDS={{ sqlite_defaults.timeout_seconds | default(30.0) }}
+RAPIDKIT_DB_SQLITE_POOL_MAX_SIZE={{ sqlite_defaults.pool_max_size | default(4) }}
+RAPIDKIT_DB_SQLITE_POOL_RECYCLE_SECONDS={{ sqlite_defaults.pool_recycle_seconds | default(600) }}
+RAPIDKIT_DB_SQLITE_PRAGMAS={{ sqlite_defaults.pragmas | default({}) | tojson }}

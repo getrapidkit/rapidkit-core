@@ -1,0 +1,59 @@
+{% set runtime = runtime | default('python') %}
+{% set python_version = python_version | default('3.10.14') %}
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+{% if runtime == 'python' %}
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: {{ python_version }}
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+        with:
+          version: latest
+          virtualenvs-create: true
+          virtualenvs-in-project: true
+      - name: Install dependencies
+        run: |
+          poetry install --no-interaction --sync
+      - name: Lint
+        run: |
+          poetry run ruff check src
+          poetry run black --check src
+      - name: Type check
+        run: |
+          poetry run mypy src
+      - name: Tests
+        run: |
+          poetry run pytest --cov=src --cov-report=term-missing
+{% else %}
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: {{ node_version | default('20.19.6') }}
+      - name: Install dependencies
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install
+          fi
+      - name: Lint
+        run: |
+          npm run lint
+      - name: Tests
+        run: |
+          npm test -- --ci --watch=false
+{% endif %}

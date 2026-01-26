@@ -1,0 +1,214 @@
+"""FastAPI adapter for {{ module_title }}."""
+
+from __future__ import annotations
+
+import importlib.util
+import os
+import sys
+from functools import lru_cache
+from pathlib import Path
+from typing import Any, Mapping
+
+from fastapi import APIRouter, FastAPI
+from pydantic import BaseModel, Field
+from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
+from starlette.responses import Response
+from starlette.types import ASGIApp
+
+_RUNTIME: Any | None = None
+
+_VENDOR_MODULE = "{{ rapidkit_vendor_module }}"
+_VENDOR_VERSION = "{{ rapidkit_vendor_version }}"
+_VENDOR_RELATIVE_PATH = "{{ vendor_runtime_relative }}"
+_VENDOR_ROOT_ENV = "RAPIDKIT_VENDOR_ROOT"
+_CACHE_PREFIX = "rapidkit_vendor_security_headers"
+
+
+def _project_root() -> Path:
+    current = Path(__file__).resolve()
+    for parent in current.parents:
+        if (parent / "pyproject.toml").exists():
+            return parent
+    # Fallback for unusual layouts; module lives under src/modules/<...>/.
+    return current.parents[5]
+
+
+def _vendor_root() -> Path:
+    override = os.getenv(_VENDOR_ROOT_ENV)
+    if override:
+        return Path(override).expanduser().resolve()
+    return _project_root() / ".rapidkit" / "vendor"
+
+
+def _vendor_base_dir() -> Path:
+    module_dir = _vendor_root() / _VENDOR_MODULE
+    preferred = module_dir / _VENDOR_VERSION if _VENDOR_VERSION else None
+    if preferred and preferred.exists():
+        return preferred
+    candidates = sorted((path for path in module_dir.glob("*") if path.is_dir()), reverse=True)
+    if candidates:
+        return candidates[0]
+    raise RuntimeError(
+        "RapidKit vendor payload for '{module}' not found under {root}. "
+        "Re-run `rapidkit modules install {module}`.".format(module=_VENDOR_MODULE, root=module_dir)
+    )
+
+
+def _vendor_file() -> Path:
+    relative = _VENDOR_RELATIVE_PATH
+    if not relative:
+        raise RuntimeError("Security Headers vendor relative path missing from generator context")
+    return _vendor_base_dir() / relative
+
+
+@lru_cache(maxsize=1)
+def _load_vendor_module():
+    vendor_path = _vendor_file()
+    if not vendor_path.exists():
+        raise RuntimeError(
+            "RapidKit vendor security headers file missing at {path}. "
+            "Re-run `rapidkit modules install {module}`.".format(
+                path=vendor_path,
+                module=_VENDOR_MODULE,
+            )
+        )
+
+    module_name = _CACHE_PREFIX + "_" + _VENDOR_MODULE.replace("/", "_")
+    spec = importlib.util.spec_from_file_location(module_name, vendor_path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Unable to load vendor security headers module from {vendor_path}")
+
+    module = importlib.util.module_from_spec(spec)
+    sys.modules.setdefault(module_name, module)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _resolve_export(name: str):
+    module = _load_vendor_module()
+    try:
+        return getattr(module, name)
+    except AttributeError as exc:  # pragma: no cover - defensive against drift
+        raise RuntimeError(f"Vendor security headers module missing attribute '{name}'") from exc
+
+
+SecurityHeaders = _resolve_export("{{ module_class_name }}")
+SecurityHeadersConfig = _resolve_export("{{ module_class_name }}Config")
+
+
+class SecurityHeadersSettings(BaseModel):
+    """Pydantic model mirroring the runtime configuration."""
+
+    enabled: bool = True
+    strict_transport_security: bool = True
+    strict_transport_security_max_age: int = 63072000
+    strict_transport_security_include_subdomains: bool = True
+    strict_transport_security_preload: bool = True
+    content_security_policy: str | None = None
+    content_security_policy_report_only: bool = False
+    referrer_policy: str = "strict-origin-when-cross-origin"
+    x_content_type_options: str | bool = "nosniff"
+    x_frame_options: str = "DENY"
+    x_xss_protection: bool = False
+    cross_origin_embedder_policy: str | None = "require-corp"
+    cross_origin_opener_policy: str | None = "same-origin"
+    cross_origin_resource_policy: str | None = "same-origin"
+    permissions_policy: dict[str, str | list[str] | None] = Field(default_factory=dict)
+    expect_ct: str | None = None
+    x_dns_prefetch_control: str | None = "off"
+    x_download_options: str | None = "noopen"
+    additional_headers: dict[str, str] = Field(default_factory=dict)
+
+    def to_runtime_config(self) -> Any:
+        payload = self.model_dump()
+        return SecurityHeadersConfig(**payload)
+
+
+class SecurityHeadersMiddleware(BaseHTTPMiddleware):
+    """Starlette middleware that injects {{ module_title }} headers."""
+
+    def __init__(self, app: ASGIApp, runtime: Any) -> None:
+        super().__init__(app)
+        self._runtime = runtime
+
+    async def dispatch(self, request: Request, call_next) -> Response:  # type: ignore[override]
+        response = await call_next(request)
+        self._runtime.apply(response.headers)
+        return response
+
+
+def _coerce_config(
+    config: Any | SecurityHeadersSettings | Mapping[str, Any] | None,
+) -> Any:
+    if config is None:
+        return SecurityHeadersConfig()
+    if isinstance(config, SecurityHeadersConfig):
+        return config
+    if isinstance(config, SecurityHeadersSettings):
+        return config.to_runtime_config()
+    if hasattr(config, "model_dump"):
+        payload = config.model_dump()  # type: ignore[call-arg]
+        return SecurityHeadersConfig(**payload)
+    if isinstance(config, Mapping):
+        return SecurityHeadersConfig(**dict(config))
+    raise TypeError("Unsupported security headers configuration payload")
+
+
+def configure_security_headers(
+    config: Any | SecurityHeadersSettings | Mapping[str, Any] | None = None,
+) -> Any:
+    """Instantiate and memoise the {{ module_title }} runtime."""
+
+    global _RUNTIME
+    runtime_config = _coerce_config(config)
+    _RUNTIME = SecurityHeaders(runtime_config)
+    _RUNTIME.headers(refresh=True)
+    return _RUNTIME
+
+
+def get_runtime() -> Any:
+    """Return the cached runtime, initialising defaults when needed."""
+
+    global _RUNTIME
+    if _RUNTIME is None:
+        _RUNTIME = SecurityHeaders(SecurityHeadersConfig())
+    return _RUNTIME
+
+
+def register_fastapi(
+    app: FastAPI,
+    config: Any | SecurityHeadersSettings | Mapping[str, Any] | None = None,
+) -> APIRouter:
+    """Attach middleware and HTTP routes for {{ module_title }}."""
+
+    runtime = configure_security_headers(config)
+    if runtime.is_enabled():
+        app.add_middleware(SecurityHeadersMiddleware, runtime=runtime)
+
+    state = getattr(app, "state", None)
+    if state is not None:
+        setattr(state, "security_headers_runtime", runtime)
+        setattr(state, "security_headers_enabled", runtime.is_enabled())
+        setattr(state, "security_headers_headers", runtime.headers())
+
+    try:
+        from modules.free.security.security_headers.routers.{{ module_name }} import build_router
+    except ImportError:  # pragma: no cover
+        from .routers.{{ module_name }} import build_router
+
+    router = build_router()
+    setattr(router, "security_headers_runtime", runtime)
+    app.include_router(router)
+    return router
+
+
+__all__ = [
+    "SecurityHeaders",
+    "SecurityHeadersConfig",
+    "SecurityHeadersMiddleware",
+    "SecurityHeadersSettings",
+    "configure_security_headers",
+    "get_runtime",
+    "register_fastapi",
+]

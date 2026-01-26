@@ -1,0 +1,95 @@
+name: deployment
+display_name: Deployment Toolkit
+description: Portable Docker, Compose, Makefile, and CI assets for RapidKit projects.
+root_path: src/
+
+profiles:
+    fastapi/standard:
+        description: FastAPI-first deployment toolkit (Python runtime).
+    fastapi/ddd:
+        inherits: fastapi/standard
+        description: FastAPI DDD deployment toolkit inheriting standard assets.
+    nestjs/standard:
+        description: NestJS deployment toolkit (Node runtime).
+
+variables:
+    include_ci:
+        type: boolean
+        default: true
+        description: Toggle generation of CI workflow files (GitHub Actions).
+    include_postgres:
+        type: boolean
+        default: true
+        description: Include a Postgres service in docker-compose templates.
+    python_version:
+        type: string
+        default: "3.10.14"
+        description: Python version used for FastAPI Docker images.
+    node_version:
+        type: string
+        default: "20.19.6"
+        description: Node.js version used for NestJS Docker images.
+    package_manager:
+        type: string
+        default: npm
+        description: Preferred Node package manager (npm, pnpm, yarn).
+    package_manager_command:
+        type: string
+        default: npm
+        description: CLI command used for package manager invocations inside Makefiles.
+    docker_image_name:
+        type: string
+        default: rapidkit/app
+        description: Base Docker image name used by generated Dockerfiles and workflows.
+    docker_registry_url:
+        type: string
+        default: ghcr.io/rapidkit/example
+        description: Registry used in CI workflows when pushing images.
+    compose_project_name:
+        type: string
+        default: rapidkit
+        description: Compose project name applied via `COMPOSE_PROJECT_NAME`.
+
+features:
+    ci_workflow:
+        status: stable
+        enabled: true
+        description: Generates GitHub Actions workflow with lint/test/build stages.
+    postgres_service:
+        status: stable
+        enabled: true
+        description: Adds a Postgres container and health checks to docker-compose.yml.
+    multi_stage_build:
+        status: beta
+        enabled: false
+        description: Multi-stage Dockerfile stages for smaller production images.
+    registry_push:
+        status: beta
+        enabled: true
+        description: CI job that authenticates and pushes images to the configured registry.
+
+depends_on:
+    fastapi/standard:
+        - name: "docker"
+          source: external
+          tool: apt
+          version: "7.1.0"
+    nestjs/standard:
+        - name: "docker"
+          source: external
+          tool: apt
+          version: "7.1.0"
+        - name: "@nestjs/cli"
+          source: npm
+          tool: npm
+          version: "10.0.0"
+
+dev_dependencies:
+    - name: pre-commit
+      source: external
+      tool: pip
+      version: ">=3.7.0,<4.0"
+    - name: yamllint
+      source: external
+      tool: pip
+      version: ">=1.35.0,<2.0"

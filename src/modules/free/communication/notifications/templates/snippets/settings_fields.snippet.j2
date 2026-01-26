@@ -1,0 +1,237 @@
+# Notifications (Email)
+
+{% set notifications_enabled_default = "True" if (notifications_defaults.enabled | default(true)) else "False" %}
+{% set notifications_log_level_default = notifications_defaults.log_level | default('INFO') | tojson %}
+{% set smtp_host_default = notifications_defaults.smtp.host | default('localhost') | tojson %}
+{% set smtp_port_default = notifications_defaults.smtp.port | default(587) | tojson %}
+{% set smtp_use_tls_default = "True" if (notifications_defaults.smtp.use_tls | default(true)) else "False" %}
+{% set smtp_timeout_default = notifications_defaults.smtp.timeout | default(30) | tojson %}
+{% set sender_from_email_default = notifications_defaults.sender.from_email | default('noreply@rapidkit.local') | tojson %}
+{% set sender_from_name_default = notifications_defaults.sender.from_name | default('RapidKit Notifications') | tojson %}
+{% set template_directory_default = notifications_defaults.templates.directory | default('./templates/notifications') | tojson %}
+{% set template_auto_reload_default = "True" if (notifications_defaults.templates.auto_reload | default(false)) else "False" %}
+{% set retry_max_attempts_default = notifications_defaults.retry.max_attempts | default(3) | tojson %}
+{% set retry_backoff_seconds_default = notifications_defaults.retry.backoff_seconds | default(2.0) | tojson %}
+{% set retry_initial_delay_seconds_default = notifications_defaults.retry.initial_delay_seconds | default(1.0) | tojson %}
+{% set rate_limit_enabled_default = "True" if (notifications_defaults.rate_limit.enabled | default(false)) else "False" %}
+{% set rate_limit_max_per_minute_default = notifications_defaults.rate_limit.max_per_minute %}
+{% set rate_limit_max_per_hour_default = notifications_defaults.rate_limit.max_per_hour %}
+{% if rate_limit_max_per_minute_default %}
+    {% set rate_limit_max_per_minute_expr = rate_limit_max_per_minute_default | tojson %}
+{% else %}
+    {% set rate_limit_max_per_minute_expr = 'None' %}
+{% endif %}
+{% if rate_limit_max_per_hour_default %}
+    {% set rate_limit_max_per_hour_expr = rate_limit_max_per_hour_default | tojson %}
+{% else %}
+    {% set rate_limit_max_per_hour_expr = 'None' %}
+{% endif %}
+
+if "NOTIFICATIONS_ENABLED" in locals():
+    NOTIFICATIONS_ENABLED = Field(
+        default={{ notifications_enabled_default }},
+        description="Toggle notifications manager registration during startup",
+    )
+else:
+    NOTIFICATIONS_ENABLED: bool = Field(
+        default={{ notifications_enabled_default }},
+        description="Toggle notifications manager registration during startup",
+    )
+
+if "NOTIFICATIONS_LOG_LEVEL" in locals():
+    NOTIFICATIONS_LOG_LEVEL = Field(
+        default={{ notifications_log_level_default }},
+        description="Logging level for notifications module",
+    )
+else:
+    NOTIFICATIONS_LOG_LEVEL: str = Field(
+        default={{ notifications_log_level_default }},
+        description="Logging level for notifications module",
+    )
+
+if "NOTIFICATIONS_SMTP_HOST" in locals():
+    NOTIFICATIONS_SMTP_HOST = Field(
+        default={{ smtp_host_default }},
+        description="SMTP host used for outbound email",
+    )
+else:
+    NOTIFICATIONS_SMTP_HOST: str = Field(
+        default={{ smtp_host_default }},
+        description="SMTP host used for outbound email",
+    )
+
+if "NOTIFICATIONS_SMTP_PORT" in locals():
+    NOTIFICATIONS_SMTP_PORT = Field(
+        default={{ smtp_port_default }},
+        description="SMTP port used for outbound email",
+    )
+else:
+    NOTIFICATIONS_SMTP_PORT: int = Field(
+        default={{ smtp_port_default }},
+        description="SMTP port used for outbound email",
+    )
+
+if "NOTIFICATIONS_SMTP_USERNAME" in locals():
+    NOTIFICATIONS_SMTP_USERNAME = Field(
+        default=None,
+        description="Optional SMTP username",
+    )
+else:
+    NOTIFICATIONS_SMTP_USERNAME: Optional[str] = Field(
+        default=None,
+        description="Optional SMTP username",
+    )
+
+if "NOTIFICATIONS_SMTP_PASSWORD" in locals():
+    NOTIFICATIONS_SMTP_PASSWORD = Field(
+        default=None,
+        description="Optional SMTP password",
+    )
+else:
+    NOTIFICATIONS_SMTP_PASSWORD: Optional[str] = Field(
+        default=None,
+        description="Optional SMTP password",
+    )
+
+if "NOTIFICATIONS_SMTP_USE_TLS" in locals():
+    NOTIFICATIONS_SMTP_USE_TLS = Field(
+        default={{ smtp_use_tls_default }},
+        description="Use STARTTLS when connecting to SMTP",
+    )
+else:
+    NOTIFICATIONS_SMTP_USE_TLS: bool = Field(
+        default={{ smtp_use_tls_default }},
+        description="Use STARTTLS when connecting to SMTP",
+    )
+
+if "NOTIFICATIONS_SMTP_TIMEOUT" in locals():
+    NOTIFICATIONS_SMTP_TIMEOUT = Field(
+        default={{ smtp_timeout_default }},
+        description="Socket timeout (seconds) for SMTP operations",
+    )
+else:
+    NOTIFICATIONS_SMTP_TIMEOUT: float = Field(
+        default={{ smtp_timeout_default }},
+        description="Socket timeout (seconds) for SMTP operations",
+    )
+
+if "NOTIFICATIONS_SENDER_FROM_EMAIL" in locals():
+    NOTIFICATIONS_SENDER_FROM_EMAIL = Field(
+        default={{ sender_from_email_default }},
+        description="Default From email address",
+    )
+else:
+    NOTIFICATIONS_SENDER_FROM_EMAIL: str = Field(
+        default={{ sender_from_email_default }},
+        description="Default From email address",
+    )
+
+if "NOTIFICATIONS_SENDER_FROM_NAME" in locals():
+    NOTIFICATIONS_SENDER_FROM_NAME = Field(
+        default={{ sender_from_name_default }},
+        description="Human readable From name",
+    )
+else:
+    NOTIFICATIONS_SENDER_FROM_NAME: Optional[str] = Field(
+        default={{ sender_from_name_default }},
+        description="Human readable From name",
+    )
+
+if "NOTIFICATIONS_SENDER_REPLY_TO" in locals():
+    NOTIFICATIONS_SENDER_REPLY_TO = Field(
+        default=None,
+        description="Optional Reply-To address",
+    )
+else:
+    NOTIFICATIONS_SENDER_REPLY_TO: Optional[str] = Field(
+        default=None,
+        description="Optional Reply-To address",
+    )
+
+if "NOTIFICATIONS_TEMPLATE_DIRECTORY" in locals():
+    NOTIFICATIONS_TEMPLATE_DIRECTORY = Field(
+        default={{ template_directory_default }},
+        description="Path to notifications email templates",
+    )
+else:
+    NOTIFICATIONS_TEMPLATE_DIRECTORY: str = Field(
+        default={{ template_directory_default }},
+        description="Path to notifications email templates",
+    )
+
+if "NOTIFICATIONS_TEMPLATE_AUTO_RELOAD" in locals():
+    NOTIFICATIONS_TEMPLATE_AUTO_RELOAD = Field(
+        default={{ template_auto_reload_default }},
+        description="Reload templates on every render (development)",
+    )
+else:
+    NOTIFICATIONS_TEMPLATE_AUTO_RELOAD: bool = Field(
+        default={{ template_auto_reload_default }},
+        description="Reload templates on every render (development)",
+    )
+
+if "NOTIFICATIONS_RETRY_MAX_ATTEMPTS" in locals():
+    NOTIFICATIONS_RETRY_MAX_ATTEMPTS = Field(
+        default={{ retry_max_attempts_default }},
+        description="Maximum email retry attempts",
+    )
+else:
+    NOTIFICATIONS_RETRY_MAX_ATTEMPTS: int = Field(
+        default={{ retry_max_attempts_default }},
+        description="Maximum email retry attempts",
+    )
+
+if "NOTIFICATIONS_RETRY_BACKOFF_SECONDS" in locals():
+    NOTIFICATIONS_RETRY_BACKOFF_SECONDS = Field(
+        default={{ retry_backoff_seconds_default }},
+        description="Exponential backoff multiplier in seconds",
+    )
+else:
+    NOTIFICATIONS_RETRY_BACKOFF_SECONDS: float = Field(
+        default={{ retry_backoff_seconds_default }},
+        description="Exponential backoff multiplier in seconds",
+    )
+
+if "NOTIFICATIONS_RETRY_INITIAL_DELAY_SECONDS" in locals():
+    NOTIFICATIONS_RETRY_INITIAL_DELAY_SECONDS = Field(
+        default={{ retry_initial_delay_seconds_default }},
+        description="Initial retry delay in seconds",
+    )
+else:
+    NOTIFICATIONS_RETRY_INITIAL_DELAY_SECONDS: float = Field(
+        default={{ retry_initial_delay_seconds_default }},
+        description="Initial retry delay in seconds",
+    )
+
+if "NOTIFICATIONS_RATE_LIMIT_ENABLED" in locals():
+    NOTIFICATIONS_RATE_LIMIT_ENABLED = Field(
+        default={{ rate_limit_enabled_default }},
+        description="Expose rate limiting metadata in health output",
+    )
+else:
+    NOTIFICATIONS_RATE_LIMIT_ENABLED: bool = Field(
+        default={{ rate_limit_enabled_default }},
+        description="Expose rate limiting metadata in health output",
+    )
+
+if "NOTIFICATIONS_RATE_LIMIT_MAX_PER_MINUTE" in locals():
+    NOTIFICATIONS_RATE_LIMIT_MAX_PER_MINUTE = Field(
+        default={{ rate_limit_max_per_minute_expr }},
+        description="Optional notifications per minute cap",
+    )
+else:
+    NOTIFICATIONS_RATE_LIMIT_MAX_PER_MINUTE: Optional[int] = Field(
+        default={{ rate_limit_max_per_minute_expr }},
+        description="Optional notifications per minute cap",
+    )
+
+if "NOTIFICATIONS_RATE_LIMIT_MAX_PER_HOUR" in locals():
+    NOTIFICATIONS_RATE_LIMIT_MAX_PER_HOUR = Field(
+        default={{ rate_limit_max_per_hour_expr }},
+        description="Optional notifications per hour cap",
+    )
+else:
+    NOTIFICATIONS_RATE_LIMIT_MAX_PER_HOUR: Optional[int] = Field(
+        default={{ rate_limit_max_per_hour_expr }},
+        description="Optional notifications per hour cap",
+    )

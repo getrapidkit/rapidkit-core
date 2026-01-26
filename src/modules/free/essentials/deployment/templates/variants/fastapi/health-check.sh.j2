@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+APP_URL=${APP_URL:-http://localhost:8000/api/health/module/deployment}
+EXPECTED_STATUS=${EXPECTED_STATUS:-200}
+
+if ! command -v curl >/dev/null 2>&1; then
+  echo "curl is required for the health-check script" >&2
+  exit 2
+fi
+
+HTTP_STATUS=$(curl --silent --output /tmp/rapidkit-health-check.out --write-out "%{http_code}" "${APP_URL}")
+cat /tmp/rapidkit-health-check.out
+rm -f /tmp/rapidkit-health-check.out
+
+echo
+if [[ "${HTTP_STATUS}" != "${EXPECTED_STATUS}" ]]; then
+  echo "Health check failed: expected status ${EXPECTED_STATUS}, received ${HTTP_STATUS}" >&2
+  exit 1
+fi
+
+echo "Health check succeeded for ${APP_URL}"

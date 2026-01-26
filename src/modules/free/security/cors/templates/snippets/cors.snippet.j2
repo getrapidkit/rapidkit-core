@@ -1,0 +1,22 @@
+{# Jinja snippet used to inject shared fragments into generated artefacts. #}
+{# Name this snippet when referencing from module.yaml generation entries. #}
+
+# CORS Configuration Snippet
+# This snippet provides CORS middleware setup for FastAPI applications
+
+from fastapi.middleware.cors import CORSMiddleware
+
+# CORS configuration
+origins = {{ allow_origins | tojson }}
+allow_credentials = {{ allow_credentials | tojson }}
+allow_methods = {{ allow_methods | tojson }}
+allow_headers = {{ allow_headers | tojson }}
+
+# Add CORS middleware to your FastAPI app
+# app.add_middleware(
+#     CORSMiddleware,
+#     allow_origins=origins,
+#     allow_credentials=allow_credentials,
+#     allow_methods=allow_methods,
+#     allow_headers=allow_headers,
+# )

@@ -1,0 +1,220 @@
+name: notifications
+display_name: Unified Notifications
+description: >-
+  Email-first notifications runtime offering SMTP delivery, template rendering, provider registry,
+  and health instrumentation for RapidKit applications.
+root_path: src/
+
+profiles:
+  fastapi/standard:
+    description: Notifications runtime wired into the RapidKit FastAPI starter kit.
+  fastapi/ddd:
+    inherits: fastapi/standard
+    description: Configuration tuned for the FastAPI DDD kit defaults.
+  nestjs/standard:
+    description: NestJS configuration helpers that mirror the FastAPI runtime surface.
+
+defaults:
+  enabled: true
+  log_level: INFO
+  smtp:
+    host: localhost
+    port: 587
+    username: null
+    password: null
+    use_tls: true
+    timeout: 30
+  sender:
+    from_email: noreply@rapidkit.local
+    from_name: RapidKit Notifications
+    reply_to: null
+  retry:
+    max_attempts: 3
+    backoff_seconds: 2.0
+    initial_delay_seconds: 1.0
+  templates:
+    directory: ./templates/notifications
+    auto_reload: false
+  providers:
+    email:
+      enabled: true
+      backend: smtp
+    push:
+      enabled: false
+      backend: null
+    sms:
+      enabled: false
+      backend: null
+  rate_limit:
+    enabled: false
+    max_per_minute: null
+    max_per_hour: null
+  audit_logging: false
+
+variables:
+  notifications_enabled:
+    type: boolean
+    default: true
+    description: Toggle notifications runtime wiring at application startup.
+  notifications_log_level:
+    type: string
+    default: INFO
+    description: Logging level used by the notifications runtime.
+  smtp_host:
+    type: string
+    default: localhost
+    description: SMTP host used by the email provider.
+  smtp_port:
+    type: integer
+    default: 587
+    description: SMTP port used by the email provider.
+  smtp_username:
+    type: string
+    default: null
+    description: Optional SMTP username for authenticated transports.
+  smtp_password:
+    type: string
+    default: null
+    description: Optional SMTP password for authenticated transports.
+  smtp_use_tls:
+    type: boolean
+    default: true
+    description: Enable STARTTLS/TLS when connecting to SMTP.
+  smtp_timeout:
+    type: integer
+    default: 30
+    description: Socket timeout seconds for SMTP operations.
+  sender_from_email:
+    type: string
+    default: noreply@rapidkit.local
+    description: Default From email address.
+  sender_from_name:
+    type: string
+    default: RapidKit Notifications
+    description: Default human readable sender name.
+  sender_reply_to:
+    type: string
+    default: null
+    description: Optional reply-to email address.
+  retry_max_attempts:
+    type: integer
+    default: 3
+    description: Maximum retry attempts for transient delivery failures.
+  retry_backoff_seconds:
+    type: float
+    default: 2.0
+    description: Exponential backoff multiplier in seconds.
+  retry_initial_delay_seconds:
+    type: float
+    default: 1.0
+    description: Initial delay (seconds) before the first retry.
+  template_directory:
+    type: string
+    default: ./templates/notifications
+    description: Directory scanned for HTML/text email templates.
+  template_auto_reload:
+    type: boolean
+    default: false
+    description: Reload Jinja templates on every render (development mode).
+  rate_limit_enabled:
+    type: boolean
+    default: false
+    description: Enable lightweight rate limiting metadata in health output.
+  rate_limit_max_per_minute:
+    type: integer
+    default: null
+    description: Optional max notifications per minute cap.
+  rate_limit_max_per_hour:
+    type: integer
+    default: null
+    description: Optional max notifications per hour cap.
+  provider_email_enabled:
+    type: boolean
+    default: true
+    description: Enable email notifications provider.
+  provider_push_enabled:
+    type: boolean
+    default: false
+    description: Enable push notifications provider.
+  provider_sms_enabled:
+    type: boolean
+    default: false
+    description: Enable SMS notifications provider.
+
+features:
+  email_provider:
+    status: stable
+    enabled: true
+    description: SMTP backed email delivery with templating helpers.
+    files:
+      - path: core/notifications.py
+        description: Runtime, models, and registration helpers.
+  provider_registry:
+    status: stable
+    enabled: true
+    description: Notification manager that routes events to enabled providers.
+  fastapi_dependency:
+    status: stable
+    enabled: true
+    description: FastAPI dependency helpers for notification manager injection.
+  health_probe:
+    status: stable
+    enabled: true
+    description: FastAPI health endpoint exposing provider configuration.
+    files:
+      - path: core/health/notifications.py
+        description: Health router registration entry point.
+
+snippets:
+  - name: notifications_env
+    path: templates/snippets/env.snippet.j2
+    description: Injects notification environment variables into .env templates.
+  - name: notifications_settings_fields
+    path: templates/snippets/settings_fields.snippet.j2
+    description: Adds notification configuration fields to project Pydantic settings.
+
+depends_on:
+  fastapi/standard:
+    - name: aiosmtplib
+      source: external
+      tool: pip
+      version: ">=3.0.1,<4.0"
+    - name: email-validator
+      source: external
+      tool: pip
+      version: ">=2.0.0,<3.0"
+    - name: jinja2
+      source: external
+      tool: pip
+      version: ">=3.1.4,<4.0"
+  nestjs/standard:
+    - name: "@nestjs/common"
+      source: npm
+      tool: npm
+      version: ">=11.1.0"
+    - name: "@nestjs/core"
+      source: npm
+      tool: npm
+      version: ">=11.1.0"
+    - name: nodemailer
+      source: npm
+      tool: npm
+      version: ">=6.9.0"
+    - name: handlebars
+      source: npm
+      tool: npm
+      version: ">=4.7.8 <5.0.0"
+
+dev_dependencies:
+  - name: pytest
+    source: external
+    tool: pip
+    version: ">=8.3.0,<9.0"
+  - name: pytest-asyncio
+    source: external
+    tool: pip
+    version: ">=0.25.0,<1.0"
+  - name: httpx
+    source: external
+    tool: pip
+    version: ">=0.28.0,<1.0"

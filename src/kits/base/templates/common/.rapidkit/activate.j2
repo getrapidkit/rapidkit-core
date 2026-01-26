@@ -1,0 +1,19 @@
+#!/usr/bin/env bash
+# RapidKit: activation helper
+# Usage: source .rapidkit/activate
+# This file is intended to make it easy to activate the project's Python venv
+# from the current shell. For shells where `source` is not available, prefer
+# `eval "$(rapidkit shell activate)"` (prints the same snippet).
+
+VENV='.venv'
+if [ -f "$VENV/bin/activate" ]; then
+  # bash / zsh
+  . "$VENV/bin/activate"
+elif [ -f "$VENV/bin/activate.fish" ]; then
+  # fish
+  source "$VENV/bin/activate.fish"
+fi
+
+# export project root to make tooling simpler
+export RAPIDKIT_PROJECT_ROOT="$(pwd)"
+export PATH="$(pwd)/.rapidkit:$(pwd):$PATH"

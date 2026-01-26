@@ -1,0 +1,37 @@
+{% set runtime = runtime | default('python') %}
+{% set include_postgres = include_postgres | default(true) %}
+{% set package_manager_command = package_manager_command | default(package_manager | default('npm')) %}
+services:
+  app:
+    profiles:
+      - production
+    environment:
+      APP_ENV: production
+    command: >-
+{% if runtime == 'python' %}
+      poetry run uvicorn src.main:app --host 0.0.0.0 --port 8000
+{% else %}
+      {{ package_manager_command }} run start:prod
+{% endif %}
+    ports:
+{% if runtime == 'python' %}
+      - "8000:8000"
+{% else %}
+      - "3000:3000"
+{% endif %}
+    deploy:
+      restart_policy:
+        condition: on-failure
+      update_config:
+        order: start-first
+{% if include_postgres %}
+    depends_on:
+      - postgres
+{% endif %}
+{% if include_postgres %}
+  postgres:
+    profiles:
+      - production
+    environment:
+      POSTGRES_HOST_AUTH_METHOD: trust
+{% endif %}

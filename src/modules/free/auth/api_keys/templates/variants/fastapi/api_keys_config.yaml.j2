@@ -1,0 +1,27 @@
+{%- set defaults = api_keys_defaults or {} -%}
+# RapidKit generated configuration for {{ module_title }}.
+# Adjust values to fit your environment; defaults come from module.yaml.
+
+api_keys:
+  enabled: {{ defaults.get("enabled", True) | tojson }}
+  key_prefix: {{ defaults.get("key_prefix", "rk") | tojson }}
+  display_prefix: {{ defaults.get("display_prefix", "rk_live_") | tojson }}
+  token_separator: {{ defaults.get("token_separator", ".") | tojson }}
+  secret_bytes: {{ defaults.get("secret_bytes", 32) | tojson }}
+  prefix_bytes: {{ defaults.get("prefix_bytes", 6) | tojson }}
+  prefix_charset: {{ defaults.get("prefix_charset", "ABCDEFGHJKLMNPQRSTUVWXYZ23456789") | tojson }}
+  hash_algorithm: {{ defaults.get("hash_algorithm", "sha256") | tojson }}
+  pepper_env: {{ defaults.get("pepper_env", "RAPIDKIT_API_KEYS_PEPPER") | tojson }}
+  pepper: {{ defaults.get("pepper") | tojson }}
+  default_scopes: {{ defaults.get("default_scopes", ["read"]) | tojson }}
+  allowed_scopes: {{ defaults.get("allowed_scopes", ["read", "write", "admin"]) | tojson }}
+  allow_scope_wildcards: {{ defaults.get("allow_scope_wildcards", False) | tojson }}
+  ttl_hours: {{ defaults.get("ttl_hours") | tojson }}
+  rotation_days: {{ defaults.get("rotation_days", 90) | tojson }}
+  max_active_per_owner: {{ defaults.get("max_active_per_owner", 25) | tojson }}
+  leak_window_hours: {{ defaults.get("leak_window_hours", 72) | tojson }}
+  metadata: {{ defaults.get("metadata", {"issuer": "rapidkit"}) | tojson }}
+  persist_last_used: {{ defaults.get("persist_last_used", True) | tojson }}
+  audit_trail: {{ defaults.get("audit_trail", True) | tojson }}
+  repository_backend: {{ defaults.get("repository_backend", "memory") | tojson }}
+  features: {{ defaults.get("features", []) | tojson }}

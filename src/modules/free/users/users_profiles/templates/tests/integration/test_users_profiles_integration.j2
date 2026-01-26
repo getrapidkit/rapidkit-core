@@ -1,0 +1,89 @@
+"""Integration coverage for the Users Profiles FastAPI variant."""
+
+from __future__ import annotations
+
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+
+from src.health.users_profiles import register_users_profiles_health
+from src.modules.free.users.users_profiles.core.users.profiles.metadata_routes import register_users_profiles_routes
+from src.modules.free.users.users_profiles.core.users.profiles.router import router as users_profiles_router
+from src.modules.free.users.users_profiles.users_profiles import MODULE_FEATURES, get_users_profiles_metadata
+
+
+def _create_application() -> FastAPI:
+    app = FastAPI()
+    app.include_router(users_profiles_router)
+    register_users_profiles_routes(app)
+    register_users_profiles_health(app)
+    return app
+
+
+def test_users_profiles_endpoints_behave_consistently() -> None:
+    app = _create_application()
+    client = TestClient(app)
+
+    upsert_response = client.put(
+        "/api/users/user-123/profile/",
+        json={
+            "display_name": "Ada Lovelace",
+            "biography": "Computing pioneer",
+            "social_links": ["https://example.com/ada"],
+        },
+    )
+    assert upsert_response.status_code == 200
+    profile = upsert_response.json()
+    assert profile["user_id"] == "user-123"
+    assert profile["display_name"] == "Ada Lovelace"
+    assert profile["marketing_opt_in"] is True
+
+    fetch_response = client.get("/api/users/user-123/profile/")
+    assert fetch_response.status_code == 200
+    fetched = fetch_response.json()
+    assert fetched["user_id"] == "user-123"
+    assert fetched["display_name"] == "Ada Lovelace"
+
+    metadata_response = client.get("/api/users_profiles/metadata")
+    assert metadata_response.status_code == 200
+    metadata = metadata_response.json()
+    assert metadata["module"] == {{ module_name | tojson }}
+    assert set(MODULE_FEATURES).issubset(metadata["features"])
+
+    features_response = client.get("/api/users_profiles/features")
+    assert features_response.status_code == 200
+    assert set(features_response.json()["features"]) == set(MODULE_FEATURES)
+
+    health_response = client.get("/api/health/module/users_profiles")
+    assert health_response.status_code == 200
+    health_payload = health_response.json()
+    assert health_payload["module"] == {{ module_name | tojson }}
+    assert health_payload["status"] in {"ok", "degraded"}
+
+    delete_response = client.delete("/api/users/user-123/profile/")
+    assert delete_response.status_code == 204
+
+    missing_response = client.get("/api/users/user-123/profile/")
+    assert missing_response.status_code == 404
+
+
+def test_users_profiles_validation_rules() -> None:
+    app = _create_application()
+    client = TestClient(app)
+    metadata = get_users_profiles_metadata()
+
+    too_long_bio = "x" * (metadata["max_bio_length"] + 1)
+    bio_response = client.put(
+        "/api/users/user-456/profile/",
+        json={"biography": too_long_bio},
+    )
+    assert bio_response.status_code == 422
+
+    excessive_links = [
+        f"https://example.com/profile/{index}"
+        for index in range(metadata["social_links_limit"] + 1)
+    ]
+    links_response = client.put(
+        "/api/users/user-456/profile/",
+        json={"social_links": excessive_links},
+    )
+    assert links_response.status_code == 422

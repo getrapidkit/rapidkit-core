@@ -1,0 +1,409 @@
+import { BadRequestException, Injectable, LoggerService } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { AsyncLocalStorage } from 'async_hooks';
+import * as fs from 'fs';
+import * as os from 'os';
+import { dirname } from 'path';
+
+import type { LoggingConfiguration } from './configuration';
+
+const VENDOR_MODULE = '{{ rapidkit_vendor_module }}';
+const VENDOR_VERSION = '{{ rapidkit_vendor_version }}';
+const VENDOR_EXPORTS = [
+  'LoggingConfig',
+  'MetricsBridgeHandler',
+  'NoiseFilter',
+  'OTelBridgeHandler',
+  'RequestContextMiddleware',
+  'ContextEnricher',
+  'JsonFormatter',
+  'ColoredFormatter',
+  'RedactionFilter',
+  'create_file_handler',
+  'create_queue_handler',
+  'create_stream_handler',
+  'create_syslog_handler',
+  'get_logger',
+  'set_request_context',
+  'setup_queue_listeners',
+  'shutdown_queue',
+  'LoggingContextInterceptor',
+  'LoggingService',
+].sort();
+
+const SUPPORTED_LEVELS = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'] as const;
+type LogLevel = (typeof SUPPORTED_LEVELS)[number];
+
+const LEVEL_PRIORITY: Record<LogLevel, number> = {
+  DEBUG: 10,
+  INFO: 20,
+  WARNING: 30,
+  ERROR: 40,
+  CRITICAL: 50,
+};
+
+const SECRET_PATTERNS: RegExp[] = [
+  /(api[_-]?key|secret|token|passwd|password)=[^&\s]+/gi,
+];
+
+type Sink = 'stderr' | 'stdout' | 'file' | 'syslog' | string;
+
+export interface LoggingContext {
+  requestId?: string;
+  userId?: string;
+  [key: string]: unknown;
+}
+
+export interface LoggingConfigurationSnapshot extends LoggingConfiguration {
+  level: LogLevel;
+  sinks: Sink[];
+  overrides: Record<string, LogLevel>;
+}
+
+export interface LoggingMetadata {
+  module: string;
+  module_version: string;
+  version: string;
+  status: 'ok' | 'error';
+  available: string[];
+  config: LoggingConfigurationSnapshot;
+}
+
+export interface LoggerLevelSnapshot {
+  module: string;
+  logger: string;
+  level: LogLevel;
+}
+
+interface StructuredLogEntry {
+  ts: string;
+  level: LogLevel;
+  logger: string;
+  message: string;
+  context: LoggingContext;
+  metadata: Record<string, unknown>;
+  host: string;
+  module: string;
+}
+
+@Injectable()
+export class LoggingService implements LoggerService {
+  private readonly context = new AsyncLocalStorage<LoggingContext>();
+
+  private readonly loggerCache = new Map<string, StructuredLogger>();
+
+  private readonly levelOverrides = new Map<string, LogLevel>();
+
+  private configurationSnapshot: LoggingConfigurationSnapshot;
+
+  constructor(private readonly configService: ConfigService) {
+    this.configurationSnapshot = this.buildSnapshot(this.resolveConfig());
+  }
+
+  get configuration(): LoggingConfigurationSnapshot {
+    return this.configurationSnapshot;
+  }
+
+  get contextEnabled(): boolean {
+    return Boolean(this.configurationSnapshot.requestContextEnabled);
+  }
+
+  getMetadata(): LoggingMetadata {
+    return {
+      module: VENDOR_MODULE,
+      module_version: VENDOR_VERSION,
+      version: VENDOR_VERSION,
+      status: 'ok',
+      available: [...VENDOR_EXPORTS],
+      config: this.configuration,
+    };
+  }
+
+  getHealth(): LoggingMetadata {
+    return this.getMetadata();
+  }
+
+  refreshVendorMetadata(): LoggingMetadata {
+    this.levelOverrides.clear();
+    this.loggerCache.clear();
+    this.configurationSnapshot = this.buildSnapshot(this.resolveConfig());
+    return this.getMetadata();
+  }
+
+  updateLoggerLevel(logger: string, level: string): LoggerLevelSnapshot {
+    const loggerName = this.normalizeLoggerName(logger);
+    const normalizedLevel = this.normalizeLevel(level);
+    this.levelOverrides.set(loggerName, normalizedLevel);
+    const cached = this.loggerCache.get(loggerName);
+    if (cached) {
+      cached.setLevel(normalizedLevel);
+    }
+    this.configurationSnapshot = {
+      ...this.configurationSnapshot,
+      overrides: this.buildOverrides(this.configurationSnapshot.level),
+    };
+    return {
+      module: VENDOR_MODULE,
+      logger: loggerName,
+      level: normalizedLevel,
+    };
+  }
+
+  /**
+   * Return a structured logger with contextual awareness.
+   */
+  getLogger(name?: string): StructuredLogger {
+    const loggerName = this.normalizeLoggerName(name);
+    if (!this.loggerCache.has(loggerName)) {
+      this.loggerCache.set(
+        loggerName,
+        new StructuredLogger(this, loggerName, this.getEffectiveLevel(loggerName)),
+      );
+    }
+    return this.loggerCache.get(loggerName)!;
+  }
+
+  log(message: string, context?: string): void {
+    this.getLogger(context).info(message);
+  }
+
+  error(message: string, trace?: string, context?: string): void {
+    const payload = trace ? { trace } : undefined;
+    this.getLogger(context).error(message, payload);
+  }
+
+  warn(message: string, context?: string): void {
+    this.getLogger(context).warn(message);
+  }
+
+  debug(message: string, context?: string): void {
+    this.getLogger(context).debug(message);
+  }
+
+  verbose(message: string, context?: string): void {
+    this.getLogger(context).debug(message);
+  }
+
+  setRequestContext(context: LoggingContext): void {
+    if (!this.contextEnabled) {
+      throw new Error('Request context propagation disabled via configuration');
+    }
+    const current = this.context.getStore() ?? {};
+    this.context.enterWith({ ...current, ...context });
+  }
+
+  clearRequestContext(): void {
+    if (!this.contextEnabled) {
+      return;
+    }
+    this.context.enterWith({});
+  }
+
+  runWithContext<T>(context: LoggingContext, fn: () => T): T {
+    if (!this.contextEnabled) {
+      return fn();
+    }
+    const merged = { ...(this.context.getStore() ?? {}), ...context };
+    return this.context.run(merged, fn);
+  }
+
+  currentContext(): LoggingContext {
+    return { ...(this.context.getStore() ?? {}) };
+  }
+
+  emit(
+    loggerName: string,
+    level: LogLevel,
+    message: string,
+    metadata: Record<string, unknown> | undefined = undefined,
+  ): void {
+    const effectiveLevel = this.getEffectiveLevel(loggerName);
+    if (LEVEL_PRIORITY[level] < LEVEL_PRIORITY[effectiveLevel]) {
+      return;
+    }
+
+    const contextSnapshot = this.currentContext();
+    const entry: StructuredLogEntry = {
+      ts: new Date().toISOString(),
+      level,
+      logger: loggerName,
+      message: this.redact(message),
+      context: contextSnapshot,
+      metadata: this.sanitizeMetadata(metadata),
+      host: os.hostname(),
+      module: VENDOR_MODULE,
+    };
+
+    this.writeEntry(entry);
+  }
+
+  private sanitizeMetadata(metadata?: Record<string, unknown>): Record<string, unknown> {
+    if (!metadata) {
+      return {};
+    }
+    const sanitized: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(metadata)) {
+      if (typeof value === 'string') {
+        sanitized[key] = this.redact(value);
+      } else if (Array.isArray(value)) {
+        sanitized[key] = value.map((item) =>
+          typeof item === 'string' ? this.redact(item) : item,
+        );
+      } else {
+        sanitized[key] = value;
+      }
+    }
+    return sanitized;
+  }
+
+  private redact(value: string): string {
+    let result = value;
+    for (const pattern of SECRET_PATTERNS) {
+      result = result.replace(pattern, '$1=***');
+    }
+    return result;
+  }
+
+  private writeEntry(entry: StructuredLogEntry): void {
+    const payload = JSON.stringify(entry);
+    const sinks = this.configurationSnapshot.sinks.length
+      ? this.configurationSnapshot.sinks
+      : ['stderr'];
+
+    for (const sink of sinks) {
+      switch (sink) {
+        case 'stdout':
+          process.stdout.write(`${payload}\n`);
+          break;
+        case 'file':
+          this.writeToFile(payload, this.configurationSnapshot.filePath);
+          break;
+        case 'syslog':
+          // Syslog integration not yet implemented; fall back to stderr.
+          process.stderr.write(`${payload}\n`);
+          break;
+        case 'stderr':
+        default:
+          process.stderr.write(`${payload}\n`);
+          break;
+      }
+    }
+  }
+
+  private writeToFile(payload: string, targetPath: string): void {
+    try {
+      const resolved = targetPath || 'logs/app.log';
+      fs.mkdirSync(dirname(resolved), { recursive: true });
+      fs.appendFileSync(resolved, `${payload}\n`, { encoding: 'utf8' });
+    } catch (error) {
+      process.stderr.write(
+        `{"ts":"${new Date().toISOString()}","level":"ERROR","logger":"${VENDOR_MODULE}","message":"Failed to write log file","detail":"${(error as Error).message}"}\n`,
+      );
+    }
+  }
+
+  private resolveConfig(): LoggingConfiguration {
+    const config = this.configService.get<LoggingConfiguration>('logging');
+    if (!config) {
+      throw new Error('Logging configuration missing from NestJS ConfigService');
+    }
+    return config;
+  }
+
+  private buildSnapshot(config: LoggingConfiguration): LoggingConfigurationSnapshot {
+    const level = this.normalizeLevel(config.level ?? 'info');
+    const sinks = Array.isArray(config.sinks)
+      ? config.sinks.map((sink) => sink.toLowerCase() as Sink)
+      : ['stderr'];
+    const overrides = this.buildOverrides(level);
+    return {
+      ...config,
+      level,
+      sinks,
+      overrides,
+    };
+  }
+
+  private buildOverrides(defaultLevel: LogLevel): Record<string, LogLevel> {
+    const overrides = new Map<string, LogLevel>(this.levelOverrides);
+    if (!overrides.has('root')) {
+      overrides.set('root', defaultLevel);
+    }
+    return Object.fromEntries(overrides.entries());
+  }
+
+  private normalizeLoggerName(logger?: string): string {
+    const candidate = logger?.trim();
+    return candidate && candidate.length > 0 ? candidate : 'app';
+  }
+
+  private normalizeLevel(level: string): LogLevel {
+    const candidate = level?.toString().trim().toUpperCase() as LogLevel;
+    if (!candidate || !SUPPORTED_LEVELS.includes(candidate)) {
+      throw new BadRequestException(
+        `Unsupported log level '${level}'. Allowed levels: ${SUPPORTED_LEVELS.join(', ')}`,
+      );
+    }
+    return candidate;
+  }
+
+  private getEffectiveLevel(logger: string): LogLevel {
+    return this.levelOverrides.get(logger) ?? this.levelOverrides.get('root') ?? this.configurationSnapshot.level;
+  }
+
+}
+
+export class StructuredLogger {
+  private currentLevel: LogLevel;
+
+  constructor(
+    private readonly service: LoggingService,
+    private readonly name: string,
+    initialLevel: LogLevel,
+  ) {
+    this.currentLevel = initialLevel;
+  }
+
+  get loggerName(): string {
+    return this.name;
+  }
+
+  setLevel(level: LogLevel): void {
+    this.currentLevel = level;
+  }
+
+  private shouldEmit(level: LogLevel): boolean {
+    return LEVEL_PRIORITY[level] >= LEVEL_PRIORITY[this.currentLevel];
+  }
+
+  debug(message: string, metadata?: Record<string, unknown>): void {
+    if (!this.shouldEmit('DEBUG')) return;
+    this.service.emit(this.name, 'DEBUG', message, metadata);
+  }
+
+  info(message: string, metadata?: Record<string, unknown>): void {
+    if (!this.shouldEmit('INFO')) return;
+    this.service.emit(this.name, 'INFO', message, metadata);
+  }
+
+  warn(message: string, metadata?: Record<string, unknown>): void {
+    if (!this.shouldEmit('WARNING')) return;
+    this.service.emit(this.name, 'WARNING', message, metadata);
+  }
+
+  error(message: string, metadata?: Record<string, unknown>): void {
+    if (!this.shouldEmit('ERROR')) return;
+    this.service.emit(this.name, 'ERROR', message, metadata);
+  }
+
+  critical(message: string, metadata?: Record<string, unknown>): void {
+    if (!this.shouldEmit('CRITICAL')) return;
+    this.service.emit(this.name, 'CRITICAL', message, metadata);
+  }
+
+  log(message: string, metadata?: Record<string, unknown>): void {
+    this.info(message, metadata);
+  }
+}
+
+export type { LogLevel };

@@ -1,0 +1,107 @@
+snippets:
+  - id: security_headers_env
+    target: .env,.env.dev,.env.prod,.env.example
+    anchor: "# <<<inject:module-env>>>"
+    template: env.snippet.j2
+    features: [security_headers]
+    profiles: [nestjs/standard]
+    description: Injects Security Headers-related environment variables (NestJS)
+    version: "1.0.0"
+    priority: 15
+    dependencies: []
+    schema:
+      type: object
+      properties:
+        SECURITY_HEADERS_ENABLED:
+          type: bool
+          default: true
+          description: Enable or disable Security Headers globally
+        SECURITY_HEADERS_STRICT_TRANSPORT_SECURITY:
+          type: bool
+          default: true
+        SECURITY_HEADERS_STRICT_TRANSPORT_SECURITY_MAX_AGE:
+          type: int
+          default: 63072000
+        SECURITY_HEADERS_STRICT_TRANSPORT_SECURITY_INCLUDE_SUBDOMAINS:
+          type: bool
+          default: true
+        SECURITY_HEADERS_STRICT_TRANSPORT_SECURITY_PRELOAD:
+          type: bool
+          default: true
+        SECURITY_HEADERS_CONTENT_SECURITY_POLICY:
+          type: str
+          default: ""
+        SECURITY_HEADERS_CONTENT_SECURITY_POLICY_REPORT_ONLY:
+          type: bool
+          default: false
+        SECURITY_HEADERS_REFERRER_POLICY:
+          type: str
+          default: "strict-origin-when-cross-origin"
+        SECURITY_HEADERS_X_CONTENT_TYPE_OPTIONS:
+          type: str
+          default: "nosniff"
+        SECURITY_HEADERS_X_FRAME_OPTIONS:
+          type: str
+          default: "DENY"
+        SECURITY_HEADERS_X_XSS_PROTECTION:
+          type: bool
+          default: false
+        SECURITY_HEADERS_CROSS_ORIGIN_EMBEDDER_POLICY:
+          type: str
+          default: ""
+        SECURITY_HEADERS_CROSS_ORIGIN_OPENER_POLICY:
+          type: str
+          default: ""
+        SECURITY_HEADERS_CROSS_ORIGIN_RESOURCE_POLICY:
+          type: str
+          default: ""
+        SECURITY_HEADERS_PERMISSIONS_POLICY:
+          type: str
+          default: ""
+          description: JSON object string for Permissions-Policy (optional)
+        SECURITY_HEADERS_EXPECT_CT:
+          type: str
+          default: ""
+        SECURITY_HEADERS_X_DNS_PREFETCH_CONTROL:
+          type: str
+          default: "off"
+        SECURITY_HEADERS_X_DOWNLOAD_OPTIONS:
+          type: str
+          default: "noopen"
+        SECURITY_HEADERS_ADDITIONAL_HEADERS:
+          type: str
+          default: ""
+          description: JSON object string of extra headers to set (optional)
+      additionalProperties: true
+      required: []
+    metadata:
+      author: "RapidKit Team"
+      created_at: "2025-12-26"
+      last_modified: "2025-12-26"
+    conflict_resolution: merge
+  - id: security_headers_quickstart
+    target: README.md
+    anchor: "<!-- <<<inject:module-snippet>>> -->"
+    template: security_headers.snippet.j2
+    features: [security_headers, http_middleware]
+    profiles: [fastapi/standard, fastapi/ddd, nestjs/standard]
+    description: Quickstart instructions for registering the Security Headers middleware/service.
+    version: "1.0.0"
+    priority: 10
+    dependencies: []
+    context:
+      sample_policy: "default-src 'self'; img-src 'self' data:; object-src 'none'"
+      sample_permissions:
+        geolocation: []
+        camera: []
+        microphone: []
+    schema:
+      type: object
+      properties: {}
+      additionalProperties: true
+      required: []
+    metadata:
+      author: "RapidKit Team"
+      created_at: "2025-11-17"
+      last_modified: "2025-11-17"
+    conflict_resolution: merge

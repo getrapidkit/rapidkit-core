@@ -1,0 +1,181 @@
+{% include "templates/base/" ~ module_name ~ ".py.j2" %}
+
+from datetime import datetime
+from typing import Any, Mapping
+
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, status
+from pydantic import BaseModel, Field
+
+
+class _RuntimeDependency:
+    """Provide dependency injection wrapper for the runtime."""
+
+    def __call__(
+        self,
+        config: Mapping[str, Any] | None = None,
+    ) -> {{ module_class_name }}:
+        return get_api_keys_runtime(config=config)
+
+
+class IssueRequest(BaseModel):
+    owner_id: str = Field(..., min_length=1, max_length=128)
+    scopes: list[str] = Field(default_factory=list)
+    label: str | None = Field(default=None, max_length=128)
+    metadata: dict[str, Any] | None = None
+    ttl_hours: int | None = Field(default=None, ge=1)
+
+
+class IssueResponse(BaseModel):
+    token: str
+    secret_preview: str
+    key_id: str
+    owner_id: str
+    prefix: str
+    label: str | None
+    expires_at: datetime | None
+
+
+class VerifyRequest(BaseModel):
+    token: str
+    required_scopes: list[str] = Field(default_factory=list)
+
+
+class VerifyResponse(BaseModel):
+    matched: bool
+    reason: str | None
+    granted: list[str]
+    required: list[str]
+    owner_id: str | None
+    key_id: str | None
+
+
+class RevokeRequest(BaseModel):
+    key_id: str
+    reason: str | None = None
+
+
+def get_runtime(config: Mapping[str, Any] | None = None) -> {{ module_class_name }}:
+    """Expose a helper mirroring snippet expectations."""
+
+    return get_api_keys_runtime(config=config)
+
+
+def build_router(
+    *,
+    runtime: {{ module_class_name }} | None = None,
+    prefix: str = "/{{ module_kebab }}",
+) -> APIRouter:
+    runtime = runtime or get_api_keys_runtime()
+    from .routers.{{ module_name }} import build_router as router_build_router
+
+    router = router_build_router(runtime=runtime, prefix=prefix)
+    dependency = _RuntimeDependency()
+
+    @router.post(
+        "/issue",
+        status_code=status.HTTP_201_CREATED,
+        response_model=IssueResponse,
+        summary="Issue a new API key",
+    )
+    async def issue_key(payload: IssueRequest, runtime_dep: {{ module_class_name }} = Depends(dependency)) -> IssueResponse:
+        try:
+            result = runtime_dep.issue_key(
+                payload.owner_id,
+                scopes=payload.scopes,
+                label=payload.label,
+                metadata=payload.metadata or {},
+                ttl_hours=payload.ttl_hours,
+            )
+        except {{ module_class_name }}ConfigurationError as exc:
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc))
+        except {{ module_class_name }}RateLimitError as exc:
+            raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=str(exc))
+
+        record = result.record
+        return IssueResponse(
+            token=result.token,
+            secret_preview=_mask_secret(result.secret),
+            key_id=record.key_id,
+            owner_id=record.owner_id,
+            prefix=record.prefix,
+            label=record.label,
+            expires_at=record.expires_at,
+        )
+
+    @router.post(
+        "/verify",
+        response_model=VerifyResponse,
+        summary="Verify an API key",
+    )
+    async def verify_key(payload: VerifyRequest, runtime_dep: {{ module_class_name }} = Depends(dependency)) -> VerifyResponse:
+        try:
+            result = runtime_dep.verify_token(
+                payload.token,
+                required_scopes=payload.required_scopes,
+            )
+        except {{ module_class_name }}VerificationError as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
+
+        record = result.record
+        return VerifyResponse(
+            matched=result.matched,
+            reason=result.reason,
+            granted=list(result.scopes_granted),
+            required=list(result.required_scopes),
+            owner_id=record.owner_id if record else None,
+            key_id=record.key_id if record else None,
+        )
+
+    @router.post(
+        "/revoke",
+        status_code=status.HTTP_200_OK,
+        summary="Revoke an API key",
+    )
+    async def revoke_key(payload: RevokeRequest, runtime_dep: {{ module_class_name }} = Depends(dependency)) -> dict[str, Any]:
+        try:
+            record = runtime_dep.revoke_key(payload.key_id, reason=payload.reason)
+        except {{ module_class_name }}RepositoryError as exc:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+        return {
+            "revoked": True,
+            "key_id": record.key_id,
+            "owner_id": record.owner_id,
+            "revoked_at": record.revoked_at,
+        }
+
+    @router.get("/health", summary="API Keys health status")
+    async def health(runtime_dep: {{ module_class_name }} = Depends(dependency)) -> dict[str, Any]:
+        payload = runtime_dep.health_check()
+        return payload
+
+    return router
+
+
+def register_fastapi(
+    app: FastAPI,
+    *,
+    runtime: {{ module_class_name }} | None = None,
+    prefix: str = "/{{ module_kebab }}",
+) -> APIRouter:
+    """Attach the {{ module_title }} router to the given FastAPI app."""
+
+    router = build_router(runtime=runtime, prefix=prefix)
+    app.include_router(router)
+    return router
+
+
+__all__ = sorted(
+    set(
+        __all__
+        + [
+            "IssueRequest",
+            "IssueResponse",
+            "VerifyRequest",
+            "VerifyResponse",
+            "RevokeRequest",
+            "get_runtime",
+            "build_router",
+            "register_fastapi",
+        ]
+    )
+)

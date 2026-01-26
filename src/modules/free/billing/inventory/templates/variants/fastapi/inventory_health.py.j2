@@ -1,0 +1,23 @@
+{% include "templates/base/inventory_health.py.j2" %}
+
+# FastAPI health helper for {{ module_title }}.
+
+from fastapi import APIRouter, FastAPI
+
+from {{ module_import_base }}.{{ module_name }} import {{ module_class_name }}
+
+
+def register_inventory_health(
+    app: FastAPI, *, service: {{ module_class_name }} | None = None
+) -> APIRouter:
+    """Attach a health-only router for observability tooling."""
+
+    inventory_service = service or {{ module_class_name }}()
+    router = APIRouter(prefix="/health/{{ module_kebab }}", tags=["{{ module_title }} Health"])
+
+    @router.get("", summary="{{ module_title }} health summary")
+    async def fetch_health() -> dict[str, object]:
+        return build_health_payload(service=inventory_service)
+
+    app.include_router(router)
+    return router

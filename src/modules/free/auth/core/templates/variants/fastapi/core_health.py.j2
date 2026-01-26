@@ -1,0 +1,27 @@
+"""FastAPI shim exposing the canonical Auth Core health router."""
+
+from __future__ import annotations
+
+from typing import Any
+
+from src.health.auth_core import (
+    auth_core_health_check,
+    register_auth_core_health,
+    router as auth_core_health_router,
+)
+
+
+def build_health_router() -> Any:
+    """Return the generated Auth Core health router."""
+
+    return auth_core_health_router
+
+
+router = auth_core_health_router
+
+__all__ = [
+    "build_health_router",
+    "auth_core_health_check",
+    "register_auth_core_health",
+    "router",
+]

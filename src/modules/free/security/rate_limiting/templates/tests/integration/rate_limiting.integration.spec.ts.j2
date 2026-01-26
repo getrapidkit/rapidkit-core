@@ -1,0 +1,47 @@
+import { INestApplication } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
+import request from 'supertest';
+
+import { RateLimitingModule } from '../../../../src/modules/free/security/rate_limiting/rate-limiting.module';
+import { RateLimitingHealthModule } from '../../../../src/health/rate-limiting-health.module';
+import { RateLimitingService } from '../../../../src/modules/free/security/rate_limiting/rate-limiting.service';
+
+async function createApplication(): Promise<INestApplication> {
+  const moduleRef = await Test.createTestingModule({
+    imports: [RateLimitingModule, RateLimitingHealthModule],
+  }).compile();
+
+  const app = moduleRef.createNestApplication();
+  await app.init();
+  return app;
+}
+
+describe('RateLimitingModule (Integration)', () => {
+  let app: INestApplication;
+  let service: RateLimitingService;
+
+  beforeAll(async () => {
+    app = await createApplication();
+    service = app.get(RateLimitingService);
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  it('exposes RateLimitingService bindings', () => {
+    expect(service).toBeDefined();
+    const metadata = service.getMetadata();
+    expect(metadata).toHaveProperty('enabled');
+    expect(metadata).toHaveProperty('defaultRule');
+  });
+
+  it('serves module health endpoint', async () => {
+    const server = app.getHttpServer();
+    const response = await request(server).get('/api/health/module/rate-limiting');
+
+    expect(response.status).toBe(200);
+    expect(response.body).toHaveProperty('module', {{ rapidkit_vendor_module | tojson }});
+    expect(response.body).toHaveProperty('status');
+  });
+});

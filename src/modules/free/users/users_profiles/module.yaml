@@ -1,0 +1,269 @@
+name: users_profiles
+display_name: Users Profiles
+description: Profile management services and HTTP adapters for RapidKit users
+version: 0.1.0
+access: free
+status: stable
+tier: free
+category: users
+generated_from_config: true
+tags:
+    - users
+    - personalization
+    - user_profiles
+depends_on:
+    - free/users/users_core
+    - free/essentials/settings
+profile_inherits:
+    fastapi.standard: fastapi
+    fastapi.ddd: fastapi
+    nestjs.standard: nestjs
+config_sources:
+    - config/base.yaml
+    - config/snippets.yaml
+generation:
+    vendor:
+        root: .rapidkit/vendor
+        files:
+            - template: templates/base/users_profiles_init.py.j2
+              relative: src/modules/free/users/users_profiles/core/users/profiles/__init__.py
+            - template: templates/base/users_profiles_models.py.j2
+              relative: src/modules/free/users/users_profiles/core/users/profiles/models.py
+            - template: templates/base/users_profiles_dto.py.j2
+              relative: src/modules/free/users/users_profiles/core/users/profiles/dto.py
+            - template: templates/base/users_profiles_errors.py.j2
+              relative: src/modules/free/users/users_profiles/core/users/profiles/errors.py
+            - template: templates/base/users_profiles_repository.py.j2
+              relative: src/modules/free/users/users_profiles/core/users/profiles/repository.py
+            - template: templates/base/users_profiles_in_memory_repository.py.j2
+              relative: src/modules/free/users/users_profiles/core/users/profiles/in_memory_repository.py
+            - template: templates/base/users_profiles_service.py.j2
+              relative: src/modules/free/users/users_profiles/core/users/profiles/service.py
+            - template: templates/base/users_profiles_settings.py.j2
+              relative: src/modules/free/users/users_profiles/core/users/profiles/settings.py
+            - template: templates/base/users_profiles_health.py.j2
+              relative: src/health/users_profiles.py
+            - template: templates/base/users_profiles.py.j2
+              relative: src/modules/free/users/users_profiles/users_profiles.py
+            - template: templates/base/users_profiles_types.py.j2
+              relative: src/modules/free/users/users_profiles/users_profiles_types.py
+            - template: templates/vendor/nestjs/configuration.js.j2
+              relative: nestjs/configuration.js
+    variants:
+        fastapi: &fastapi_variant
+            root: .
+            context:
+                framework: fastapi
+                module_class_name: UsersProfiles
+                module_slug: users_profiles
+                vendor_runtime_relative: src/modules/free/users/users_profiles/users_profiles.py
+                vendor_health_relative: src/health/users_profiles.py
+                vendor_types_relative: src/modules/free/users/users_profiles/users_profiles_types.py
+                vendor_configuration_relative: nestjs/configuration.js
+            files:
+                - template: templates/variants/fastapi/users_profiles_runtime.py.j2
+                  output: src/modules/free/users/users_profiles/users_profiles.py
+                  description: Project-facing runtime wrapper around Users Profiles vendor module
+                - template: templates/variants/fastapi/users_profiles_types_runtime.py.j2
+                  output: src/modules/free/users/users_profiles/users_profiles_types.py
+                  description: Project-facing wrapper exposing Users Profiles health snapshot types
+                - template: templates/variants/fastapi/profiles_init.py.j2
+                  output: src/modules/free/users/users_profiles/core/users/profiles/__init__.py
+                - template: templates/variants/fastapi/profiles_models.py.j2
+                  output: src/modules/free/users/users_profiles/core/users/profiles/models.py
+                - template: templates/variants/fastapi/profiles_dto.py.j2
+                  output: src/modules/free/users/users_profiles/core/users/profiles/dto.py
+                - template: templates/variants/fastapi/profiles_errors.py.j2
+                  output: src/modules/free/users/users_profiles/core/users/profiles/errors.py
+                - template: templates/variants/fastapi/profiles_repository.py.j2
+                  output: src/modules/free/users/users_profiles/core/users/profiles/repository.py
+                - template: templates/variants/fastapi/profiles_in_memory_repository.py.j2
+                  output: src/modules/free/users/users_profiles/core/users/profiles/in_memory_repository.py
+                - template: templates/variants/fastapi/profiles_service.py.j2
+                  output: src/modules/free/users/users_profiles/core/users/profiles/service.py
+                - template: templates/variants/fastapi/profiles_settings.py.j2
+                  output: src/modules/free/users/users_profiles/core/users/profiles/settings.py
+                - template: templates/variants/fastapi/profiles_dependencies.py.j2
+                  output: src/modules/free/users/users_profiles/core/users/profiles/dependencies.py
+                - template: templates/variants/fastapi/profiles_router.py.j2
+                  output: src/modules/free/users/users_profiles/core/users/profiles/router.py
+                  description: FastAPI health endpoints backed by shared Users Profiles runtime metadata
+                - template: templates/variants/fastapi/users_profiles_routes.py.j2
+                  output: src/modules/free/users/users_profiles/core/users/profiles/metadata_routes.py
+                  description: FastAPI metadata and feature discovery routes for Users Profiles
+                - template: templates/variants/fastapi/users_profiles.py.j2
+                  output: src/modules/free/users/users_profiles/core/users/profiles/runtime.py
+                  description: Helper utilities to register Users Profiles routes into FastAPI applications
+                - template: templates/variants/fastapi/users_profiles_config.yaml.j2
+                  output: config/users/users_profiles.yaml
+                  description: Default Users Profiles configuration bundle for FastAPI projects
+                - template: templates/tests/integration/test_users_profiles_integration.j2
+                  output: tests/modules/integration/users/test_users_profiles_integration.py
+                  description: FastAPI integration test covering Users Profiles routes and health endpoints
+                - template: templates/variants/fastapi/tests/test_users_profiles_e2e.py
+                  output: tests/modules/e2e/free/users/users_profiles/test_users_profiles_e2e.py
+
+        # Compatibility aliases: the runner installs with kit profile names.
+        fastapi.standard: *fastapi_variant
+        fastapi.ddd: *fastapi_variant
+
+        nestjs: &nestjs_variant
+            root: .
+            context:
+                framework: nestjs
+                module_class_name: UsersProfiles
+                module_kebab: users-profiles
+                vendor_configuration_relative: nestjs/configuration.js
+            files:
+                - template: templates/variants/nestjs/index.ts.j2
+                  output: src/modules/free/users/users_profiles/index.ts
+                - template: templates/variants/nestjs/users_profiles.service.ts.j2
+                  output: src/modules/free/users/users_profiles/users-profiles.service.ts
+                - template: templates/variants/nestjs/users_profiles.controller.ts.j2
+                  output: src/modules/free/users/users_profiles/users-profiles.controller.ts
+                - template: templates/variants/nestjs/users_profiles.module.ts.j2
+                  output: src/modules/free/users/users_profiles/users-profiles.module.ts
+                - template: templates/variants/nestjs/users_profiles.configuration.ts.j2
+                  output: src/modules/free/users/users_profiles/users-profiles.configuration.ts
+                  description: NestJS configuration namespace for Users Profiles defaults
+                - template: templates/variants/nestjs/users_profiles.health.controller.ts.j2
+                  output: src/health/users_profiles-health.controller.ts
+                  description: NestJS health controller exposing Users Profiles status
+                - template: templates/variants/nestjs/users_profiles.health.module.ts.j2
+                  output: src/health/users_profiles-health.module.ts
+                  description: NestJS health module wiring Users Profiles diagnostics
+                - template: templates/tests/integration/test_users_profiles_integration.spec.ts.j2
+                  output: tests/modules/integration/users/users_profiles.integration.spec.ts
+                - template: templates/variants/nestjs/tests/users_profiles.e2e-spec.ts
+                  output: tests/modules/e2e/free/users/users_profiles/users_profiles.e2e-spec.ts
+
+        nestjs.standard: *nestjs_variant
+    snippets:
+        enabled: true
+        config: config/snippets.yaml
+        default: []
+compatibility:
+    python: ">=3.10,<4.0"
+    node: ">=18"
+    frameworks:
+        - fastapi
+        - nestjs
+    os:
+        - linux
+        - darwin
+        - windows
+testing:
+    coverage_min: 85
+    integration_tests: false
+    e2e_tests: false
+    unit_tests:
+        - tests/modules/free/users/profiles/test_users_profiles_generator.py
+        - tests/modules/free/users/profiles/test_users_profiles_overrides.py
+        - tests/modules/free/users/profiles/test_users_profiles_plugins.py
+        - tests/modules/free/users/profiles/test_users_profiles_cli_entry.py
+    fixtures: []
+documentation:
+    changelog: docs/changelog.md
+    readme: README.md
+    overview: docs/overview.md
+    usage: docs/usage.md
+    advanced: docs/advanced.md
+    migration: docs/migration.md
+    troubleshooting: docs/troubleshooting.md
+    api_docs: null
+    examples: []
+support:
+    issues: https://github.com/getrapidkit/core/issues
+    discussions: https://github.com/getrapidkit/core/discussions
+    documentation: https://docs.rapidkit.top/modules/users_profiles
+changelog:
+    - version: 0.1.0
+      date: "2025-12-14"
+      notes: See docs/changelog.md
+validation:
+    pre_install:
+        - check_python_version
+    post_install:
+        - validate_generated_code
+        - run_tests
+rollback:
+    strategy: uninstall
+    backup_path: .rapidkit/backups/
+    max_backups: 5
+performance:
+    lazy_loading: true
+    caching:
+        templates: true
+        ttl: 300
+capabilities:
+    - user_profiles
+    - personalization
+    - http_apis
+    - cross_framework
+signature:
+    signature: zh+L+aAp1JIvHVMYChTYO0RxIpIz7xNkOJS1Xul6Rsk5flcUk3Wfj83fgneuACSjNy9P+nzdNsxPdsi+UUG6DA==
+    signer_id: c7eb213b1ac6d8c6
+    signature_version: v1
+signer_id: null
+signature_version: null
+file_hashes:
+    templates/variants/nestjs/tests/users_profiles.e2e-spec.ts: sha256:59bc7fb5b0854c3ec903606ed42cdbd3b37f5225dc6808e8f303ef9245fa21c4
+    templates/variants/fastapi/tests/test_users_profiles_e2e.py: sha256:6bd93c67e5b23a3c1308895855f0175ea71ab47166161c6b6376663f9d0f11f2
+    scripts/run_demo.py: sha256:4234d061207542040fb7215b048816b245f1a3c38d755b938f06ebb3366e506e
+    README.md: sha256:f111f1390770df72ecfadb36b813683d0aa4d44d57ccac670af649d1d2b43ec6
+    __init__.py: sha256:e0081b77cf7fb2f2843817cc02ab9ee2533c4000561e87e84272c3207b5c7a8d
+    config/base.yaml: sha256:2af6418d95fe48e8a6ce71c4cde7a0a5ee56e04bc727105b99ffd19ecceba713
+    config/snippets.yaml: sha256:24f03d1564cbe2126e0987811f4eca03dfea6188b22bd2d810d856e915f6b515
+    docs/README.md: sha256:0939af60e3a39e0c2f1cc9b5ac907546d7902e7f60161dfa5f0f92031efc750b
+    docs/advanced.md: sha256:e3c3ef108116c7bbd047c05e6dbdac82a24ba7c2c378be03b7302010f5dd4449
+    docs/changelog.md: sha256:e468cb7fa20f2a6d3c595853fe593f8a7a3251fb1dd679d5a0cb675783115d3e
+    docs/migration.md: sha256:417577c7cb73e2acda7267bb59af73c86e21db400508bdc2508ebf531db5f797
+    docs/overview.md: sha256:fab4e852e6505d5af12f67ec7493915d9857946417fa5033e47d984c72b2c36f
+    docs/troubleshooting.md: sha256:19cd44efa4e1c6a4898ead71e818254e661a8b4369b9b123067333a52776cbc4
+    docs/usage.md: sha256:089346db6e5626ab6d0cf94227263cee6b4e9e8eddfea83803558061172e23b5
+    frameworks/__init__.py: sha256:30a3a0aecdb5e8f5ef7e5cde3bb901bd3044792de4c62759a6d654d520e7950d
+    frameworks/fastapi.py: sha256:7597cd6bf7cbacd6da2a3977f6412cc38b7469990b5bc8e1088e98561d96072a
+    frameworks/nestjs.py: sha256:123cff128d9db0c384454680e2e580b57ed6ecb080407b6e7e14da443ad6f0bb
+    generate.py: sha256:dfeb494fabe0a2bfaa46c9de3a126d7259691ecec4726650f7cc6aac7d04fe16
+    module.verify.json: sha256:26cc72999cb0b24eee61b993221919d3b44955eaf0cdee7ba5a3975129c82b3d
+    overrides.py: sha256:94489e278a77786e52f6326a85c47c46bf95ce1a79a45293f31d2a13d95fc770
+    templates/base/users_profiles.py.j2: sha256:e9bc80622f2036a6a891555df121e5f2e75996bcd887a906dcc04f2e88d9c4b9
+    templates/base/users_profiles_dto.py.j2: sha256:e496db715c86fc1501c3bf9b06a0a3c86b1f16caec233ac07b12cc553612cd84
+    templates/base/users_profiles_errors.py.j2: sha256:51c299b484b6d44396c3fbef1e51ac8e1b4cf689f241829272195081ae5e1eb0
+    templates/base/users_profiles_health.py.j2: sha256:f29c336716f4e48f544b2aef8e217fd93aae4d7bc1f378bfd5e90e299d90dbea
+    templates/base/users_profiles_in_memory_repository.py.j2: sha256:14158b23cef20b9e77c2103b72d495f4017e50057798bf0ed83a10ac6819a1a5
+    templates/base/users_profiles_init.py.j2: sha256:02e43608dc32f47af89d27b48fd4e6d5ae1c60c13e66f2289625d449c403621f
+    templates/base/users_profiles_models.py.j2: sha256:791a9e21680dedd24a818f92aaee17ba87a6281e6654164653d8679cd8767477
+    templates/base/users_profiles_repository.py.j2: sha256:35c2eee2d208f60d2da14bee6491b438eab0ddff7afe3d158e9b1730eb49e352
+    templates/base/users_profiles_service.py.j2: sha256:5cac4f66d07520f536217450573a4f3fb97df9337ebe873d18910554a5cbd664
+    templates/base/users_profiles_settings.py.j2: sha256:045cce0e8e91a85db3788bbbacc2e93e0d15f2392856faa330c6204314f37648
+    templates/base/users_profiles_types.py.j2: sha256:85b00d662379f0838a8f68613b5ba70fde2cef8a61198d5fe46491d701f92e45
+    templates/snippets/users_profiles.snippet.j2: sha256:eac9a93b543cbb3d4f76cececa4a043f526794d7c919e8333977671e8b1bea66
+    templates/tests/__init__.py: sha256:8a7c5a80970b5e7599b6928ace7b07b5c42dd594d92c5c2de5c43934452804ad
+    templates/tests/integration/__init__.py: sha256:0839d7de474e40812f7cef84f5a69c6cf55701aa4f09ddf74efb671e7519ba46
+    templates/tests/integration/test_users_profiles_integration.j2: sha256:a1d451520188599ecc26efa591e1fe365921673f5001014c8638b2c2a0987db1
+    templates/tests/integration/test_users_profiles_integration.spec.ts.j2: sha256:d31c919b0991672f25da874eac8d3c169e066e9593d2ca5aa34caac81c4c50cf
+    templates/variants/fastapi/profiles_dependencies.py.j2: sha256:01379120dfb7a9583686339fd76ad33382c3d5a52b5708f6f66e226953b66302
+    templates/variants/fastapi/profiles_dto.py.j2: sha256:e496db715c86fc1501c3bf9b06a0a3c86b1f16caec233ac07b12cc553612cd84
+    templates/variants/fastapi/profiles_errors.py.j2: sha256:51c299b484b6d44396c3fbef1e51ac8e1b4cf689f241829272195081ae5e1eb0
+    templates/variants/fastapi/profiles_in_memory_repository.py.j2: sha256:14158b23cef20b9e77c2103b72d495f4017e50057798bf0ed83a10ac6819a1a5
+    templates/variants/fastapi/profiles_init.py.j2: sha256:02e43608dc32f47af89d27b48fd4e6d5ae1c60c13e66f2289625d449c403621f
+    templates/variants/fastapi/profiles_models.py.j2: sha256:791a9e21680dedd24a818f92aaee17ba87a6281e6654164653d8679cd8767477
+    templates/variants/fastapi/profiles_repository.py.j2: sha256:35c2eee2d208f60d2da14bee6491b438eab0ddff7afe3d158e9b1730eb49e352
+    templates/variants/fastapi/profiles_router.py.j2: sha256:4a996e66c59621f4841c31da7fe68dcf19ba8975f645adad350ebce86567d144
+    templates/variants/fastapi/profiles_service.py.j2: sha256:5cac4f66d07520f536217450573a4f3fb97df9337ebe873d18910554a5cbd664
+    templates/variants/fastapi/profiles_settings.py.j2: sha256:045cce0e8e91a85db3788bbbacc2e93e0d15f2392856faa330c6204314f37648
+    templates/variants/fastapi/users_profiles.py.j2: sha256:212dbd5b8e4107d96b5edfde93dae8724a72a6f32aca3a61546ae750d2801ec6
+    templates/variants/fastapi/users_profiles_config.yaml.j2: sha256:b37a68757caca56f417291bb47f49fe09b376018f9ffc2197424d98ee1cbe055
+    templates/variants/fastapi/users_profiles_health.py.j2: sha256:f29c336716f4e48f544b2aef8e217fd93aae4d7bc1f378bfd5e90e299d90dbea
+    templates/variants/fastapi/users_profiles_routes.py.j2: sha256:8bc7d802845b7a5bce39537b220b5f50bfdedf8d7c69c8195eb91aa6f7fb2a2f
+    templates/variants/fastapi/users_profiles_runtime.py.j2: sha256:16d758bfc9102b55b95cf2a15c8b40dd7d9c03e6a2c093393d2cfaf37b30d7e4
+    templates/variants/fastapi/users_profiles_types_runtime.py.j2: sha256:c48a556258bd3b02a214e460223dfabb29de04981e0e96400c78242339894f90
+    templates/variants/nestjs/index.ts.j2: sha256:c7a599e00ca97f7c5be6481c4a9f24c5ff0b432af0ccc5ff2040d08f695f1bbf
+    templates/variants/nestjs/users_profiles.controller.ts.j2: sha256:da98c228f62655f7bee68026006724ed78203c1f1efb4413aee4630684a71587
+    templates/variants/nestjs/users_profiles.module.ts.j2: sha256:21c0b858d26feada7b4510a3d83bbcaa061b1ef8b3cb77a5c8756454d55be473
+    templates/variants/nestjs/users_profiles.service.ts.j2: sha256:26791656313d3f6791bbdf72bf6d7aed30fd95cfa97d60c9223baf3484559506
+    templates/variants/nestjs/users_profiles.configuration.ts.j2: sha256:9ea5f28cd8837e82bee59c50bbe855813c719874dc36e8f7bfb69676ee0cbe53
+    templates/variants/nestjs/users_profiles.health.controller.ts.j2: sha256:1cb801f3c1198ae72cfd7fd91eb7fb131617730e50eac43e624f3086ed28e2f2
+    templates/variants/nestjs/users_profiles.health.module.ts.j2: sha256:93391f27324f5bc42053eb5f82fca5768793a1a0afe63bb65da10c17e61b7e4a
+    templates/vendor/nestjs/configuration.js.j2: sha256:63c90108f45f18bda7114acb68f9ed728b148bed4b976ea026800575ba2bc7ea

@@ -1,0 +1,71 @@
+import { Test } from "@nestjs/testing";
+
+import { {{ module_class_name }}Module } from "../../src/modules/free/auth/session/session.module";
+import { {{ module_class_name }}Service } from "../../src/modules/free/auth/session/session.service";
+import { {{ module_class_name }}Controller } from "../../src/modules/free/auth/session/session.controller";
+import { {{ module_class_name }}HealthController } from "../../src/health/session.health";
+
+const USER_ID = "user-123";
+
+const mockEnv = () => {
+  process.env.RAPIDKIT_SESSION_SECRET = "session-test-secret";
+};
+
+const clearEnv = () => {
+  delete process.env.RAPIDKIT_SESSION_SECRET;
+};
+
+describe("{{ module_class_name }}Module", () => {
+  beforeEach(mockEnv);
+  afterEach(clearEnv);
+
+  it("registers controllers and service", async () => {
+    const moduleRef = await Test.createTestingModule({
+      imports: [{{ module_class_name }}Module],
+    }).compile();
+
+    expect(moduleRef.get({{ module_class_name }}Service)).toBeDefined();
+    expect(moduleRef.get({{ module_class_name }}Controller)).toBeDefined();
+    expect(moduleRef.get({{ module_class_name }}HealthController)).toBeDefined();
+  });
+
+  it("issues and validates sessions", async () => {
+    const moduleRef = await Test.createTestingModule({
+      imports: [{{ module_class_name }}Module],
+    }).compile();
+
+    const service = moduleRef.get({{ module_class_name }}Service);
+    const envelope = service.issueSession(USER_ID, { role: "admin" });
+
+    expect(envelope.session.sessionId).toBeDefined();
+    expect(envelope.cookie.name).toBe("rapidkit_session");
+
+    const verified = service.verifySessionToken(envelope.token);
+    expect(verified.userId).toBe(USER_ID);
+    expect(verified.payload.role).toBe("admin");
+  });
+
+  it("rotates refresh tokens", async () => {
+    const moduleRef = await Test.createTestingModule({
+      imports: [{{ module_class_name }}Module],
+    }).compile();
+
+    const service = moduleRef.get({{ module_class_name }}Service);
+    const envelope = service.issueSession(USER_ID);
+
+    const rotated = service.rotateSession(envelope.refreshToken);
+    expect(rotated.refreshToken).not.toBe(envelope.refreshToken);
+  });
+
+  it("reports health metadata", async () => {
+    const moduleRef = await Test.createTestingModule({
+      imports: [{{ module_class_name }}Module],
+    }).compile();
+
+    const health = moduleRef.get({{ module_class_name }}HealthController);
+    const payload = health.getModuleHealth();
+
+    expect(payload.status).toBe("ok");
+    expect(payload.metadata["module"]).toBe("session");
+  });
+});

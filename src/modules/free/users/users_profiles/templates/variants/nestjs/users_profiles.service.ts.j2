@@ -1,0 +1,426 @@
+import {
+  BadRequestException,
+  Injectable,
+  Logger,
+  NotFoundException,
+  UnprocessableEntityException,
+} from "@nestjs/common";
+
+type Visibility = "public" | "private" | "team";
+
+export interface UserProfileDto {
+  userId: string;
+  displayName: string | null;
+  avatarUrl: string | null;
+  timezone: string;
+  biography: string | null;
+  socialLinks: string[];
+  marketingOptIn: boolean;
+  visibility: Visibility;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpdateUserProfileDto {
+  displayName?: string | null;
+  avatarUrl?: string | null;
+  timezone?: string;
+  biography?: string | null;
+  socialLinks?: string[] | null;
+  marketingOptIn?: boolean;
+  visibility?: Visibility;
+}
+
+export const USERS_PROFILES_FEATURES = [
+  "profile_management",
+  "avatar_uploads",
+  "privacy_controls",
+  "marketing_preferences",
+  "timezone_support",
+] as const;
+
+export type UsersProfilesFeature = (typeof USERS_PROFILES_FEATURES)[number];
+
+export interface UsersProfilesMetadata {
+  module: string;
+  title: string;
+  status: "ok" | "degraded" | "error";
+  checked_at: string;
+  default_timezone: string;
+  max_bio_length: number;
+  avatar_max_bytes: number;
+  allow_marketing_opt_in: boolean;
+  social_links_limit: number;
+  default_visibility: Visibility;
+  supported_visibilities: Visibility[];
+  features: UsersProfilesFeature[];
+}
+
+export type UsersProfilesHealthPayload = UsersProfilesMetadata & { detail?: string };
+
+interface UsersProfilesDefaults {
+  default_timezone?: string | null;
+  max_bio_length?: number | string | null;
+  avatar_max_bytes?: number | string | null;
+  allow_marketing_opt_in?: boolean | string | null;
+  social_links_limit?: number | string | null;
+  default_visibility?: string | null;
+  supported_visibilities?: string[] | null;
+}
+
+interface ProfileRecord {
+  userId: string;
+  displayName: string | null;
+  avatarUrl: string | null;
+  timezone: string;
+  biography: string | null;
+  socialLinks: string[];
+  marketingOptIn: boolean;
+  visibility: Visibility;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface ResolvedSettings {
+  defaultTimezone: string;
+  maxBioLength: number;
+  avatarMaxBytes: number;
+  allowMarketingOptIn: boolean;
+  socialLinksLimit: number;
+  defaultVisibility: Visibility;
+  supportedVisibilities: Visibility[];
+}
+
+const DEFAULTS: UsersProfilesDefaults = {{ users_profiles_defaults | tojson(indent=2) }};
+
+@Injectable()
+export class {{ module_class_name }}Service {
+  private readonly logger = new Logger("{{ module_class_name }}Service");
+  private readonly profiles = new Map<string, ProfileRecord>();
+  private readonly clock = () => new Date();
+
+  constructor() {}
+
+  async listProfiles(limit?: number, offset = 0): Promise<UserProfileDto[]> {
+    const effectiveLimit = resolveLimit(limit, this.profiles.size || undefined);
+    if (offset < 0) {
+      throw new BadRequestException("offset cannot be negative");
+    }
+    const window = Array.from(this.profiles.values()).slice(offset, offset + effectiveLimit);
+    return window.map(toDto);
+  }
+
+  async getProfile(userId: string): Promise<UserProfileDto> {
+    const record = this.profiles.get(userId);
+    if (!record) {
+      throw new NotFoundException(`Profile for user '${userId}' was not found`);
+    }
+    return toDto(record);
+  }
+
+  async upsertProfile(userId: string, payload: UpdateUserProfileDto): Promise<UserProfileDto> {
+    if (!userId || !userId.trim()) {
+      throw new BadRequestException("userId is required");
+    }
+
+    const settings = resolveSettings();
+    const sanitizedLinks = sanitizeSocialLinks(payload.socialLinks);
+    validateProfilePayload(payload, sanitizedLinks, settings);
+
+    const now = this.clock();
+    const existing = this.profiles.get(userId);
+
+    if (existing) {
+      const updated: ProfileRecord = {
+        ...existing,
+        displayName: valueOrNull(payload.displayName, existing.displayName),
+        avatarUrl: valueOrNull(payload.avatarUrl, existing.avatarUrl),
+        timezone: resolveTimezone(payload.timezone, existing.timezone, settings),
+        biography: valueOrNull(payload.biography, existing.biography),
+        socialLinks:
+          Array.isArray(payload.socialLinks) && sanitizedLinks && sanitizedLinks.length > 0
+            ? sanitizedLinks
+            : existing.socialLinks,
+        marketingOptIn:
+          payload.marketingOptIn !== undefined
+            ? payload.marketingOptIn
+            : existing.marketingOptIn,
+        visibility:
+          payload.visibility !== undefined
+            ? normalizeVisibility(payload.visibility, settings.defaultVisibility, settings.supportedVisibilities)
+            : existing.visibility,
+        updatedAt: now,
+      };
+      this.profiles.set(userId, updated);
+      return toDto(updated);
+    }
+
+    const record: ProfileRecord = {
+      userId,
+      displayName: valueOrNull(payload.displayName, null),
+      avatarUrl: valueOrNull(payload.avatarUrl, null),
+      timezone: resolveTimezone(payload.timezone, settings.defaultTimezone, settings),
+      biography: valueOrNull(payload.biography, null),
+      socialLinks: sanitizedLinks ?? [],
+      marketingOptIn:
+        payload.marketingOptIn !== undefined
+          ? payload.marketingOptIn
+          : settings.allowMarketingOptIn,
+      visibility: normalizeVisibility(
+        payload.visibility,
+        settings.defaultVisibility,
+        settings.supportedVisibilities,
+      ),
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    this.profiles.set(userId, record);
+    return toDto(record);
+  }
+
+  async deleteProfile(userId: string): Promise<void> {
+    const existing = this.profiles.get(userId);
+    if (!existing) {
+      throw new NotFoundException(`Profile for user '${userId}' was not found`);
+    }
+    this.profiles.delete(userId);
+  }
+
+  listFeatures(): UsersProfilesFeature[] {
+    return Array.from(USERS_PROFILES_FEATURES);
+  }
+
+  buildMetadata(): UsersProfilesMetadata {
+    const settings = resolveSettings();
+    return {
+      module: "{{ module_name }}",
+      title: "{{ module_title }}",
+      status: "ok",
+      checked_at: new Date().toISOString(),
+      default_timezone: settings.defaultTimezone,
+      max_bio_length: settings.maxBioLength,
+      avatar_max_bytes: settings.avatarMaxBytes,
+      allow_marketing_opt_in: settings.allowMarketingOptIn,
+      social_links_limit: settings.socialLinksLimit,
+      default_visibility: settings.defaultVisibility,
+      supported_visibilities: [...settings.supportedVisibilities],
+      features: this.listFeatures(),
+    };
+  }
+
+  async resolveHealth(): Promise<UsersProfilesHealthPayload> {
+    try {
+      return this.buildMetadata();
+    } catch (error) {
+      this.logger.warn("Users Profiles health evaluation failed", error as Error);
+      let metadata: UsersProfilesMetadata;
+      try {
+        metadata = this.buildMetadata();
+      } catch {
+        metadata = {
+          module: "{{ module_name }}",
+          title: "{{ module_title }}",
+          status: "ok",
+          checked_at: new Date().toISOString(),
+          default_timezone: "UTC",
+          max_bio_length: 280,
+          avatar_max_bytes: 2_097_152,
+          allow_marketing_opt_in: true,
+          social_links_limit: 5,
+          default_visibility: "public",
+          supported_visibilities: ["public", "private", "team"],
+          features: this.listFeatures(),
+        };
+      }
+      return {
+        ...metadata,
+        status: "degraded",
+        detail:
+          error instanceof Error && error.message
+            ? error.message
+            : "Users Profiles configuration invalid",
+      };
+    }
+  }
+}
+
+function toDto(record: ProfileRecord): UserProfileDto {
+  return {
+    userId: record.userId,
+    displayName: record.displayName,
+    avatarUrl: record.avatarUrl,
+    timezone: record.timezone,
+    biography: record.biography,
+    socialLinks: [...record.socialLinks],
+    marketingOptIn: record.marketingOptIn,
+    visibility: record.visibility,
+    createdAt: record.createdAt.toISOString(),
+    updatedAt: record.updatedAt.toISOString(),
+  };
+}
+
+function resolveSettings(): ResolvedSettings {
+  const defaultVisibility = normalizeVisibility(
+    DEFAULTS.default_visibility,
+    "public",
+    KNOWN_VISIBILITIES,
+  );
+  const supportedVisibilities = resolveSupportedVisibilities(
+    DEFAULTS.supported_visibilities,
+    defaultVisibility,
+  );
+  const socialLinksLimit = Math.max(0, Math.floor(coerceNumber(DEFAULTS.social_links_limit, 5)));
+  return {
+    defaultTimezone: coerceString(DEFAULTS.default_timezone, "UTC"),
+    maxBioLength: Math.max(1, Math.floor(coerceNumber(DEFAULTS.max_bio_length, 280))),
+    avatarMaxBytes: Math.max(0, Math.floor(coerceNumber(DEFAULTS.avatar_max_bytes, 2_097_152))),
+    allowMarketingOptIn: coerceBoolean(DEFAULTS.allow_marketing_opt_in, true),
+    socialLinksLimit,
+    defaultVisibility,
+    supportedVisibilities,
+  };
+}
+
+const KNOWN_VISIBILITIES: Visibility[] = ["public", "private", "team"];
+
+function normalizeVisibility(
+  value: unknown,
+  fallback: Visibility,
+  supported: Visibility[],
+): Visibility {
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    const match = KNOWN_VISIBILITIES.find((vis) => vis === normalized);
+    if (match && supported.includes(match)) {
+      return match;
+    }
+  }
+  return fallback;
+}
+
+function resolveSupportedVisibilities(
+  value: unknown,
+  defaultVisibility: Visibility,
+): Visibility[] {
+  const entries: Visibility[] = [];
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      const vis = normalizeVisibility(item, defaultVisibility, KNOWN_VISIBILITIES);
+      if (!entries.includes(vis)) {
+        entries.push(vis);
+      }
+    }
+  } else if (typeof value === "string" && value.trim()) {
+    for (const chunk of value.split(",")) {
+      const vis = normalizeVisibility(chunk, defaultVisibility, KNOWN_VISIBILITIES);
+      if (!entries.includes(vis)) {
+        entries.push(vis);
+      }
+    }
+  }
+  if (!entries.includes(defaultVisibility)) {
+    entries.push(defaultVisibility);
+  }
+  if (!entries.length) {
+    entries.push("public");
+  }
+  return entries;
+}
+
+function sanitizeSocialLinks(links: UpdateUserProfileDto["socialLinks"]): string[] | null {
+  if (!Array.isArray(links)) {
+    return null;
+  }
+  return links
+    .map((link) => (typeof link === "string" ? link.trim() : String(link).trim()))
+    .filter((link) => Boolean(link));
+}
+
+function validateProfilePayload(
+  payload: UpdateUserProfileDto,
+  socialLinks: string[] | null,
+  settings: ResolvedSettings,
+): void {
+  if (payload.biography && payload.biography.length > settings.maxBioLength) {
+    throw new UnprocessableEntityException(
+      `Biography exceeds ${settings.maxBioLength} characters`,
+    );
+  }
+  if (socialLinks && socialLinks.length > settings.socialLinksLimit) {
+    throw new UnprocessableEntityException(
+      `Only ${settings.socialLinksLimit} social links are allowed`,
+    );
+  }
+}
+
+function valueOrNull<T>(value: T | null | undefined, fallback: T | null): T | null {
+  if (value === undefined) {
+    return fallback;
+  }
+  return value === null ? null : value;
+}
+
+function resolveTimezone(
+  value: string | undefined,
+  fallback: string,
+  settings: ResolvedSettings,
+): string {
+  if (value === undefined || value === null) {
+    return fallback;
+  }
+  const trimmed = value.trim();
+  return trimmed || settings.defaultTimezone;
+}
+
+function resolveLimit(limit: number | undefined, fallback?: number): number {
+  if (limit === undefined || limit === null) {
+    if (fallback === undefined || fallback === null || fallback <= 0) {
+      return Number.MAX_SAFE_INTEGER;
+    }
+    if (!Number.isFinite(fallback)) {
+      return Number.MAX_SAFE_INTEGER;
+    }
+    return Math.max(1, Math.floor(fallback));
+  }
+  if (!Number.isInteger(limit) || limit <= 0) {
+    throw new BadRequestException("limit must be a positive integer");
+  }
+  return limit;
+}
+
+function coerceString(value: unknown, fallback: string): string {
+  if (typeof value === "string" && value.trim()) {
+    return value.trim();
+  }
+  return fallback;
+}
+
+function coerceNumber(value: unknown, fallback: number): number {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+  return fallback;
+}
+
+function coerceBoolean(value: unknown, fallback: boolean): boolean {
+  if (typeof value === "boolean") {
+    return value;
+  }
+  if (typeof value === "string") {
+    const normalized = value.trim().toLowerCase();
+    if (["1", "true", "yes", "on"].includes(normalized)) {
+      return true;
+    }
+    if (["0", "false", "no", "off"].includes(normalized)) {
+      return false;
+    }
+  }
+  return fallback;
+}

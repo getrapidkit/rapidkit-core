@@ -1,0 +1,137 @@
+name: "🏷️ Create Staging RC Tag"
+
+on:
+    workflow_dispatch:
+        inputs:
+            base_version:
+                description: "Base version X.Y.Z (optional; defaults to pyproject.toml)"
+                required: false
+                type: string
+            dry_run:
+                description: "Only compute next tag; do not push"
+                required: false
+                default: "false"
+                type: choice
+                options:
+                    - "false"
+                    - "true"
+
+concurrency:
+    group: community-staging-tag-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    tag:
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+                  fetch-tags: true
+
+            - name: Install Poetry
+              uses: snok/install-poetry@v1
+              with:
+                  version: "2.2.1"
+                  virtualenvs-in-project: true
+                  virtualenvs-create: true
+
+            - name: Configure git identity
+              id: git_identity
+              run: |
+                  set -euo pipefail
+                  git config --global user.name "rapidkit-bot"
+                  git config --global user.email "actions@users.noreply.github.com"
+
+            - name: Resolve base version
+              id: base
+              run: |
+                  set -euo pipefail
+                  BASE_INPUT="${{ inputs.base_version }}"
+                  if [[ -n "$BASE_INPUT" ]]; then
+                      BASE="$BASE_INPUT"
+                  else
+                      RAW=$(awk -F '"' '/^version =/ {print $2; exit}' pyproject.toml)
+                      BASE=$(echo "$RAW" | grep -Eo '^[0-9]+\.[0-9]+\.[0-9]+' || true)
+                      if [[ -z "$BASE" ]]; then
+                          echo "Unable to resolve base X.Y.Z from pyproject.toml version: $RAW" >&2
+                          exit 1
+                      fi
+                  fi
+                  echo "base_version=$BASE" >> "$GITHUB_OUTPUT"
+
+            - name: Compute next rc tag
+              id: next
+              run: |
+                  set -euo pipefail
+                  BASE="${{ steps.base.outputs.base_version }}"
+                  git fetch --tags --force
+                  pattern="v${BASE}-rc."
+                  max=0
+                  while IFS= read -r tag; do
+                      n="${tag##*rc.}"
+                      if [[ "$n" =~ ^[0-9]+$ ]] && (( n > max )); then
+                          max=$n
+                      fi
+                  done < <(git tag -l "${pattern}*")
+                  next=$((max + 1))
+                  echo "next_tag=v${BASE}-rc.${next}" >> "$GITHUB_OUTPUT"
+
+            - name: Show next tag
+              run: |
+                  echo "Next tag: ${{ steps.next.outputs.next_tag }}"
+
+            - name: Bump pyproject version (PEP 440) and commit
+              if: ${{ inputs.dry_run != 'true' }}
+              run: |
+                  set -euo pipefail
+                  BASE="${{ steps.base.outputs.base_version }}"
+                  tag="${{ steps.next.outputs.next_tag }}"
+                  rc_num="${tag##*rc.}"
+                  if [[ ! "$rc_num" =~ ^[0-9]+$ ]]; then
+                      echo "Unable to parse rc number from tag: $tag" >&2
+                      exit 1
+                  fi
+
+                  pep_version="${BASE}rc${rc_num}"
+                  echo "Bumping project version to: $pep_version"
+
+                  poetry version "$pep_version"
+
+                  if poetry lock --help 2>/dev/null | grep -q -- '--no-update'; then
+                      poetry lock --no-update
+                  else
+                      poetry lock
+                  fi
+
+                  git add pyproject.toml poetry.lock
+                  if git diff --cached --quiet; then
+                      echo "No version changes to commit (already at $pep_version)."
+                  else
+                      git commit -m "chore(release): bump version to $pep_version"
+                  fi
+
+            - name: Create and push tag
+              if: ${{ inputs.dry_run != 'true' }}
+              env:
+                  STAGING_TAG_PUSH_TOKEN: ${{ secrets.STAGING_TAG_PUSH_TOKEN }}
+              run: |
+                  set -euo pipefail
+                  tag="${{ steps.next.outputs.next_tag }}"
+
+                  git tag -a "$tag" -m "Staging RC: $tag"
+
+                  if [[ -n "${STAGING_TAG_PUSH_TOKEN:-}" ]]; then
+                      # Use PAT so the tag push can trigger downstream workflows (publish, docker, etc).
+                      git remote set-url origin "https://x-access-token:${STAGING_TAG_PUSH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+                  else
+                      echo "NOTE: STAGING_TAG_PUSH_TOKEN is not set. Pushing tag with GITHUB_TOKEN may not trigger other workflows." >&2
+                      echo "      If you want tag -> publish to auto-run, add a PAT secret named STAGING_TAG_PUSH_TOKEN (repo+workflow)." >&2
+                  fi
+
+                  # Push version bump commit first (so the tag points at the correct pyproject version)
+                  git push origin "HEAD:${GITHUB_REF_NAME}"
+                  git push origin "$tag"

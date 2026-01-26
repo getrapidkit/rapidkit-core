@@ -1,0 +1,63 @@
+import { registerAs } from "@nestjs/config";
+
+export type RedisConfiguration = {
+  url: string;
+  preconnect: boolean;
+  retries: number;
+  backoffBase: number;
+  ttl: number;
+};
+
+const TRUTHY = ["1", "true", "yes", "on"];
+
+const toBoolean = (value: string | undefined, fallback: boolean): boolean => {
+  if (!value) {
+    return fallback;
+  }
+  return TRUTHY.includes(value.toLowerCase());
+};
+
+const toNumber = (value: string | undefined, fallback: number): number => {
+  if (!value) {
+    return fallback;
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const buildUrl = (): string => {
+  const direct = process.env.REDIS_URL;
+  if (direct && direct.length > 0) {
+    return direct;
+  }
+
+  const host = process.env.REDIS_HOST ?? {{ redis_defaults.host | default('localhost') | tojson }};
+  const port = process.env.REDIS_PORT ?? {{ redis_defaults.port | default(6379) | tojson }};
+  const db = process.env.REDIS_DB ?? {{ redis_defaults.db | default(0) | tojson }};
+  const password =
+    process.env.REDIS_PASSWORD ?? {{ redis_defaults.password | default("") | tojson }};
+  const useTls = toBoolean(
+    process.env.REDIS_USE_TLS,
+    {{ redis_defaults.use_tls | default(false) | tojson }}
+  );
+  const scheme = useTls ? "rediss" : "redis";
+  const auth = password ? `:${password}@` : "";
+  return `${scheme}://${auth}${host}:${port}/${db}`;
+};
+
+export default registerAs("redis", (): RedisConfiguration => ({
+  url: buildUrl(),
+  preconnect: toBoolean(
+    process.env.REDIS_PRECONNECT,
+    {{ redis_defaults.preconnect | default(false) | tojson }}
+  ),
+  retries: toNumber(
+    process.env.REDIS_CONNECT_RETRIES,
+    {{ redis_defaults.connect_retries | default(3) | tojson }}
+  ),
+  backoffBase: toNumber(
+    process.env.REDIS_CONNECT_BACKOFF_BASE,
+    {{ redis_defaults.connect_backoff_base | default(0.5) | tojson }}
+  ),
+  ttl: toNumber(process.env.CACHE_TTL, {{ redis_defaults.cache_ttl | default(3600) | tojson }}),
+}));

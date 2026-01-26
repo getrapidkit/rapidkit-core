@@ -1,0 +1,117 @@
+snippets:
+  - id: rate_limiting_env
+    target: .env,.env.dev,.env.prod,.env.example
+    anchor: "# <<<inject:module-env>>>"
+    template: rate_limiting_env.snippet.j2
+    features: [rate-limiting]
+    profiles: [fastapi/standard,fastapi/ddd,nestjs/standard]
+    description: Injects rate limiting environment variables and defaults.
+    version: "1.0.0"
+    priority: 15
+    dependencies: []
+    context:
+      defaults:
+        enabled: true
+        backend: memory
+        default_limit: 120
+        default_window: 60
+        redis_url: "redis://localhost:6379/0"
+    schema:
+      type: object
+      properties:
+        RATE_LIMIT_ENABLED:
+          type: bool
+          default: true
+          description: Enable the rate limiting runtime.
+        RATE_LIMIT_BACKEND:
+          type: str
+          default: memory
+          enum: [memory, redis]
+        RATE_LIMIT_REDIS_URL:
+          type: str
+          default: "redis://localhost:6379/0"
+          description: Redis connection string when RATE_LIMIT_BACKEND=redis.
+        RATE_LIMIT_DEFAULT_LIMIT:
+          type: int
+          default: 120
+        RATE_LIMIT_DEFAULT_WINDOW:
+          type: int
+          default: 60
+        RATE_LIMIT_TRUST_FORWARDED_FOR:
+          type: bool
+          default: false
+        RATE_LIMIT_IDENTITY_HEADER:
+          type: str
+          default: X-RateLimit-Identity
+        RATE_LIMIT_RULES_JSON:
+          type: str
+          default: ""
+          description: JSON encoded overrides appended to defaults.
+      additionalProperties: true
+      required: []
+    metadata:
+      author: "RapidKit Team"
+      created_at: "2025-11-01"
+      last_modified: "2025-11-01"
+    conflict_resolution: merge
+  - id: rate_limiting_settings_fields
+    target: src/modules/free/essentials/settings/settings.py
+    anchor: "# <<<inject:settings-fields>>>"
+    template: rate_limiting_settings_fields.snippet.j2
+    features: [rate-limiting, extendable_settings]
+    profiles: [fastapi/standard,fastapi/ddd,nestjs/standard]
+    description: Injects rate limiting configuration fields into the shared settings module.
+    version: "1.0.0"
+    priority: 25
+    dependencies: []
+    context:
+      defaults:
+        enabled: true
+        backend: memory
+        redis_url: "redis://localhost:6379/0"
+        redis_prefix: "rate-limit"
+        trust_forwarded_for: false
+        forwarded_for_header: "X-Forwarded-For"
+        identity_header: "X-RateLimit-Identity"
+        default_rule_name: "default"
+        default_scope: "identity"
+        default_limit: 120
+        default_window: 60
+        default_priority: 100
+        default_block_seconds: null
+        headers:
+          limit: "X-RateLimit-Limit"
+          remaining: "X-RateLimit-Remaining"
+          reset: "X-RateLimit-Reset"
+          retry_after: "Retry-After"
+          rule: "X-RateLimit-Rule"
+    schema:
+      type: object
+      properties: {}
+      additionalProperties: true
+      required: []
+    metadata:
+      author: "RapidKit Team"
+      created_at: "2025-11-01"
+      last_modified: "2025-11-01"
+    conflict_resolution: merge
+  - id: rate_limiting_settings_fields_nestjs
+    target: src/config/configuration.ts
+    anchor: "// <<<inject:configuration>>>"
+    template: rate_limiting_settings_fields_nestjs.snippet.j2
+    features: [rate-limiting]
+    profiles: [nestjs/standard]
+    description: Adds rate limiting fields to the NestJS settings interface.
+    version: "1.0.0"
+    priority: 25
+    dependencies: []
+    schema:
+      type: object
+      properties: {}
+      additionalProperties: true
+      required: []
+    metadata:
+      author: "RapidKit Team"
+      created_at: "2025-11-01"
+      last_modified: "2025-11-01"
+    conflict_resolution: merge

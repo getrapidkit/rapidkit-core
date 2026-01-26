@@ -1,0 +1,355 @@
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+  Optional,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import Database from 'better-sqlite3';
+import { existsSync, mkdirSync } from 'node:fs';
+import { dirname } from 'node:path';
+
+export interface {{ module_class_name }}PoolConfig {
+  maxSize: number;
+  recycleSeconds: number;
+}
+
+export interface {{ module_class_name }}Config {
+  databasePath: string;
+  createIfMissing: boolean;
+  timeoutSeconds: number;
+  pragmas: Record<string, string>;
+  pool: {{ module_class_name }}PoolConfig;
+}
+
+export interface {{ module_class_name }}TableInfo {
+  name: string;
+  type: string;
+  sql: string | null;
+}
+
+export interface {{ module_class_name }}HealthPayload {
+  module: string;
+  status: 'ok' | 'degraded';
+  detail: string;
+  warnings: string[];
+  pragmas: Record<string, string>;
+}
+
+export const DB_SQLITE_VENDOR_MODULE = '{{ rapidkit_vendor_module }}';
+export const DB_SQLITE_VENDOR_VERSION = '{{ rapidkit_vendor_version }}';
+
+const DEFAULT_DATABASE_PATH = '{{ default_database_path }}';
+const DEFAULT_CREATE_IF_MISSING = {{ "true" if default_create_if_missing else "false" }};
+const DEFAULT_TIMEOUT_SECONDS = {{ default_timeout_seconds }};
+const DEFAULT_PRAGMAS: Record<string, string> = {{ default_pragmas | tojson }};
+const DEFAULT_POOL: {{ module_class_name }}PoolConfig = {
+  maxSize: {{ default_pool.max_size }},
+  recycleSeconds: {{ default_pool.recycle_seconds }},
+};
+
+type SqliteDatabase = Database.Database;
+
+@Injectable()
+export class {{ module_class_name }}Service
+  implements OnModuleInit, OnModuleDestroy
+{
+  private readonly logger = new Logger({{ module_class_name }}Service.name);
+  private readonly config: {{ module_class_name }}Config;
+  private database: SqliteDatabase | null = null;
+
+  constructor(
+    @Optional()
+    private readonly configService?: ConfigService<Record<string, unknown>>,
+  ) {
+    this.config = this.resolveConfig();
+  }
+
+  onModuleInit(): void {
+    this.ensureDatabaseExists();
+    this.openDatabase();
+    try {
+      this.getHealthPayload();
+    } catch (error) {
+      this.logger.warn(
+        `SQLite health pre-check failed: ${this.stringifyError(error)}`,
+      );
+    }
+  }
+
+  onModuleDestroy(): void {
+    this.close();
+  }
+
+  getHealthPayload(): {{ module_class_name }}HealthPayload {
+    try {
+      const db = this.openDatabase();
+      const detailRaw = db.pragma('quick_check', { simple: true }) as unknown;
+      const detail = this.normalizeDetail(detailRaw);
+      const status = detail === 'ok' ? 'ok' : 'degraded';
+      const warnings = detail === 'ok' ? [] : [detail];
+      const pragmas = {
+        journal_mode: String(db.pragma('journal_mode', { simple: true })),
+        synchronous: String(db.pragma('synchronous', { simple: true })),
+        foreign_keys: String(db.pragma('foreign_keys', { simple: true })),
+      };
+
+      return {
+        module: DB_SQLITE_VENDOR_MODULE,
+        status,
+        detail,
+        warnings,
+        pragmas,
+      };
+    } catch (error) {
+      this.logger.error(
+        `SQLite health check failed: ${this.stringifyError(error)}`,
+      );
+      throw error;
+    }
+  }
+
+  listTables(): {{ module_class_name }}TableInfo[] {
+    const db = this.openDatabase();
+    const rows = db
+      .prepare(
+        "SELECT name, type, sql FROM sqlite_master WHERE type IN ('table', 'view') ORDER BY name",
+      )
+      .all() as Array<{ name: string; type: string; sql: string | null }>;
+
+    return rows.map((row) => ({
+      name: row.name,
+      type: row.type,
+      sql: row.sql ?? null,
+    }));
+  }
+
+  getMetadata(): Record<string, unknown> {
+    return {
+      module: DB_SQLITE_VENDOR_MODULE,
+      version: DB_SQLITE_VENDOR_VERSION,
+      database_path: this.config.databasePath,
+      pragmas: { ...this.config.pragmas },
+      pool: { ...this.config.pool },
+    };
+  }
+
+  close(): void {
+    if (this.database) {
+      this.database.close();
+      this.database = null;
+    }
+  }
+
+  private openDatabase(): SqliteDatabase {
+    if (this.database) {
+      return this.database;
+    }
+
+    const timeoutMs = Math.max(1, Math.round(this.config.timeoutSeconds * 1000));
+    const db = new Database(this.config.databasePath, {
+      timeout: timeoutMs,
+      fileMustExist: !this.config.createIfMissing,
+    });
+
+    db.pragma(`busy_timeout = ${timeoutMs}`);
+    for (const [pragma, value] of Object.entries(this.config.pragmas)) {
+      try {
+        db.pragma(`${pragma} = ${value}`);
+      } catch (error) {
+        this.logger.warn(
+          `Failed to apply pragma ${pragma}: ${this.stringifyError(error)}`,
+        );
+      }
+    }
+
+    this.database = db;
+    return db;
+  }
+
+  private ensureDatabaseExists(): void {
+    const { databasePath, createIfMissing } = this.config;
+
+    if (databasePath === ':memory:' || databasePath.startsWith('file::memory:')) {
+      return;
+    }
+
+    const directory = dirname(databasePath);
+    if (!existsSync(directory)) {
+      mkdirSync(directory, { recursive: true });
+    }
+
+    if (!existsSync(databasePath)) {
+      if (!createIfMissing) {
+        throw new Error(
+          `SQLite database file '${databasePath}' is missing and create_if_missing is disabled.`,
+        );
+      }
+      const db = new Database(databasePath);
+      db.close();
+    }
+  }
+
+  private resolveConfig(): {{ module_class_name }}Config {
+    const databasePath = this.lookupString(
+      ['DB_SQLITE_PATH', 'DB_SQLITE_DATABASE_PATH'],
+      DEFAULT_DATABASE_PATH,
+    );
+    const createIfMissing = this.lookupBool(
+      ['DB_SQLITE_CREATE_IF_MISSING'],
+      DEFAULT_CREATE_IF_MISSING,
+    );
+    const timeoutSeconds = this.lookupFloat(
+      ['DB_SQLITE_TIMEOUT_SECONDS'],
+      DEFAULT_TIMEOUT_SECONDS,
+    );
+
+    const pool: {{ module_class_name }}PoolConfig = {
+      maxSize: this.lookupInt(['DB_SQLITE_POOL_MAX_SIZE'], DEFAULT_POOL.maxSize),
+      recycleSeconds: this.lookupInt(
+        ['DB_SQLITE_POOL_RECYCLE_SECONDS'],
+        DEFAULT_POOL.recycleSeconds,
+      ),
+    };
+
+    const pragmas = this.resolvePragmas();
+
+    return {
+      databasePath,
+      createIfMissing,
+      timeoutSeconds,
+      pragmas,
+      pool,
+    };
+  }
+
+  private resolvePragmas(): Record<string, string> {
+    const base = { ...DEFAULT_PRAGMAS };
+    const override = this.lookupStringOrNull(['DB_SQLITE_PRAGMAS'], null);
+
+    if (override) {
+      const entries = override.split(/[;,]/);
+      for (const entry of entries) {
+        const [rawKey, rawValue] = entry.split('=', 2);
+        if (!rawKey || rawValue === undefined) {
+          continue;
+        }
+        const key = rawKey.trim();
+        const value = rawValue.trim();
+        if (key.length > 0 && value.length > 0) {
+          base[key] = value;
+        }
+      }
+    }
+
+    return base;
+  }
+
+  private lookupString(keys: string[], fallback: string): string {
+    for (const key of keys) {
+      const value = this.lookupEnv(key);
+      if (typeof value === 'string' && value.trim().length > 0) {
+        return value.trim();
+      }
+    }
+    return fallback;
+  }
+
+  private lookupStringOrNull(keys: string[], fallback: string | null): string | null {
+    for (const key of keys) {
+      const value = this.lookupEnv(key);
+      if (typeof value === 'string' && value.trim().length > 0) {
+        return value.trim();
+      }
+    }
+    return fallback;
+  }
+
+  private lookupBool(keys: string[], fallback: boolean): boolean {
+    for (const key of keys) {
+      const value = this.lookupEnv(key);
+      if (value === undefined) {
+        continue;
+      }
+      if (typeof value === 'boolean') {
+        return value;
+      }
+      if (typeof value === 'string') {
+        const normalized = value.trim().toLowerCase();
+        if (['1', 'true', 'yes', 'on'].includes(normalized)) {
+          return true;
+        }
+        if (['0', 'false', 'no', 'off'].includes(normalized)) {
+          return false;
+        }
+      }
+    }
+    return fallback;
+  }
+
+  private lookupInt(keys: string[], fallback: number): number {
+    for (const key of keys) {
+      const value = this.lookupEnv(key);
+      if (value === undefined) {
+        continue;
+      }
+      const parsed = Number.parseInt(String(value), 10);
+      if (!Number.isNaN(parsed)) {
+        return parsed;
+      }
+    }
+    return fallback;
+  }
+
+  private lookupFloat(keys: string[], fallback: number): number {
+    for (const key of keys) {
+      const value = this.lookupEnv(key);
+      if (value === undefined) {
+        continue;
+      }
+      const parsed = Number.parseFloat(String(value));
+      if (!Number.isNaN(parsed)) {
+        return parsed;
+      }
+    }
+    return fallback;
+  }
+
+  private lookupEnv(key: string): unknown {
+    if (this.configService) {
+      const value = this.configService.get(key);
+      if (value !== undefined) {
+        return value;
+      }
+    }
+    if (process.env[key] !== undefined) {
+      return process.env[key];
+    }
+    return undefined;
+  }
+
+  private normalizeDetail(detail: unknown): string {
+    if (typeof detail === 'string' && detail.trim().length > 0) {
+      return detail.trim();
+    }
+    if (Array.isArray(detail) && detail.length > 0) {
+      return this.normalizeDetail(detail[0]);
+    }
+    return 'ok';
+  }
+
+  private stringifyError(error: unknown): string {
+    if (error instanceof Error) {
+      return error.message;
+    }
+    if (typeof error === 'string') {
+      return error;
+    }
+    try {
+      return JSON.stringify(error);
+    } catch {
+      return String(error);
+    }
+  }
+}

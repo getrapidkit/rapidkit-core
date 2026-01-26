@@ -1,0 +1,43 @@
+{
+  "checked_at": "2025-12-25T12:26:43.016672+00:00",
+  "description": "Lean module layout blueprint (v3)",
+  "extra_directories": [
+    "scripts"
+  ],
+  "extra_files": [
+    "scripts/run_demo.py",
+    "templates/base/logging_health.py.j2"
+  ],
+  "missing_directories": [],
+  "missing_files": [],
+  "module": "free/essentials/logging",
+  "parity": {
+    "fastapi": {
+      "declared": true,
+      "has_config": true,
+      "has_health": true,
+      "has_metadata": true,
+      "has_tests": true,
+      "issues": [],
+      "plugin": true,
+      "status": "ok"
+    },
+    "nestjs": {
+      "declared": true,
+      "has_config": true,
+      "has_health": true,
+      "has_metadata": true,
+      "has_tests": true,
+      "issues": [],
+      "plugin": true,
+      "status": "ok"
+    }
+  },
+  "parity_checked_at": "2025-12-06T21:56:11.636223+00:00",
+  "parity_valid": true,
+  "spec_version": 4,
+  "structure_tree_hash": "69e96f507dd00f3b714ec03cd6bdb0735d7bd35080412b99458d8145110a2f35",
+  "structure_valid": true,
+  "tree_hash": "69e96f507dd00f3b714ec03cd6bdb0735d7bd35080412b99458d8145110a2f35",
+  "valid": true
+}

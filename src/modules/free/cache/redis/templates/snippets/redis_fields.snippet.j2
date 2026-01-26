@@ -1,0 +1,122 @@
+# Cache (Redis)
+
+{% set redis_url_default = redis_defaults.url | default('redis://localhost:6379/0') | tojson %}
+{% set redis_host_default = redis_defaults.host | default('localhost') | tojson %}
+{% set redis_port_default = redis_defaults.port | default(6379) | tojson %}
+{% set redis_db_default = redis_defaults.db | default(0) | tojson %}
+{% set redis_password_default = redis_defaults.password | default('') | tojson %}
+{% set redis_use_tls_default = "True" if (redis_defaults.use_tls | default(false)) else "False" %}
+{% set redis_preconnect_default = "True" if (redis_defaults.preconnect | default(false)) else "False" %}
+{% set redis_connect_retries_default = redis_defaults.connect_retries | default(3) | tojson %}
+{% set redis_connect_backoff_default = redis_defaults.connect_backoff_base | default(0.5) | tojson %}
+{% set cache_ttl_default = redis_defaults.cache_ttl | default(3600) | tojson %}
+
+if "REDIS_URL" in locals():
+    REDIS_URL = Field(
+        default={{ redis_url_default }},
+        description="Redis connection URL (overrides individual host settings when provided)",
+    )
+else:
+    REDIS_URL: Optional[str] = Field(
+        default={{ redis_url_default }},
+        description="Redis connection URL (overrides individual host settings when provided)",
+    )
+
+if "REDIS_HOST" in locals():
+    REDIS_HOST = Field(
+        default={{ redis_host_default }},
+        description="Redis host used when REDIS_URL is absent",
+    )
+else:
+    REDIS_HOST: str = Field(
+        default={{ redis_host_default }},
+        description="Redis host used when REDIS_URL is absent",
+    )
+
+if "REDIS_PORT" in locals():
+    REDIS_PORT = Field(
+        default={{ redis_port_default }},
+        description="Redis port when building the URL dynamically",
+    )
+else:
+    REDIS_PORT: int = Field(
+        default={{ redis_port_default }},
+        description="Redis port when building the URL dynamically",
+    )
+
+if "REDIS_DB" in locals():
+    REDIS_DB = Field(
+        default={{ redis_db_default }},
+        description="Redis database index",
+    )
+else:
+    REDIS_DB: int = Field(
+        default={{ redis_db_default }},
+        description="Redis database index",
+    )
+
+if "REDIS_PASSWORD" in locals():
+    REDIS_PASSWORD = Field(
+        default={{ redis_password_default }},
+        description="Redis password",
+    )
+else:
+    REDIS_PASSWORD: Optional[str] = Field(
+        default={{ redis_password_default }},
+        description="Redis password",
+    )
+
+if "REDIS_USE_TLS" in locals():
+    REDIS_USE_TLS = Field(
+        default={{ redis_use_tls_default }},
+        description="Use TLS (rediss://) when composing the URL",
+    )
+else:
+    REDIS_USE_TLS: bool = Field(
+        default={{ redis_use_tls_default }},
+        description="Use TLS (rediss://) when composing the URL",
+    )
+
+if "REDIS_PRECONNECT" in locals():
+    REDIS_PRECONNECT = Field(
+        default={{ redis_preconnect_default }},
+        description="Attempt to connect to Redis during application startup",
+    )
+else:
+    REDIS_PRECONNECT: bool = Field(
+        default={{ redis_preconnect_default }},
+        description="Attempt to connect to Redis during application startup",
+    )
+
+if "REDIS_CONNECT_RETRIES" in locals():
+    REDIS_CONNECT_RETRIES = Field(
+        default={{ redis_connect_retries_default }},
+        description="Number of connection retries for async client initialisation",
+    )
+else:
+    REDIS_CONNECT_RETRIES: int = Field(
+        default={{ redis_connect_retries_default }},
+        description="Number of connection retries for async client initialisation",
+    )
+
+if "REDIS_CONNECT_BACKOFF_BASE" in locals():
+    REDIS_CONNECT_BACKOFF_BASE = Field(
+        default={{ redis_connect_backoff_default }},
+        description="Base backoff delay (seconds) for retry attempts",
+    )
+else:
+    REDIS_CONNECT_BACKOFF_BASE: float = Field(
+        default={{ redis_connect_backoff_default }},
+        description="Base backoff delay (seconds) for retry attempts",
+    )
+
+if "CACHE_TTL" in locals():
+    CACHE_TTL = Field(
+        default={{ cache_ttl_default }},
+        description="Default cache TTL used by helpers",
+    )
+else:
+    CACHE_TTL: int = Field(
+        default={{ cache_ttl_default }},
+        description="Default cache TTL used by helpers",
+    )

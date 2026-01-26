@@ -1,0 +1,14 @@
+import { Module } from "@nestjs/common";
+import { ConfigModule } from "@nestjs/config";
+
+import oauthConfiguration from "./configuration";
+import { {{ module_class_name }}Controller } from "./oauth.controller";
+import { {{ module_class_name }}Service } from "./oauth.service";
+
+@Module({
+  imports: [ConfigModule.forFeature(oauthConfiguration)],
+  controllers: [{{ module_class_name }}Controller],
+  providers: [{{ module_class_name }}Service],
+  exports: [{{ module_class_name }}Service],
+})
+export class {{ module_class_name }}Module {}

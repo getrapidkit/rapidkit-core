@@ -1,0 +1,419 @@
+"""Redis runtime implementation for {{ module_title }}."""
+
+from __future__ import annotations
+
+import asyncio
+import json
+import logging
+import os
+import threading
+from contextlib import asynccontextmanager, suppress
+from typing import Any, AsyncIterator, Dict, Optional
+from urllib.parse import urlsplit, urlunsplit
+
+try:  # Optional settings import; fall back to env vars when unavailable
+    from src.modules.free.essentials.settings.settings import settings  # type: ignore
+except ImportError:  # pragma: no cover
+    settings = None  # type: ignore
+
+try:  # Redis async + sync packages (installed via module dependencies)
+    import redis.asyncio as redis_async  # type: ignore
+    from redis.asyncio import Redis as AsyncRedis  # type: ignore
+except Exception:  # pragma: no cover - handled gracefully in helpers
+    redis_async = None  # type: ignore
+    AsyncRedis = None  # type: ignore
+
+try:
+    import redis as redis_sync  # type: ignore
+    from redis import Redis as SyncRedis  # type: ignore
+except Exception:  # pragma: no cover
+    redis_sync = None  # type: ignore
+    SyncRedis = None  # type: ignore
+
+LOGGER = logging.getLogger("redis")
+
+_DEFAULTS = json.loads(r'''{{ redis_defaults | default({}) | tojson }}''')
+_FALLBACK_DEFAULTS = {
+    "url": "redis://localhost:6379/0",
+    "host": "localhost",
+    "port": 6379,
+    "db": 0,
+    "password": "",
+    "use_tls": False,
+    "preconnect": False,
+    "connect_retries": 3,
+    "connect_backoff_base": 0.5,
+    "cache_ttl": 3600,
+}
+DEFAULTS = {**_FALLBACK_DEFAULTS, **_DEFAULTS}
+
+TRUTHY_VALUES = {"1", "true", "yes", "on"}
+FALSY_VALUES = {"0", "false", "no", "off"}
+MASKED_SECRET = "***"
+
+
+def _mask_url_password(url: str) -> str:
+    try:
+        parsed = urlsplit(url)
+    except ValueError:
+        return url
+
+    netloc = parsed.netloc
+    if "@" not in netloc:
+        return url
+
+    userinfo, hostinfo = netloc.rsplit("@", 1)
+    if ":" not in userinfo:
+        return url
+
+    username, _ = userinfo.split(":", 1)
+    if username:
+        masked_userinfo = f"{username}:{MASKED_SECRET}"
+    else:
+        masked_userinfo = f":{MASKED_SECRET}"
+    masked_netloc = f"{masked_userinfo}@{hostinfo}"
+    return urlunsplit((parsed.scheme, masked_netloc, parsed.path, parsed.query, parsed.fragment))
+
+
+def _snapshot_connection(url: str) -> Dict[str, Any]:
+    host = _resolve_str("REDIS_HOST", DEFAULTS["host"])
+    port = _resolve_int("REDIS_PORT", DEFAULTS["port"])
+    db = _resolve_int("REDIS_DB", DEFAULTS["db"])
+    use_tls = _resolve_bool("REDIS_USE_TLS", DEFAULTS["use_tls"])
+
+    try:
+        parsed = urlsplit(url)
+    except ValueError:
+        parsed = None
+
+    if parsed is not None:
+        if parsed.hostname:
+            host = parsed.hostname
+        if parsed.port is not None:
+            port = parsed.port
+        if parsed.path and parsed.path.strip("/"):
+            trimmed = parsed.path.strip("/")
+            try:
+                db = int(trimmed)
+            except ValueError:
+                pass
+        if parsed.scheme:
+            use_tls = parsed.scheme.lower() == "rediss"
+
+    return {
+        "host": host,
+        "port": port,
+        "db": db,
+        "use_tls": use_tls,
+    }
+
+
+def _resolve_from_settings(name: str) -> Optional[object]:
+    if settings is not None and hasattr(settings, name):
+        value = getattr(settings, name)
+        if value not in (None, ""):
+            return value
+    return None
+
+
+def _resolve_env(name: str) -> Optional[str]:
+    value = os.getenv(name)
+    return value if value not in (None, "") else None
+
+
+def _resolve_bool(name: str, default: bool) -> bool:
+    value = _resolve_from_settings(name)
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        lowered = value.strip().lower()
+        if lowered in TRUTHY_VALUES:
+            return True
+        if lowered in FALSY_VALUES:
+            return False
+    env_value = _resolve_env(name)
+    if env_value is None:
+        return default
+    lowered = env_value.strip().lower()
+    if lowered in TRUTHY_VALUES:
+        return True
+    if lowered in FALSY_VALUES:
+        return False
+    return default
+
+
+def _resolve_int(name: str, default: int) -> int:
+    value = _resolve_from_settings(name)
+    if isinstance(value, int):
+        return value
+    if isinstance(value, str):
+        try:
+            return int(value)
+        except ValueError:
+            pass
+    env_value = _resolve_env(name)
+    if env_value is None:
+        return default
+    try:
+        return int(env_value)
+    except ValueError:
+        return default
+
+
+def _resolve_float(name: str, default: float) -> float:
+    value = _resolve_from_settings(name)
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        try:
+            return float(value)
+        except ValueError:
+            pass
+    env_value = _resolve_env(name)
+    if env_value is None:
+        return default
+    try:
+        return float(env_value)
+    except ValueError:
+        return default
+
+
+def _resolve_str(name: str, default: str = "") -> str:
+    value = _resolve_from_settings(name)
+    if isinstance(value, str):
+        cleaned = value.strip()
+        if cleaned:
+            return cleaned
+    env_value = _resolve_env(name)
+    if env_value:
+        cleaned = env_value.strip()
+        if cleaned:
+            return cleaned
+    return default
+
+
+def build_redis_url() -> str:
+    """Resolve the Redis connection URL from settings or environment values."""
+
+    url = _resolve_str("REDIS_URL", DEFAULTS["url"])
+    if url:
+        return url
+
+    host = _resolve_str("REDIS_HOST", DEFAULTS["host"])
+    port = _resolve_int("REDIS_PORT", DEFAULTS["port"])
+    db = _resolve_int("REDIS_DB", DEFAULTS["db"])
+    password = _resolve_str("REDIS_PASSWORD", DEFAULTS["password"])
+    use_tls = _resolve_bool("REDIS_USE_TLS", DEFAULTS["use_tls"])
+    scheme = "rediss" if use_tls else "redis"
+    auth = f":{password}@" if password else ""
+    return f"{scheme}://{auth}{host}:{port}/{db}"
+
+
+def get_redis_metadata() -> Dict[str, Any]:
+    """Return a sanitised snapshot of the active Redis configuration."""
+
+    url = build_redis_url()
+    connection = _snapshot_connection(url)
+    sanitized_defaults = dict(DEFAULTS)
+    if sanitized_defaults.get("password"):
+        sanitized_defaults["password"] = MASKED_SECRET
+    url_default = sanitized_defaults.get("url")
+    if isinstance(url_default, str):
+        sanitized_defaults["url"] = _mask_url_password(url_default)
+
+    retry_attempts = _resolve_int("REDIS_CONNECT_RETRIES", DEFAULTS["connect_retries"])
+    backoff_base = _resolve_float(
+        "REDIS_CONNECT_BACKOFF_BASE",
+        DEFAULTS["connect_backoff_base"],
+    )
+    preconnect = _resolve_bool("REDIS_PRECONNECT", DEFAULTS["preconnect"])
+    cache_ttl = _resolve_int("REDIS_CACHE_TTL", DEFAULTS["cache_ttl"])
+
+    return {
+        "module": "redis",
+        "url": _mask_url_password(url),
+        "connection": connection,
+        "retry": {
+            "preconnect": preconnect,
+            "attempts": retry_attempts,
+            "backoff_base": backoff_base,
+        },
+        "cache_ttl": cache_ttl,
+        "features": [
+            "redis.async-client",
+            "redis.sync-client",
+            "fastapi.dependency",
+            "redis.health-check",
+        ],
+        "defaults": sanitized_defaults,
+    }
+
+
+class RedisClient:
+    """Async Redis client singleton with retry/backoff support."""
+
+    _client: Optional[AsyncRedis] = None
+    _lock: Optional[asyncio.Lock] = None
+
+    @classmethod
+    async def get_instance(cls) -> AsyncRedis:
+        if redis_async is None or AsyncRedis is None:  # pragma: no cover - defensive
+            raise RuntimeError("redis.asyncio is not available; install the 'redis' package")
+
+        if cls._client is not None:
+            return cls._client
+
+        if cls._lock is None:
+            cls._lock = asyncio.Lock()
+
+        async with cls._lock:
+            if cls._client is not None:
+                return cls._client
+
+            url = build_redis_url()
+            retries = max(_resolve_int("REDIS_CONNECT_RETRIES", DEFAULTS["connect_retries"]), 0)
+            backoff_base = max(
+                _resolve_float("REDIS_CONNECT_BACKOFF_BASE", DEFAULTS["connect_backoff_base"]),
+                0.0,
+            )
+
+            last_error: Optional[Exception] = None
+            for attempt in range(1, retries + 2):
+                try:
+                    client = redis_async.Redis.from_url(
+                        url,
+                        decode_responses=True,
+                        encoding="utf-8",
+                    )
+                    cls._client = client  # success
+                    if attempt > 1:
+                        LOGGER.info("Redis async connection recovered after %s attempts", attempt)
+                    return client
+                except Exception as exc:  # pragma: no cover - requires redis failure
+                    last_error = exc
+                    LOGGER.warning("Redis async connection attempt %s failed: %s", attempt, exc)
+                    if attempt <= retries:
+                        await asyncio.sleep(backoff_base * attempt)
+
+            raise RuntimeError(
+                f"Failed to connect to Redis after {retries + 1} attempts"
+            ) from last_error
+
+    @classmethod
+    async def close(cls) -> None:
+        if cls._client is None:
+            return
+        try:
+            await cls._client.close()
+        finally:
+            cls._client = None
+
+    @classmethod
+    def reset(cls) -> None:
+        cls._client = None
+        cls._lock = None
+
+
+class RedisSyncClient:
+    """Synchronous Redis client singleton built on a shared connection pool."""
+
+    _client: Optional[SyncRedis] = None
+    _lock = threading.Lock()
+
+    @classmethod
+    def get_instance(cls) -> SyncRedis:
+        if redis_sync is None or SyncRedis is None:  # pragma: no cover - defensive
+            raise RuntimeError("redis package is not available; install it to use sync helpers")
+
+        if cls._client is not None:
+            return cls._client
+
+        with cls._lock:
+            if cls._client is None:
+                cls._client = redis_sync.Redis.from_url(
+                    build_redis_url(),
+                    decode_responses=True,
+                    encoding="utf-8",
+                )
+        return cls._client
+
+    @classmethod
+    def close_sync(cls) -> None:
+        client = cls._client
+        cls._client = None
+        if client is not None:
+            with suppress(Exception):  # pragma: no cover - best effort
+                client.close()
+
+    @classmethod
+    def reset(cls) -> None:
+        cls.close_sync()
+
+
+async def get_redis() -> AsyncRedis:
+    """Discover (or create) the shared async Redis client."""
+
+    return await RedisClient.get_instance()
+
+
+def get_redis_sync() -> SyncRedis:
+    """Return the shared synchronous Redis client."""
+
+    return RedisSyncClient.get_instance()
+
+
+async def check_redis_connection(timeout: float = 1.0) -> None:
+    """Ping Redis and surface an error when the connection is unavailable."""
+
+    client = await RedisClient.get_instance()
+    await asyncio.wait_for(client.ping(), timeout)
+
+
+async def redis_dependency() -> AsyncIterator[AsyncRedis]:
+    """FastAPI dependency that yields the shared async Redis client."""
+
+    client = await RedisClient.get_instance()
+    yield client
+
+
+def register_redis(preconnect: Optional[bool] = None):
+    """Return a FastAPI lifespan hook that initialises and tears down Redis clients."""
+
+    resolved_preconnect = (
+        _resolve_bool("REDIS_PRECONNECT", DEFAULTS["preconnect"])
+        if preconnect is None
+        else preconnect
+    )
+
+    @asynccontextmanager
+    async def lifespan(_app):
+        if resolved_preconnect:
+            try:
+                await RedisClient.get_instance()
+            except Exception as exc:  # pragma: no cover - optional pre-connect
+                LOGGER.warning("Redis preconnect failed: %s", exc)
+            with suppress(Exception):  # pragma: no cover - optional sync preconnect
+                RedisSyncClient.get_instance()
+        try:
+            yield
+        finally:
+            await RedisClient.close()
+            RedisSyncClient.close_sync()
+
+    return lifespan
+
+
+__all__ = [
+    "AsyncRedis",
+    "SyncRedis",
+    "RedisClient",
+    "RedisSyncClient",
+    "DEFAULTS",
+    "build_redis_url",
+    "check_redis_connection",
+    "get_redis",
+    "get_redis_sync",
+    "redis_dependency",
+    "register_redis",
+    "get_redis_metadata",
+]

@@ -1,0 +1,15 @@
+// PostgreSQL module configuration for NestJS kits
+dbPostgres: {
+  url: process.env.DATABASE_URL ?? "{{ database_url }}",
+  testUrl: process.env.TEST_DATABASE_URL ?? "{{ test_database_url }}",
+  pool: {
+    size: process.env.DB_POOL_SIZE ? Number(process.env.DB_POOL_SIZE) : {{ db_pool_size }},
+    maxOverflow: process.env.DB_MAX_OVERFLOW ? Number(process.env.DB_MAX_OVERFLOW) : {{ db_max_overflow }},
+    timeoutSeconds: process.env.DB_POOL_TIMEOUT ? Number(process.env.DB_POOL_TIMEOUT) : {{ db_pool_timeout }},
+    recycleSeconds: process.env.DB_POOL_RECYCLE ? Number(process.env.DB_POOL_RECYCLE) : {{ db_pool_recycle }},
+  },
+  echo: process.env.DB_ECHO ? process.env.DB_ECHO === "true" : {{ 'true' if db_echo else 'false' }},
+  expireOnCommit: process.env.DB_EXPIRE_ON_COMMIT
+    ? process.env.DB_EXPIRE_ON_COMMIT === "true"
+    : {{ 'true' if db_expire_on_commit else 'false' }},
+},

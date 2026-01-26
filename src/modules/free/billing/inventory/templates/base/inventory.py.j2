@@ -1,0 +1,442 @@
+"""Runtime facade for the {{ module_title }} module."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from datetime import datetime
+from threading import RLock
+from typing import Any, Callable, Dict, Iterable, Mapping, Optional
+
+from {{ module_import_base }}.types.inventory import (
+    InventoryItem,
+    InventoryMetrics,
+    InventoryReservation,
+    InventorySnapshot,
+    coerce_reservation_expiry,
+    quantize_amount,
+    utc_now,
+)
+
+MODULE_NAME = "{{ module_name }}"
+MODULE_TITLE = "{{ module_title }}"
+
+
+class InventoryError(RuntimeError):
+    """Base exception for Inventory operations."""
+
+
+class InventoryValidationError(InventoryError):
+    """Raised when a request violates module invariants."""
+
+
+class InventoryReservationError(InventoryError):
+    """Raised when reservation state cannot be persisted."""
+
+
+class InventoryNotFoundError(InventoryError):
+    """Raised when an item or reservation cannot be located."""
+
+
+@dataclass(slots=True)
+class {{ module_class_name }}Config:
+    """Runtime configuration for {{ module_title }}."""
+
+    enabled: bool = True
+    default_currency: str = "USD"
+    allow_backorders: bool = False
+    allow_negative_inventory: bool = False
+    low_stock_threshold: int = {{ inventory_defaults.low_stock_threshold | default(5) }}
+    reservation_expiry_minutes: int = {{ inventory_defaults.reservation_expiry_minutes | default(30) }}
+    decimal_precision: int = {{ inventory_defaults.decimal_precision | default(2) }}
+    log_level: str = {{ inventory_defaults.log_level | default('INFO') | upper | tojson }}
+    metadata: Dict[str, Any] = field(default_factory=lambda: dict({{ inventory_defaults.metadata | default({'module': module_name}) | tojson }}))
+    pricing: Dict[str, Any] = field(default_factory=lambda: dict({{ inventory_pricing | tojson }}))
+    warehouses: Dict[str, Dict[str, Any]] = field(default_factory=lambda: dict({{ inventory_warehouses | tojson }}))
+    notifications: Dict[str, Any] = field(default_factory=lambda: dict({{ inventory_notifications | tojson }}))
+
+    @classmethod
+    def from_mapping(cls, config: Mapping[str, Any] | None) -> "{{ module_class_name }}Config":
+        if config is None:
+            config = {}
+
+        defaults = config.get("defaults") if isinstance(config, Mapping) else None
+        source: Mapping[str, Any]
+        if isinstance(defaults, Mapping):
+            source = defaults
+        elif isinstance(config, Mapping):
+            source = config
+        else:
+            source = {}
+
+        def _bool(name: str, default: bool) -> bool:
+            value = source.get(name, default)
+            if isinstance(value, bool):
+                return value
+            if isinstance(value, str):
+                lowered = value.lower()
+                if lowered in {"1", "true", "yes", "on"}:
+                    return True
+                if lowered in {"0", "false", "no", "off"}:
+                    return False
+            return bool(default)
+
+        def _int(name: str, default: int) -> int:
+            value = source.get(name, default)
+            try:
+                parsed = int(value)
+            except (TypeError, ValueError):
+                return default
+            return max(parsed, 0)
+
+        metadata = source.get("metadata") if isinstance(source.get("metadata"), Mapping) else {}
+        pricing = config.get("pricing") if isinstance(config.get("pricing"), Mapping) else {}
+        warehouses = config.get("warehouses") if isinstance(config.get("warehouses"), Mapping) else {}
+        notifications = config.get("notifications") if isinstance(config.get("notifications"), Mapping) else {}
+
+        return cls(
+            enabled=_bool("enabled", True),
+            default_currency=str(source.get("default_currency", "USD")).upper(),
+            allow_backorders=_bool("allow_backorders", False),
+            allow_negative_inventory=_bool("allow_negative_inventory", False),
+            low_stock_threshold=_int("low_stock_threshold", {{ inventory_defaults.low_stock_threshold | default(5) }}),
+            reservation_expiry_minutes=_int(
+                "reservation_expiry_minutes",
+                {{ inventory_defaults.reservation_expiry_minutes | default(30) }},
+            ),
+            decimal_precision=_int("decimal_precision", {{ inventory_defaults.decimal_precision | default(2) }}),
+            log_level=str(source.get("log_level", "INFO")).upper(),
+            metadata=dict(metadata),
+            pricing=dict(pricing),
+            warehouses={k: dict(v) for k, v in warehouses.items()},
+            notifications=dict(notifications),
+        )
+
+
+class InventoryStore:
+    """Persistence contract for inventory data."""
+
+    def get_item(self, sku: str) -> Optional[InventoryItem]:  # pragma: no cover - interface
+        raise NotImplementedError
+
+    def set_item(self, item: InventoryItem) -> None:  # pragma: no cover - interface
+        raise NotImplementedError
+
+    def remove_item(self, sku: str) -> None:  # pragma: no cover - interface
+        raise NotImplementedError
+
+    def iter_items(self) -> Iterable[InventoryItem]:  # pragma: no cover - interface
+        raise NotImplementedError
+
+    def get_reservation(self, reference: str) -> Optional[InventoryReservation]:  # pragma: no cover - interface
+        raise NotImplementedError
+
+    def set_reservation(self, reservation: InventoryReservation) -> None:  # pragma: no cover - interface
+        raise NotImplementedError
+
+    def remove_reservation(self, reference: str) -> None:  # pragma: no cover - interface
+        raise NotImplementedError
+
+    def iter_reservations(self) -> Iterable[InventoryReservation]:  # pragma: no cover - interface
+        raise NotImplementedError
+
+
+class InMemoryInventoryStore(InventoryStore):
+    """Process-local store suitable for tests and development."""
+
+    def __init__(self) -> None:
+        self._items: Dict[str, InventoryItem] = {}
+        self._reservations: Dict[str, InventoryReservation] = {}
+
+    def get_item(self, sku: str) -> Optional[InventoryItem]:
+        item = self._items.get(sku)
+        return item.clone() if item else None
+
+    def set_item(self, item: InventoryItem) -> None:
+        self._items[item.sku] = item.clone()
+
+    def remove_item(self, sku: str) -> None:
+        self._items.pop(sku, None)
+
+    def iter_items(self) -> Iterable[InventoryItem]:
+        for item in self._items.values():
+            yield item.clone()
+
+    def get_reservation(self, reference: str) -> Optional[InventoryReservation]:
+        reservation = self._reservations.get(reference)
+        return InventoryReservation(
+            reference=reservation.reference,
+            sku=reservation.sku,
+            quantity=reservation.quantity,
+            created_at=reservation.created_at,
+            expires_at=reservation.expires_at,
+            metadata=dict(reservation.metadata),
+        ) if reservation else None
+
+    def set_reservation(self, reservation: InventoryReservation) -> None:
+        payload = InventoryReservation(
+            reference=reservation.reference,
+            sku=reservation.sku,
+            quantity=reservation.quantity,
+            created_at=reservation.created_at,
+            expires_at=reservation.expires_at,
+            metadata=dict(reservation.metadata),
+        )
+        self._reservations[reservation.reference] = payload
+
+    def remove_reservation(self, reference: str) -> None:
+        self._reservations.pop(reference, None)
+
+    def iter_reservations(self) -> Iterable[InventoryReservation]:
+        for reservation in self._reservations.values():
+            yield InventoryReservation(
+                reference=reservation.reference,
+                sku=reservation.sku,
+                quantity=reservation.quantity,
+                created_at=reservation.created_at,
+                expires_at=reservation.expires_at,
+                metadata=dict(reservation.metadata),
+            )
+
+
+class {{ module_class_name }}:
+    """Primary facade exposing {{ module_title }} capabilities."""
+
+    def __init__(
+        self,
+        config: {{ module_class_name }}Config | Mapping[str, Any] | None = None,
+        *,
+        store: InventoryStore | None = None,
+        clock: Optional[Callable[[], datetime]] = None,
+    ) -> None:
+        if isinstance(config, {{ module_class_name }}Config):
+            self.config = config
+        else:
+            self.config = {{ module_class_name }}Config.from_mapping(config)
+        self._store = store or InMemoryInventoryStore()
+        self._clock = clock or utc_now
+        self._lock = RLock()
+
+    # ------------------------------------------------------------------
+    # Item management
+    # ------------------------------------------------------------------
+    def upsert_item(
+        self,
+        *,
+        sku: str,
+        name: str,
+        quantity: int,
+        price: Any,
+        currency: Optional[str] = None,
+        metadata: Optional[Mapping[str, Any]] = None,
+        attributes: Optional[Mapping[str, Any]] = None,
+    ) -> InventoryItem:
+        if not sku:
+            raise InventoryValidationError("SKU cannot be empty")
+        if quantity < 0 and not self.config.allow_negative_inventory:
+            raise InventoryValidationError("Quantity cannot be negative when negative inventory is disabled")
+        chosen_currency = (currency or self.config.default_currency).upper()
+        price_decimal = quantize_amount(price, precision=self.config.decimal_precision)
+
+        with self._lock:
+            existing = self._store.get_item(sku)
+            reserved = existing.reserved if existing else 0
+            item = InventoryItem(
+                sku=sku,
+                name=name,
+                quantity=quantity,
+                reserved=reserved,
+                price=price_decimal,
+                currency=chosen_currency,
+                metadata=dict(metadata or {}),
+                attributes=dict(attributes or {}),
+            )
+            if item.available < 0 and not self.config.allow_backorders:
+                raise InventoryValidationError("Item availability cannot be negative when backorders are disabled")
+            self._store.set_item(item)
+            return item.clone()
+
+    def adjust_stock(self, *, sku: str, delta: int, reason: str = "manual") -> InventoryItem:  # noqa: ARG002 - reason logged externally
+        if delta == 0:
+            raise InventoryValidationError("Adjustment delta cannot be zero")
+
+        with self._lock:
+            item = self._ensure_item(sku)
+            new_quantity = item.quantity + delta
+            if new_quantity < 0 and not self.config.allow_negative_inventory:
+                raise InventoryValidationError("Adjustment would drop inventory below zero")
+            updated = item.clone(quantity=new_quantity)
+            if updated.available < 0 and not self.config.allow_backorders:
+                raise InventoryValidationError("Adjustment would trigger backorder but backorders are disabled")
+            self._store.set_item(updated)
+            return updated.clone()
+
+    def remove_item(self, sku: str) -> None:
+        with self._lock:
+            if self._store.get_item(sku) is None:
+                raise InventoryNotFoundError(f"Item '{sku}' not found")
+            self._store.remove_item(sku)
+
+    def list_items(self) -> Dict[str, InventoryItem]:
+        with self._lock:
+            return {item.sku: item.clone() for item in self._store.iter_items()}
+
+    def get_item(self, sku: str) -> InventoryItem:
+        with self._lock:
+            return self._ensure_item(sku)
+
+    # ------------------------------------------------------------------
+    # Reservations
+    # ------------------------------------------------------------------
+    def reserve_stock(
+        self,
+        *,
+        sku: str,
+        quantity: int,
+        reference: str,
+        ttl_minutes: Optional[int] = None,
+        metadata: Optional[Mapping[str, Any]] = None,
+    ) -> InventoryReservation:
+        if quantity <= 0:
+            raise InventoryReservationError("Reservation quantity must be greater than zero")
+        if not reference:
+            raise InventoryReservationError("Reservation reference is required")
+
+        with self._lock:
+            self._purge_expired_reservations_locked()
+            if self._store.get_reservation(reference) is not None:
+                raise InventoryReservationError(f"Reservation '{reference}' already exists")
+            item = self._ensure_item(sku)
+            ttl = ttl_minutes if ttl_minutes is not None else self.config.reservation_expiry_minutes
+            expires_at = coerce_reservation_expiry(ttl_minutes=ttl, now=self._clock())
+
+            if item.available < quantity and not self.config.allow_backorders:
+                raise InventoryReservationError("Insufficient available inventory for reservation")
+
+            updated = item.clone(reserved=item.reserved + quantity)
+            if updated.quantity < updated.reserved and not self.config.allow_negative_inventory:
+                raise InventoryReservationError("Reservation exceeds on-hand stock")
+
+            self._store.set_item(updated)
+            reservation = InventoryReservation(
+                reference=reference,
+                sku=sku,
+                quantity=quantity,
+                created_at=self._clock(),
+                expires_at=expires_at,
+                metadata=dict(metadata or {}),
+            )
+            self._store.set_reservation(reservation)
+            return reservation
+
+    def release_reservation(self, reference: str, *, commit: bool = False) -> InventoryReservation:
+        with self._lock:
+            reservation = self._store.get_reservation(reference)
+            if reservation is None:
+                raise InventoryReservationError(f"Reservation '{reference}' does not exist")
+
+            item = self._ensure_item(reservation.sku)
+            reserved = max(item.reserved - reservation.quantity, 0)
+            quantity = item.quantity
+            if commit:
+                quantity = quantity - reservation.quantity
+                if quantity < 0 and not self.config.allow_negative_inventory:
+                    raise InventoryReservationError("Commit would drop inventory below zero")
+
+            updated = item.clone(quantity=quantity, reserved=reserved)
+            if updated.available < 0 and not self.config.allow_backorders:
+                raise InventoryReservationError("Commit would trigger backorders while disabled")
+
+            self._store.set_item(updated)
+            self._store.remove_reservation(reference)
+            return reservation
+
+    def purge_expired_reservations(self) -> int:
+        with self._lock:
+            return self._purge_expired_reservations_locked()
+
+    def _purge_expired_reservations_locked(self) -> int:
+        now = self._clock()
+        removed = 0
+        for reservation in list(self._store.iter_reservations()):
+            if reservation.expired(at=now):
+                self.release_reservation(reservation.reference, commit=False)
+                removed += 1
+        return removed
+
+    # ------------------------------------------------------------------
+    # Diagnostics and health
+    # ------------------------------------------------------------------
+    def health_check(self) -> Dict[str, Any]:
+        metrics = self.get_metrics()
+        status = "ok"
+        if not self.config.enabled:
+            status = "disabled"
+        elif metrics["low_stock_items"] > 0:
+            status = "degraded"
+
+        return {
+            "module": MODULE_NAME,
+            "status": status,
+            "metrics": metrics,
+            "metadata": {
+                "warehouses": list(self.config.warehouses.keys()),
+                "default_currency": self.config.default_currency,
+            },
+        }
+
+    def get_metrics(self) -> Dict[str, Any]:
+        with self._lock:
+            items = list(self._store.iter_items())
+            total_on_hand = sum(max(item.quantity, 0) for item in items)
+            total_reserved = sum(max(item.reserved, 0) for item in items)
+            low_stock = sum(1 for item in items if item.available <= self.config.low_stock_threshold)
+            backorders = sum(1 for item in items if item.available < 0)
+            metrics = InventoryMetrics(
+                total_skus=len(items),
+                total_on_hand=total_on_hand,
+                total_reserved=total_reserved,
+                low_stock_items=low_stock,
+                backorder_skus=backorders,
+                currency=self.config.default_currency,
+            )
+            return metrics.to_dict()
+
+    def snapshot(self) -> InventorySnapshot:
+        with self._lock:
+            items = {item.sku: item for item in self._store.iter_items()}
+            reservations = {r.reference: r for r in self._store.iter_reservations()}
+            metrics_dict = self.get_metrics()
+            metrics = InventoryMetrics(
+                total_skus=metrics_dict["total_skus"],
+                total_on_hand=metrics_dict["total_on_hand"],
+                total_reserved=metrics_dict["total_reserved"],
+                low_stock_items=metrics_dict["low_stock_items"],
+                backorder_skus=metrics_dict["backorder_skus"],
+                currency=metrics_dict["currency"],
+            )
+            return InventorySnapshot(
+                generated_at=self._clock(),
+                items=items,
+                reservations=reservations,
+                metrics=metrics,
+            )
+
+    def configuration(self) -> Dict[str, Any]:
+        return {
+            "enabled": self.config.enabled,
+            "default_currency": self.config.default_currency,
+            "warehouses": self.config.warehouses,
+            "allow_backorders": self.config.allow_backorders,
+            "allow_negative_inventory": self.config.allow_negative_inventory,
+            "low_stock_threshold": self.config.low_stock_threshold,
+            "reservation_expiry_minutes": self.config.reservation_expiry_minutes,
+        }
+
+    # ------------------------------------------------------------------
+    # Internal helpers
+    # ------------------------------------------------------------------
+    def _ensure_item(self, sku: str) -> InventoryItem:
+        item = self._store.get_item(sku)
+        if item is None:
+            raise InventoryNotFoundError(f"Item '{sku}' not found")
+        return item

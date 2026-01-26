@@ -1,0 +1,147 @@
+import { Injectable } from '@nestjs/common';
+import { hostname } from 'node:os';
+
+export interface DeploymentAsset {
+  name: string;
+  path: string;
+  runtime: string;
+  description: string;
+  metadata: Record<string, string>;
+}
+
+export interface DeploymentPlan {
+  module: string;
+  version: string;
+  assets: DeploymentAsset[];
+}
+
+export interface DeploymentPlanSummary {
+  module: string;
+  version: string;
+  assets: DeploymentAsset[];
+}
+
+export interface DeploymentHealthPayload {
+  status: 'ok' | 'error';
+  module: string;
+  module_version: string;
+  asset_count: number;
+  plan: DeploymentPlanSummary;
+  runtime: string;
+  runtime_version: string | null;
+  python_version?: string | null;
+  ci_enabled: boolean;
+  postgres_enabled: boolean;
+  hostname?: string;
+  checked_at: string;
+}
+
+const DEFAULT_ASSETS: DeploymentAsset[] = [
+  {
+    name: 'fastapi',
+    path: 'deployment/fastapi',
+    runtime: 'python',
+    description: 'Docker, Compose, and CI assets tailored for RapidKit FastAPI services.',
+    metadata: {
+      dockerfile: 'deployment/fastapi/Dockerfile',
+      compose: 'deployment/fastapi/docker-compose.yml',
+      workflow: 'deployment/fastapi/ci.yml',
+    },
+  },
+  {
+    name: 'nestjs',
+    path: 'deployment/nestjs',
+    runtime: 'node',
+    description: 'Docker, Compose, and CI assets tailored for RapidKit NestJS services.',
+    metadata: {
+      dockerfile: 'deployment/nestjs/Dockerfile',
+      compose: 'deployment/nestjs/docker-compose.yml',
+      workflow: 'deployment/nestjs/ci.yml',
+    },
+  },
+];
+
+const VENDOR_MODULE = '{{ rapidkit_vendor_module }}';
+const VENDOR_VERSION = '{{ rapidkit_vendor_version }}';
+
+export const DEPLOYMENT_VENDOR_MODULE = VENDOR_MODULE;
+export const DEPLOYMENT_VENDOR_VERSION = VENDOR_VERSION;
+
+function cloneAsset(asset: DeploymentAsset): DeploymentAsset {
+  return {
+    ...asset,
+    metadata: { ...asset.metadata },
+  };
+}
+
+function buildPlan(assets: DeploymentAsset[] = DEFAULT_ASSETS): DeploymentPlan {
+  return {
+    module: VENDOR_MODULE,
+    version: VENDOR_VERSION,
+    assets: assets.map(cloneAsset),
+  };
+}
+
+function buildPlanSummary(plan: DeploymentPlan | null = null): DeploymentPlanSummary {
+  const resolved = plan ?? buildPlan();
+  return {
+    module: resolved.module,
+    version: resolved.version,
+    assets: resolved.assets.map(cloneAsset),
+  };
+}
+
+@Injectable()
+export class DeploymentService {
+  private readonly runtime = '{{ runtime }}';
+  private readonly includeCI = {{ 'true' if include_ci else 'false' }};
+  private readonly includePostgres = {{ 'true' if include_postgres else 'false' }};
+  private readonly runtimeVersion = '{{ node_version }}';
+  private readonly pythonVersion: string | null = null;
+
+  getPlan(): DeploymentPlan {
+    return buildPlan();
+  }
+
+  describePlan(): DeploymentPlanSummary {
+    return buildPlanSummary();
+  }
+
+  listAssets(): DeploymentAsset[] {
+    return this.describePlan().assets;
+  }
+
+  getHealth(): DeploymentHealthPayload {
+    const planSummary = this.describePlan();
+    const assets = planSummary.assets;
+    const checkedAt = new Date().toISOString();
+    const payload: DeploymentHealthPayload = {
+      status: 'ok',
+      module: planSummary.module,
+      module_version: planSummary.version,
+      asset_count: assets.length,
+      plan: planSummary,
+      runtime: this.runtime,
+      runtime_version: this.runtimeVersion,
+      python_version: this.pythonVersion,
+      ci_enabled: this.includeCI,
+      postgres_enabled: this.includePostgres,
+      checked_at: checkedAt,
+    };
+
+    const resolvedHostname = this.resolveHostname();
+    if (resolvedHostname) {
+      payload.hostname = resolvedHostname;
+    }
+
+    return payload;
+  }
+
+  private resolveHostname(): string | null {
+    try {
+      return hostname();
+    } catch {
+      return null;
+    }
+  }
+}

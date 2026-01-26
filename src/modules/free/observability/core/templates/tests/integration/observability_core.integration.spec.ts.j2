@@ -1,0 +1,47 @@
+import { INestApplication } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
+import request from 'supertest';
+
+import { ObservabilityCoreModule } from '../../../../src/modules/free/observability/core/observability-core/observability-core.module';
+import { ObservabilityCoreHealthModule } from '../../../../src/health/observability-core-health.module';
+import { ObservabilityCoreService } from '../../../../src/modules/free/observability/core/observability-core/observability-core.service';
+
+async function createApplication(): Promise<INestApplication> {
+  const moduleRef = await Test.createTestingModule({
+    imports: [ObservabilityCoreModule, ObservabilityCoreHealthModule],
+  }).compile();
+
+  const app = moduleRef.createNestApplication();
+  await app.init();
+  return app;
+}
+
+describe('ObservabilityCoreModule (Integration)', () => {
+  let app: INestApplication;
+  let service: ObservabilityCoreService;
+
+  beforeAll(async () => {
+    app = await createApplication();
+    service = app.get(ObservabilityCoreService);
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  it('exposes ObservabilityCoreService bindings', () => {
+    expect(service).toBeDefined();
+    const summary = service.getSummary();
+    expect(summary).toHaveProperty('module', '{{ rapidkit_vendor_module }}');
+    expect(summary).toHaveProperty('status', 'ok');
+  });
+
+  it('serves module health endpoint', async () => {
+    const server = app.getHttpServer();
+    const response = await request(server).get('/api/health/module/{{ module_kebab }}');
+
+    expect(response.status).toBe(200);
+    expect(response.body).toHaveProperty('module', '{{ rapidkit_vendor_module }}');
+    expect(response.body).toHaveProperty('status');
+  });
+});

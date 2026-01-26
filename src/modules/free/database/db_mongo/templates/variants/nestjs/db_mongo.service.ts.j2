@@ -1,0 +1,650 @@
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+  Optional,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import type {
+  Admin,
+  Collection,
+  Db,
+  Document,
+  MongoClientOptions,
+} from 'mongodb';
+import { MongoClient } from 'mongodb';
+import { performance } from 'node:perf_hooks';
+
+export interface {{ module_class_name }}Credentials {
+  username: string | null;
+  password: string | null;
+}
+
+export interface {{ module_class_name }}PoolConfig {
+  min: number;
+  max: number;
+}
+
+export interface {{ module_class_name }}TimeoutConfig {
+  connect: number;
+  serverSelection: number;
+  maxIdle: number;
+}
+
+export interface {{ module_class_name }}TlsConfig {
+  enabled: boolean;
+  allowInvalidCertificates: boolean;
+}
+
+export interface {{ module_class_name }}HealthConfig {
+  timeoutMs: number;
+  collectMetrics: boolean;
+}
+
+export interface {{ module_class_name }}Config {
+  uri: string;
+  database: string;
+  appName: string;
+  authSource: string;
+  replicaSet: string | null;
+  readPreference: string;
+  retryReads: boolean;
+  retryWrites: boolean;
+  compressors: string[];
+  credentials: {{ module_class_name }}Credentials;
+  pool: {{ module_class_name }}PoolConfig;
+  timeouts: {{ module_class_name }}TimeoutConfig;
+  tls: {{ module_class_name }}TlsConfig;
+  health: {{ module_class_name }}HealthConfig;
+}
+
+export interface {{ module_class_name }}ClusterMetrics {
+  latency_ms: number;
+  connections: Record<string, unknown>;
+  opcounters: Record<string, unknown>;
+  storage: Record<string, unknown>;
+}
+
+export interface {{ module_class_name }}ReplicaState {
+  set_name: string | null;
+  primary: string | null;
+  members: string[];
+}
+
+export interface {{ module_class_name }}HealthPayload {
+  status: 'ok' | 'degraded' | 'critical';
+  detail: string;
+  module: string;
+  metrics: {{ module_class_name }}ClusterMetrics;
+  replica: {{ module_class_name }}ReplicaState;
+  server_version: string | null;
+  extra: Record<string, unknown>;
+  errors: string[];
+}
+
+export const DB_MONGO_VENDOR_MODULE = '{{ rapidkit_vendor_module }}';
+export const DB_MONGO_VENDOR_VERSION = '{{ rapidkit_vendor_version }}';
+
+const DEFAULT_URI = '{{ default_connection_uri }}';
+const DEFAULT_DATABASE = '{{ default_database_name }}';
+const DEFAULT_APP_NAME = '{{ default_app_name }}';
+const DEFAULT_AUTH_SOURCE = '{{ default_auth_source }}';
+const DEFAULT_REPLICA_SET = {% if default_replica_set is none %}null{% else %}'{{ default_replica_set }}'{% endif %};
+const DEFAULT_USERNAME = {% if default_username is none %}null{% else %}'{{ default_username }}'{% endif %};
+const DEFAULT_PASSWORD = {% if default_password is none %}null{% else %}'{{ default_password }}'{% endif %};
+const DEFAULT_READ_PREFERENCE = '{{ default_read_preference }}';
+const DEFAULT_RETRY_READS = {{ 'true' if default_retry_reads else 'false' }};
+const DEFAULT_RETRY_WRITES = {{ 'true' if default_retry_writes else 'false' }};
+const DEFAULT_COMPRESSORS: string[] = {{ default_compressors | tojson }};
+const DEFAULT_POOL_MIN = {{ default_pool_min_size }};
+const DEFAULT_POOL_MAX = {{ default_pool_max_size }};
+const DEFAULT_CONNECT_TIMEOUT_MS = {{ default_connect_timeout_ms }};
+const DEFAULT_SERVER_SELECTION_TIMEOUT_MS = {{ default_server_selection_timeout_ms }};
+const DEFAULT_MAX_IDLE_TIME_MS = {{ default_max_idle_time_ms }};
+const DEFAULT_TLS_ENABLED = {{ 'true' if default_tls_enabled else 'false' }};
+const DEFAULT_TLS_ALLOW_INVALID = {{ 'true' if default_tls_allow_invalid_certificates else 'false' }};
+const DEFAULT_HEALTH_TIMEOUT_MS = {{ default_health_timeout_ms }};
+const DEFAULT_COLLECT_METRICS = {{ 'true' if default_collect_metrics else 'false' }};
+
+type NormalizedDocument = Record<string, unknown>;
+
+@Injectable()
+export class {{ module_class_name }}Service
+  implements OnModuleInit, OnModuleDestroy
+{
+  private readonly logger = new Logger({{ module_class_name }}Service.name);
+  private readonly config: {{ module_class_name }}Config;
+  private client: MongoClient | null = null;
+  private clientPromise: Promise<MongoClient> | null = null;
+
+  constructor(
+    @Optional()
+    private readonly configService?: ConfigService<Record<string, unknown>>,
+  ) {
+    this.config = this.resolveConfig();
+  }
+
+  async onModuleInit(): Promise<void> {
+    return;
+  }
+
+  async onModuleDestroy(): Promise<void> {
+    await this.close();
+  }
+
+  getConfig(): {{ module_class_name }}Config {
+    return {
+      ...this.config,
+      compressors: [...this.config.compressors],
+      credentials: { ...this.config.credentials },
+      pool: { ...this.config.pool },
+      timeouts: { ...this.config.timeouts },
+      tls: { ...this.config.tls },
+      health: { ...this.config.health },
+    };
+  }
+
+  async getDatabase(name?: string): Promise<Db> {
+    const client = await this.ensureClient();
+    return client.db(name ?? this.config.database);
+  }
+
+  async collection<TSchema extends Document = Document>(
+    name: string,
+    database?: string,
+  ): Promise<Collection<TSchema>> {
+    const db = await this.getDatabase(database);
+    return db.collection<TSchema>(name);
+  }
+
+  async checkHealth(): Promise<{{ module_class_name }}HealthPayload> {
+    const client = await this.ensureClient();
+    const adminDb = client.db(this.config.database).admin();
+
+    const errors: string[] = [];
+    let status: 'ok' | 'degraded' | 'critical' = 'ok';
+    let detail = 'ok';
+    const metrics: {{ module_class_name }}ClusterMetrics = {
+      latency_ms: 0,
+      connections: {},
+      opcounters: {},
+      storage: {},
+    };
+    let serverVersion: string | null = null;
+    let replica: {{ module_class_name }}ReplicaState = {
+      set_name: null,
+      primary: null,
+      members: [],
+    };
+    const extra: Record<string, unknown> = {};
+
+    const started = performance.now();
+    try {
+      await adminDb.command(
+        { ping: 1 },
+        { maxTimeMS: this.config.health.timeoutMs } as any,
+      );
+      metrics.latency_ms = performance.now() - started;
+    } catch (error) {
+      status = 'degraded';
+      detail = `ping failed: ${this.stringifyError(error)}`;
+      errors.push(detail);
+    }
+
+    if (this.config.health.collectMetrics) {
+      try {
+        const info = await adminDb.command({ serverStatus: 1 });
+        serverVersion =
+          typeof info.version === 'string' ? info.version : null;
+        metrics.connections = this.normalizeDocument(info.connections);
+        metrics.opcounters = this.normalizeDocument(info.opcounters);
+        metrics.storage = this.normalizeDocument(info.wiredTiger);
+        if (info.process) {
+          extra.process = info.process;
+        }
+        if (info.maxWireVersion !== undefined) {
+          extra.max_wire_version = info.maxWireVersion;
+        }
+        if (info.gitVersion) {
+          extra.git_version = info.gitVersion;
+        }
+      } catch (error) {
+        errors.push(`serverStatus: ${this.stringifyError(error)}`);
+      }
+
+      replica = await this.collectReplicaState(adminDb);
+    }
+
+    return {
+      status,
+      detail,
+      module: DB_MONGO_VENDOR_MODULE,
+      metrics,
+      replica,
+      server_version: serverVersion,
+      extra,
+      errors,
+    };
+  }
+
+  async getServerInfo(): Promise<Record<string, unknown>> {
+    const client = await this.ensureClient();
+    const adminDb = client.db(this.config.database).admin();
+    const info = await adminDb.command({ serverStatus: 1 });
+    return this.normalizeDocument(info);
+  }
+
+  getMetadata(): Record<string, unknown> {
+    return {
+      module: DB_MONGO_VENDOR_MODULE,
+      version: DB_MONGO_VENDOR_VERSION,
+      title: '{{ module_title }}',
+      config: {
+        connection_uri: this.config.uri,
+        database: this.config.database,
+        auth_source: this.config.authSource,
+        replica_set: this.config.replicaSet,
+        read_preference: this.config.readPreference,
+        pool: { ...this.config.pool },
+        timeouts: { ...this.config.timeouts },
+        tls: { ...this.config.tls },
+        compressors: [...this.config.compressors],
+      },
+    };
+  }
+
+  async close(): Promise<void> {
+    if (this.client) {
+      try {
+        await this.client.close();
+      } catch (error) {
+        this.logger.error(
+          `Failed to close MongoDB client: ${this.stringifyError(error)}`,
+        );
+      } finally {
+        this.client = null;
+      }
+    }
+    if (this.clientPromise) {
+      try {
+        const client = await this.clientPromise;
+        await client.close();
+      } catch (error) {
+        this.logger.debug(
+          `MongoDB pending connection rejected during close: ${this.stringifyError(error)}`,
+        );
+      } finally {
+        this.clientPromise = null;
+        this.client = null;
+      }
+    }
+  }
+
+  private async ensureClient(): Promise<MongoClient> {
+    if (this.client) {
+      return this.client;
+    }
+    if (this.clientPromise) {
+      return this.clientPromise;
+    }
+
+    const options = this.buildClientOptions();
+    const client = new MongoClient(this.config.uri, options);
+    this.clientPromise = client
+      .connect()
+      .then((connected: MongoClient) => {
+        this.logger.debug(
+          `MongoDB client connected (pool=${options.maxPoolSize ?? options.minPoolSize ?? 'auto'})`,
+        );
+        this.client = connected;
+        this.clientPromise = null;
+        return connected;
+      })
+      .catch((error: unknown) => {
+        this.clientPromise = null;
+        throw error;
+      });
+
+    return this.clientPromise;
+  }
+
+  private buildClientOptions(): MongoClientOptions {
+    const poolMin = Math.max(0, this.config.pool.min);
+    const poolMax = Math.max(poolMin, this.config.pool.max);
+    const healthTimeout = Math.max(0, this.config.health.timeoutMs);
+    const connectTimeout = Math.max(0, this.config.timeouts.connect);
+    const serverSelectionTimeout = Math.max(0, this.config.timeouts.serverSelection);
+    const effectiveConnectTimeout =
+      healthTimeout > 0 ? Math.min(connectTimeout, healthTimeout) : connectTimeout;
+    const effectiveServerSelectionTimeout =
+      healthTimeout > 0
+        ? Math.min(serverSelectionTimeout, healthTimeout)
+        : serverSelectionTimeout;
+    const options: MongoClientOptions = {
+      appName: this.config.appName,
+      authSource: this.config.authSource,
+      readPreference: this.config.readPreference as any,
+      retryReads: this.config.retryReads,
+      retryWrites: this.config.retryWrites,
+      minPoolSize: poolMin,
+      maxPoolSize: poolMax,
+      connectTimeoutMS: effectiveConnectTimeout,
+      serverSelectionTimeoutMS: effectiveServerSelectionTimeout,
+      maxIdleTimeMS: Math.max(0, this.config.timeouts.maxIdle),
+      compressors:
+        this.config.compressors.length > 0
+          ? ([...this.config.compressors] as any)
+          : undefined,
+      tls: this.config.tls.enabled,
+      tlsAllowInvalidCertificates: this.config.tls.allowInvalidCertificates,
+    };
+
+    if (this.config.replicaSet) {
+      options.replicaSet = this.config.replicaSet;
+    }
+    if (this.config.credentials.username) {
+      options.auth = {
+        username: this.config.credentials.username,
+        password:
+          this.config.credentials.password === null
+            ? undefined
+            : this.config.credentials.password,
+      };
+    }
+
+    return options;
+  }
+
+  private async collectReplicaState(adminDb: Admin): Promise<{{ module_class_name }}ReplicaState> {
+    try {
+      const status = await adminDb.command({ replSetGetStatus: 1 });
+      const membersRaw = Array.isArray(status.members)
+        ? status.members
+        : [];
+      const members: string[] = [];
+      for (const entry of membersRaw) {
+        if (entry && typeof entry === 'object' && 'name' in entry) {
+          const value = (entry as Record<string, unknown>).name;
+          if (typeof value === 'string' && value.length > 0) {
+            members.push(value);
+          }
+        } else if (typeof entry === 'string' && entry.length > 0) {
+          members.push(entry);
+        }
+      }
+      return {
+        set_name: typeof status.set === 'string' ? status.set : null,
+        primary: typeof status.primary === 'string' ? status.primary : null,
+        members,
+      };
+    } catch (error) {
+      this.logger.debug(
+        `Replica status unavailable: ${this.stringifyError(error)}`,
+      );
+      return {
+        set_name: null,
+        primary: null,
+        members: [],
+      };
+    }
+  }
+
+  private normalizeDocument(value: unknown): NormalizedDocument {
+    if (!value || typeof value !== 'object') {
+      return {};
+    }
+    const result: NormalizedDocument = {};
+    for (const [key, entry] of Object.entries(
+      value as Record<string, unknown>,
+    )) {
+      result[key] = this.normalizeValue(entry);
+    }
+    return result;
+  }
+
+  private normalizeValue(value: unknown): unknown {
+    if (
+      value === null ||
+      typeof value === 'string' ||
+      typeof value === 'number' ||
+      typeof value === 'boolean'
+    ) {
+      return value;
+    }
+    if (Array.isArray(value)) {
+      return value.map((item) => this.normalizeValue(item));
+    }
+    if (value && typeof value === 'object') {
+      if (typeof (value as { toJSON?: () => unknown }).toJSON === 'function') {
+        try {
+          return (value as { toJSON: () => unknown }).toJSON();
+        } catch {
+          // no-op fallback to recursive handling below
+        }
+      }
+      return this.normalizeDocument(value as Record<string, unknown>);
+    }
+    return String(value);
+  }
+
+  private resolveConfig(): {{ module_class_name }}Config {
+    const uri = this.lookupString(
+      ['RAPIDKIT_DB_MONGO_URI'],
+      DEFAULT_URI,
+    );
+    const database = this.lookupString(
+      ['RAPIDKIT_DB_MONGO_DATABASE'],
+      DEFAULT_DATABASE,
+    );
+    const appName = this.lookupString(
+      ['RAPIDKIT_DB_MONGO_APP_NAME'],
+      DEFAULT_APP_NAME,
+    );
+    const authSource = this.lookupString(
+      ['RAPIDKIT_DB_MONGO_AUTH_SOURCE'],
+      DEFAULT_AUTH_SOURCE,
+    );
+    const replicaSet = this.lookupStringOrNull(
+      ['RAPIDKIT_DB_MONGO_REPLICA_SET'],
+      DEFAULT_REPLICA_SET,
+    );
+    const readPreference = this.lookupString(
+      ['RAPIDKIT_DB_MONGO_READ_PREFERENCE'],
+      DEFAULT_READ_PREFERENCE,
+    );
+    const retryReads = this.lookupBool(
+      ['RAPIDKIT_DB_MONGO_RETRY_READS'],
+      DEFAULT_RETRY_READS,
+    );
+    const retryWrites = this.lookupBool(
+      ['RAPIDKIT_DB_MONGO_RETRY_WRITES'],
+      DEFAULT_RETRY_WRITES,
+    );
+    const compressors = this.lookupList(
+      ['RAPIDKIT_DB_MONGO_COMPRESSORS'],
+      DEFAULT_COMPRESSORS,
+    );
+    const minPool = this.lookupInt(
+      ['RAPIDKIT_DB_MONGO_MIN_POOL_SIZE'],
+      DEFAULT_POOL_MIN,
+    );
+    const maxPool = this.lookupInt(
+      ['RAPIDKIT_DB_MONGO_MAX_POOL_SIZE'],
+      DEFAULT_POOL_MAX,
+    );
+    const connectTimeout = this.lookupInt(
+      ['RAPIDKIT_DB_MONGO_CONNECT_TIMEOUT_MS'],
+      DEFAULT_CONNECT_TIMEOUT_MS,
+    );
+    const serverSelectionTimeout = this.lookupInt(
+      ['RAPIDKIT_DB_MONGO_SERVER_SELECTION_TIMEOUT_MS'],
+      DEFAULT_SERVER_SELECTION_TIMEOUT_MS,
+    );
+    const maxIdle = this.lookupInt(
+      ['RAPIDKIT_DB_MONGO_MAX_IDLE_TIME_MS'],
+      DEFAULT_MAX_IDLE_TIME_MS,
+    );
+    const username = this.lookupStringOrNull(
+      ['RAPIDKIT_DB_MONGO_USERNAME'],
+      DEFAULT_USERNAME,
+    );
+    const password = this.lookupStringOrNull(
+      ['RAPIDKIT_DB_MONGO_PASSWORD'],
+      DEFAULT_PASSWORD,
+    );
+    const tlsEnabled = this.lookupBool(
+      ['RAPIDKIT_DB_MONGO_TLS'],
+      DEFAULT_TLS_ENABLED,
+    );
+    const tlsAllowInvalid = this.lookupBool(
+      ['RAPIDKIT_DB_MONGO_TLS_ALLOW_INVALID_CERTS'],
+      DEFAULT_TLS_ALLOW_INVALID,
+    );
+    const healthTimeout = this.lookupInt(
+      ['RAPIDKIT_DB_MONGO_HEALTH_TIMEOUT_MS'],
+      DEFAULT_HEALTH_TIMEOUT_MS,
+    );
+    const collectMetrics = this.lookupBool(
+      ['RAPIDKIT_DB_MONGO_HEALTH_METRICS'],
+      DEFAULT_COLLECT_METRICS,
+    );
+
+    return {
+      uri,
+      database,
+      appName,
+      authSource,
+      replicaSet,
+      readPreference,
+      retryReads,
+      retryWrites,
+      compressors,
+      credentials: { username, password },
+      pool: {
+        min: Math.max(0, minPool),
+        max: Math.max(minPool, maxPool),
+      },
+      timeouts: {
+        connect: Math.max(0, connectTimeout),
+        serverSelection: Math.max(0, serverSelectionTimeout),
+        maxIdle: Math.max(0, maxIdle),
+      },
+      tls: {
+        enabled: tlsEnabled,
+        allowInvalidCertificates: tlsAllowInvalid,
+      },
+      health: {
+        timeoutMs: Math.max(1, healthTimeout),
+        collectMetrics,
+      },
+    };
+  }
+
+  private lookupString(keys: string[], fallback: string): string {
+    for (const key of keys) {
+      const value = this.lookupEnv(key);
+      if (typeof value === 'string' && value.trim().length > 0) {
+        return value.trim();
+      }
+    }
+    return fallback;
+  }
+
+  private lookupStringOrNull(
+    keys: string[],
+    fallback: string | null,
+  ): string | null {
+    for (const key of keys) {
+      const value = this.lookupEnv(key);
+      if (typeof value === 'string' && value.trim().length > 0) {
+        return value.trim();
+      }
+    }
+    return fallback;
+  }
+
+  private lookupBool(keys: string[], fallback: boolean): boolean {
+    for (const key of keys) {
+      const value = this.lookupEnv(key);
+      if (value === undefined) {
+        continue;
+      }
+      if (typeof value === 'boolean') {
+        return value;
+      }
+      if (typeof value === 'string') {
+        const normalised = value.trim().toLowerCase();
+        if (['1', 'true', 'yes', 'on'].includes(normalised)) {
+          return true;
+        }
+        if (['0', 'false', 'no', 'off'].includes(normalised)) {
+          return false;
+        }
+      }
+    }
+    return fallback;
+  }
+
+  private lookupInt(keys: string[], fallback: number): number {
+    for (const key of keys) {
+      const value = this.lookupEnv(key);
+      if (value === undefined) {
+        continue;
+      }
+      const parsed = Number.parseInt(String(value), 10);
+      if (!Number.isNaN(parsed)) {
+        return parsed;
+      }
+    }
+    return fallback;
+  }
+
+  private lookupList(keys: string[], fallback: string[]): string[] {
+    const raw = this.lookupStringOrNull(keys, null);
+    if (!raw) {
+      return [...fallback];
+    }
+    try {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        return parsed
+          .map((entry) => String(entry).trim())
+          .filter((entry) => entry.length > 0);
+      }
+    } catch {
+      // fall through to CSV parsing below
+    }
+    return raw
+      .split(',')
+      .map((entry) => entry.trim())
+      .filter((entry) => entry.length > 0);
+  }
+
+  private lookupEnv(key: string): unknown {
+    if (this.configService) {
+      const value = this.configService.get(key);
+      if (value !== undefined) {
+        return value;
+      }
+    }
+    if (process.env[key] !== undefined) {
+      return process.env[key];
+    }
+    return undefined;
+  }
+
+  private stringifyError(error: unknown): string {
+    if (error instanceof Error) {
+      return error.message;
+    }
+    if (typeof error === 'string') {
+      return error;
+    }
+    try {
+      return JSON.stringify(error);
+    } catch {
+      return String(error);
+    }
+  }
+}

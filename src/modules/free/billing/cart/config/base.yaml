@@ -1,0 +1,29 @@
+# Default configuration for the Cart module.
+# Adjust values to match your marketplace (currency, tax policy, discounts).
+
+defaults:
+  currency: USD
+  tax_rate: '0.0700'
+  apply_tax_before_discounts: false
+  default_discount_code: WELCOME10
+  auto_apply_default_discount: true
+  max_unique_items: 100
+  metadata:
+    owner: billing
+    domain: checkout
+
+discount_rules:
+  - code: WELCOME10
+    description: 10% off first purchase
+    percentage: '0.10'
+    applies_to: []
+    minimum_subtotal: '0.00'
+  - code: FREESHIP
+    description: Fixed $5 shipping credit
+    amount: '5.00'
+    applies_to: []
+    minimum_subtotal: '25.00'
+
+health:
+  enabled: true
+  freshness_threshold_minutes: 30

@@ -1,0 +1,43 @@
+{
+  "checked_at": "2025-12-24T15:20:06.268524+00:00",
+  "description": "Lean module layout blueprint (v3)",
+  "extra_directories": [
+    "scripts"
+  ],
+  "extra_files": [
+    "scripts/run_demo.py",
+    "templates/base/email_health.py.j2"
+  ],
+  "missing_directories": [],
+  "missing_files": [],
+  "module": "free/communication/email",
+  "parity": {
+    "fastapi": {
+      "declared": true,
+      "has_config": true,
+      "has_health": true,
+      "has_metadata": true,
+      "has_tests": true,
+      "issues": [],
+      "plugin": true,
+      "status": "ok"
+    },
+    "nestjs": {
+      "declared": true,
+      "has_config": true,
+      "has_health": true,
+      "has_metadata": true,
+      "has_tests": true,
+      "issues": [],
+      "plugin": true,
+      "status": "ok"
+    }
+  },
+  "parity_checked_at": "2025-12-07T19:32:21.354826+00:00",
+  "parity_valid": true,
+  "spec_version": 4,
+  "structure_tree_hash": "e427bbb636b61d2e9912173035a808ec702dba4a80f98325579cb621ba112385",
+  "structure_valid": true,
+  "tree_hash": "e427bbb636b61d2e9912173035a808ec702dba4a80f98325579cb621ba112385",
+  "valid": true
+}

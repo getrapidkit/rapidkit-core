@@ -1,0 +1,14 @@
+{# Environment variable snippet for configuring the Api Keys module. #}
+
+# Mandatory hashing pepper used to derive deterministic digests
+{{ pepper_env }}="{{ example_pepper }}"
+
+# Optional overrides (uncomment as needed)
+# RAPIDKIT_API_KEYS_DEFAULT_SCOPES='["read", "write"]'
+# RAPIDKIT_API_KEYS_ALLOWED_SCOPES='["read", "write", "admin"]'
+# RAPIDKIT_API_KEYS_TTL_HOURS=720
+# RAPIDKIT_API_KEYS_ROTATION_DAYS=45
+# RAPIDKIT_API_KEYS_MAX_ACTIVE=10
+# RAPIDKIT_API_KEYS_AUDIT_TRAIL=true
+# RAPIDKIT_API_KEYS_PERSIST_LAST_USED=true
+# RAPIDKIT_API_KEYS_REPOSITORY=memory

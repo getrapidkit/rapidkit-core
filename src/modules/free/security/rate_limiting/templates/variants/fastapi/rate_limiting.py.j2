@@ -1,0 +1,135 @@
+"""Project-facing wrapper around the vendor rate limiting runtime."""
+
+from __future__ import annotations
+
+import importlib.util
+import os
+import sys
+from functools import lru_cache
+from pathlib import Path
+from types import ModuleType
+
+_VENDOR_MODULE = "{{ rapidkit_vendor_module }}"
+_VENDOR_VERSION = "{{ rapidkit_vendor_version }}"
+_VENDOR_RELATIVE_PATH = "{{ vendor_runtime_relative }}"
+_VENDOR_ROOT_ENV = "RAPIDKIT_VENDOR_ROOT"
+_CACHE_PREFIX = "rapidkit_vendor_rate_limiting"
+
+
+def _project_root() -> Path:
+    current = Path(__file__).resolve()
+    for ancestor in current.parents:
+        if (ancestor / "pyproject.toml").exists() or (ancestor / "package.json").exists():
+            return ancestor
+    # Fallback: best-effort (keeps behaviour stable in unusual layouts)
+    return current.parents[5]
+
+
+def _vendor_root() -> Path:
+    override = os.getenv(_VENDOR_ROOT_ENV)
+    if override:
+        return Path(override).expanduser().resolve()
+    return _project_root() / ".rapidkit" / "vendor"
+
+
+def _vendor_base_dir() -> Path:
+    root = _vendor_root()
+    module_dir = root / _VENDOR_MODULE
+    preferred = module_dir / _VENDOR_VERSION if _VENDOR_VERSION else None
+    if preferred and preferred.exists():
+        return preferred
+    candidates = sorted((p for p in module_dir.glob("*") if p.is_dir()), reverse=True)
+    if candidates:
+        return candidates[0]
+    raise RuntimeError(
+        "RapidKit vendor payload for '{module}' not found under {root}. "
+        "Re-run `rapidkit modules install {module}`.".format(module=_VENDOR_MODULE, root=root)
+    )
+
+
+def _vendor_file() -> Path:
+    relative = _VENDOR_RELATIVE_PATH
+    if not relative:
+        raise RuntimeError("Rate limiting vendor relative path missing from generator context")
+    return _vendor_base_dir() / relative
+
+
+@lru_cache(maxsize=1)
+def _load_vendor_module() -> ModuleType:
+    vendor_path = _vendor_file()
+    if not vendor_path.exists():
+        raise RuntimeError(
+            "RapidKit vendor rate limiting file missing at {path}. "
+            "Re-run `rapidkit modules install {module}`.".format(
+                path=vendor_path,
+                module=_VENDOR_MODULE,
+            )
+        )
+
+    module_name = _CACHE_PREFIX + _VENDOR_MODULE.replace("/", "_")
+    spec = importlib.util.spec_from_file_location(module_name, vendor_path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Unable to load vendor rate limiting module from {vendor_path}")
+
+    module = importlib.util.module_from_spec(spec)
+    sys.modules.setdefault(module_name, module)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _resolve_export(name: str):
+    vendor = _load_vendor_module()
+    try:
+        return getattr(vendor, name)
+    except AttributeError as exc:  # pragma: no cover - defensive against drift
+        raise RuntimeError(f"Vendor rate limiting module missing attribute '{name}'") from exc
+
+
+def refresh_vendor_module() -> None:
+    """Clear vendor import caches (useful after module upgrades)."""
+
+    _load_vendor_module.cache_clear()
+
+
+RateLimitHeaders = _resolve_export("RateLimitHeaders")
+RateLimitScope = _resolve_export("RateLimitScope")
+RateLimitRule = _resolve_export("RateLimitRule")
+RateLimitResult = _resolve_export("RateLimitResult")
+RateLimitExceeded = _resolve_export("RateLimitExceeded")
+RateLimiter = _resolve_export("RateLimiter")
+RateLimiterConfig = _resolve_export("RateLimiterConfig")
+RateLimitBackend = _resolve_export("RateLimitBackend")
+MemoryRateLimitBackend = _resolve_export("MemoryRateLimitBackend")
+RedisRateLimitBackend = _resolve_export("RedisRateLimitBackend")
+configure_rate_limiter = _resolve_export("configure_rate_limiter")
+get_rate_limiter = _resolve_export("get_rate_limiter")
+get_rate_limiter_metadata = _resolve_export("get_rate_limiter_metadata")
+load_rate_limiter_config = _resolve_export("load_rate_limiter_config")
+
+
+try:  # Optional override contracts (enterprise deployments)
+    from core.services.override_contracts import apply_module_overrides
+except ImportError:  # pragma: no cover - override system optional
+    apply_module_overrides = None
+
+if apply_module_overrides is not None:  # pragma: no branch - tiny guard
+    apply_module_overrides(sys.modules[__name__], "rate_limiting")
+
+
+__all__ = [
+    "RateLimitHeaders",
+    "RateLimitScope",
+    "RateLimitRule",
+    "RateLimitResult",
+    "RateLimitExceeded",
+    "RateLimiter",
+    "RateLimiterConfig",
+    "RateLimitBackend",
+    "MemoryRateLimitBackend",
+    "RedisRateLimitBackend",
+    "configure_rate_limiter",
+    "get_rate_limiter",
+    "get_rate_limiter_metadata",
+    "load_rate_limiter_config",
+    "refresh_vendor_module",
+]

@@ -1,0 +1,72 @@
+import { Test } from '@nestjs/testing';
+import { INestApplication } from '@nestjs/common';
+import request from 'supertest';
+
+import { DbMongoModule } from '../../../../src/modules/free/database/db_mongo/db-mongo.module';
+import { DbMongoHealthModule } from '../../../../src/health/db-mongo-health.module';
+import { DbMongoService } from '../../../../src/modules/free/database/db_mongo/db-mongo.service';
+
+async function createApplication(): Promise<INestApplication> {
+  const moduleRef = await Test.createTestingModule({
+    imports: [DbMongoModule, DbMongoHealthModule],
+  }).compile();
+
+  const app = moduleRef.createNestApplication();
+  await app.init();
+  return app;
+}
+
+describe('DbMongoModule (Integration)', () => {
+  let app: INestApplication;
+  let service: DbMongoService;
+
+  beforeAll(async () => {
+    app = await createApplication();
+    service = app.get(DbMongoService);
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  it('exposes DbMongoService bindings', () => {
+    expect(service).toBeDefined();
+    const config = service.getConfig();
+    expect(config).toHaveProperty('uri');
+    expect(typeof service.getMetadata).toBe('function');
+  });
+
+  it('masks credentials when retrieving metadata', () => {
+    const metadata = service.getMetadata();
+    expect(metadata).toHaveProperty('module', '{{ rapidkit_vendor_module }}');
+  });
+
+  it('serves module health endpoint', async () => {
+    jest.spyOn(service, 'checkHealth').mockResolvedValue({
+      status: 'ok',
+      detail: 'ok',
+      module: '{{ rapidkit_vendor_module }}',
+      metrics: {
+        latency_ms: 0,
+        connections: {},
+        opcounters: {},
+        storage: {},
+      },
+      replica: {
+        set_name: null,
+        primary: null,
+        members: [],
+      },
+      server_version: null,
+      extra: {},
+      errors: [],
+    } as any);
+
+    const server = app.getHttpServer();
+    const response = await request(server).get('/api/health/module/db-mongo');
+
+    expect(response.status).toBe(200);
+    expect(response.body).toHaveProperty('module', '{{ rapidkit_vendor_module }}');
+    expect(response.body).toHaveProperty('status');
+  });
+});

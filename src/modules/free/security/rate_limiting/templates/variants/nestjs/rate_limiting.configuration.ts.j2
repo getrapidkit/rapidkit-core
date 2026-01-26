@@ -1,0 +1,316 @@
+import { registerAs } from '@nestjs/config';
+
+type RateLimitScope = 'global' | 'identity' | 'route' | 'route-identity';
+
+type UnknownRecord = Record<string, unknown>;
+
+type RawRule = Record<string, unknown>;
+
+export interface RateLimitRule {
+  readonly name: string;
+  readonly limit: number;
+  readonly windowSeconds: number;
+  readonly scope: RateLimitScope;
+  readonly priority: number;
+  readonly methods: string[];
+  readonly routes: string[];
+  readonly cost: number;
+  readonly blockSeconds: number | null;
+  readonly includeHeaders: boolean;
+}
+
+export interface RateLimitHeadersConfig {
+  readonly limit: string;
+  readonly remaining: string;
+  readonly reset: string;
+  readonly retryAfter: string;
+  readonly rule: string;
+}
+
+export interface RateLimitingConfiguration {
+  readonly module: string;
+  readonly title: string;
+  readonly enabled: boolean;
+  readonly backend: string;
+  readonly redisUrl: string | null;
+  readonly redisPrefix: string;
+  readonly trustForwardedFor: boolean;
+  readonly forwardedForHeader: string;
+  readonly identityHeader: string | null;
+  readonly defaultScope: RateLimitScope;
+  readonly defaultRule: RateLimitRule;
+  readonly rules: RateLimitRule[];
+  readonly headers: RateLimitHeadersConfig;
+  readonly metadata: UnknownRecord;
+}
+
+const DEFAULTS = {{ rate_limiting_defaults | tojson(indent=2) }} as UnknownRecord;
+const RULES = Array.isArray(DEFAULTS.rules) ? (DEFAULTS.rules as RawRule[]) : [];
+const HEADERS = (DEFAULTS.headers ?? {}) as UnknownRecord;
+const METADATA_DEFAULTS = {{ metadata_defaults | tojson(indent=2) }} as UnknownRecord;
+
+const parseBoolean = (value: string | undefined, fallback: boolean): boolean => {
+  if (typeof value !== 'string') {
+    return fallback;
+  }
+  const normalized = value.trim().toLowerCase();
+  if (['1', 'true', 'yes', 'on'].includes(normalized)) {
+    return true;
+  }
+  if (['0', 'false', 'no', 'off'].includes(normalized)) {
+    return false;
+  }
+  return fallback;
+};
+
+const parseString = <TFallback extends string | null>(
+  value: string | undefined,
+  fallback: TFallback,
+): TFallback | string => {
+  if (typeof value !== 'string') {
+    return fallback;
+  }
+  const trimmed = value.trim();
+  if (trimmed.length === 0) {
+    return fallback;
+  }
+  return trimmed;
+};
+
+const parseJsonRecord = (
+  value: string | undefined,
+  fallback: UnknownRecord,
+): UnknownRecord => {
+  if (typeof value !== 'string') {
+    return { ...fallback };
+  }
+  try {
+    const parsed = JSON.parse(value);
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return { ...fallback, ...(parsed as UnknownRecord) };
+    }
+  } catch {
+    // ignore malformed payloads and retain defaults
+  }
+  return { ...fallback };
+};
+
+const coerceDefaultString = (value: unknown, fallback: string): string => {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (trimmed.length > 0) {
+      return trimmed;
+    }
+  }
+  return fallback;
+};
+
+const coerceOptionalString = (value: unknown): string | null => {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (trimmed.length > 0) {
+      return trimmed;
+    }
+  }
+  return null;
+};
+
+const parseRules = (value: string | undefined, fallback: RawRule[]): RawRule[] => {
+  if (typeof value !== 'string') {
+    return [...fallback];
+  }
+  try {
+    const parsed = JSON.parse(value);
+    if (Array.isArray(parsed)) {
+      return parsed.filter((item) => item && typeof item === 'object') as RawRule[];
+    }
+    if (parsed && typeof parsed === 'object') {
+      return [parsed as RawRule];
+    }
+  } catch {
+    // Best-effort parsing only, fallback to defaults
+  }
+  return [...fallback];
+};
+
+const coerceArray = (value: unknown): string[] => {
+  if (Array.isArray(value)) {
+    return value.map((entry) => String(entry)).filter((entry) => entry.length > 0);
+  }
+  return [];
+};
+
+const buildRule = (payload: RawRule, fallbackName: string): RateLimitRule | null => {
+  const nameRaw = payload.name;
+  const limitRaw = payload.limit;
+  const windowRaw = payload.window_seconds ?? payload.window;
+  const scopeRaw = payload.scope;
+  const priorityRaw = payload.priority;
+  const methodsRaw = payload.methods;
+  const routesRaw = payload.routes;
+  const costRaw = payload.cost;
+  const blockSecondsRaw = payload.block_seconds;
+  const includeHeadersRaw = payload.include_headers;
+
+  const name = typeof nameRaw === 'string' && nameRaw.trim().length > 0 ? nameRaw.trim() : fallbackName;
+  const limit = Math.max(Number.isFinite(Number(limitRaw)) ? Number(limitRaw) : 0, 0);
+  const windowSeconds = Math.max(Number.isFinite(Number(windowRaw)) ? Number(windowRaw) : 0, 0);
+  if (limit <= 0 || windowSeconds <= 0) {
+    return null;
+  }
+  const scope = typeof scopeRaw === 'string' && scopeRaw.trim().length > 0 ? (scopeRaw.trim() as RateLimitScope) : 'identity';
+  const priority = Number.isFinite(Number(priorityRaw)) ? Number(priorityRaw) : 100;
+  const methods = coerceArray(methodsRaw).map((method) => method.toUpperCase());
+  const routes = coerceArray(routesRaw);
+  const cost = Math.max(Number.isFinite(Number(costRaw)) ? Number(costRaw) : 1, 1);
+  let blockSeconds: number | null = null;
+  if (blockSecondsRaw !== undefined && blockSecondsRaw !== null) {
+    const parsed = Number(blockSecondsRaw);
+    blockSeconds = Number.isFinite(parsed) ? Math.max(Math.trunc(parsed), 0) : null;
+  }
+  const includeHeaders = typeof includeHeadersRaw === 'boolean'
+    ? includeHeadersRaw
+    : parseBoolean(typeof includeHeadersRaw === 'string' ? includeHeadersRaw : undefined, true);
+
+  return {
+    name,
+    limit: Math.trunc(limit),
+    windowSeconds: Math.trunc(windowSeconds),
+    scope,
+    priority: Math.trunc(priority),
+    methods,
+    routes,
+    cost: Math.trunc(cost),
+    blockSeconds,
+    includeHeaders,
+  };
+};
+
+const buildDefaultRule = (): RateLimitRule => {
+  const defaultName = String(DEFAULTS.default_rule_name ?? 'default');
+  const limit = Math.max(Number(DEFAULTS.default_limit ?? 120), 1);
+  const windowSeconds = Math.max(Number(DEFAULTS.default_window ?? 60), 1);
+  const scope = String(DEFAULTS.default_scope ?? 'identity') as RateLimitScope;
+  const priority = Number.isFinite(Number(DEFAULTS.default_priority)) ? Number(DEFAULTS.default_priority) : 100;
+  const blockSecondsRaw = DEFAULTS.default_block_seconds;
+  let blockSeconds: number | null = null;
+  if (blockSecondsRaw !== undefined && blockSecondsRaw !== null) {
+    const parsed = Number(blockSecondsRaw);
+    blockSeconds = Number.isFinite(parsed) ? Math.max(Math.trunc(parsed), 0) : null;
+  }
+
+  return {
+    name: defaultName,
+    limit: Math.trunc(limit),
+    windowSeconds: Math.trunc(windowSeconds),
+    scope,
+    priority: Math.trunc(priority),
+    methods: [],
+    routes: [],
+    cost: 1,
+    blockSeconds,
+    includeHeaders: true,
+  };
+};
+
+const compileRules = (defaultRule: RateLimitRule): RateLimitRule[] => {
+  const buffer: RateLimitRule[] = [defaultRule];
+  const overrideRules = parseRules(process.env.RATE_LIMIT_RULES_JSON, RULES);
+  overrideRules.forEach((payload, index) => {
+    const rule = buildRule(payload, `rule-${index}`);
+    if (rule) {
+      buffer.push(rule);
+    }
+  });
+  return buffer.sort((first, second) => first.priority - second.priority);
+};
+
+const resolveHeaders = (): RateLimitHeadersConfig => {
+  const limit = parseString(
+    process.env.RATE_LIMIT_HEADER_LIMIT,
+    coerceDefaultString(HEADERS.limit, 'X-RateLimit-Limit'),
+  );
+  const remaining = parseString(
+    process.env.RATE_LIMIT_HEADER_REMAINING,
+    coerceDefaultString(HEADERS.remaining, 'X-RateLimit-Remaining'),
+  );
+  const reset = parseString(
+    process.env.RATE_LIMIT_HEADER_RESET,
+    coerceDefaultString(HEADERS.reset, 'X-RateLimit-Reset'),
+  );
+  const retryAfter = parseString(
+    process.env.RATE_LIMIT_HEADER_RETRY_AFTER,
+    coerceDefaultString(HEADERS.retry_after, 'Retry-After'),
+  );
+  const rule = parseString(
+    process.env.RATE_LIMIT_HEADER_RULE,
+    coerceDefaultString(HEADERS.rule, 'X-RateLimit-Rule'),
+  );
+
+  return {
+    limit: String(limit ?? 'X-RateLimit-Limit'),
+    remaining: String(remaining ?? 'X-RateLimit-Remaining'),
+    reset: String(reset ?? 'X-RateLimit-Reset'),
+    retryAfter: String(retryAfter ?? 'Retry-After'),
+    rule: String(rule ?? 'X-RateLimit-Rule'),
+  };
+};
+
+export const rateLimitingConfiguration = registerAs(
+  'rateLimiting',
+  (): RateLimitingConfiguration => {
+    const defaultRule = buildDefaultRule();
+    const rules = compileRules(defaultRule);
+
+    const redisUrlRaw = process.env.RATE_LIMIT_REDIS_URL;
+    const redisUrl = typeof redisUrlRaw === 'string' && redisUrlRaw.trim().length > 0
+      ? redisUrlRaw.trim()
+      : typeof DEFAULTS.redis_url === 'string'
+      ? String(DEFAULTS.redis_url)
+      : null;
+
+    return {
+      module: {{ rapidkit_vendor_module | tojson }},
+      title: {{ module_title | tojson }},
+      enabled: parseBoolean(
+        process.env.RATE_LIMIT_ENABLED,
+        Boolean(DEFAULTS.enabled ?? true),
+      ),
+      backend: String(
+        parseString(
+          process.env.RATE_LIMIT_BACKEND,
+          coerceDefaultString(DEFAULTS.backend, 'memory'),
+        ) ?? 'memory',
+      ),
+      redisUrl,
+      redisPrefix: String(
+        parseString(
+          process.env.RATE_LIMIT_REDIS_PREFIX,
+          coerceDefaultString(DEFAULTS.redis_prefix, 'rate-limit'),
+        ) ?? 'rate-limit',
+      ),
+      trustForwardedFor: parseBoolean(
+        process.env.RATE_LIMIT_TRUST_FORWARDED_FOR,
+        Boolean(DEFAULTS.trust_forwarded_for ?? false),
+      ),
+      forwardedForHeader: String(
+        parseString(
+          process.env.RATE_LIMIT_FORWARDED_FOR_HEADER,
+          coerceDefaultString(DEFAULTS.forwarded_for_header, 'X-Forwarded-For'),
+        ) ?? 'X-Forwarded-For',
+      ),
+      identityHeader: ((): string | null => {
+        const identity = parseString(
+          process.env.RATE_LIMIT_IDENTITY_HEADER,
+          coerceOptionalString(DEFAULTS.identity_header ?? null),
+        );
+        return identity ? String(identity) : null;
+      })(),
+      defaultScope: defaultRule.scope,
+      defaultRule,
+      rules,
+      headers: resolveHeaders(),
+      metadata: parseJsonRecord(process.env.RATE_LIMIT_METADATA, METADATA_DEFAULTS),
+    };
+  },
+);

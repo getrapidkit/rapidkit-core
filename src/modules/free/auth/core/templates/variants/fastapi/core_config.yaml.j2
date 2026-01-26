@@ -1,0 +1,18 @@
+{%- set defaults = auth_core_defaults or {} -%}
+# RapidKit generated configuration for {{ module_title }}.
+# Adjust values to align with your deployment requirements.
+
+auth_core:
+  hash_name: {{ defaults.get("hash_name", "sha256") | tojson }}
+  iterations: {{ defaults.get("iterations", 390000) | tojson }}
+  salt_bytes: {{ defaults.get("salt_bytes", 32) | tojson }}
+  token_bytes: {{ defaults.get("token_bytes", 32) | tojson }}
+  token_ttl_seconds: {{ defaults.get("token_ttl_seconds", 1800) | tojson }}
+  issuer: {{ defaults.get("issuer", "RapidKit") | tojson }}
+  pepper_env: {{ defaults.get("pepper_env", "RAPIDKIT_AUTH_CORE_PEPPER") | tojson }}
+  policy:
+    min_length: {{ defaults.get("policy", {}).get("min_length", 12) | tojson }}
+    require_uppercase: {{ defaults.get("policy", {}).get("require_uppercase", True) | tojson }}
+    require_lowercase: {{ defaults.get("policy", {}).get("require_lowercase", True) | tojson }}
+    require_digits: {{ defaults.get("policy", {}).get("require_digits", True) | tojson }}
+    require_symbols: {{ defaults.get("policy", {}).get("require_symbols", False) | tojson }}

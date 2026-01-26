@@ -1,0 +1,44 @@
+"""FastAPI route definitions for {{ module_title }}."""
+
+from __future__ import annotations
+
+from typing import Any
+
+from fastapi import APIRouter, Depends, Request
+
+try:
+    from ..{{ module_name }} import {{ module_class_name }}
+except ImportError:  # pragma: no cover
+    try:
+        from database.{{ module_name }} import {{ module_class_name }}
+    except ImportError:  # pragma: no cover
+        from ..{{ module_name }} import {{ module_class_name }}
+
+
+async def get_runtime_dependency(request: Request) -> {{ module_class_name }}:
+    runtime: {{ module_class_name }} | None = getattr(request.app.state, "{{ module_name }}_runtime", None)
+    if runtime is None:
+        runtime = {{ module_class_name }}()
+        request.app.state.{{ module_name }}_runtime = runtime
+    return runtime
+
+
+def build_router(*, runtime_dependency=get_runtime_dependency) -> APIRouter:
+    router = APIRouter(prefix="/{{ module_kebab }}", tags=["{{ module_title }}"])
+
+    @router.get("/health", summary="{{ module_title }} health check")
+    async def read_health(runtime: {{ module_class_name }} = Depends(runtime_dependency)) -> dict[str, Any]:
+        report = await runtime.health_check()
+        payload = report.to_payload()
+        payload.update({"module": "{{ module_name }}"})
+        return payload
+
+    @router.get("/info", summary="MongoDB server information snapshot")
+    async def server_info(runtime: {{ module_class_name }} = Depends(runtime_dependency)) -> dict[str, Any]:
+        info = await runtime.server_info()
+        return {"module": "{{ module_name }}", "info": info}
+
+    return router
+
+
+__all__ = ["build_router", "get_runtime_dependency"]

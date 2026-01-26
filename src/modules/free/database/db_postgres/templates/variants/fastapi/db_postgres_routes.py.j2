@@ -1,0 +1,56 @@
+"""FastAPI routes exposing PostgreSQL management endpoints."""
+
+from __future__ import annotations
+
+from typing import Any, Dict
+
+from fastapi import APIRouter, HTTPException, status
+
+from src.modules.free.database.db_postgres.postgres import (
+    check_postgres_connection,
+    check_postgres_connection_sync,
+    get_database_url,
+    get_pool_status,
+)
+
+router = APIRouter(prefix="/database/postgres", tags=["database", "postgres"])
+
+
+@router.get("/metadata", response_model=Dict[str, Any])
+async def get_postgres_metadata() -> Dict[str, Any]:
+    """Return masked connection metadata and pool configuration."""
+
+    metadata = {
+        "database_url": get_database_url(),
+        "database_url_unmasked": get_database_url(hide_password=False),
+    }
+    try:
+        pool = await get_pool_status()
+    except Exception as exc:  # pragma: no cover - defensive catch, surfaced via HTTPError
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+    metadata["pool"] = pool
+    return metadata
+
+
+@router.get("/health/async", response_model=Dict[str, Any])
+async def postgres_health_async() -> Dict[str, Any]:
+    """Perform async health probe against the primary engine."""
+
+    await check_postgres_connection()
+    return {"status": "ok"}
+
+
+@router.get("/health/sync", response_model=Dict[str, Any])
+async def postgres_health_sync() -> Dict[str, Any]:
+    """Invoke the sync health probe to validate psycopg engine."""
+
+    try:
+        check_postgres_connection_sync()
+    except HTTPException:
+        raise
+    except Exception as exc:  # pragma: no cover - convert to HTTP friendly error
+        raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
+    return {"status": "ok"}
+
+
+__all__ = ["router", "get_postgres_metadata", "postgres_health_async", "postgres_health_sync"]

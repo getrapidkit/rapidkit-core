@@ -1,0 +1,156 @@
+"""Runtime helpers for {{ module_title }} metadata and configuration."""
+
+from __future__ import annotations
+
+import os
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from functools import lru_cache
+from typing import Any, Mapping, MutableMapping, Sequence
+
+
+DEFAULT_ENV_PREFIX = "RAPIDKIT_{{ module_name|upper }}_"
+MODULE_NAME = "{{ module_name }}"
+MODULE_TITLE = "{{ module_title }}"
+MODULE_FEATURES: tuple[str, ...] = (
+    "profile_management",
+    "avatar_uploads",
+    "privacy_controls",
+    "marketing_preferences",
+    "timezone_support",
+)
+
+
+def _coerce_bool(value: Any, default: bool) -> bool:
+    if isinstance(value, bool):
+        return value
+    if value is None:
+        return default
+    lowered = str(value).strip().lower()
+    if lowered in {"1", "true", "yes", "on"}:
+        return True
+    if lowered in {"0", "false", "no", "off"}:
+        return False
+    return default
+
+
+def _coerce_int(value: Any, default: int) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):  # pragma: no cover - defensive guard
+        return default
+
+
+def _coerce_str(value: Any, default: str) -> str:
+    if value is None:
+        return default
+    text = str(value).strip()
+    return text or default
+
+
+def _coerce_sequence(value: Any) -> tuple[str, ...]:
+    if value is None:
+        return ()
+    if isinstance(value, str):
+        return tuple(item.strip() for item in value.split(",") if item.strip())
+    if isinstance(value, Sequence):
+        return tuple(str(item).strip() for item in value if str(item).strip())
+    return ()
+
+
+@dataclass(slots=True)
+class {{ module_class_name }}Config:
+    """Normalized configuration for {{ module_title }}."""
+
+    default_timezone: str = "UTC"
+    max_bio_length: int = 280
+    avatar_max_bytes: int = 2_097_152
+    allow_marketing_opt_in: bool = True
+    social_links_limit: int = 5
+    default_visibility: str = "public"
+    supported_visibilities: tuple[str, ...] = field(
+        default_factory=lambda: ("public", "private", "team")
+    )
+
+    @classmethod
+    def from_mapping(cls, payload: Mapping[str, Any]) -> "{{ module_class_name }}Config":
+        defaults = cls()
+        visibilities = _coerce_sequence(payload.get("supported_visibilities"))
+        if not visibilities:
+            visibilities = defaults.supported_visibilities
+
+        visibility = _coerce_str(payload.get("default_visibility"), defaults.default_visibility)
+        if visibility not in visibilities:
+            visibility = visibilities[0]
+
+        return cls(
+            default_timezone=_coerce_str(payload.get("default_timezone"), defaults.default_timezone),
+            max_bio_length=_coerce_int(payload.get("max_bio_length"), defaults.max_bio_length),
+            avatar_max_bytes=_coerce_int(payload.get("avatar_max_bytes"), defaults.avatar_max_bytes),
+            allow_marketing_opt_in=_coerce_bool(
+                payload.get("allow_marketing_opt_in"), defaults.allow_marketing_opt_in
+            ),
+            social_links_limit=_coerce_int(
+                payload.get("social_links_limit"), defaults.social_links_limit
+            ),
+            default_visibility=visibility,
+            supported_visibilities=visibilities,
+        )
+
+
+@lru_cache(maxsize=1)
+def load_config_from_env(
+    prefix: str = DEFAULT_ENV_PREFIX,
+    env: Mapping[str, str] | None = None,
+) -> {{ module_class_name }}Config:
+    source = env or os.environ
+    payload: MutableMapping[str, Any] = {
+        "default_timezone": source.get(f"{prefix}DEFAULT_TIMEZONE"),
+        "max_bio_length": source.get(f"{prefix}MAX_BIO_LENGTH"),
+        "avatar_max_bytes": source.get(f"{prefix}AVATAR_MAX_BYTES"),
+        "allow_marketing_opt_in": source.get(f"{prefix}ALLOW_MARKETING_OPT_IN"),
+        "social_links_limit": source.get(f"{prefix}SOCIAL_LINKS_LIMIT"),
+        "default_visibility": source.get(f"{prefix}DEFAULT_VISIBILITY"),
+        "supported_visibilities": source.get(f"{prefix}SUPPORTED_VISIBILITIES"),
+    }
+    return {{ module_class_name }}Config.from_mapping(payload)
+
+
+def describe_{{ module_name }}(
+    config: {{ module_class_name }}Config | None = None,
+) -> MutableMapping[str, Any]:
+    """Return metadata describing the {{ module_title }} configuration."""
+
+    resolved = config or load_config_from_env()
+    metadata: MutableMapping[str, Any] = {
+        "module": MODULE_NAME,
+        "title": MODULE_TITLE,
+        "status": "ok",
+        "checked_at": datetime.now(timezone.utc).isoformat(),
+        "features": list(MODULE_FEATURES),
+        "default_timezone": resolved.default_timezone,
+        "max_bio_length": resolved.max_bio_length,
+        "avatar_max_bytes": resolved.avatar_max_bytes,
+        "allow_marketing_opt_in": resolved.allow_marketing_opt_in,
+        "social_links_limit": resolved.social_links_limit,
+        "default_visibility": resolved.default_visibility,
+        "supported_visibilities": list(resolved.supported_visibilities),
+    }
+    return metadata
+
+
+def get_{{ module_name }}_metadata() -> MutableMapping[str, Any]:
+    """Collect metadata using environment-backed configuration."""
+
+    return describe_{{ module_name }}()
+
+
+__all__ = [
+    "MODULE_FEATURES",
+    "MODULE_NAME",
+    "MODULE_TITLE",
+    "{{ module_class_name }}Config",
+    "describe_{{ module_name }}",
+    "get_{{ module_name }}_metadata",
+    "load_config_from_env",
+]

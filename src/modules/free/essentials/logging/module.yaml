@@ -1,0 +1,208 @@
+name: logging
+version: 0.1.2
+access: free
+status: stable
+category: essentials
+description: Structured logging infrastructure with FastAPI and NestJS integrations.
+tags:
+- logging
+- observability
+- tracing
+generated_from_config: true
+depends_on:
+- free/essentials/settings
+profile_inherits:
+  fastapi.standard: fastapi
+  fastapi.ddd: fastapi
+  nestjs.standard: nestjs
+config_sources:
+- config/base.yaml
+- config/snippets.yaml
+generation:
+  vendor:
+    root: .rapidkit/vendor
+    files:
+    - template: templates/base/logging.py.j2
+      relative: src/modules/free/essentials/logging/logging.py
+    - template: templates/base/logging_health.py.j2
+      relative: src/health/logging.py
+    - template: templates/base/logging_types.py.j2
+      relative: src/modules/free/essentials/logging/logging_types.py
+    - template: templates/vendor/nestjs/configuration.js.j2
+      relative: nestjs/configuration.js
+    - template: templates/vendor/nestjs/logging.health.ts.j2
+      relative: nestjs/logging.health.ts
+  variants:
+    fastapi: &fastapi_variant
+      root: .
+      context: &fastapi_context
+        framework: fastapi
+      files: &fastapi_files
+      - template: templates/variants/fastapi/logging.py.j2
+        output: src/modules/free/essentials/logging/logging.py
+      - template: templates/variants/fastapi/logging_routes.py.j2
+        output: src/modules/free/essentials/logging/routers/logging.py
+      - template: templates/base/logging_health.py.j2
+        output: src/health/logging.py
+        description: FastAPI health endpoints for logging diagnostics
+      - template: templates/tests/integration/test_logging_integration.j2
+        output: tests/modules/free/essentials/logging/test_logging_integration.py
+        description: Integration tests for Logging module
+      - template: templates/variants/fastapi/logging_config.yaml.j2
+        output: src/modules/free/essentials/logging/config/logging.yaml
+        description: Default Logging configuration values
+      - template: templates/variants/fastapi/tests/test_logging_e2e.py
+        output: tests/modules/e2e/free/essentials/logging/test_logging_e2e.py
+
+
+    # Compatibility aliases: the installer uses kit profile names.
+    fastapi.standard: *fastapi_variant
+    fastapi.ddd: *fastapi_variant
+
+    nestjs: &nestjs_variant
+      root: .
+      context: &nestjs_context
+        framework: nestjs
+        vendor_configuration_relative: nestjs/configuration.js
+      files: &nestjs_files
+      - template: templates/variants/nestjs/configuration.ts.j2
+        output: src/modules/free/essentials/logging/configuration.ts
+      - template: templates/variants/nestjs/logging.service.ts.j2
+        output: src/modules/free/essentials/logging/logging.service.ts
+      - template: templates/variants/nestjs/logging.module.ts.j2
+        output: src/modules/free/essentials/logging/logging.module.ts
+      - template: templates/variants/nestjs/logging.controller.ts.j2
+        output: src/modules/free/essentials/logging/logging.controller.ts
+      - template: templates/variants/nestjs/index.ts.j2
+        output: src/modules/free/essentials/logging/index.ts
+      - template: templates/variants/nestjs/validation.ts.j2
+        output: src/modules/free/essentials/logging/validation.ts
+      - template: templates/vendor/nestjs/logging.health.ts.j2
+        output: src/modules/free/essentials/logging/logging.health.ts
+        description: NestJS logging health registration
+      - template: templates/variants/nestjs/logging.interceptor.ts.j2
+        output: src/modules/free/essentials/logging/logging.interceptor.ts
+      - template: templates/tests/integration/logging.integration.spec.ts.j2
+        output: tests/modules/integration/essentials/logging/logging.integration.spec.ts
+      - template: templates/variants/nestjs/tests/logging.e2e-spec.ts
+        output: tests/modules/e2e/free/essentials/logging/logging.e2e-spec.ts
+
+
+    nestjs.standard: *nestjs_variant
+  snippets:
+    enabled: true
+    config: config/snippets.yaml
+    default: []
+compatibility:
+  python: '>=3.10,<4.0'
+  frameworks:
+  - fastapi
+  - nestjs
+  os:
+  - linux
+  - darwin
+  - windows
+  node: '>=16'
+testing:
+  coverage_min: 85
+  integration_tests: true
+  e2e_tests: false
+  unit_tests:
+  - tests/modules/free/essentials/logging/test_logging_generate.py
+  - tests/modules/free/essentials/logging/test_logging_overrides.py
+  - tests/modules/free/essentials/logging/test_logging_cli_entry.py
+  - tests/modules/free/essentials/logging/test_logging_frameworks_nestjs.py
+  - tests/modules/free/essentials/logging/test_logging_framework_variants.py
+  - tests/modules/free/essentials/logging/test_logging_vendor_layer.py
+  - tests/modules/free/essentials/logging/test_logging_health_check.py
+  - tests/modules/free/essentials/logging/test_logging_versioning.py
+  integration_test_files:
+  - tests/modules/integration/logging/test_logging_integration.py
+  - tests/modules/integration/logging/logging.integration.spec.ts
+  fixtures: []
+documentation:
+  changelog: docs/changelog.md
+  readme: README.md
+  overview: docs/overview.md
+  usage: docs/usage.md
+  advanced: docs/advanced.md
+  migration: docs/migration.md
+  troubleshooting: docs/troubleshooting.md
+  api_docs: null
+  examples: []
+support:
+  issues: https://github.com/getrapidkit/core/issues
+  discussions: https://github.com/getrapidkit/core/discussions
+  documentation: https://docs.rapidkit.top/modules/logging
+changelog:
+- version: 0.1.2
+  date: '2025-12-14'
+  notes: See docs/changelog.md
+validation:
+  pre_install:
+  - check_python_version
+  - check_dependencies
+  post_install:
+  - validate_generated_code
+  - run_tests
+rollback:
+  strategy: uninstall
+  backup_path: .rapidkit/backups/
+  max_backups: 5
+performance:
+  lazy_loading: true
+  caching:
+    templates: true
+    ttl: 300
+tier: free
+capabilities: []
+signature:
+  signature: JAQ850qkDJOKElbCamkgM/jvW2omDgK/gWzdYFLZLxfLp6Ft9Ti7D1DUFpaXIFSj0YXyWzNQS7fIv/EXF8gRDA==
+  signer_id: c7eb213b1ac6d8c6
+  signature_version: v1
+signer_id: null
+signature_version: null
+file_hashes:
+  templates/variants/nestjs/tests/logging.e2e-spec.ts: sha256:f9d714289daa04de24bbb1cdf723956e2cf6fee9a5092913984f5cf04f8455ae
+  templates/variants/fastapi/tests/test_logging_e2e.py: sha256:d8768237f800034e20199eeef4575c105c2fbdc24c15cba71f66fe526ddfe47a
+  scripts/run_demo.py: sha256:babd78cad4bd28c16991dc23dae4992fd2cb4b68dd1f38f95982ee7ed26a0879
+  README.md: sha256:995216d8ecf0463dc3c3f9f716af1facd7e46bc9d5c8352d12eab3f2aa4bb8e4
+  __init__.py: sha256:b8d01614bd1d11794ee51995d16f484d30c3f4323f929dc43cf45cf33ebc40b4
+  config/base.yaml: sha256:7ef5601b586d23fd0d4598c1b4da184a521558cd301de35286e5479f8a99f3de
+  config/snippets.yaml: sha256:4a2fd5dd51e09c7ae9259a57a8c66f8c23de2f6218a0eaf833f9a80b961ee6a8
+  docs/README.md: sha256:44c001d5c03f21a9c95b26f63e66f4977e5b9f30910ace118d81ff510c0f6c25
+  docs/advanced.md: sha256:3d99e784686a66f7ecd2ef2c034766a23bd44b50dc55441b97506f05d3bd89d5
+  docs/changelog.md: sha256:921d4518f6d92d1b8df24f4c0a7e641f9fd44288ed5ab768ebd625bbbef699f2
+  docs/migration.md: sha256:24f27587ce11af78eea86fe5aaf9662b283be8b410771dc7a8db8258eb57d175
+  docs/overview.md: sha256:631fcc539b9c417a5cb5f0d559d53e2d3e39c21529ac3dc5c44c49b48985653d
+  docs/troubleshooting.md: sha256:a4aa697d5558b07d64ecca3a551ade326609ce8af7493771d055b55f60a7db9b
+  docs/usage.md: sha256:3244301c508e5065f3a2aebe2a1db8a82b9a15e10e71b2fb530d965dfb323650
+  frameworks/__init__.py: sha256:44c6049fd56596bf7abbfae63e588e336bb73659e98ef7f5de5f423e2d16ab8e
+  frameworks/fastapi.py: sha256:77b2d76a000b76c645cfd6dcd6e58c01ffcbd391dd08cc650d13895f24f7eeb5
+  frameworks/nestjs.py: sha256:236ac8570dc437e87f9939eb4e399e8fbb3ad44df49ee1fe01ea541156ae02e6
+  generate.py: sha256:45bbbdaafdb62941df842ab03a56e87f474cc43f6bdef253672bac4cc49528a6
+  module.verify.json: sha256:1cc4ca355edaac687c99c917dd59c2e45f5fbe62eba2662c6e2d168a9bf377b0
+  overrides.py: sha256:9fc44bf8c4252fa11da66c37fd3c00542c89930813a2a3b1167332ca917aee0d
+  templates/base/logging.py.j2: sha256:ed37ddb841460d3dce07f670174384e02ef55be628f0de722328dd4ea0277f78
+  templates/base/logging_health.py.j2: sha256:f0071035a38831814fdfca82d54b8537567089081e1981adfa09e4b61e280ac5
+  templates/base/logging_types.py.j2: sha256:959f3fa23f41da3b015342cdd479933e41797447d489c0acdce41c8928c00c53
+  templates/snippets/env.snippet.j2: sha256:b0af9be8e6fe0af44eaac86be127ae5244262965f7c1f34714a879e76e0a1b9c
+  templates/snippets/health_probe_logging.snippet.j2: sha256:3be78f9e6fa6ad524e94abf54ae9af41bf4aa262048f58884b78aa2f09a5fbfa
+  templates/snippets/logging.snippet.j2: sha256:3cf5ce93eda51fa923d8067853237d4c2cb50f514f1be97387109cb68da1262c
+  templates/snippets/logging_fields.snippet.j2: sha256:e0fdd9d6a5551138536cf4ea7f4c85f08eb697a81ad0acb61c10ee58694f3224
+  templates/snippets/logging_fields_nestjs.snippet.j2: sha256:737413c82097fddb36117a615cb41abaf0bed73cb3f32d3eea390f6a7022096d
+  templates/tests/__init__.py: sha256:b63ee88c2693f1e2f1a4ac7168b187401e12d7d47dbdcddd7d377d18fc81a37f
+  templates/tests/integration/logging.integration.spec.ts.j2: sha256:7e27431dbbfcb072edfe9b3d58883b95b2741f7d14c98d8e0a38ac5b4ae5844f
+  templates/tests/integration/test_logging_integration.j2: sha256:40188c4c90a879a414edf16441dd14e4fb9c01366927a0c468c283c97abba09b
+  templates/variants/fastapi/logging.py.j2: sha256:361a270d7a4465dc30c7e68fa6f1ec38bf90685a260e0edb4d030254e488bf07
+  templates/variants/fastapi/logging_config.yaml.j2: sha256:759c1990e73acec55dda5fac1e7504228f18f9a214c41ac39dcefe569d151124
+  templates/variants/fastapi/logging_routes.py.j2: sha256:727b367eb31b11619056bc4826b5cede59ce8c70f2fd6df37f949795773ba0d2
+  templates/variants/nestjs/configuration.ts.j2: sha256:9ecb1e1af41d253ff6c0117eddd7188b1d1e3ca7fe066fd1ab11c6823ebeebb7
+  templates/variants/nestjs/index.ts.j2: sha256:b6f4df69fe9f57111b25d5e7762cff17d83b180408373178749ec3b21a62d8ff
+  templates/variants/nestjs/logging.controller.ts.j2: sha256:9635bba2e60a1bb698adf27d4fe616e4371a2b714c12f9fd552b758542f9b3df
+  templates/variants/nestjs/logging.interceptor.ts.j2: sha256:e8d9553c8c0e23b6518859207ccb6f4e62a3696c13dfcbcbbace93ac7540650c
+  templates/variants/nestjs/logging.module.ts.j2: sha256:0de078e0f95cfb61ac32699d1278c230b99c625afbc2e940629bc7eee6cd409e
+  templates/variants/nestjs/logging.service.ts.j2: sha256:4c6cc1ba9e20ede2dcf6da5b5b055c11a47d232b7b60d66745edf6f4e3299d2a
+  templates/variants/nestjs/validation.ts.j2: sha256:3990962eeaccfab3c3ad31222632b03ae4894775cefac431e2e9c01acbcee05a
+  templates/vendor/nestjs/configuration.js.j2: sha256:06bf1981c0a2573c2557519d81a1c920a22a2f90379e36cb651c50f079cbd435
+  templates/vendor/nestjs/logging.health.ts.j2: sha256:59273e7a12a759ad201c7876a3b033b7d99062a5b580f8ac1c4ff40b53119fc0

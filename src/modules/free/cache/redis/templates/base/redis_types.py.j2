@@ -1,0 +1,57 @@
+"""Typed helpers describing Redis health metadata."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Mapping
+
+from src.modules.free.cache.redis.client import get_redis_metadata
+
+
+@dataclass(slots=True)
+class RedisHealthSnapshot:
+    """Immutable snapshot of the Redis deployment state."""
+
+    module: str
+    module_version: str
+    url: str
+    features: List[str] = field(default_factory=list)
+    connection: Dict[str, Any] = field(default_factory=dict)
+    retry: Dict[str, Any] = field(default_factory=dict)
+    cache_ttl: int | None = None
+    defaults: Dict[str, Any] = field(default_factory=dict)
+
+    @classmethod
+    def collect(cls, metadata: Mapping[str, Any] | None = None) -> "RedisHealthSnapshot":
+        source = dict(metadata or get_redis_metadata())
+        return cls(
+            module=source.get("module", "{{ rapidkit_vendor_module }}"),
+            module_version="{{ rapidkit_vendor_version }}",
+            url=source.get("url", ""),
+            features=list(source.get("features") or []),
+            connection=dict(source.get("connection") or {}),
+            retry=dict(source.get("retry") or {}),
+            cache_ttl=source.get("cache_ttl"),
+            defaults=dict(source.get("defaults") or {}),
+        )
+
+
+def as_dict(snapshot: RedisHealthSnapshot | None = None) -> Dict[str, Any]:
+    """Serialize a snapshot into a JSON-friendly payload."""
+
+    active = snapshot or RedisHealthSnapshot.collect()
+    payload: Dict[str, Any] = {
+        "module": active.module,
+        "module_version": active.module_version,
+        "url": active.url,
+        "features": list(active.features),
+        "connection": dict(active.connection),
+        "retry": dict(active.retry),
+        "defaults": dict(active.defaults),
+    }
+    if active.cache_ttl is not None:
+        payload["cache_ttl"] = active.cache_ttl
+    return payload
+
+
+__all__ = ["RedisHealthSnapshot", "as_dict"]

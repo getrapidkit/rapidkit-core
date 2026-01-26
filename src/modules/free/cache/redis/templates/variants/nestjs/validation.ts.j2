@@ -1,0 +1,37 @@
+import * as Joi from "joi";
+
+export const redisValidationSchema = Joi.object({
+  REDIS_URL: Joi.string().uri().optional(),
+  REDIS_HOST: Joi.string().default({{ redis_defaults.host | default('localhost') | tojson }}),
+  REDIS_PORT: Joi.number().integer().min(1).default({{ redis_defaults.port | default(6379) | tojson }}),
+  REDIS_DB: Joi.number().integer().min(0).default({{ redis_defaults.db | default(0) | tojson }}),
+  REDIS_PASSWORD: Joi.string().allow("").default({{ redis_defaults.password | default('') | tojson }}),
+  REDIS_USE_TLS: Joi.boolean()
+    .truthy("true")
+    .truthy("1")
+    .truthy("yes")
+    .truthy("on")
+    .falsy("false")
+    .falsy("0")
+    .falsy("no")
+    .falsy("off")
+    .default({{ redis_defaults.use_tls | default(false) | tojson }}),
+  REDIS_PRECONNECT: Joi.boolean()
+    .truthy("true")
+    .truthy("1")
+    .truthy("yes")
+    .truthy("on")
+    .falsy("false")
+    .falsy("0")
+    .falsy("no")
+    .falsy("off")
+    .default({{ redis_defaults.preconnect | default(false) | tojson }}),
+  REDIS_CONNECT_RETRIES: Joi.number()
+    .integer()
+    .min(0)
+    .default({{ redis_defaults.connect_retries | default(3) | tojson }}),
+  REDIS_CONNECT_BACKOFF_BASE: Joi.number()
+    .min(0)
+    .default({{ redis_defaults.connect_backoff_base | default(0.5) | tojson }}),
+  CACHE_TTL: Joi.number().integer().min(0).default({{ redis_defaults.cache_ttl | default(3600) | tojson }}),
+});

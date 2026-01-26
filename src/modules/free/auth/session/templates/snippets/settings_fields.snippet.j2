@@ -1,0 +1,111 @@
+# Session Management
+
+{% set defaults = session_defaults %}
+{% set secret_env_default = defaults.secret_key_env | default('RAPIDKIT_SESSION_SECRET') | tojson %}
+{% set ttl_default = defaults.session_ttl_seconds | default(2592000) | tojson %}
+{% set refresh_ttl_default = defaults.refresh_ttl_seconds | default(15552000) | tojson %}
+{% set cookie_name_default = defaults.cookie_name | default('rapidkit_session') | tojson %}
+{% set cookie_domain_default = defaults.cookie_domain | default('') | tojson %}
+{% set cookie_secure_default = "True" if (defaults.cookie_secure | default(true)) else "False" %}
+{% set cookie_httponly_default = "True" if (defaults.cookie_httponly | default(true)) else "False" %}
+{% set cookie_same_site_default = defaults.cookie_same_site | default('lax') | tojson %}
+{% set storage_backend_default = defaults.storage_backend | default('memory') | tojson %}
+
+if "SESSION_SECRET_ENV" in locals():
+    SESSION_SECRET_ENV = Field(
+        default={{ secret_env_default }},
+        description="Environment variable that stores the session signing secret",
+    )
+else:
+    SESSION_SECRET_ENV: str = Field(
+        default={{ secret_env_default }},
+        description="Environment variable that stores the session signing secret",
+    )
+
+if "SESSION_TTL_SECONDS" in locals():
+    SESSION_TTL_SECONDS = Field(
+        default={{ ttl_default }},
+        description="Primary session token lifetime in seconds",
+    )
+else:
+    SESSION_TTL_SECONDS: int = Field(
+        default={{ ttl_default }},
+        description="Primary session token lifetime in seconds",
+    )
+
+if "SESSION_REFRESH_TTL_SECONDS" in locals():
+    SESSION_REFRESH_TTL_SECONDS = Field(
+        default={{ refresh_ttl_default }},
+        description="Refresh token lifetime in seconds",
+    )
+else:
+    SESSION_REFRESH_TTL_SECONDS: int = Field(
+        default={{ refresh_ttl_default }},
+        description="Refresh token lifetime in seconds",
+    )
+
+if "SESSION_COOKIE_NAME" in locals():
+    SESSION_COOKIE_NAME = Field(
+        default={{ cookie_name_default }},
+        description="Name of the session cookie exposed to clients",
+    )
+else:
+    SESSION_COOKIE_NAME: str = Field(
+        default={{ cookie_name_default }},
+        description="Name of the session cookie exposed to clients",
+    )
+
+if "SESSION_COOKIE_DOMAIN" in locals():
+    SESSION_COOKIE_DOMAIN = Field(
+        default={{ cookie_domain_default }},
+        description="Optional domain attribute applied to the session cookie",
+    )
+else:
+    SESSION_COOKIE_DOMAIN: Optional[str] = Field(
+        default={{ cookie_domain_default }},
+        description="Optional domain attribute applied to the session cookie",
+    )
+
+if "SESSION_COOKIE_SECURE" in locals():
+    SESSION_COOKIE_SECURE = Field(
+        default={{ cookie_secure_default }},
+        description="Mark the session cookie as secure",
+    )
+else:
+    SESSION_COOKIE_SECURE: bool = Field(
+        default={{ cookie_secure_default }},
+        description="Mark the session cookie as secure",
+    )
+
+if "SESSION_COOKIE_HTTPONLY" in locals():
+    SESSION_COOKIE_HTTPONLY = Field(
+        default={{ cookie_httponly_default }},
+        description="Mark the session cookie as HTTPOnly",
+    )
+else:
+    SESSION_COOKIE_HTTPONLY: bool = Field(
+        default={{ cookie_httponly_default }},
+        description="Mark the session cookie as HTTPOnly",
+    )
+
+if "SESSION_COOKIE_SAME_SITE" in locals():
+    SESSION_COOKIE_SAME_SITE = Field(
+        default={{ cookie_same_site_default }},
+        description="SameSite policy applied to the session cookie",
+    )
+else:
+    SESSION_COOKIE_SAME_SITE: str = Field(
+        default={{ cookie_same_site_default }},
+        description="SameSite policy applied to the session cookie",
+    )
+
+if "SESSION_STORAGE_BACKEND" in locals():
+    SESSION_STORAGE_BACKEND = Field(
+        default={{ storage_backend_default }},
+        description="Storage backend identifier for persisted sessions",
+    )
+else:
+    SESSION_STORAGE_BACKEND: str = Field(
+        default={{ storage_backend_default }},
+        description="Storage backend identifier for persisted sessions",
+    )

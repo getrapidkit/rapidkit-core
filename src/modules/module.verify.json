@@ -1,0 +1,12 @@
+{
+  "checked_at": "2025-10-09T23:18:28.216920+00:00",
+  "description": "Canonical layout enforced for every RapidKit module",
+  "extra_directories": [],
+  "extra_files": [],
+  "missing_directories": [],
+  "missing_files": [],
+  "module": "free/essentials/logging",
+  "spec_version": 1,
+  "tree_hash": "076e7508980ad1ee2ee19ce0fa80ccc3f4208930944d42616eae4ec77d0b22e7",
+  "valid": true
+}

@@ -1,0 +1,21 @@
+# Db Mongo module environment variables
+RAPIDKIT_DB_MONGO_URI={{ mongo_defaults.connection_uri | default('mongodb://localhost:27017') }}
+RAPIDKIT_DB_MONGO_DATABASE={{ mongo_defaults.database | default('rapidkit') }}
+RAPIDKIT_DB_MONGO_USERNAME={{ mongo_defaults.username if mongo_defaults.username is not none else '' }}
+RAPIDKIT_DB_MONGO_PASSWORD={{ mongo_defaults.password if mongo_defaults.password is not none else '' }}
+RAPIDKIT_DB_MONGO_AUTH_SOURCE={{ mongo_defaults.auth_source | default('admin') }}
+RAPIDKIT_DB_MONGO_REPLICA_SET={{ mongo_defaults.replica_set if mongo_defaults.replica_set is not none else '' }}
+RAPIDKIT_DB_MONGO_APP_NAME={{ mongo_defaults.app_name | default('rapidkit-db-mongo') }}
+RAPIDKIT_DB_MONGO_READ_PREFERENCE={{ mongo_defaults.read_preference | default('primary') }}
+RAPIDKIT_DB_MONGO_RETRY_READS={{ mongo_defaults.retry_reads | default(true) | tojson }}
+RAPIDKIT_DB_MONGO_RETRY_WRITES={{ mongo_defaults.retry_writes | default(true) | tojson }}
+RAPIDKIT_DB_MONGO_COMPRESSORS={{ mongo_defaults.compressors | default([]) | tojson }}
+RAPIDKIT_DB_MONGO_MIN_POOL_SIZE={{ mongo_defaults.min_pool_size | default(0) }}
+RAPIDKIT_DB_MONGO_MAX_POOL_SIZE={{ mongo_defaults.max_pool_size | default(20) }}
+RAPIDKIT_DB_MONGO_CONNECT_TIMEOUT_MS={{ mongo_defaults.connect_timeout_ms | default(5000) }}
+RAPIDKIT_DB_MONGO_SERVER_SELECTION_TIMEOUT_MS={{ mongo_defaults.server_selection_timeout_ms | default(8000) }}
+RAPIDKIT_DB_MONGO_MAX_IDLE_TIME_MS={{ mongo_defaults.max_idle_time_ms | default(120000) }}
+RAPIDKIT_DB_MONGO_TLS={{ mongo_defaults.tls | default(false) | tojson }}
+RAPIDKIT_DB_MONGO_TLS_ALLOW_INVALID_CERTS={{ mongo_defaults.tls_allow_invalid_certificates | default(false) | tojson }}
+RAPIDKIT_DB_MONGO_HEALTH_TIMEOUT_MS={{ health_defaults.ping_timeout_ms | default(1500) }}
+RAPIDKIT_DB_MONGO_HEALTH_METRICS={{ health_defaults.metrics | default(true) | tojson }}

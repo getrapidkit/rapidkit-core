@@ -1,0 +1,70 @@
+import { registerAs } from "@nestjs/config";
+
+type SessionConfiguration = {
+  secretKeyEnv: string;
+  sessionTtlSeconds: number;
+  refreshTtlSeconds: number;
+  cookieName: string;
+  cookieDomain?: string | null;
+  cookieSecure: boolean;
+  cookieHttpOnly: boolean;
+  cookieSameSite: string;
+  storageBackend: string;
+};
+
+const DEFAULTS: Record<string, any> = {{ module_defaults | default({}) | tojson(indent=2) }};
+
+const parseInteger = (value: string | undefined, fallback: number): number => {
+  if (typeof value !== "string" || value.trim().length === 0) {
+    return fallback;
+  }
+  const parsed = Number.parseInt(value, 10);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const parseBoolean = (value: string | undefined, fallback: boolean): boolean => {
+  if (typeof value !== "string") {
+    return fallback;
+  }
+  const normalized = value.trim().toLowerCase();
+  if (["1", "true", "yes", "on"].includes(normalized)) {
+    return true;
+  }
+  if (["0", "false", "no", "off"].includes(normalized)) {
+    return false;
+  }
+  return fallback;
+};
+
+const coalesce = <T>(value: T | undefined, fallback: T): T =>
+  value === undefined || value === null ? fallback : value;
+
+export default registerAs("session", (): SessionConfiguration => {
+  const defaults = DEFAULTS ?? {};
+  return {
+    secretKeyEnv: String(coalesce(defaults.secret_key_env, "RAPIDKIT_SESSION_SECRET")),
+    sessionTtlSeconds: parseInteger(
+      process.env.SESSION_TTL_SECONDS,
+      coalesce(defaults.session_ttl_seconds, 2_592_000),
+    ),
+    refreshTtlSeconds: parseInteger(
+      process.env.SESSION_REFRESH_TTL_SECONDS,
+      coalesce(defaults.refresh_ttl_seconds, 15_552_000),
+    ),
+    cookieName:
+      process.env.SESSION_COOKIE_NAME ?? coalesce(defaults.cookie_name, "rapidkit_session"),
+    cookieDomain: process.env.SESSION_COOKIE_DOMAIN ?? defaults.cookie_domain ?? null,
+    cookieSecure: parseBoolean(
+      process.env.SESSION_COOKIE_SECURE,
+      coalesce(defaults.cookie_secure, true),
+    ),
+    cookieHttpOnly: parseBoolean(
+      process.env.SESSION_COOKIE_HTTPONLY,
+      coalesce(defaults.cookie_httponly, true),
+    ),
+    cookieSameSite:
+      process.env.SESSION_COOKIE_SAME_SITE ?? coalesce(defaults.cookie_same_site, "lax"),
+    storageBackend:
+      process.env.SESSION_STORAGE_BACKEND ?? coalesce(defaults.storage_backend, "memory"),
+  };
+});

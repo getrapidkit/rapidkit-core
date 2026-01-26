@@ -1,0 +1,37 @@
+import * as Joi from "joi";
+
+const DEFAULTS = {{ auth_core_defaults | default({}) | tojson(indent=2) }};
+const DEFAULT_POLICY = DEFAULTS.policy ?? {
+  min_length: 12,
+  require_uppercase: true,
+  require_lowercase: true,
+  require_digits: true,
+  require_symbols: false,
+};
+
+export const authCoreValidationSchema = Joi.object({
+  RAPIDKIT_AUTH_CORE_HASH: Joi.string().default(DEFAULTS.hash_name ?? "sha256"),
+  RAPIDKIT_AUTH_CORE_ITERATIONS: Joi.number()
+    .integer()
+    .min(1)
+    .default(DEFAULTS.iterations ?? 390000),
+  RAPIDKIT_AUTH_CORE_SALT_BYTES: Joi.number()
+    .integer()
+    .min(1)
+    .default(DEFAULTS.salt_bytes ?? 32),
+  RAPIDKIT_AUTH_CORE_TOKEN_BYTES: Joi.number()
+    .integer()
+    .min(1)
+    .default(DEFAULTS.token_bytes ?? 32),
+  RAPIDKIT_AUTH_CORE_TOKEN_TTL: Joi.number()
+    .integer()
+    .min(1)
+    .default(DEFAULTS.token_ttl_seconds ?? 1800),
+  RAPIDKIT_AUTH_CORE_ISSUER: Joi.string().default(DEFAULTS.issuer ?? "RapidKit"),
+  RAPIDKIT_AUTH_CORE_PEPPER_ENV: Joi.string().default(
+    DEFAULTS.pepper_env ?? "RAPIDKIT_AUTH_CORE_PEPPER",
+  ),
+  RAPIDKIT_AUTH_CORE_POLICY: Joi.string()
+    .optional()
+    .default(JSON.stringify(DEFAULT_POLICY)),
+});

@@ -1,0 +1,406 @@
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+  Optional,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import Redis, { type RedisOptions } from 'ioredis';
+import { performance } from 'node:perf_hooks';
+import { URL } from 'node:url';
+
+import type { RedisConfiguration } from './configuration';
+
+export interface RedisConnectionSnapshot {
+  host: string;
+  port: number;
+  db: number;
+  use_tls: boolean;
+}
+
+export interface RedisRetrySnapshot {
+  preconnect: boolean;
+  attempts: number;
+  backoff_base: number;
+}
+
+export interface RedisMetadata {
+  module: string;
+  module_version: string;
+  url: string;
+  connection: RedisConnectionSnapshot;
+  retry: RedisRetrySnapshot;
+  cache_ttl: number;
+  defaults: Record<string, unknown>;
+  features: string[];
+}
+
+export interface RedisPingPayload {
+  status: 'ok' | 'unknown';
+  result: string | boolean | null;
+  latency_ms: number | null;
+}
+
+export interface RedisClientDescription {
+  client_repr: string;
+  status: string;
+}
+
+export interface RedisHealthPayload {
+  status: 'ok' | 'error';
+  module: string;
+  module_version: string;
+  latency_ms: number | null;
+  checks: {
+    connection: boolean;
+    cache_ttl: boolean;
+  };
+  metadata: RedisMetadata;
+  detail?: string;
+}
+
+interface RedisDefaults {
+  url: string;
+  host: string;
+  port: number;
+  db: number;
+  password: string;
+  use_tls: boolean;
+  preconnect: boolean;
+  connect_retries: number;
+  connect_backoff_base: number;
+  cache_ttl: number;
+}
+
+const MASKED_SECRET = '***';
+const DEFAULT_FEATURES = [
+  'redis.async-client',
+  'redis.sync-client',
+  'fastapi.dependency',
+  'redis.health-check',
+];
+
+const DEFAULTS: RedisDefaults = {
+  url: {{ redis_defaults.url | default('redis://localhost:6379/0') | tojson }},
+  host: {{ redis_defaults.host | default('localhost') | tojson }},
+  port: {{ redis_defaults.port | default(6379) }},
+  db: {{ redis_defaults.db | default(0) }},
+  password: {{ redis_defaults.password | default('') | tojson }},
+  use_tls: {{ redis_defaults.use_tls | default(false) | tojson }},
+  preconnect: {{ redis_defaults.preconnect | default(false) | tojson }},
+  connect_retries: {{ redis_defaults.connect_retries | default(3) }},
+  connect_backoff_base: {{ redis_defaults.connect_backoff_base | default(0.5) }},
+  cache_ttl: {{ redis_defaults.cache_ttl | default(3600) }},
+};
+
+export const DB_REDIS_VENDOR_MODULE = '{{ rapidkit_vendor_module }}';
+export const DB_REDIS_VENDOR_VERSION = '{{ rapidkit_vendor_version }}';
+
+@Injectable()
+export class {{ module_class_name }}Service
+  implements OnModuleInit, OnModuleDestroy
+{
+  private readonly logger = new Logger({{ module_class_name }}Service.name);
+  private readonly configuration: RedisConfiguration;
+  private client: Redis | null = null;
+  private connecting: Promise<Redis> | null = null;
+
+  constructor(
+    @Optional()
+    private readonly configService?: ConfigService<Record<string, unknown>>,
+  ) {
+    this.configuration = this.resolveConfig();
+  }
+
+  async onModuleInit(): Promise<void> {
+    if (!this.configuration.preconnect) {
+      return;
+    }
+    try {
+      await this.ensureClient();
+    } catch (error: unknown) {
+      this.logger.warn(
+        `Redis preconnect failed: ${this.stringifyError(error)}`,
+      );
+    }
+  }
+
+  async onModuleDestroy(): Promise<void> {
+    await this.close();
+  }
+
+  getConfig(): RedisConfiguration {
+    return { ...this.configuration };
+  }
+
+  describeCache(): RedisMetadata {
+    const sanitizedDefaults = this.buildSanitizedDefaults();
+    const url = this.configuration.url;
+    return {
+      module: DB_REDIS_VENDOR_MODULE,
+      module_version: DB_REDIS_VENDOR_VERSION,
+      url: this.maskUrlPassword(url),
+      connection: this.buildConnectionSnapshot(url),
+      retry: {
+        preconnect: this.configuration.preconnect,
+        attempts: this.configuration.retries,
+        backoff_base: this.configuration.backoffBase,
+      },
+      cache_ttl: this.configuration.ttl,
+      defaults: sanitizedDefaults,
+      features: [...DEFAULT_FEATURES],
+    };
+  }
+
+  async ping(): Promise<RedisPingPayload> {
+    const client = await this.ensureClient();
+    const started = performance.now();
+    const result = await client.ping();
+    const latency = performance.now() - started;
+    const normalized = typeof result === 'string' ? result.toUpperCase() : result;
+    const isOk =
+      (typeof normalized === 'string' && normalized === 'PONG') ||
+      (typeof normalized === 'boolean' && normalized === true);
+    const status: 'ok' | 'unknown' = isOk ? 'ok' : 'unknown';
+    return {
+      status,
+      result,
+      latency_ms: latency,
+    };
+  }
+
+  async describeClient(): Promise<RedisClientDescription> {
+    const client = await this.ensureClient();
+    const status = client.status ?? 'unknown';
+    return {
+      client_repr: this.stringifyClient(client),
+      status,
+    };
+  }
+
+  async getHealthPayload(): Promise<RedisHealthPayload> {
+    const metadata = this.describeCache();
+    const ttlHealthy = Number.isFinite(metadata.cache_ttl) && metadata.cache_ttl >= 0;
+    try {
+      const pingPayload = await this.ping();
+      const connectionHealthy = pingPayload.status === 'ok';
+      return {
+        status: connectionHealthy ? 'ok' : 'error',
+        module: DB_REDIS_VENDOR_MODULE,
+        module_version: DB_REDIS_VENDOR_VERSION,
+        latency_ms: pingPayload.latency_ms,
+        checks: {
+          connection: connectionHealthy,
+          cache_ttl: ttlHealthy,
+        },
+        metadata,
+        detail: connectionHealthy ? undefined : 'Redis ping returned unexpected result',
+      };
+    } catch (error: unknown) {
+      const detail = this.stringifyError(error);
+      return {
+        status: 'error',
+        module: DB_REDIS_VENDOR_MODULE,
+        module_version: DB_REDIS_VENDOR_VERSION,
+        latency_ms: null,
+        checks: {
+          connection: false,
+          cache_ttl: ttlHealthy,
+        },
+        metadata,
+        detail,
+      };
+    }
+  }
+
+  async close(): Promise<void> {
+    if (this.connecting) {
+      try {
+        await this.connecting;
+      } catch {
+        // ignore failed pending connection during shutdown
+      }
+      this.connecting = null;
+    }
+    if (this.client) {
+      try {
+        await this.client.quit();
+      } catch (error: unknown) {
+        this.logger.debug(
+          `Redis client quit failed: ${this.stringifyError(error)}`,
+        );
+        this.client.disconnect();
+      } finally {
+        this.client = null;
+      }
+    }
+  }
+
+  private async ensureClient(): Promise<Redis> {
+    if (this.client) {
+      return this.client;
+    }
+    if (this.connecting) {
+      return this.connecting;
+    }
+
+    const client = new Redis(this.configuration.url, this.buildRedisOptions());
+    this.connecting = client
+      .connect()
+      .then(() => {
+        this.logger.debug('Redis client connected');
+        this.client = client;
+        this.connecting = null;
+        return client;
+      })
+      .catch((error: unknown) => {
+        this.connecting = null;
+        client.disconnect();
+        throw error;
+      });
+
+    return this.connecting;
+  }
+
+  private buildRedisOptions(): RedisOptions {
+    const attempts = Math.max(0, Math.trunc(this.configuration.retries));
+    const backoffBase = Math.max(0, Number(this.configuration.backoffBase));
+    return {
+      lazyConnect: true,
+      retryStrategy: (retryCount: number): number | null => {
+        if (retryCount > attempts) {
+          return null;
+        }
+        const delay = backoffBase > 0 ? backoffBase * 1000 * retryCount : 0;
+        return Number.isFinite(delay) ? Math.min(delay, 60_000) : 0;
+      },
+    };
+  }
+
+  private buildSanitizedDefaults(): Record<string, unknown> {
+    const sanitized: Record<string, unknown> = {
+      ...DEFAULTS,
+    };
+    if (typeof sanitized.password === 'string' && sanitized.password.length > 0) {
+      sanitized.password = MASKED_SECRET;
+    }
+    if (typeof sanitized.url === 'string') {
+      sanitized.url = this.maskUrlPassword(String(sanitized.url));
+    }
+    return sanitized;
+  }
+
+  private buildConnectionSnapshot(url: string): RedisConnectionSnapshot {
+    try {
+      const parsed = new URL(url);
+      const db = parsed.pathname.replace('/', '');
+      const host = parsed.hostname || DEFAULTS.host;
+      const port = parsed.port ? Number(parsed.port) : DEFAULTS.port;
+      const dbNumber = db ? Number(db) : DEFAULTS.db;
+      const useTls = parsed.protocol === 'rediss:';
+      return {
+        host,
+        port: Number.isFinite(port) ? port : DEFAULTS.port,
+        db: Number.isFinite(dbNumber) ? dbNumber : DEFAULTS.db,
+        use_tls: useTls,
+      };
+    } catch {
+      return {
+        host: DEFAULTS.host,
+        port: DEFAULTS.port,
+        db: DEFAULTS.db,
+        use_tls: DEFAULTS.use_tls,
+      };
+    }
+  }
+
+  private resolveConfig(): RedisConfiguration {
+    const direct = this.configService?.get<RedisConfiguration>('redis');
+    if (direct) {
+      return {
+        ...direct,
+      };
+    }
+    return {
+      url: this.lookupString(['REDIS_URL'], DEFAULTS.url),
+      preconnect: this.lookupBool('REDIS_PRECONNECT', DEFAULTS.preconnect),
+      retries: this.lookupNumber('REDIS_CONNECT_RETRIES', DEFAULTS.connect_retries),
+      backoffBase: this.lookupFloat(
+        'REDIS_CONNECT_BACKOFF_BASE',
+        DEFAULTS.connect_backoff_base,
+      ),
+      ttl: this.lookupNumber('CACHE_TTL', DEFAULTS.cache_ttl),
+    };
+  }
+
+  private lookupString(keys: string[], fallback: string): string {
+    for (const key of keys) {
+      const value = process.env[key];
+      if (typeof value === 'string' && value.trim().length > 0) {
+        return value.trim();
+      }
+    }
+    return fallback;
+  }
+
+  private lookupNumber(key: string, fallback: number): number {
+    const value = process.env[key];
+    if (value === undefined) {
+      return fallback;
+    }
+    const parsed = Number(value);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  }
+
+  private lookupFloat(key: string, fallback: number): number {
+    return this.lookupNumber(key, fallback);
+  }
+
+  private lookupBool(key: string, fallback: boolean): boolean {
+    const value = process.env[key];
+    if (value === undefined) {
+      return fallback;
+    }
+    const normalized = value.trim().toLowerCase();
+    if (['1', 'true', 'yes', 'on'].includes(normalized)) {
+      return true;
+    }
+    if (['0', 'false', 'no', 'off'].includes(normalized)) {
+      return false;
+    }
+    return fallback;
+  }
+
+  private stringifyClient(client: Redis): string {
+    const connection = client.options || {};
+    const address = connection.host ? `${connection.host}:${connection.port ?? ''}` : 'unknown';
+    return `Redis(status=${client.status}, address=${address})`;
+  }
+
+  private maskUrlPassword(value: string): string {
+    try {
+      const parsed = new URL(value);
+      if (parsed.password) {
+        parsed.password = MASKED_SECRET;
+      }
+      return parsed.toString();
+    } catch {
+      return value;
+    }
+  }
+
+  private stringifyError(error: unknown): string {
+    if (error instanceof Error) {
+      return error.message;
+    }
+    if (typeof error === 'string') {
+      return error;
+    }
+    try {
+      return JSON.stringify(error);
+    } catch {
+      return String(error);
+    }
+  }
+}

@@ -1,0 +1,74 @@
+{# Users Core snippet fragments.
+
+Rendered via `config/snippets.yaml` with `fragment` set to either:
+- env: injected into .env* under `# <<<inject:module-env>>>`
+- settings: injected into Settings class under `# <<<inject:settings-fields>>>`
+
+The module generator exposes `users_core_defaults` in the render context.
+#}
+
+{% set defaults = users_core_defaults | default({}) %}
+
+{% if fragment == "env" %}
+# Users Core module
+# Controls baseline behaviour for user registration and directory endpoints.
+
+# Feature toggles
+RAPIDKIT_USERS_CORE_ALLOW_REGISTRATION={{ defaults.get('allow_registration', True) | tojson }}
+RAPIDKIT_USERS_CORE_ENFORCE_UNIQUE_EMAIL={{ defaults.get('enforce_unique_email', True) | tojson }}
+RAPIDKIT_USERS_CORE_AUDIT_LOG_ENABLED={{ defaults.get('audit_log_enabled', True) | tojson }}
+RAPIDKIT_USERS_CORE_PASSWORDLESS_SUPPORTED={{ defaults.get('passwordless_supported', False) | tojson }}
+
+# Defaults & limits
+RAPIDKIT_USERS_CORE_DEFAULT_LOCALE={{ defaults.get('default_locale', 'en') }}
+RAPIDKIT_USERS_CORE_MAX_RESULTS_PER_PAGE={{ defaults.get('max_results_per_page', 100) }}
+
+# Comma-separated locale list (e.g. "en,fa,de")
+RAPIDKIT_USERS_CORE_SUPPORTED_LOCALES={{ (defaults.get('supported_locales', ['en']) | join(',')) }}
+
+{% elif fragment == "settings" %}
+try:
+	BaseSettings
+except NameError:  # pragma: no cover
+	from pydantic_settings import BaseSettings
+
+try:
+	Field
+except NameError:  # pragma: no cover
+	from pydantic import Field
+
+class UsersCoreSettings(BaseSettings):
+	"""Users Core configuration injected by RapidKit."""
+
+	allow_registration: bool = Field(
+		default={{ 'True' if defaults.get('allow_registration', True) else 'False' }},
+		description="Enable public sign-up endpoints",
+	)
+	enforce_unique_email: bool = Field(
+		default={{ 'True' if defaults.get('enforce_unique_email', True) else 'False' }},
+		description="Reject registrations that re-use an email address",
+	)
+	default_locale: str = Field(
+		default={{ defaults.get('default_locale', 'en') | tojson }},
+		description="Default locale assigned to new users",
+	)
+	audit_log_enabled: bool = Field(
+		default={{ 'True' if defaults.get('audit_log_enabled', True) else 'False' }},
+		description="Enable audit trail hooks for user lifecycle events",
+	)
+	max_results_per_page: int = Field(
+		default={{ defaults.get('max_results_per_page', 100) | tojson }},
+		ge=1,
+		description="Upper bound for list endpoints pagination",
+	)
+	passwordless_supported: bool = Field(
+		default={{ 'True' if defaults.get('passwordless_supported', False) else 'False' }},
+		description="Advertise passwordless flows as supported (feature flag)",
+	)
+	supported_locales: list[str] = Field(
+		default_factory=lambda: {{ defaults.get('supported_locales', ['en']) | tojson }},
+		description="List of supported locales for UI and profile defaults",
+	)
+
+users_core: UsersCoreSettings = UsersCoreSettings()
+{% endif %}

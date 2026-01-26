@@ -1,0 +1,106 @@
+import { registerAs } from "@nestjs/config";
+
+const DEFAULTS = {{ users_core_defaults | tojson(indent=2) }} as Record<string, unknown>;
+const MODULE_FEATURES = [
+  "user_registration",
+  "profile_management",
+  "unique_email_enforcement",
+  "audit_logging",
+  "passwordless_opt_in",
+] as const;
+
+const toBoolean = (value: unknown, fallback: boolean): boolean => {
+  if (typeof value === "boolean") {
+    return value;
+  }
+  if (typeof value === "string" && value.trim()) {
+    const normalized = value.trim().toLowerCase();
+    if (["1", "true", "yes", "on", "enabled"].includes(normalized)) {
+      return true;
+    }
+    if (["0", "false", "no", "off", "disabled"].includes(normalized)) {
+      return false;
+    }
+  }
+  return fallback;
+};
+
+const toNumber = (value: unknown, fallback: number): number => {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+  return fallback;
+};
+
+const toLocale = (value: unknown, fallback: string): string => {
+  if (typeof value === "string" && value.trim()) {
+    return value.trim();
+  }
+  return fallback;
+};
+
+const toLocales = (value: unknown, fallback: string[]): string[] => {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => (typeof item === "string" ? item.trim() : String(item).trim()))
+      .filter((item) => item.length > 0);
+  }
+  if (typeof value === "string" && value.trim()) {
+    return value
+      .split(",")
+      .map((segment) => segment.trim())
+      .filter((segment) => segment.length > 0);
+  }
+  return [...fallback];
+};
+
+export interface UsersCoreConfiguration {
+  module: string;
+  title: string;
+  features: readonly string[];
+  allowRegistration: boolean;
+  enforceUniqueEmail: boolean;
+  defaultLocale: string;
+  auditLogEnabled: boolean;
+  maxResultsPerPage: number;
+  passwordlessSupported: boolean;
+  supportedLocales: string[];
+}
+
+export const USERS_CORE_CONFIGURATION_NAMESPACE = "usersCore";
+
+export const usersCoreConfiguration = registerAs(
+  USERS_CORE_CONFIGURATION_NAMESPACE,
+  (): UsersCoreConfiguration => {
+    const allowRegistration = toBoolean(DEFAULTS.allow_registration, true);
+    const enforceUniqueEmail = toBoolean(DEFAULTS.enforce_unique_email, true);
+    const defaultLocale = toLocale(DEFAULTS.default_locale, "en");
+    const auditLogEnabled = toBoolean(DEFAULTS.audit_log_enabled, true);
+    const maxResultsPerPage = toNumber(DEFAULTS.max_results_per_page, 100);
+    const passwordlessSupported = toBoolean(DEFAULTS.passwordless_supported, false);
+    const supportedLocales = toLocales(DEFAULTS.supported_locales, [defaultLocale]);
+
+    if (!supportedLocales.includes(defaultLocale)) {
+      supportedLocales.push(defaultLocale);
+    }
+
+    return {
+      module: {{ module_name | tojson }},
+      title: {{ module_title | tojson }},
+      features: MODULE_FEATURES,
+      allowRegistration,
+      enforceUniqueEmail,
+      defaultLocale,
+      auditLogEnabled,
+      maxResultsPerPage,
+      passwordlessSupported,
+      supportedLocales,
+    };
+  },
+);

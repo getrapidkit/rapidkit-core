@@ -1,0 +1,65 @@
+"""FastAPI route definitions for {{ module_title }}."""
+
+from __future__ import annotations
+
+from typing import Mapping
+
+from fastapi import APIRouter, Response
+
+from ..{{ module_name }} import {{ module_class_name }}, {{ module_class_name }}Config, get_runtime
+from ..{{ module_name }}_types import (
+    ObservabilityEvent,
+    ObservabilityEventCreate,
+    ObservabilityMetricSnapshot,
+    ObservabilitySpan,
+    ObservabilitySummary,
+)
+
+
+def _runtime(config: {{ module_class_name }}Config | None) -> {{ module_class_name }}:
+    return get_runtime(config, refresh=config is not None)
+
+
+def build_router(config: {{ module_class_name }}Config | Mapping[str, object] | None = None) -> APIRouter:
+    router = APIRouter(prefix="/{{ module_kebab }}", tags=["{{ module_title }}"])
+    runtime_config: {{ module_class_name }}Config | None
+    if isinstance(config, Mapping):
+        runtime_config = {{ module_class_name }}Config.from_mapping(config)
+    else:
+        runtime_config = config
+
+    facade = _runtime(runtime_config)
+
+    @router.get("/health", summary="{{ module_title }} health check", response_model=ObservabilitySummary)
+    async def read_health() -> ObservabilitySummary:
+        return ObservabilitySummary(**facade.health_check())
+
+    @router.get("/metrics", summary="Rendered metrics payload", response_model=ObservabilityMetricSnapshot)
+    async def read_metrics() -> ObservabilityMetricSnapshot:
+        return facade.export_metrics_snapshot()
+
+    @router.get("/metrics/raw", summary="Raw metrics exposition", response_class=Response)
+    async def read_raw_metrics() -> Response:
+        payload, content_type = facade.export_metrics()
+        return Response(content=payload, media_type=content_type)
+
+    @router.get("/events", summary="Recent observability events", response_model=list[ObservabilityEvent])
+    async def read_events(limit: int = 50) -> list[ObservabilityEvent]:
+        events = facade.recent_events(limit)
+        return [ObservabilityEvent(**event) for event in events]
+
+    @router.post("/events", summary="Emit a transient observability event", response_model=ObservabilityEvent)
+    async def create_event(payload: ObservabilityEventCreate) -> ObservabilityEvent:
+        event = facade.emit_event(
+            payload.name,
+            severity=payload.severity,
+            attributes=payload.attributes,
+        )
+        return ObservabilityEvent(**event)
+
+    @router.get("/traces", summary="Recent captured spans", response_model=list[ObservabilitySpan])
+    async def read_spans(limit: int = 25) -> list[ObservabilitySpan]:
+        spans = facade.recent_spans(limit)
+        return [ObservabilitySpan(**span) for span in spans]
+
+    return router

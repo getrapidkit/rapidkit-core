@@ -1,0 +1,55 @@
+from __future__ import annotations
+
+from fastapi import FastAPI
+from fastapi.testclient import TestClient
+
+from src.health.users_core import register_users_core_health
+from src.modules.free.users.users_core.core.users.metadata_routes import (
+    register_users_core_routes,
+)
+from src.modules.free.users.users_core.core.users.router import router as users_router
+from src.modules.free.users.users_core.users_core import MODULE_FEATURES
+
+
+def _create_application() -> FastAPI:
+    app = FastAPI()
+    app.include_router(users_router)
+    register_users_core_routes(app)
+    register_users_core_health(app)
+    return app
+
+
+def test_users_core_endpoints_behave_consistently() -> None:
+    app = _create_application()
+    client = TestClient(app)
+
+    create_response = client.post(
+        "/api/users/",
+        json={"email": "alice@example.com", "full_name": "Alice Example"},
+    )
+    assert create_response.status_code == 201
+    payload = create_response.json()
+    assert payload["email"] == "alice@example.com"
+    user_id = payload["id"]
+
+    get_response = client.get(f"/api/users/{user_id}")
+    assert get_response.status_code == 200
+    assert get_response.json()["id"] == user_id
+
+    duplicate_response = client.post(
+        "/api/users/",
+        json={"email": "alice@example.com"},
+    )
+    assert duplicate_response.status_code == 409
+
+    metadata_response = client.get("/api/users-core/metadata")
+    assert metadata_response.status_code == 200
+    metadata = metadata_response.json()
+    assert metadata["module"] == {{ module_name | tojson }}
+    assert set(MODULE_FEATURES).issubset(metadata["features"])
+
+    health_response = client.get("/api/health/module/users-core")
+    assert health_response.status_code == 200
+    health_payload = health_response.json()
+    assert health_payload["status"] == "ok"
+    assert health_payload["module"] == {{ module_name | tojson }}

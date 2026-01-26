@@ -1,0 +1,26 @@
+[
+  {
+    "name": "ddd",
+    "category": "fastapi",
+    "tier": "standard",
+    "version": "0.1.0",
+    "path": "src/kits/fastapi/ddd",
+    "hash": "e11fb65eb5ce3d3f403358682d8edc5ee7069b9e85f40705c875927c1c044ee1"
+  },
+  {
+    "name": "standard",
+    "category": "fastapi",
+    "tier": "standard",
+    "version": "0.1.0",
+    "path": "src/kits/fastapi/standard",
+    "hash": "8369cff6cc65b7e321a77905e6696a9f586b7de55484da8f5886576ceec6e664"
+  },
+  {
+    "name": "standard",
+    "category": "nestjs",
+    "tier": "standard",
+    "version": "0.1.0",
+    "path": "src/kits/nestjs/standard",
+    "hash": "622dbb06f888391afbb990adb817d4c92bba085f6e24846a2f6af124f33f018d"
+  }
+]

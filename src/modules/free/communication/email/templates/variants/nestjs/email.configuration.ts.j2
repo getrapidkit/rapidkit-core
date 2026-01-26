@@ -1,0 +1,27 @@
+import { registerAs } from '@nestjs/config';
+
+export default registerAs('email', () => ({
+  enabled: {{ email_defaults.get('enabled', True) | tojson }},
+  provider: {{ email_defaults.get('provider', 'smtp') | tojson }},
+  fromEmail: {{ email_defaults.get('from_email', 'noreply@rapidkit.top') | tojson }},
+  fromName: {{ email_defaults.get('from_name', 'RapidKit') | tojson }},
+  replyTo: {{ email_defaults.get('reply_to') | tojson }},
+  dryRun: {{ email_defaults.get('dry_run', False) | tojson }},
+  defaultHeaders: {{ email_defaults.get('default_headers', {}) | tojson }},
+  metadata: {{ email_defaults.get('metadata', {}) | tojson }},
+  smtp: {
+    {% set smtp_defaults = email_defaults.get('smtp', {}) %}
+    host: {{ smtp_defaults.get('host', 'localhost') | tojson }},
+    port: {{ smtp_defaults.get('port', 1025) }},
+    username: {{ smtp_defaults.get('username') | tojson }},
+    password: {{ smtp_defaults.get('password') | tojson }},
+    useTls: {{ smtp_defaults.get('use_tls', False) | tojson }},
+    timeoutSeconds: {{ smtp_defaults.get('timeout_seconds', 30) | tojson }},
+  },
+  template: {
+    {% set template_defaults = email_defaults.get('template', {}) %}
+    directory: {{ template_defaults.get('directory', 'templates/email') | tojson }},
+    autoReload: {{ template_defaults.get('auto_reload', False) | tojson }},
+    strict: {{ template_defaults.get('strict', False) | tojson }},
+  },
+}));

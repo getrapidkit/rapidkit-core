@@ -1,0 +1,28 @@
+"""FastAPI health helper for {{ module_title }}."""
+
+from __future__ import annotations
+
+from fastapi import APIRouter, FastAPI, status
+
+from .{{ module_name }} import get_runtime
+
+router = APIRouter(prefix="/api/health/module", tags=["health"])
+
+
+@router.get(
+    "/{{ module_kebab }}",
+    summary="{{ module_title }} module health",
+    status_code=status.HTTP_200_OK,
+)
+async def security_headers_health() -> dict[str, object]:
+    runtime = get_runtime()
+    return runtime.health_check()
+
+
+def register_security_headers_health(app: FastAPI) -> None:
+    """Attach the security headers health routes to an application."""
+
+    app.include_router(router)
+
+
+__all__ = ["register_security_headers_health", "router", "security_headers_health"]

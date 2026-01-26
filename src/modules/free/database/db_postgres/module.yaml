@@ -1,0 +1,245 @@
+name: db_postgres
+display_name: PostgreSQL
+description: Production-ready PostgreSQL integration with async/sync engines, connection
+  pooling, transactions, health checks, and configuration scaffolding for FastAPI
+  and NestJS applications
+version: 0.1.24
+access: free
+status: stable
+category: database
+tags:
+- database
+- postgresql
+- sqlalchemy
+- asyncpg
+- connection-pool
+generated_from_config: true
+depends_on:
+- free/essentials/settings
+profile_inherits:
+  fastapi.standard: fastapi
+  fastapi.ddd: fastapi
+  nestjs.standard: nestjs
+config_sources:
+- config/base.yaml
+- config/snippets.yaml
+generation:
+  vendor:
+    root: .rapidkit/vendor
+    files:
+    - template: templates/base/postgres.py.j2
+      relative: src/modules/free/database/db_postgres/postgres.py
+    - template: templates/variants/fastapi/postgres_health.py.j2
+      relative: src/health/postgres.py
+      description: Core PostgreSQL database module with engines and sessions
+  variants:
+    fastapi: &fastapi_variant
+      root: .
+      context:
+        framework: fastapi
+        module_class_name: DatabasePostgres
+        base_module: src
+      files:
+      - template: templates/variants/fastapi/postgres.py.j2
+        output: src/modules/free/database/db_postgres/postgres.py
+      - template: templates/variants/fastapi/postgres_config.yaml.j2
+        output: config/database/postgres.yaml
+        description: Runtime configuration defaults for PostgreSQL module
+      - template: templates/tests/integration/test_postgres_integration.j2
+        output: tests/modules/integration/database/test_postgres_integration.py
+        description: Integration tests for PostgreSQL module
+    fastapi.standard: *fastapi_variant
+    fastapi.ddd: *fastapi_variant
+    nestjs: &nestjs_variant
+      root: .
+      context:
+        framework: nestjs
+        vendor_configuration_relative: nestjs/configuration.js
+        module_class_name: DatabasePostgres
+        module_kebab: database-postgres
+      files:
+      - template: templates/variants/nestjs/postgres.service.ts.j2
+        output: src/modules/free/database/db_postgres/postgres.service.ts
+      - template: templates/variants/nestjs/postgres.module.ts.j2
+        output: src/modules/free/database/db_postgres/postgres.module.ts
+      - template: templates/variants/nestjs/pg.d.ts.j2
+        output: src/modules/free/database/db_postgres/pg.d.ts
+      - template: templates/variants/nestjs/postgres-health.controller.ts.j2
+        output: src/health/postgres-health.controller.ts
+        description: NestJS controller exposing PostgreSQL health endpoint
+      - template: templates/variants/nestjs/postgres-health.module.ts.j2
+        output: src/health/postgres-health.module.ts
+        description: NestJS module wiring PostgreSQL health controller
+      - template: templates/vendor/nestjs/configuration.js.j2
+        output: nestjs/configuration.js
+      - template: templates/tests/integration/postgres.integration.spec.ts.j2
+        output: tests/modules/integration/database/postgres.integration.spec.ts
+        description: NestJS integration spec validating PostgreSQL endpoints
+      - template: templates/variants/nestjs/tests/db_postgres.e2e-spec.ts
+        output: tests/modules/e2e/free/database/db_postgres/db_postgres.e2e-spec.ts
+    nestjs.standard: *nestjs_variant
+  snippets:
+    enabled: true
+    config: config/snippets.yaml
+    default: []
+dependencies:
+  fastapi:
+  - name: asyncpg
+    source: external
+    tool: pip
+    version: '>=0.29.0,<1.0'
+    description: Async PostgreSQL driver for SQLAlchemy
+  - name: psycopg
+    source: external
+    tool: pip
+    version: '>=3.1.0,<4.0'
+    extras:
+    - binary
+    description: Sync PostgreSQL driver for SQLAlchemy
+  - name: sqlalchemy
+    source: external
+    tool: pip
+    version: '>=2.0.0,<3.0'
+    description: SQL toolkit and ORM
+dev_dependencies:
+- name: pytest
+  source: external
+  tool: pip
+  version: '>=8.3.0,<9.0'
+- name: pytest-asyncio
+  source: external
+  tool: pip
+  version: '>=0.25.0,<1.0'
+compatibility:
+  python: '>=3.10,<4.0'
+  frameworks:
+  - fastapi
+  - nestjs
+  os:
+  - linux
+  - darwin
+  - windows
+  postgresql: '>=12.0'
+testing:
+  coverage_min: 85
+  integration_tests: true
+  e2e_tests: false
+  unit_tests:
+  - tests/modules/free/database/db_postgres/test_db_postgres_cli_entry.py
+  - tests/modules/free/database/db_postgres/test_db_postgres_configuration.py
+  - tests/modules/free/database/db_postgres/test_db_postgres_framework_variants.py
+  - tests/modules/free/database/db_postgres/test_db_postgres_generate.py
+  - tests/modules/free/database/db_postgres/test_db_postgres_health_check.py
+  - tests/modules/free/database/db_postgres/test_db_postgres_integration.py
+  - tests/modules/free/database/db_postgres/test_db_postgres_overrides.py
+  - tests/modules/free/database/db_postgres/test_db_postgres_runtime_info.py
+  - tests/modules/free/database/db_postgres/test_db_postgres_standard_module.py
+  - tests/modules/free/database/db_postgres/test_db_postgres_validation.py
+  - tests/modules/free/database/db_postgres/test_db_postgres_vendor_layer.py
+  - tests/modules/free/database/db_postgres/test_db_postgres_versioning.py
+  - tests/modules/free/database/db_postgres/test_postgres_runtime.py
+  fixtures:
+  - tests/fixtures/postgres_db.py
+documentation:
+  changelog: docs/changelog.md
+  readme: README.md
+  overview: docs/overview.md
+  usage: docs/usage.md
+  advanced: docs/advanced.md
+  migration: docs/migration.md
+  troubleshooting: docs/troubleshooting.md
+  api_docs: docs/api-reference.md
+  examples:
+  - docs/examples/basic_usage.md
+  - docs/examples/connection_pooling.md
+  - docs/examples/transactions.md
+support:
+  issues: https://github.com/getrapidkit/core/issues
+  discussions: https://github.com/getrapidkit/core/discussions
+  documentation: https://docs.rapidkit.top/modules/db_postgres
+changelog:
+  - version: "0.1.24"
+    date: "2026-01-04"
+    notes: "See docs/changelog.md"
+validation:
+  pre_install:
+  - check_python_version
+  - check_postgresql_available
+  post_install:
+  - validate_generated_code
+  - test_database_connection
+rollback:
+  strategy: uninstall
+  backup_path: .rapidkit/backups/
+  max_backups: 3
+performance:
+  lazy_loading: true
+  caching:
+    templates: true
+    ttl: 300
+  connection_pool:
+    pool_size: 10
+    max_overflow: 20
+    pool_recycle: 3600
+    pool_timeout: 30
+tier: free
+capabilities:
+- async_engine
+- sync_engine
+- connection_pooling
+- transaction_management
+- health_checks
+- dependency_injection
+signature: null
+signer_id: null
+signature_version: null
+file_hashes:
+  templates/variants/fastapi/tests/test_db_postgres_e2e.py: sha256:74021f9d7f32e2020f842ed4ea30c3429a4dc41d0bf3f1764361f517a1f6f023
+  templates/variants/nestjs/tests/db_postgres.e2e-spec.ts: sha256:273d1bdbdbdb982cdc8f72cb2626cd28b81de27534e2c449b14d7c6cad21ca71
+  scripts/run_demo.py: sha256:02f9eedb0307a7c47dccc3377448b9de07b9ea9cd44460054a7060f4336cfe41
+  README.md: sha256:e27a0a062a0723c770a2983707675ab069a206072d75c282beafc0baa7e9bbb7
+  __init__.py: sha256:64f5aaa1ecc48ac45ac1e07c31b3d3047df2226a29d5a56253200ca94f9e6e4e
+  config/base.yaml: sha256:2313ee892b737e2b8e74293c4ca8c97d6db75dc27851679c1170923969553a19
+  config/snippets.yaml: sha256:831391f39736ad01cce479f4677c3e7ba95f2526201e634ce9fd5b5086c2b579
+  docs/README.md: sha256:038583442b3bbaf2b9b50bf4975cb5a2fcfab8c6ef59fd90025757acfc8e4cea
+  docs/advanced.md: sha256:db8da605a21a2f3258f7cbb27a5385f47c223d712a4fde0f282f8e97d7036eaf
+  docs/api-reference.md: sha256:60d84acbce604159adb6ab66a11c2867edfecf119ec270057fff30bd1f7d09ec
+  docs/changelog.md: sha256:bd21c3c7127648f898f534f2f904ff1c33a37fd830c08d240f6493427e019fb7
+  docs/examples/basic_usage.md: sha256:ad87ed54565854ac00b5c5a866c4005dd2af59e26023a02971452830092929a6
+  docs/examples/connection_pooling.md: sha256:6cfb00ea898dc884ee944cc933d6fbf618148b13991a70ff4ad82294ae72c419
+  docs/examples/transactions.md: sha256:687c6012e989ed843c5c308429fa931d6d9b44e056958290d61d18200771bd4f
+  docs/migration.md: sha256:200d560f9e1a204f46cc5f567252bd19d42b676c5fb15668f5da049d1c97aa57
+  docs/overview.md: sha256:615593066b331d7b7050b0bba9bcbb00697c0d28357c5861c7da025b9e2044bc
+  docs/troubleshooting.md: sha256:79a94d21b15aed89a496acd789e44b74a5e8c10558b39afe46e20e9ab0e4a486
+  docs/usage.md: sha256:9e0236cb3400337a034a9b65a65cede63234f6df1dfb18d9d9bf883d01a40960
+  frameworks/__init__.py: sha256:31e2ea52e34315af9bbb83f56132fc3a125ca379aab44b2346921d6b015b53fb
+  frameworks/fastapi.py: sha256:f8de74c874873dce1b7dc49992cb708b2b587a20e6c8ffbdc9f548887c2dce81
+  frameworks/nestjs.py: sha256:430023fc8fea01a527e9dc3865a9a0667bd94f30a1342472929395dbcc06479f
+  generate.py: sha256:f898d9a2c7847551e43950fc72aa4b047b45285c697d2ee14ab4ba7ffa4e33c6
+  module.verify.json: sha256:e057c0fddc2b25711649571492780e97a71db936ff42f388908444d7a955660f
+  overrides.py: sha256:43a943cea90365b531b4f3950e0399d489b656f0239e11a4b07166d916c927a1
+  templates/base/db_postgres.py.j2: sha256:1122d3d27e498af09b6f3f36a19ece055d940fe70d3cc9184f70ecc50fe0056e
+  templates/base/db_postgres_health.py.j2: sha256:5e91f00602e928598c9f4ced11fe7eaaba0cc9abefa2c2294c117631f591d48c
+  templates/base/db_postgres_types.py.j2: sha256:6737808176b504eef532bf9b340293fd1a7967c762c764fc0b26b5ff797c8b6a
+  templates/base/postgres.py.j2: sha256:ffa3e6ba44baf050a173628b5f9abecbed4c9d86752adf41b28edfc7178e7559
+  templates/snippets/db_postgres.snippet.j2: sha256:5873e72e3bd0d3d0f71c9e2c5fe149fe9ed576b2722cae57643e036fe67ad929
+  templates/snippets/db_postgres_settings_fields_nestjs.snippet.j2: sha256:b5e98abc846c7a1701902d676c38717b7157347b925bc73bdf8aed382764b1f6
+  templates/snippets/settings_fields.snippet.j2: sha256:e5c05e82dabee2a8634181e43ed1c833ad78dd9c67f684d9ff877963a995329b
+  templates/tests/__init__.py: sha256:a48b7fc9de9db986b594b1206b6fc75f462f86b4f982a9505e233ab57529988f
+  templates/tests/integration/postgres.integration.spec.ts.j2: sha256:8c9fb60999696d76c79b1c8f6b82975ac510c42f4df6ff6252d7b0ed8d6f8698
+  templates/tests/integration/test_db_postgres_integration.j2: sha256:df13abdc480277f06b1b311e55cee00a28c6f569c26d87b6b0a86a8114688652
+  templates/tests/integration/test_postgres_integration.j2: sha256:5effdea4a358f6f194b616dd2472fe681a594f70a3e2e58128f2f0bfa313b7c4
+  templates/variants/fastapi/db_postgres.py.j2: sha256:38d446e15b1e842fac69d31d6367a309faadcba580d2b5be7af51c79ff13fdf2
+  templates/variants/fastapi/db_postgres_health.py.j2: sha256:aa40ab6fc4706019a52927279e0b8ed5309aa560e421ae03c48fdb19d6f2708b
+  templates/variants/fastapi/db_postgres_routes.py.j2: sha256:53e08f6f08452fc5d0cedc6979e637983098dbaba4ad9b1d3a7fc45e944cd2b2
+  templates/variants/fastapi/postgres.py.j2: sha256:41e395b63326ac1e55c72b09865f4148630a8fc9d519459e4104f2820875f466
+  templates/variants/fastapi/postgres_config.yaml.j2: sha256:c9f2335e813eefe1c1edb67ff740721916574f63c511c0605fb9713602f4b8db
+  templates/variants/fastapi/postgres_health.py.j2: sha256:41d9c38701bf0b680630da1451d2c0ceb291f19c95e56f5ac9224b48e87e20db
+  templates/variants/nestjs/db_postgres.controller.ts.j2: sha256:4653ce660a93be586584637264c4f10d9d6c99d4fd2ea771bbbcf2f5887c850d
+  templates/variants/nestjs/db_postgres.module.ts.j2: sha256:d589608c05327ab00c4e90b9e962e68686d3a8c0dd401d627253e6eee543ce3c
+  templates/variants/nestjs/db_postgres.service.ts.j2: sha256:c3451c5f9d0d094f11649f08f94b136557992509cdfc11d8560d349cd7464b12
+  templates/variants/nestjs/postgres-health.controller.ts.j2: sha256:334402ca1b62113769f3f71e2b0a9c847c0f18a522c4592163fdac2d437e6d00
+  templates/variants/nestjs/postgres-health.module.ts.j2: sha256:2489b61df7277c34325780badd9057c52d4d8d42821ad892511138e5b4629b2a
+  templates/variants/nestjs/postgres.module.ts.j2: sha256:77e254db2320d65c8d52dc1ee0fef43d90720149e6c2797db42db2190224463b
+  templates/variants/nestjs/postgres.service.ts.j2: sha256:b6bcc8be9bad4b36065506b5b565bafab3be8efcac0421ead15715fb8e9218d2
+  templates/vendor/nestjs/configuration.js.j2: sha256:83f41e3d8bd1e01feac5f2de3acd4b81cf5e0c0800820d8cfe42a7ad9f9622aa

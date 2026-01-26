@@ -1,0 +1,28 @@
+// Db Mongo module configuration
+export const dbMongo = {
+  uri: process.env.RAPIDKIT_DB_MONGO_URI ?? "{{ mongo_defaults.connection_uri | default('mongodb://localhost:27017') }}",
+  database: process.env.RAPIDKIT_DB_MONGO_DATABASE ?? "{{ mongo_defaults.database | default('rapidkit') }}",
+  appName: process.env.RAPIDKIT_DB_MONGO_APP_NAME ?? "{{ mongo_defaults.app_name | default('rapidkit-db-mongo') }}",
+  authSource: process.env.RAPIDKIT_DB_MONGO_AUTH_SOURCE ?? "{{ mongo_defaults.auth_source | default('admin') }}",
+  readPreference: process.env.RAPIDKIT_DB_MONGO_READ_PREFERENCE ?? "{{ mongo_defaults.read_preference | default('primary') }}",
+  retryReads: process.env.RAPIDKIT_DB_MONGO_RETRY_READS ? process.env.RAPIDKIT_DB_MONGO_RETRY_READS === "true" : {{ 'true' if mongo_defaults.retry_reads | default(true) else 'false' }},
+  retryWrites: process.env.RAPIDKIT_DB_MONGO_RETRY_WRITES ? process.env.RAPIDKIT_DB_MONGO_RETRY_WRITES === "true" : {{ 'true' if mongo_defaults.retry_writes | default(true) else 'false' }},
+  compressors: process.env.RAPIDKIT_DB_MONGO_COMPRESSORS ? process.env.RAPIDKIT_DB_MONGO_COMPRESSORS.split(",").map(item => item.trim()).filter(Boolean) : {{ mongo_defaults.compressors | default([]) | tojson }},
+  pool: {
+    min: process.env.RAPIDKIT_DB_MONGO_MIN_POOL_SIZE ? Number(process.env.RAPIDKIT_DB_MONGO_MIN_POOL_SIZE) : {{ mongo_defaults.min_pool_size | default(0) }},
+    max: process.env.RAPIDKIT_DB_MONGO_MAX_POOL_SIZE ? Number(process.env.RAPIDKIT_DB_MONGO_MAX_POOL_SIZE) : {{ mongo_defaults.max_pool_size | default(20) }},
+  },
+  timeouts: {
+    connect: process.env.RAPIDKIT_DB_MONGO_CONNECT_TIMEOUT_MS ? Number(process.env.RAPIDKIT_DB_MONGO_CONNECT_TIMEOUT_MS) : {{ mongo_defaults.connect_timeout_ms | default(5000) }},
+    serverSelection: process.env.RAPIDKIT_DB_MONGO_SERVER_SELECTION_TIMEOUT_MS ? Number(process.env.RAPIDKIT_DB_MONGO_SERVER_SELECTION_TIMEOUT_MS) : {{ mongo_defaults.server_selection_timeout_ms | default(8000) }},
+    maxIdle: process.env.RAPIDKIT_DB_MONGO_MAX_IDLE_TIME_MS ? Number(process.env.RAPIDKIT_DB_MONGO_MAX_IDLE_TIME_MS) : {{ mongo_defaults.max_idle_time_ms | default(120000) }},
+  },
+  tls: {
+    enabled: process.env.RAPIDKIT_DB_MONGO_TLS ? process.env.RAPIDKIT_DB_MONGO_TLS === "true" : {{ 'true' if mongo_defaults.tls | default(false) else 'false' }},
+    allowInvalidCertificates: process.env.RAPIDKIT_DB_MONGO_TLS_ALLOW_INVALID_CERTS ? process.env.RAPIDKIT_DB_MONGO_TLS_ALLOW_INVALID_CERTS === "true" : {{ 'true' if mongo_defaults.tls_allow_invalid_certificates | default(false) else 'false' }},
+  },
+  health: {
+    timeoutMs: process.env.RAPIDKIT_DB_MONGO_HEALTH_TIMEOUT_MS ? Number(process.env.RAPIDKIT_DB_MONGO_HEALTH_TIMEOUT_MS) : {{ health_defaults.ping_timeout_ms | default(1500) }},
+    metrics: process.env.RAPIDKIT_DB_MONGO_HEALTH_METRICS ? process.env.RAPIDKIT_DB_MONGO_HEALTH_METRICS === "true" : {{ 'true' if health_defaults.metrics | default(true) else 'false' }},
+  },
+};

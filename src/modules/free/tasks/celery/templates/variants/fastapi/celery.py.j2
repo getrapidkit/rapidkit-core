@@ -1,0 +1,179 @@
+"""FastAPI integration helpers for the {{ module_title }} module."""
+
+from __future__ import annotations
+
+import importlib.util
+import os
+import sys
+from functools import lru_cache
+from pathlib import Path
+from types import ModuleType
+from typing import Any
+
+from fastapi import APIRouter, Depends, FastAPI
+
+_VENDOR_MODULE = "{{ rapidkit_vendor_module }}"
+_VENDOR_VERSION = "{{ rapidkit_vendor_version }}"
+_VENDOR_RELATIVE_PATH = "{{ vendor_runtime_relative }}"
+_VENDOR_ROOT_ENV = "RAPIDKIT_VENDOR_ROOT"
+_CACHE_PREFIX = "rapidkit_vendor_{{ module_name }}"
+
+
+def _project_root() -> Path:
+    current = Path(__file__).resolve()
+    for ancestor in current.parents:
+        if (ancestor / "pyproject.toml").exists() or (ancestor / "package.json").exists():
+            return ancestor
+    return current.parents[5]
+
+
+def _vendor_root() -> Path:
+    override = os.getenv(_VENDOR_ROOT_ENV)
+    if override:
+        return Path(override).expanduser().resolve()
+    return _project_root() / ".rapidkit" / "vendor"
+
+
+def _vendor_base_dir() -> Path:
+    root = _vendor_root()
+    module_dir = root / _VENDOR_MODULE
+    preferred = module_dir / _VENDOR_VERSION if _VENDOR_VERSION else None
+    if preferred and preferred.exists():
+        return preferred
+    candidates = sorted((p for p in module_dir.glob("*") if p.is_dir()), reverse=True)
+    if candidates:
+        return candidates[0]
+    raise RuntimeError(
+        "RapidKit vendor payload for '{module}' not found under {root}. "
+        "Re-run `rapidkit modules install {module}`.".format(module=_VENDOR_MODULE, root=root)
+    )
+
+
+def _vendor_file() -> Path:
+    if not _VENDOR_RELATIVE_PATH:
+        raise RuntimeError("{{ module_title }} vendor runtime relative path missing from generator context")
+    return _vendor_base_dir() / _VENDOR_RELATIVE_PATH
+
+
+@lru_cache(maxsize=1)
+def _load_vendor_module() -> ModuleType:
+    vendor_path = _vendor_file()
+    if not vendor_path.exists():
+        raise RuntimeError(
+            "RapidKit vendor runtime missing at {path}. "
+            "Re-run `rapidkit modules install {module}`.".format(
+                path=vendor_path,
+                module=_VENDOR_MODULE,
+            )
+        )
+
+    module_name = _CACHE_PREFIX + _VENDOR_MODULE.replace("/", "_")
+    spec = importlib.util.spec_from_file_location(module_name, vendor_path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Unable to load vendor runtime from {vendor_path}")
+
+    module = importlib.util.module_from_spec(spec)
+    sys.modules.setdefault(module_name, module)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _resolve_export(name: str) -> Any:
+    module = _load_vendor_module()
+    try:
+        return getattr(module, name)
+    except AttributeError as exc:
+        raise RuntimeError(f"Vendor runtime missing attribute '{name}'") from exc
+
+
+def refresh_vendor_module() -> None:
+    """Clear caches to force vendor re-import (useful after upgrades)."""
+
+    _load_vendor_module.cache_clear()
+
+
+CeleryAppConfig = _resolve_export("CeleryAppConfig")
+CeleryRuntimeError = _resolve_export("CeleryRuntimeError")
+CelerySchedule = _resolve_export("CelerySchedule")
+CelerySettings = _resolve_export("CelerySettings")
+CeleryTaskRegistry = _resolve_export("CeleryTaskRegistry")
+MODULE_FEATURES = _resolve_export("MODULE_FEATURES")
+describe_celery = _resolve_export("describe_celery")
+create_celery_app = _resolve_export("create_celery_app")
+get_celery_app = _resolve_export("get_celery_app")
+get_celery_metadata = _resolve_export("get_celery_metadata")
+load_config_from_env = _resolve_export("load_config_from_env")
+
+
+try:  # Optional override contracts
+    from core.services.override_contracts import apply_module_overrides
+except ImportError:  # pragma: no cover - override system optional
+    apply_module_overrides = None
+
+if apply_module_overrides is not None:  # pragma: no branch - tiny guard
+    apply_module_overrides(sys.modules[__name__], "tasks/celery")
+
+
+@lru_cache(maxsize=1)
+def _cached_config() -> CeleryAppConfig:
+    return load_config_from_env()
+
+
+def get_celery_config() -> CeleryAppConfig:
+    """Return the shared Celery configuration parsed from the environment."""
+
+    return _cached_config()
+
+
+def get_celery_app_dependency(config: CeleryAppConfig = Depends(get_celery_config)) -> Any:
+    """FastAPI dependency returning a configured Celery app instance."""
+
+    return get_celery_app(config)
+
+
+def create_router() -> APIRouter:
+    """Return a router exposing lightweight Celery diagnostics."""
+
+    router = APIRouter(prefix="/{{ module_name }}", tags=["{{ module_title }}"])
+
+    @router.get("/status")
+    def status(config: CeleryAppConfig = Depends(get_celery_config)) -> dict[str, Any]:
+        settings = config.settings
+        return {
+            "broker": settings.broker_url,
+            "result_backend": settings.result_backend,
+            "timezone": settings.timezone,
+            "default_queue": settings.task_default_queue,
+            "autodiscover": list(config.autodiscover),
+        }
+
+    return router
+
+
+def register_celery_lifespan(app: FastAPI, *, eager_load: bool = False) -> None:
+    """Attach lifecycle hooks that optionally warm the Celery app."""
+
+    @app.on_event("startup")
+    async def _startup() -> None:  # pragma: no cover - FastAPI lifecycle hook
+        if eager_load:
+            get_celery_app_dependency()
+
+
+__all__ = [
+    "CeleryAppConfig",
+    "CeleryRuntimeError",
+    "CelerySchedule",
+    "CelerySettings",
+    "CeleryTaskRegistry",
+    "MODULE_FEATURES",
+    "create_celery_app",
+    "create_router",
+    "describe_celery",
+    "get_celery_app",
+    "get_celery_app_dependency",
+    "get_celery_config",
+    "get_celery_metadata",
+    "load_config_from_env",
+    "refresh_vendor_module",
+    "register_celery_lifespan",
+]

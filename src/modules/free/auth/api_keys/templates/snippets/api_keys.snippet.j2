@@ -1,0 +1,18 @@
+{# Shared documentation snippet for the Api Keys module. #}
+
+## Managing API Keys via RapidKit CLI
+
+```bash
+# Issue a new key for a team member
+rapidkit modules run {{ module_name }} -- action=issue --owner alice@example.com --scopes read write
+
+# Verify an incoming token from a request header
+rapidkit modules run {{ module_name }} -- action=verify --token "$API_TOKEN" --scopes read
+
+# Revoke a leaked token
+rapidkit modules run {{ module_name }} -- action=revoke --key-id "$KEY_ID" --reason "reported leak"
+```
+
+- `--owner` accepts any unique user identifier (email, UUID, etc.).
+- Use `--scopes` to enforce least privilege; omit to fallback to the module defaults.
+- Combine with `--ttl-hours` to create short-lived credentials for automation.

@@ -1,0 +1,81 @@
+"""FastAPI route definitions for {{ module_title }}."""
+
+from __future__ import annotations
+
+from fastapi import APIRouter, Body, HTTPException, status
+
+from {{ module_import_base }}.{{ module_name }} import (
+    {{ module_class_name }},
+    InventoryError,
+    InventoryNotFoundError,
+    InventoryReservationError,
+    InventoryValidationError,
+)
+
+
+def _serialize_item(item) -> dict[str, object]:
+    return {
+        "sku": item.sku,
+        "name": item.name,
+        "quantity": item.quantity,
+        "reserved": item.reserved,
+        "available": item.available,
+        "price": str(item.price),
+        "currency": item.currency,
+        "metadata": dict(item.metadata),
+        "attributes": dict(item.attributes),
+    }
+
+
+def _handle_error(exc: InventoryError) -> None:
+    if isinstance(exc, InventoryNotFoundError):
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc)) from exc
+    if isinstance(exc, InventoryReservationError):
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
+    if isinstance(exc, InventoryValidationError):
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=str(exc)) from exc
+    raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc)) from exc
+
+
+def build_router(*, service: {{ module_class_name }} | None = None) -> APIRouter:
+    router = APIRouter(prefix="/{{ module_kebab }}", tags=["{{ module_title }}"])
+    facade = service or {{ module_class_name }}()
+
+    @router.get("/health", summary="{{ module_title }} health check")
+    async def read_health() -> dict[str, object]:
+        return facade.health_check()
+
+    @router.get("/items", summary="List tracked inventory items")
+    async def list_items() -> list[dict[str, object]]:
+        return [_serialize_item(item) for item in facade.list_items().values()]
+
+    @router.post("/items/{sku}", summary="Create or update an item")
+    async def upsert_item(
+        sku: str,
+        payload: dict = Body(..., description="Item definition"),
+    ) -> dict[str, object]:
+        try:
+            item = facade.upsert_item(
+                sku=sku,
+                name=str(payload.get("name", sku)),
+                quantity=int(payload.get("quantity", 0)),
+                price=payload.get("price", "0"),
+                currency=payload.get("currency") or facade.config.default_currency,
+                metadata=payload.get("metadata"),
+                attributes=payload.get("attributes"),
+            )
+        except InventoryError as exc:  # pragma: no cover - exercised by error tests
+            _handle_error(exc)
+        return _serialize_item(item)
+
+    @router.post("/items/{sku}/adjust", summary="Adjust stock levels")
+    async def adjust_item(
+        sku: str, delta: int = Body(..., description="Quantity adjustment"),
+    ) -> dict[str, object]:
+        try:
+            item = facade.adjust_stock(sku=sku, delta=int(delta))
+        except InventoryError as exc:
+            _handle_error(exc)
+        return _serialize_item(item)
+
+    return router

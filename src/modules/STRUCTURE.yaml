@@ -1,0 +1,71 @@
+spec_version: 4
+blueprint:
+  description: "Lean module layout blueprint (v3)"
+  verification_file: module.verify.json
+  allow_extra_entries: true
+  ignore_patterns:
+    - ".module_pending_changelog.yaml"
+    - "__pycache__"
+    - "__pycache__/*"
+    - "*/__pycache__"
+    - "**/__pycache__"
+    - "**/__pycache__/**"
+    - ".DS_Store"
+  required_directories:
+    - config
+    - docs
+    - templates
+    - templates/base
+    - templates/variants
+    - templates/variants/fastapi
+    - templates/variants/nestjs
+    - templates/tests
+    - templates/tests/integration
+    - templates/snippets
+    - templates/vendor
+    - templates/vendor/nestjs
+    - frameworks
+  flexible_subtrees:
+    - templates/variants
+    - templates/vendor
+    - templates/tests
+    - templates/snippets
+    - docs
+    - tests
+  required_files:
+    - .module_state.json
+    - module.verify.json
+    - README.md
+    - __init__.py
+    - generate.py
+    - module.yaml
+    - docs/README.md
+    - docs/overview.md
+    - docs/usage.md
+    - docs/advanced.md
+    - docs/changelog.md
+    - docs/migration.md
+    - docs/troubleshooting.md
+    - overrides.py
+    - frameworks/__init__.py
+    - frameworks/fastapi.py
+    - frameworks/nestjs.py
+    - config/base.yaml
+    - config/snippets.yaml
+    - templates/base/{{module_basename}}.py.j2
+    - templates/base/{{module_basename}}_types.py.j2
+    - templates/variants/fastapi/{{module_basename}}.py.j2
+    - templates/variants/fastapi/{{module_basename}}_routes.py.j2
+    # Health templates are optional under spec v4: modules may either
+    # - provide template-based health shims as before, or
+    # - provide publisher-vendor-backed shims via a centralized helper/metadata
+    #   (e.g. frameworks/_config.py with HEALTH_SHIM_SPEC, or module.yaml vendor files)
+    - templates/variants/nestjs/{{module_basename}}.service.ts.j2
+    - templates/variants/nestjs/{{module_basename}}.controller.ts.j2
+    - templates/variants/nestjs/{{module_basename}}.module.ts.j2
+    - templates/vendor/nestjs/configuration.js.j2
+    - templates/tests/__init__.py
+    - templates/tests/integration/test_{{module_basename}}_integration.j2
+    - templates/snippets/{{module_basename}}.snippet.j2
+
+modules: {}

@@ -1,0 +1,412 @@
+#!/usr/bin/env python3
+"""RapidKit CLI wrapper (shared template)
+
+This file is meant to be a generic, shareable CLI that supports both
+Python and Node projects. It prefers direct Python actions for Python
+projects (pyproject.toml) and delegates to the local launcher for Node
+projects (package.json).
+
+When generated, `src/cli.py` (if present) will import these functions.
+"""
+
+import subprocess
+import shutil
+import sys
+from pathlib import Path
+import socket
+from typing import Any
+
+
+def _print_banner(emoji: str, message: str) -> None:
+    print(f"{emoji} {message}")
+
+
+def _run(*cmd: Any, cwd: Path | str | None = None, env: dict | None = None) -> int:
+    try:
+        # Merge caller-provided env with the current environment so PATH and other
+        # inherited values aren't lost when only a few values are provided.
+        run_env = None
+        if env is not None:
+            import os as _os
+
+            run_env = _os.environ.copy()
+            run_env.update(env)
+
+        proc = subprocess.run([str(c) for c in cmd], cwd=str(cwd) if cwd else None, env=run_env)
+        return proc.returncode
+    except KeyboardInterrupt:
+        print("\n🛑 Command interrupted by user")
+        return 130
+    except Exception as exc:
+        print(f"❌ Error running command: {exc}")
+        return 1
+
+
+def _project_type(root: Path) -> str:
+    if (root / "pyproject.toml").exists():
+        return "python"
+    if (root / "package.json").exists():
+        return "node"
+    return "unknown"
+
+
+def _python_module(module: str, *module_args: str) -> int:
+    return _run(sys.executable, "-m", module, *module_args)
+
+
+def _python_code_targets(root: Path) -> list[str]:
+    targets: list[str] = []
+    for name in ("src", "tests"):
+        if (root / name).exists():
+            targets.append(name)
+    return targets or ["src"]
+
+
+def _call_launcher(command: str, *args: str, env: dict | None = None) -> int:
+    # call the local shell launcher which contains the robust selection logic
+    root = Path.cwd()
+    launcher = root / ".rapidkit" / "rapidkit"
+    if not launcher.exists():
+        print("❌ Local launcher not found (.rapidkit/rapidkit). Run `rapidkit init` or create .rapidkit/rapidkit.")
+        return 127
+    return _run(str(launcher), command, *args, env=env)
+
+
+def dev(port: int = 8000, host: str = "0.0.0.0", allow_global_runtime: bool = False) -> None:
+    """Start development server with reload or delegate to launcher for non-Python projects"""
+    _print_banner("🚀", "Starting development server with hot reload...")
+    root = Path.cwd()
+    ptype = _project_type(root)
+    def _port_in_use(port: int, host: str = "0.0.0.0") -> bool:
+        try:
+            with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+                s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+                s.bind((host, port))
+                return False
+        except OSError:
+            return True
+
+    if ptype == "python":
+        # Quick non-executing bootstrap checks to ensure the dev environment
+        # is prepared. We avoid importing project code - instead check for a
+        # project-local venv and presence of common runtime binaries / packages
+        # inside it.
+        venv_dir = root / ".venv"
+
+        def _venv_has_uvicorn(venv_path: Path) -> bool:
+            # Check for uvicorn binary in venv/bin or site-packages artifacts
+            if (venv_path / "bin" / "uvicorn").exists():
+                return True
+            for p in venv_path.rglob("site-packages/*"):
+                name = p.name.lower()
+                if "uvicorn" in name or "fastapi" in name:
+                    return True
+            return False
+
+        # If there's a local .venv, verify it contains uvicorn/fastapi; if not,
+        # ask the user to run `rapidkit init` which will create the venv and
+        # install dependencies.
+        if venv_dir.exists():
+            if not _venv_has_uvicorn(venv_dir):
+                print("❌ Project .venv was found but uvicorn/fastapi doesn't appear installed.")
+                print("💡 Run 'rapidkit init' to (re)bootstrap the project and install dependencies.")
+                sys.exit(1)
+        else:
+            # No project-local venv - require explicit allow_global_runtime to
+            # use globally installed uvicorn/fastapi. This avoids accidental
+            # execution with system globals and preserves reproducibility.
+            if not allow_global_runtime:
+                print("❌ Project environment not bootstrapped (no .venv found).")
+                print("")
+                print("💡 Initialize and install dependencies with:")
+                print("")
+                print("  rapidkit init")
+                print("")
+                print("If you intentionally want to use the system Python / globally installed packages, run:")
+                print("")
+                print("  rapidkit dev --allow-global-runtime")
+                print("")
+                sys.exit(1)
+
+            # allow_global_runtime is set: ensure a usable global runtime exists
+            if shutil.which("uvicorn") is None:
+                print("❌ No uvicorn executable found on PATH and no .venv present - nothing to run.")
+                print("")
+                print("💡 Either install uvicorn globally (pip install uvicorn) or run:")
+                print("")
+                print("  rapidkit init")
+                print("")
+                sys.exit(1)
+            # Warn the user when running with a global runtime
+            print("⚠️  You are running with the system/global Python/runtime which may differ from what this project expects.")
+            print("💡 Consider running `rapidkit init` to create an isolated .venv for reproducible builds.")
+
+        rc = _run(sys.executable, "-m", "uvicorn", "src.main:app", "--reload", "--host", host, "--port", str(port))
+        if rc != 0:
+            sys.exit(rc)
+    elif ptype == "node":
+        # Ensure project dependencies are installed before starting dev.
+        if not (root / "node_modules").exists():
+            print("❌ Project dependencies appear to be missing (node_modules not found).")
+            print("")
+            print("💡 Run the following to bootstrap the project and install dependencies:")
+            print("")
+            print("  rapidkit init")
+            print("")
+            print("Once initialized you can start the dev server:")
+            print("")
+            print("  rapidkit dev")
+            sys.exit(1)
+
+        if _port_in_use(port, host):
+            print(f"❌ Port {port} is already in use on {host}.")
+            print("")
+            print("What you can do:")
+            print("")
+            # Suggest a nearby free port as a quick hint (best-effort)
+            alt = port + 1
+            print(f"  • Try a different port: rapidkit dev -p {alt}")
+            print(f"  • Or set the PORT env and run again: PORT={alt} rapidkit dev")
+            print("  • Stop the process currently using that port and retry")
+            print("")
+            print("If the project hasn't been bootstrapped yet, run:")
+            print("")
+            print("  rapidkit init")
+            sys.exit(1)
+        # Set common environment variables many Node apps honour (PORT/HOST)
+        env = dict()
+        env.update({
+            k: v for k, v in {
+                "PORT": str(port),
+                "HOST": host,
+            }.items()
+            if v is not None
+        })
+        rc = _call_launcher("dev", f"--port={port}", f"--host={host}", env=env)
+        if rc != 0:
+            sys.exit(rc)
+    else:
+        print("❌ Unknown project type. Ensure pyproject.toml or package.json exists.")
+        sys.exit(1)
+
+
+def init() -> None:
+    """Bootstrap project: run dependency install for the detected project type"""
+    _print_banner("🚀", "Bootstrapping project (installing dependencies)")
+    root = Path.cwd()
+    ptype = _project_type(root)
+    if ptype == "python":
+        # prefer poetry/venv via launcher (keeps logic centralized)
+        rc = _call_launcher("init")
+        if rc != 0:
+            print("❌ Failed to run 'rapidkit init' locally. Try running it via the global 'rapidkit init' too.")
+            sys.exit(rc)
+    elif ptype == "node":
+        rc = _call_launcher("init")
+        if rc != 0:
+            print("❌ Failed to install Node dependencies via package manager.")
+            sys.exit(rc)
+    else:
+        print("❌ Unknown project type. Ensure pyproject.toml or package.json exists.")
+        sys.exit(1)
+
+
+def start(port: int = 8000, host: str = "0.0.0.0", allow_global_runtime: bool = False) -> None:
+    _print_banner("⚡", "Starting production server...")
+    root = Path.cwd()
+    ptype = _project_type(root)
+    if ptype == "python":
+        # Mirror the same bootstrap policy as 'dev' for start.
+        venv_dir = root / ".venv"
+        if venv_dir.exists():
+            # ensure uvicorn exists in venv
+            def _venv_has_uvicorn(venv_path: Path) -> bool:
+                if (venv_path / "bin" / "uvicorn").exists():
+                    return True
+                for p in venv_path.rglob("site-packages/*"):
+                    name = p.name.lower()
+                    if "uvicorn" in name or "fastapi" in name:
+                        return True
+                return False
+
+            if not _venv_has_uvicorn(venv_dir):
+                print("❌ Project .venv was found but uvicorn/fastapi doesn't appear installed.")
+                print("💡 Run 'rapidkit init' to (re)bootstrap the project and install dependencies.")
+                sys.exit(1)
+        else:
+            if not allow_global_runtime:
+                print("❌ Project environment not bootstrapped (no .venv found).")
+                print("")
+                print("💡 Initialize and install dependencies with:")
+                print("")
+                print("  rapidkit init")
+                print("")
+                print("If you intentionally want to use the system Python / globally installed packages, run:")
+                print("")
+                print("  rapidkit start --allow-global-runtime")
+                print("")
+                sys.exit(1)
+
+            if shutil.which("uvicorn") is None:
+                print("❌ No uvicorn executable found on PATH and no .venv present - nothing to run.")
+                print("")
+                print("💡 Either install uvicorn globally (pip install uvicorn) or run:")
+                print("")
+                print("  rapidkit init")
+                print("")
+                sys.exit(1)
+            print("⚠️  You are running with the system/global Python/runtime which may differ from what this project expects.")
+            print("💡 Consider running `rapidkit init` to create an isolated .venv for reproducible builds.")
+
+        rc = _run(sys.executable, "-m", "uvicorn", "src.main:app", "--host", host, "--port", str(port))
+        if rc != 0:
+            sys.exit(rc)
+    else:
+        env = dict()
+        env.update({"PORT": str(port), "HOST": host})
+        rc = _call_launcher("start", f"--port={port}", f"--host={host}", env=env)
+        if rc != 0:
+            sys.exit(rc)
+
+
+def build() -> None:
+    _print_banner("📦", "Building project")
+    root = Path.cwd()
+    if _project_type(root) == "python":
+        rc = _python_module("build")
+    else:
+        rc = _call_launcher("build")
+    if rc != 0:
+        sys.exit(rc)
+
+
+def test() -> None:
+    _print_banner("🧪", "Running tests")
+    root = Path.cwd()
+    if _project_type(root) == "python":
+        rc = _python_module("pytest", "-q")
+    else:
+        rc = _call_launcher("test")
+    if rc != 0:
+        sys.exit(rc)
+
+
+def lint() -> None:
+    _print_banner("🔧", "Running lint")
+    root = Path.cwd()
+    if _project_type(root) == "python":
+        targets = _python_code_targets(root)
+        rc = _python_module("ruff", "check", *targets)
+        if rc == 0:
+            rc = _python_module("black", "--check", *targets)
+    else:
+        rc = _call_launcher("lint")
+    if rc != 0:
+        sys.exit(rc)
+
+
+def format() -> None:
+    _print_banner("✨", "Formatting")
+    root = Path.cwd()
+    if _project_type(root) == "python":
+        targets = _python_code_targets(root)
+        rc = _python_module("ruff", "check", *targets, "--fix")
+        if rc == 0:
+            rc = _python_module("black", *targets)
+    else:
+        rc = _call_launcher("format")
+    if rc != 0:
+        sys.exit(rc)
+
+
+def help_cmd() -> None:
+    _print_banner("📚", "Project Commands (callable)")
+    # Include a Usage header to make automated checks and scripts detect help output
+    print("Usage: rapidkit <command> [args...]\n")
+    print("  init     📦 Initialize project (install deps)")
+    print("  dev      🚀 Start development server")
+    print("  start    ⚡ Start production server")
+    print("  build    📦 Build for production")
+    print("  test     🧪 Run tests")
+    print("  lint     🔧 Lint code")
+    print("  format   ✨ Format code")
+    print("  help     📚 Show help")
+
+
+def main():
+    # Accept common help flags (-h, --help, help) to print the inline help summary
+    if len(sys.argv) < 2 or (len(sys.argv) >= 2 and sys.argv[1] in ("-h", "--help", "help")):
+        help_cmd()
+        return
+
+    command = sys.argv[1]
+    args = sys.argv[2:]
+
+    # Support direct invocation of commands from the local CLI when the
+    # repository doesn't provide a packaging-friendly `src/cli.py` entrypoint.
+    root = Path.cwd()
+    cli_path = root / "src" / "cli.py"
+    commands = {
+        "init": init,
+        "dev": dev,
+        "start": start,
+        "build": build,
+        "test": test,
+        "lint": lint,
+        "format": format,
+        "help": help_cmd,
+    }
+
+    # If there's no `src/cli.py` builder, call local handlers directly and
+    # support parsing -p/--port and --host for dev/start.
+    if command in commands and not cli_path.exists():
+        if command in ("dev", "start"):
+            import argparse as _arg
+
+            _parser = _arg.ArgumentParser(prog=f"rapidkit {command}")
+            _parser.add_argument("-p", "--port", dest="port", type=int)
+            _parser.add_argument("--host", dest="host")
+            _parser.add_argument("--allow-global-runtime", action="store_true", dest="allow_global_runtime")
+            _ns, _extra = _parser.parse_known_args(args)
+            _kwargs = {}
+            if getattr(_ns, "port", None) is not None:
+                _kwargs["port"] = _ns.port
+            if getattr(_ns, "host", None) is not None:
+                _kwargs["host"] = _ns.host
+            try:
+                commands[command](**_kwargs)
+            except TypeError:
+                commands[command]()
+        else:
+            commands[command]()
+        return
+
+    # If we detect python we can call directly (avoid round-trip into shell),
+    # otherwise shell launcher will handle it.
+    root = Path.cwd()
+    if _project_type(root) == "python":
+        # Fall back to src/cli.py if present - it is still the packaging-friendly entry point.
+        cli_path = root / "src" / "cli.py"
+        if cli_path.exists():
+            cmd = [sys.executable, str(cli_path), command] + args
+            try:
+                result = subprocess.run(cmd, cwd=root)
+                sys.exit(result.returncode)
+            except KeyboardInterrupt:
+                print("\n🛑 Command interrupted by user")
+                sys.exit(1)
+            except Exception as e:
+                print(f"❌ Error running command: {e}")
+                sys.exit(1)
+        else:
+            # no src/cli.py; delegate to launcher for broad compatibility
+            rc = _call_launcher(command, *args)
+            sys.exit(rc)
+
+    # For non-python projects delegate to the shell launcher
+    rc = _call_launcher(command, *args)
+    sys.exit(rc)
+
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,56 @@
+import { ConflictException } from "@nestjs/common";
+import { Test } from "@nestjs/testing";
+
+import { {{ module_class_name }}Module } from "../../../../../src/modules/free/users/users_core/users-core.module";
+import { {{ module_class_name }}Service } from "../../../../../src/modules/free/users/users_core/users-core.service";
+
+describe("{{ module_class_name }}Module Integration", () => {
+  let service: {{ module_class_name }}Service;
+
+  beforeEach(async () => {
+    const moduleRef = await Test.createTestingModule({
+      imports: [{{ module_class_name }}Module],
+    }).compile();
+
+    service = moduleRef.get({{ module_class_name }}Service);
+  });
+
+  it("builds metadata from defaults", () => {
+    const metadata = service.buildMetadata();
+    expect(metadata.module).toBe("{{ module_name }}");
+    expect(metadata.title).toBe("{{ module_title }}");
+    expect(metadata.features).toContain("user_registration");
+    expect(metadata.supported_locales.length).toBeGreaterThan(0);
+  });
+
+  it("creates and retrieves users", async () => {
+    const created = await service.createUser({
+      email: "alice@example.com",
+      fullName: "Alice Example",
+    });
+
+    expect(created.id).toBeDefined();
+    expect(created.email).toBe("alice@example.com");
+
+    const fetched = await service.getUser(created.id);
+    expect(fetched).toEqual(created);
+
+    const listed = await service.listUsers();
+    expect(listed).toEqual([created]);
+  });
+
+  it("enforces unique email addresses", async () => {
+    await service.createUser({ email: "duplicate@example.com" });
+
+    await expect(
+      service.createUser({ email: "duplicate@example.com" }),
+    ).rejects.toBeInstanceOf(ConflictException);
+  });
+
+  it("produces health metadata", async () => {
+    const payload = await service.resolveHealth();
+    expect(payload.status).toBe("ok");
+    expect(payload.module).toBe("{{ module_name }}");
+    expect(payload.features).toEqual(expect.arrayContaining(["user_registration"]));
+  });
+});

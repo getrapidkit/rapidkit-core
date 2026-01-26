@@ -1,0 +1,142 @@
+snippets:
+  - id: redis_env
+    target: .env,.env.dev,.env.prod,.env.example
+    anchor: "# <<<inject:module-env>>>"
+    template: env.snippet.j2
+    features: [redis]
+    profiles: [fastapi/standard, fastapi/ddd, nestjs/standard]
+    description: Injects Redis-related environment variables
+    version: "1.0.0"
+    priority: 10
+    dependencies: []
+    context:
+      redis_defaults:
+        url: "redis://localhost:6379/0"
+        host: "localhost"
+        port: 6379
+        db: 0
+        password: ""
+        use_tls: false
+        preconnect: false
+        connect_retries: 3
+        connect_backoff_base: 0.5
+        cache_ttl: 3600
+    schema:
+      type: object
+      properties:
+        REDIS_URL:
+          type: str
+          default: "redis://localhost:6379/0"
+          description: "Full redis:// URL (preferred)"
+          validation: "^redis://[\\w\\-.:@]+(:[0-9]+)?(/[0-9]+)?$"
+        REDIS_HOST:
+          type: str
+          default: "localhost"
+        REDIS_PORT:
+          type: int
+          default: 6379
+        REDIS_DB:
+          type: int
+          default: 0
+        REDIS_PASSWORD:
+          type: str
+          default: ""
+        REDIS_USE_TLS:
+          type: bool
+          default: false
+        CACHE_TTL:
+          type: int
+          default: 3600
+          description: "Default cache TTL in seconds"
+        REDIS_PRECONNECT:
+          type: bool
+          default: false
+          description: "If true the app will attempt to connect to Redis on startup"
+        REDIS_CONNECT_RETRIES:
+          type: int
+          default: 3
+          description: "Number of connection attempts for Redis client"
+        REDIS_CONNECT_BACKOFF_BASE:
+          type: number
+          default: 0.5
+          description: "Base backoff in seconds for Redis connection retry"
+      additionalProperties: true
+      # REDIS_URL is intentionally not required: the runtime client can build a
+      # URL from REDIS_HOST/REDIS_PORT/REDIS_DB and allows flexibility in configs.
+      required: []
+    metadata:
+      author: "RapidKit Team"
+      created_at: "2025-08-18"
+      last_modified: "2025-08-18"
+    conflict_resolution: merge
+  - id: redis_settings_fields
+    target: src/modules/free/essentials/settings/settings.py
+    anchor: "# <<<inject:settings-fields>>>"
+    template: redis_fields.snippet.j2
+    features: [extendable_settings, redis]
+    profiles: [fastapi/standard, fastapi/ddd]
+    description: Inject settings fields for Redis into core/settings.py
+    version: "1.0.0"
+    priority: 20
+    dependencies: []
+    context:
+      redis_defaults:
+        url: "redis://localhost:6379/0"
+        host: "localhost"
+        port: 6379
+        db: 0
+        password: ""
+        use_tls: false
+        preconnect: false
+        connect_retries: 3
+        connect_backoff_base: 0.5
+        cache_ttl: 3600
+    schema:
+      type: object
+      properties: {}
+      additionalProperties: true
+      required: []
+    metadata:
+      author: "RapidKit Team"
+      created_at: "2025-08-19"
+      last_modified: "2025-08-19"
+    conflict_resolution: merge
+  - id: redis_settings_fields_nestjs
+    target: src/config/configuration.ts
+    anchor: "// <<<inject:configuration>>>"
+    template: redis_fields_nestjs.snippet.j2
+    features: [redis]
+    profiles: [nestjs/standard]
+    description: Inject Redis configuration fields into NestJS configuration
+    version: "1.0.0"
+    priority: 20
+    dependencies: []
+    schema:
+      type: object
+      properties: {}
+      additionalProperties: true
+      required: []
+    metadata:
+      author: "RapidKit Team"
+      created_at: "2025-09-30"
+      last_modified: "2025-09-30"
+    conflict_resolution: merge
+  - id: redis_quickstart
+    target: README.md
+    anchor: "<!-- <<<inject:module-snippet>>> -->"
+    template: redis.snippet.j2
+    features: [redis]
+    profiles: [fastapi/standard, fastapi/ddd, nestjs/standard]
+    description: Quick commands for validating the Redis module installation
+    version: "1.0.0"
+    priority: 5
+    dependencies: []
+    schema:
+      type: object
+      properties: {}
+      additionalProperties: true
+      required: []
+    metadata:
+      author: "RapidKit Core Team"
+      created_at: "2025-11-02"
+      last_modified: "2025-11-02"

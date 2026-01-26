@@ -1,0 +1,218 @@
+name: security_headers
+display_name: Security Headers
+description: >-
+  Harden HTTP responses with industry-standard security headers, FastAPI middleware,
+  and NestJS providers including health telemetry and diagnostics.
+root_path: src/
+
+profiles:
+  fastapi/standard:
+    description: Security Headers middleware wired for the RapidKit FastAPI starter.
+  fastapi/ddd:
+    inherits: fastapi/standard
+    description: DDD profile that reuses the FastAPI wiring with aggregate-friendly defaults.
+  nestjs/standard:
+    description: NestJS module exposing register() helpers, configuration schemas, and health modules.
+
+defaults:
+  enabled: true
+  strict_transport_security:
+    enabled: true
+    max_age: 63072000
+    include_subdomains: true
+    preload: true
+  content_security_policy: null
+  content_security_policy_report_only: false
+  referrer_policy: strict-origin-when-cross-origin
+  x_frame_options: DENY
+  x_content_type_options: nosniff
+  x_xss_protection: false
+  cross_origin_embedder_policy: require-corp
+  cross_origin_opener_policy: same-origin
+  cross_origin_resource_policy: same-origin
+  permissions_policy: {}
+  expect_ct: null
+  x_dns_prefetch_control: off
+  x_download_options: noopen
+  additional_headers: {}
+
+variables:
+  enabled:
+    type: boolean
+    default: true
+    description: Toggle all security header middleware and providers.
+    env_var: SECURITY_HEADERS_ENABLED
+  strict_transport_security_max_age:
+    type: integer
+    default: 63072000
+    description: Seconds Strict-Transport-Security remains active in browsers.
+    env_var: SECURITY_HEADERS_HSTS_MAX_AGE
+  strict_transport_security_include_subdomains:
+    type: boolean
+    default: true
+    description: Apply HSTS to all subdomains.
+    env_var: SECURITY_HEADERS_HSTS_INCLUDE_SUBDOMAINS
+  strict_transport_security_preload:
+    type: boolean
+    default: true
+    description: Advertise preload eligibility for HSTS.
+    env_var: SECURITY_HEADERS_HSTS_PRELOAD
+  content_security_policy:
+    type: string
+    default: null
+    description: Optional Content-Security-Policy header value.
+    env_var: SECURITY_HEADERS_CSP
+  content_security_policy_report_only:
+    type: boolean
+    default: false
+    description: Emit Content-Security-Policy-Report-Only when true.
+    env_var: SECURITY_HEADERS_CSP_REPORT_ONLY
+  referrer_policy:
+    type: string
+    default: "strict-origin-when-cross-origin"
+    description: Referrer-Policy header value.
+    env_var: SECURITY_HEADERS_REFERRER_POLICY
+  x_content_type_options:
+    type: string
+    default: nosniff
+    description: Header value for X-Content-Type-Options; set to "false" to disable.
+    env_var: SECURITY_HEADERS_X_CONTENT_TYPE_OPTIONS
+  x_frame_options:
+    type: string
+    default: "DENY"
+    description: X-Frame-Options header directive.
+    env_var: SECURITY_HEADERS_X_FRAME_OPTIONS
+  x_xss_protection:
+    type: boolean
+    default: false
+    description: Enables the legacy X-XSS-Protection header for compatible browsers.
+    env_var: SECURITY_HEADERS_X_XSS_PROTECTION
+  cross_origin_embedder_policy:
+    type: string
+    default: "require-corp"
+    description: Cross-Origin-Embedder-Policy header directive.
+    env_var: SECURITY_HEADERS_COEP
+  cross_origin_opener_policy:
+    type: string
+    default: "same-origin"
+    description: Cross-Origin-Opener-Policy header directive.
+    env_var: SECURITY_HEADERS_COOP
+  cross_origin_resource_policy:
+    type: string
+    default: "same-origin"
+    description: Cross-Origin-Resource-Policy header directive.
+    env_var: SECURITY_HEADERS_CORP
+  permissions_policy:
+    type: object
+    default: {}
+    description: Permissions-Policy directives mapped to space-delimited strings.
+  expect_ct:
+    type: string
+    default: null
+    description: Expect-CT header payload when certificate transparency enforcement is required.
+    env_var: SECURITY_HEADERS_EXPECT_CT
+  x_dns_prefetch_control:
+    type: string
+    default: "off"
+    description: X-DNS-Prefetch-Control header directive.
+    env_var: SECURITY_HEADERS_DNS_PREFETCH
+  x_download_options:
+    type: string
+    default: "noopen"
+    description: X-Download-Options header directive for Internet Explorer.
+    env_var: SECURITY_HEADERS_DOWNLOAD_OPTIONS
+
+features:
+  fastapi_middleware:
+    status: stable
+    enabled: true
+    profiles:
+      - fastapi/standard
+      - fastapi/ddd
+    description: FastAPI middleware registration that applies hardened response headers.
+    files:
+      - path: security/security_headers.py
+        description: FastAPI Security Headers middleware and helpers.
+      - path: routers/security_headers.py
+        description: Diagnostic router exposing runtime configuration snapshots.
+  fastapi_health:
+    status: stable
+    enabled: true
+    profiles:
+      - fastapi/standard
+      - fastapi/ddd
+    description: FastAPI health endpoint surfacing security header status.
+    files:
+      - path: health/security_headers.py
+        description: Health route returning module status payloads.
+  nestjs_module:
+    status: stable
+    enabled: true
+    profiles:
+      - nestjs/standard
+    description: NestJS service, module, configuration, and health controller wiring.
+    files:
+      - path: security-headers/security-headers.service.ts
+        description: Injectable service applying headers to NestJS responses.
+      - path: security-headers/security-headers.module.ts
+        description: NestJS module exposing register() helpers.
+      - path: security-headers/security-headers.controller.ts
+        description: Controller exposing diagnostics routes.
+      - path: security-headers/security-headers.configuration.ts
+        description: Configuration helper for NestJS kits.
+      - path: health/security-headers-health.controller.ts
+        description: Health controller for NestJS deployments.
+      - path: health/security-headers-health.module.ts
+        description: Health module providing DI wiring for the controller.
+
+snippets:
+  - name: security_headers_quickstart
+    path: templates/snippets/security_headers.snippet.j2
+    description: Quickstart instructions for wiring the middleware/service into FastAPI or NestJS.
+
+depends_on:
+  fastapi/standard:
+    - name: fastapi
+      source: external
+      tool: pip
+      version: ">=0.115.0,<1.0"
+    - name: starlette
+      source: external
+      tool: pip
+      version: ">=0.38.0,<1.0"
+  fastapi/ddd:
+    - name: fastapi
+      source: external
+      tool: pip
+      version: ">=0.115.0,<1.0"
+    - name: starlette
+      source: external
+      tool: pip
+      version: ">=0.38.0,<1.0"
+  nestjs/standard:
+    - name: "@nestjs/common"
+      source: npm
+      tool: npm
+      version: ">=11.1.0"
+    - name: "@nestjs/core"
+      source: npm
+      tool: npm
+      version: ">=11.1.0"
+    - name: express
+      source: npm
+      tool: npm
+      version: ">=4.19.0"
+
+dev_dependencies:
+  - name: pytest
+    source: external
+    tool: pip
+    version: ">=8.3.0,<9.0"
+  - name: pytest-asyncio
+    source: external
+    tool: pip
+    version: ">=0.25.0,<1.0"
+  - name: ruff
+    source: external
+    tool: pip
+    version: ">=0.6.0,<1.0"

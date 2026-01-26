@@ -1,0 +1,589 @@
+import {
+	Inject,
+	Injectable,
+	Logger,
+	Optional,
+} from '@nestjs/common';
+import * as Handlebars from 'handlebars';
+// nodemailer does not ship TypeScript typings by default.
+// Prefer installing @types/nodemailer in real projects.
+// eslint-disable-next-line @typescript-eslint/no-var-requires, @typescript-eslint/no-require-imports
+const nodemailer: any = require('nodemailer');
+import { existsSync, readFileSync } from 'fs';
+import { join } from 'path';
+
+export const NOTIFICATIONS_EMAIL_CONFIG = 'NOTIFICATIONS_EMAIL_CONFIG';
+export const NOTIFICATIONS_TEMPLATE_OPTIONS = 'NOTIFICATIONS_TEMPLATE_OPTIONS';
+export const NOTIFICATIONS_PROVIDER_OVERRIDES = 'NOTIFICATIONS_PROVIDER_OVERRIDES';
+export const NOTIFICATIONS_EMAIL_TRANSPORT = 'NOTIFICATIONS_EMAIL_TRANSPORT';
+export const NOTIFICATIONS_EMAIL_SERVICE = 'NOTIFICATIONS_EMAIL_SERVICE';
+
+const FEATURE_FLAGS = [
+	'email_channel',
+	'push_channel',
+	'sms_channel',
+	'templated_delivery',
+	'provider_metadata',
+	'health_reporting',
+] as const;
+
+const DEFAULT_PROVIDERS = ['email', 'push', 'sms'] as const;
+
+export type NotificationChannel = (typeof DEFAULT_PROVIDERS)[number] | string;
+
+export interface EmailConfig {
+	host: string;
+	port?: number;
+	username?: string;
+	password?: string;
+	fromEmail?: string;
+	fromName?: string;
+	replyTo?: string;
+	useTls?: boolean;
+	timeout?: number;
+	templateDirectory?: string;
+}
+
+export interface TemplateOptions {
+	directory?: string;
+	autoReload?: boolean;
+	cache?: boolean;
+}
+
+export interface OutboundEmail {
+	to: string[];
+	subject: string;
+	html?: string;
+	text?: string;
+	cc?: string[];
+	bcc?: string[];
+	replyTo?: string;
+	headers?: Record<string, string>;
+}
+
+export interface Notification {
+	channel?: NotificationChannel;
+	type?: NotificationChannel;
+	recipient: string;
+	title: string;
+	body: string;
+	metadata?: Record<string, any>;
+	priority?: 'low' | 'normal' | 'high';
+}
+
+export type ProviderHandler = (notification: Notification) => Promise<boolean>;
+
+export interface ProviderSnapshot {
+	name: string;
+	enabled: boolean;
+	handler_registered: boolean;
+	metadata: Record<string, any>;
+}
+
+export interface NotificationsSnapshot {
+	module: string;
+	version: string | null;
+	status: 'ok' | 'degraded';
+	checked_at: string;
+	providers: Record<string, ProviderSnapshot>;
+	features: string[];
+	detail?: string;
+}
+
+export type ProviderOverrides = Record<string, Partial<ProviderSnapshot>>;
+
+export type EmailTransport = (message: any) => Promise<any>;
+
+export interface NotificationsModuleOptions {
+	email?: EmailConfig;
+	templateOptions?: TemplateOptions;
+	providerOverrides?: ProviderOverrides;
+	transport?: EmailTransport;
+}
+
+@Injectable()
+export class EmailService {
+	private readonly logger = new Logger(EmailService.name);
+	private transporter: any | null = null;
+	private readonly transportOverride?: EmailTransport;
+	private templateDirectory: string | null;
+		private readonly cacheEnabled: boolean;
+		private autoReload: boolean;
+	private readonly templateCache = new Map<string, Handlebars.TemplateDelegate>();
+
+	constructor(
+		@Inject(NOTIFICATIONS_EMAIL_CONFIG) private readonly config: EmailConfig,
+		@Optional() @Inject(NOTIFICATIONS_TEMPLATE_OPTIONS) templateOptions?: TemplateOptions,
+		@Optional() @Inject(NOTIFICATIONS_EMAIL_TRANSPORT) transportOverride?: EmailTransport,
+	) {
+		this.transportOverride = transportOverride;
+		this.cacheEnabled = templateOptions?.cache ?? true;
+		this.autoReload = templateOptions?.autoReload ?? false;
+		this.templateDirectory =
+			templateOptions?.directory ?? this.config.templateDirectory ?? null;
+
+		if (this.templateDirectory) {
+			this.logger.log(`Notifications templates directory set to ${this.templateDirectory}`);
+		}
+	}
+
+	setTemplateDirectory(directory: string, options: { clearCache?: boolean; autoReload?: boolean } = {}): void {
+		if (!existsSync(directory)) {
+			this.logger.warn(`Template directory does not exist: ${directory}`);
+			return;
+		}
+
+		this.templateDirectory = directory;
+		if (options.autoReload !== undefined) {
+			this.autoReload = options.autoReload;
+		}
+
+		if (options.clearCache ?? true) {
+			this.templateCache.clear();
+		}
+
+		this.logger.log(`Template directory set to ${directory}`);
+	}
+
+	private getFromEmail(): string {
+		return this.config.fromEmail ?? (this.config as any).from_email ?? 'noreply@rapidkit.local';
+	}
+
+	private getFromName(): string | undefined {
+		return this.config.fromName ?? (this.config as any).from_name ?? undefined;
+	}
+
+	private getReplyTo(): string | undefined {
+		return this.config.replyTo ?? (this.config as any).reply_to ?? undefined;
+	}
+
+	private resolveUseTls(): boolean {
+		const raw = this.config.useTls ?? (this.config as any).use_tls;
+		return raw !== undefined ? Boolean(raw) : true;
+	}
+
+	private resolveFromAddress(): string {
+		const fromEmail = this.getFromEmail();
+		const fromName = this.getFromName();
+		if (fromName) {
+			return `${fromName} <${fromEmail}>`;
+		}
+		return fromEmail;
+	}
+
+	private ensureTransporter(): any {
+		if (this.transportOverride) {
+			if (!this.transporter) {
+				this.transporter = nodemailer.createTransport({ jsonTransport: true });
+			}
+			return this.transporter;
+		}
+
+		if (!this.transporter) {
+			this.transporter = nodemailer.createTransport({
+				host: this.config.host,
+				port: this.config.port ?? 587,
+				secure: this.resolveUseTls(),
+				auth:
+					this.config.username && this.config.password
+						? {
+								user: this.config.username,
+								pass: this.config.password,
+							}
+						: undefined,
+				connectionTimeout: (this.config.timeout ?? 30) * 1000,
+			});
+		}
+
+		return this.transporter;
+	}
+
+	private getTemplate(name: string): Handlebars.TemplateDelegate {
+		if (!this.templateDirectory) {
+			throw new Error('Template directory not configured');
+		}
+
+		if (!this.autoReload && this.templateCache.has(name)) {
+			return this.templateCache.get(name)!;
+		}
+
+		const directPath = join(this.templateDirectory, name);
+		const candidate = existsSync(directPath)
+			? directPath
+			: join(this.templateDirectory, `${name}.hbs`);
+
+		if (!existsSync(candidate)) {
+			throw new Error(`Template not found: ${name}`);
+		}
+
+		const templateSource = readFileSync(candidate, 'utf8');
+		const compiled = Handlebars.compile(templateSource);
+
+		if (this.cacheEnabled) {
+			this.templateCache.set(name, compiled);
+		}
+
+		return compiled;
+	}
+
+	renderTemplate(templateName: string, context: Record<string, any> = {}): string {
+		try {
+			const compiled = this.getTemplate(templateName);
+			return compiled(context);
+		} catch (error) {
+			this.logger.error(`Unable to render template: ${templateName} - ${(error as Error)?.message ?? 'unknown error'}`);
+			throw error;
+		}
+	}
+
+	async sendEmail(message: OutboundEmail): Promise<boolean> {
+		const payload: any = {
+			from: this.resolveFromAddress(),
+			to: message.to.join(', '),
+			cc: message.cc?.join(', '),
+			bcc: message.bcc?.join(', '),
+			subject: message.subject,
+			html: message.html,
+			text: message.text,
+			replyTo: message.replyTo ?? this.getReplyTo(),
+			headers: message.headers,
+		};
+
+		try {
+			if (this.transportOverride) {
+				await this.transportOverride(payload);
+				return true;
+			}
+
+			const transporter = this.ensureTransporter();
+			await transporter.sendMail(payload);
+			this.logger.log(`Email sent to ${message.to.join(', ')}`);
+			return true;
+		} catch (error) {
+			this.logger.error(`Email delivery failure: ${(error as Error)?.message ?? 'unknown error'}`);
+			return false;
+		}
+	}
+
+	async sendTemplatedEmail(
+		to: string[],
+		templateName: string,
+		context: Record<string, any>,
+		subject: string,
+		textFallback?: string,
+	): Promise<boolean> {
+		const html = this.renderTemplate(templateName, context);
+		return this.sendEmail({ to, subject, html, text: textFallback });
+	}
+
+	async verifyConnection(): Promise<boolean> {
+		if (this.transportOverride) {
+			return true;
+		}
+
+		try {
+			const transporter = this.ensureTransporter();
+			await transporter.verify();
+			return true;
+		} catch (error) {
+			this.logger.error(`SMTP verification failed: ${(error as Error)?.message ?? 'unknown error'}`);
+			return false;
+		}
+	}
+
+	describe(): Record<string, any> {
+		return {
+			host: this.config.host,
+			port: this.config.port ?? 587,
+			from: this.resolveFromAddress(),
+			templateDirectory: this.templateDirectory,
+			templatesCached: this.templateCache.size,
+			cacheEnabled: this.cacheEnabled,
+			autoReload: this.autoReload,
+		};
+	}
+
+	getStatus(): Record<string, any> {
+		return {
+			configured: true,
+			verified: this.transporter !== null,
+			metadata: this.describe(),
+		};
+	}
+}
+
+@Injectable()
+export class NotificationManager {
+	private readonly logger = new Logger(NotificationManager.name);
+	private readonly handlers = new Map<string, ProviderHandler>();
+	private readonly metadata = new Map<string, Record<string, any>>();
+	private emailService: EmailService | null = null;
+
+	constructor(@Optional() emailService?: EmailService) {
+		if (emailService) {
+			this.registerEmailService(emailService);
+		}
+	}
+
+	registerEmailService(service: EmailService, autoRegisterHandler = true): void {
+		this.emailService = service;
+
+		if (autoRegisterHandler) {
+			this.registerHandler('email', this.dispatchEmailNotification.bind(this), {
+				provider: "{{ default_email_provider | default('smtp') }}",
+				email_service: service.describe(),
+			});
+		}
+
+		this.logger.log('Notifications email provider registered');
+	}
+
+	registerHandler(
+		channel: string,
+		handler: ProviderHandler,
+		metadata: Record<string, any> | undefined = undefined,
+		overwrite = true,
+	): void {
+		if (!overwrite && this.handlers.has(channel)) {
+			throw new Error(`Handler already registered for channel ${channel}`);
+		}
+
+		this.handlers.set(channel, handler);
+
+		if (metadata) {
+			this.metadata.set(channel, { ...metadata });
+		}
+	}
+
+	hasHandler(channel: string): boolean {
+		return this.handlers.has(channel);
+	}
+
+	availableChannels(): string[] {
+		return Array.from(this.handlers.keys());
+	}
+
+	getEmailService(): EmailService | null {
+		return this.emailService;
+	}
+
+	async sendNotification(notification: Notification): Promise<boolean> {
+		const channel = this.resolveChannel(notification);
+		const handler = this.handlers.get(channel);
+
+		if (!handler) {
+			this.logger.warn(`No handler registered for channel ${channel}`);
+			return false;
+		}
+
+		try {
+			return await handler(notification);
+		} catch (error) {
+			this.logger.error(`Notification dispatch failed for channel ${channel}: ${(error as Error)?.message ?? 'unknown error'}`);
+			return false;
+		}
+	}
+
+	describeProviders(): Record<string, ProviderSnapshot> {
+		const providers: Record<string, ProviderSnapshot> = {};
+
+		for (const [channel] of this.handlers.entries()) {
+			providers[channel] = {
+				name: channel,
+				enabled: true,
+				handler_registered: true,
+				metadata: { ...(this.metadata.get(channel) ?? {}) },
+			};
+		}
+
+		if (!providers.email) {
+			providers.email = {
+				name: 'email',
+				enabled: this.emailService !== null,
+				handler_registered: this.handlers.has('email'),
+				metadata: {},
+			};
+		}
+
+		if (this.emailService) {
+			providers.email.enabled = true;
+			providers.email.metadata = {
+				...providers.email.metadata,
+				email_service: this.emailService.describe(),
+			};
+		}
+
+		return providers;
+	}
+
+	private resolveChannel(notification: Notification): string {
+		return (notification.channel ?? notification.type ?? 'email').toString();
+	}
+
+	private async dispatchEmailNotification(notification: Notification): Promise<boolean> {
+		if (!this.emailService) {
+			this.logger.warn('Email service requested but not configured');
+			return false;
+		}
+
+		const metadata = notification.metadata ?? {};
+		const textFallback = typeof metadata.text_body === 'string' ? metadata.text_body : undefined;
+
+		if (metadata.template && metadata.context) {
+			return this.emailService.sendTemplatedEmail(
+				[notification.recipient],
+				String(metadata.template),
+				metadata.context as Record<string, any>,
+				notification.title,
+				textFallback,
+			);
+		}
+
+		const outbound: OutboundEmail = {
+			to: [notification.recipient],
+			subject: notification.title,
+			html: notification.body,
+			text: textFallback,
+		};
+
+		return this.emailService.sendEmail(outbound);
+	}
+}
+
+function normalizeProviderPayload(
+	name: string,
+	payload?: Partial<ProviderSnapshot>,
+	defaults: { enabled?: boolean; handler_registered?: boolean } = {},
+): ProviderSnapshot {
+	return {
+		name,
+		enabled: payload?.enabled ?? defaults.enabled ?? false,
+		handler_registered: payload?.handler_registered ?? defaults.handler_registered ?? false,
+		metadata: { ...(payload?.metadata ?? {}) },
+	};
+}
+
+export interface DescribeNotificationsOptions {
+	providerOverrides?: ProviderOverrides;
+	moduleName?: string;
+	moduleVersion?: string | null;
+}
+
+export function listNotificationFeatures(): string[] {
+	return Array.from(FEATURE_FLAGS);
+}
+
+export function describeNotifications(
+	manager?: NotificationManager,
+	options: DescribeNotificationsOptions = {},
+): NotificationsSnapshot {
+	const providerOverrides = options.providerOverrides ?? {};
+	const moduleName = options.moduleName ?? '{{ module_name | default("notifications") }}';
+	const moduleVersion = options.moduleVersion ?? '{{ version | default("0.0.0") }}';
+
+	let rawProviders: Record<string, ProviderSnapshot> = {};
+	if (manager && typeof manager.describeProviders === 'function') {
+		try {
+			rawProviders = manager.describeProviders();
+		} catch {
+			rawProviders = {};
+		}
+	}
+
+	const providerNames = new Set<string>([...DEFAULT_PROVIDERS]);
+	Object.keys(rawProviders).forEach((name) => providerNames.add(name));
+	Object.keys(providerOverrides).forEach((name) => providerNames.add(name));
+
+	const providers: Record<string, ProviderSnapshot> = {};
+	for (const name of Array.from(providerNames).sort()) {
+		providers[name] = normalizeProviderPayload(name, rawProviders[name]);
+		const override = providerOverrides[name];
+		if (override) {
+			const base = providers[name];
+			const normalizedOverride = normalizeProviderPayload(name, override, {
+				enabled: base.enabled,
+				handler_registered: base.handler_registered,
+			});
+			providers[name] = {
+				...base,
+				enabled: normalizedOverride.enabled,
+				handler_registered: normalizedOverride.handler_registered,
+				metadata: {
+					...base.metadata,
+					...(override.metadata ?? {}),
+				},
+			};
+		}
+	}
+
+	if (providers.email) {
+		const emailService = manager?.getEmailService();
+		if (emailService) {
+			providers.email.enabled = true;
+			providers.email.handler_registered = true;
+			providers.email.metadata = {
+				...providers.email.metadata,
+				email_service: emailService.describe(),
+			};
+		}
+	}
+
+	const status = providers.email?.enabled ? 'ok' : 'degraded';
+
+	const snapshot: NotificationsSnapshot = {
+		module: moduleName,
+		version: moduleVersion === undefined ? null : moduleVersion,
+		status,
+		checked_at: new Date().toISOString(),
+		providers,
+		features: listNotificationFeatures(),
+	};
+
+	if (status !== 'ok') {
+		snapshot.detail = 'Email provider not initialized';
+	}
+
+	return snapshot;
+}
+
+export function getNotificationsMetadata(
+	manager?: NotificationManager,
+	options?: DescribeNotificationsOptions,
+): NotificationsSnapshot {
+	return describeNotifications(manager, options ?? {});
+}
+
+export function HealthCheckNotifications() {
+	return async (
+		provider: NotificationManager | EmailService,
+	): Promise<Record<string, any>> => {
+		if (provider instanceof NotificationManager) {
+			const snapshot = describeNotifications(provider);
+			return {
+				notifications: {
+					status: snapshot.status,
+					detail: snapshot.detail,
+					checked_at: snapshot.checked_at,
+					providers: snapshot.providers,
+				},
+			};
+		}
+
+		if (provider instanceof EmailService) {
+			const verified = await provider.verifyConnection();
+			return {
+				notifications_email: {
+					status: verified ? 'ok' : 'degraded',
+					metadata: provider.describe(),
+				},
+			};
+		}
+
+		return {};
+	};
+}
+
+export {
+	FEATURE_FLAGS as NOTIFICATION_FEATURE_FLAGS,
+	DEFAULT_PROVIDERS as NOTIFICATION_DEFAULT_PROVIDERS,
+};

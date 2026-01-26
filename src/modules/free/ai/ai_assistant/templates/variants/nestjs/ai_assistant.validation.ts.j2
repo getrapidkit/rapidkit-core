@@ -1,0 +1,75 @@
+import { Type } from "class-transformer";
+import {
+    ArrayMaxSize,
+    IsArray,
+    IsIn,
+    IsInt,
+    IsNotEmpty,
+    IsOptional,
+    IsString,
+    MaxLength,
+    Min,
+    ValidateNested,
+} from "class-validator";
+import { AssistantMessage, CompletionRequest, HealthSnapshot } from "./{{ module_name }}.service";
+
+export class MessagePayloadDto implements AssistantMessage {
+    @IsString()
+    @IsIn(["user", "assistant", "system"])
+    role!: "user" | "assistant" | "system";
+
+    @IsString()
+    @IsNotEmpty()
+    content!: string;
+
+    @IsOptional()
+    metadata?: Record<string, unknown>;
+}
+
+export class CompletionRequestDto implements CompletionRequest {
+    @IsString()
+    @IsNotEmpty()
+    @MaxLength(4000)
+    prompt!: string;
+
+    @IsOptional()
+    @IsString()
+    provider?: string;
+
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => MessagePayloadDto)
+    @ArrayMaxSize(50)
+    context?: MessagePayloadDto[];
+
+    @IsOptional()
+    settings?: Record<string, unknown>;
+}
+
+export class ProviderConfigDto {
+    @IsString()
+    name!: string;
+
+    @IsString()
+    providerType!: string;
+
+    @IsOptional()
+    options?: Record<string, unknown>;
+
+    @IsOptional()
+    enabled?: boolean;
+}
+
+export class {{ module_class_name }}ConfigDto {
+    @IsString()
+    defaultProvider = "echo";
+
+    @IsInt()
+    @Min(1)
+    conversationWindow = 20;
+
+    @IsOptional()
+    providers?: ProviderConfigDto[];
+}
+
+export type HealthResponseDto = HealthSnapshot;

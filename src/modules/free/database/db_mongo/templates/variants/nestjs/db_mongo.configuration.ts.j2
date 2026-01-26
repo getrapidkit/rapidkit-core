@@ -1,0 +1,68 @@
+import { registerAs } from '@nestjs/config';
+
+interface DbMongoConfig {
+  module: string;
+  connection: {
+    uri: string;
+    database: string;
+    appName: string;
+    authSource: string;
+    replicaSet: string | null;
+    readPreference: string;
+    retryReads: boolean;
+    retryWrites: boolean;
+    compressors: string[];
+  };
+  pool: {
+    min: number;
+    max: number;
+  };
+  timeouts: {
+    connectMs: number;
+    serverSelectionMs: number;
+    maxIdleMs: number;
+  };
+  security: {
+    tls: boolean;
+    tlsAllowInvalidCertificates: boolean;
+  };
+  health: {
+    timeoutMs: number;
+    collectMetrics: boolean;
+  };
+}
+
+export const dbMongoConfiguration = registerAs(
+  'dbMongo',
+  (): DbMongoConfig => ({
+    module: {{ rapidkit_vendor_module | tojson }},
+    connection: {
+      uri: {{ mongo_defaults.get('connection_uri') | tojson }},
+      database: {{ mongo_defaults.get('database') | tojson }},
+      appName: {{ mongo_defaults.get('app_name') | tojson }},
+      authSource: {{ mongo_defaults.get('auth_source') | tojson }},
+      replicaSet: {{ mongo_defaults.get('replica_set') | tojson }},
+      readPreference: {{ mongo_defaults.get('read_preference') | tojson }},
+      retryReads: {{ 'true' if mongo_defaults.get('retry_reads') else 'false' }},
+      retryWrites: {{ 'true' if mongo_defaults.get('retry_writes') else 'false' }},
+      compressors: {{ mongo_defaults.get('compressors', []) | tojson }},
+    },
+    pool: {
+      min: {{ mongo_defaults.get('min_pool_size', 0) }},
+      max: {{ mongo_defaults.get('max_pool_size', 20) }},
+    },
+    timeouts: {
+      connectMs: {{ mongo_defaults.get('connect_timeout_ms', 5000) }},
+      serverSelectionMs: {{ mongo_defaults.get('server_selection_timeout_ms', 8000) }},
+      maxIdleMs: {{ mongo_defaults.get('max_idle_time_ms', 120000) }},
+    },
+    security: {
+      tls: {{ 'true' if mongo_defaults.get('tls') else 'false' }},
+      tlsAllowInvalidCertificates: {{ 'true' if mongo_defaults.get('tls_allow_invalid_certificates') else 'false' }},
+    },
+    health: {
+      timeoutMs: {{ health_defaults.get('ping_timeout_ms', 1500) }},
+      collectMetrics: {{ 'true' if health_defaults.get('metrics', True) else 'false' }},
+    },
+  }),
+);

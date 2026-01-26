@@ -1,0 +1,16 @@
+// Storage configuration
+storage: {
+  adapter: process.env.STORAGE_ADAPTER || 'local',
+  basePath: process.env.STORAGE_BASE_PATH || './storage/uploads',
+  maxFileSize: parseInt(process.env.STORAGE_MAX_FILE_SIZE || '104857600', 10),
+  s3: {
+    enabled: !!process.env.S3_BUCKET,
+    bucket: process.env.S3_BUCKET || '',
+    region: process.env.S3_REGION || 'us-east-1',
+  },
+  gcs: {
+    enabled: !!process.env.GCS_BUCKET,
+    bucket: process.env.GCS_BUCKET || '',
+    projectId: process.env.GCS_PROJECT_ID || '',
+  },
+},

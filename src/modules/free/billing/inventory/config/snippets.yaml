@@ -1,0 +1,27 @@
+# Register snippet bundles for Inventory
+snippets:
+  - name: restock-webhook
+    description: Enable webhook dispatch when stock drops below the configured threshold.
+    context:
+      notifications:
+        channels:
+          - webhook
+        low_stock:
+          enabled: true
+          include_reservations: true
+  - name: multi-warehouse
+    description: Example multi-warehouse topology with differing backorder policies.
+    context:
+      warehouses:
+        primary:
+          allow_backorders: false
+        eu_central:
+          code: eu-central
+          name: Frankfurt Hub
+          location: eu-central
+          allow_backorders: true
+        us_east:
+          code: us-east
+          name: Virginia Hub
+          location: us-east
+          allow_backorders: false

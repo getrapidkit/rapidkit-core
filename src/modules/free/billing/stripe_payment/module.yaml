@@ -1,0 +1,199 @@
+name: stripe_payment
+display_name: Stripe Payment
+description: Stripe payments and subscriptions
+version: 0.1.0
+access: free
+status: stable
+tier: free
+category: billing
+generated_from_config: true
+depends_on:
+    - free/database/db_postgres
+    - free/essentials/settings
+    - free/users/users_core
+tags:
+    - billing
+    - stripe-payment
+profile_inherits:
+    fastapi.standard: fastapi
+    fastapi.ddd: fastapi
+    nestjs.standard: nestjs
+config_sources:
+    - config/base.yaml
+    - config/snippets.yaml
+generation:
+    vendor:
+        root: .rapidkit/vendor
+        files:
+            - template: templates/base/stripe_payment.py.j2
+              relative: src/modules/free/billing/stripe_payment/stripe_payment.py
+            - template: templates/base/stripe_payment_health.py.j2
+              relative: src/health/stripe_payment.py
+            - template: templates/base/stripe_payment_types.py.j2
+              relative: src/modules/free/billing/stripe_payment/types/stripe_payment.py
+            - template: templates/vendor/nestjs/configuration.js.j2
+              relative: nestjs/configuration.js
+    variants:
+        fastapi: &fastapi_variant
+            root: .
+            context:
+                framework: fastapi
+                module_class_name: StripePayment
+                vendor_runtime_relative: src/modules/free/billing/stripe_payment/stripe_payment.py
+            files:
+                - template: templates/variants/fastapi/stripe_payment.py.j2
+                  output: src/modules/free/billing/stripe_payment/stripe_payment.py
+                - template: templates/variants/fastapi/stripe_payment_routes.py.j2
+                  output: src/modules/free/billing/stripe_payment/routers/stripe_payment.py
+                - template: templates/variants/fastapi/stripe_payment_types.py.j2
+                  output: src/modules/free/billing/stripe_payment/types/stripe_payment.py
+                - template: templates/variants/fastapi/stripe_payment_config.yaml.j2
+                  output: config/stripe_payment.yaml
+                - template: templates/tests/integration/test_stripe_payment_integration.j2
+                  output: tests/modules/integration/billing/stripe_payment/test_stripe_payment_integration.py
+                - template: templates/variants/fastapi/tests/test_stripe_payment_e2e.py
+                  output: tests/modules/e2e/free/billing/stripe_payment/test_stripe_payment_e2e.py
+        fastapi.standard: *fastapi_variant
+        fastapi.ddd: *fastapi_variant
+        nestjs: &nestjs_variant
+            root: .
+            context:
+                framework: nestjs
+                vendor_configuration_relative: nestjs/configuration.js
+                vendor_runtime_relative: src/modules/free/billing/stripe_payment/stripe_payment.py
+                module_class_name: StripePayment
+                module_kebab: stripe-payment
+            files:
+                - template: templates/variants/nestjs/stripe_payment.service.ts.j2
+                  output: src/modules/free/billing/stripe_payment/stripe-payment.service.ts
+                - template: templates/variants/nestjs/stripe_payment.controller.ts.j2
+                  output: src/modules/free/billing/stripe_payment/stripe-payment.controller.ts
+                - template: templates/variants/nestjs/stripe_payment.module.ts.j2
+                  output: src/modules/free/billing/stripe_payment/stripe-payment.module.ts
+                - template: templates/variants/nestjs/stripe_payment.health.ts.j2
+                  output: src/modules/free/billing/stripe_payment/stripe-payment.health.ts
+                - template: templates/variants/nestjs/stripe_payment.routes.ts.j2
+                  output: src/modules/free/billing/stripe_payment/stripe-payment.routes.ts
+                - template: templates/variants/nestjs/stripe_payment.configuration.ts.j2
+                  output: src/modules/free/billing/stripe_payment/stripe-payment.configuration.ts
+                - template: templates/variants/nestjs/__tests__/stripe_payment.integration.spec.ts.j2
+                  output: tests/modules/integration/billing/stripe-payment.integration.spec.ts
+                - template: templates/variants/nestjs/tests/stripe_payment.e2e-spec.ts
+                  output: tests/modules/e2e/free/billing/stripe_payment/stripe_payment.e2e-spec.ts
+        nestjs.standard: *nestjs_variant
+    snippets:
+        enabled: true
+        config: config/snippets.yaml
+        default: []
+compatibility:
+    python: ">=3.10,<4.0"
+    node: ">=18,<21"
+    frameworks:
+        - fastapi
+        - nestjs
+    os:
+        - linux
+        - darwin
+        - windows
+testing:
+    coverage_min: 85
+    integration_tests: true
+    e2e_tests: false
+    unit_tests:
+        - test_stripe_payment_generator.py
+        - test_stripe_payment_overrides.py
+        - test_stripe_payment_runtime.py
+        - test_stripe_payment_adapters.py
+        - test_stripe_payment_validation.py
+        - test_stripe_payment_error_handling.py
+        - test_stripe_payment_health_check.py
+        - test_stripe_payment_framework_variants.py
+        - test_stripe_payment_vendor_layer.py
+        - test_stripe_payment_configuration.py
+        - test_stripe_payment_versioning.py
+        - test_stripe_payment_integration.py
+        - test_stripe_payment_standard_module.py
+    fixtures:
+        - conftest.py
+documentation:
+    changelog: docs/changelog.md
+    readme: README.md
+    overview: docs/overview.md
+    usage: docs/usage.md
+    advanced: docs/advanced.md
+    migration: docs/migration.md
+    troubleshooting: docs/troubleshooting.md
+    api_docs: docs/api-reference.md
+    examples: []
+support:
+    issues: https://github.com/getrapidkit/core/issues
+    discussions: https://github.com/getrapidkit/core/discussions
+    documentation: https://docs.rapidkit.top/modules/billing/stripe_payment
+changelog:
+    - version: 0.1.0
+      date: "2025-12-14"
+      notes: See docs/changelog.md
+validation:
+    pre_install:
+        - check_python_version
+    post_install:
+        - validate_generated_code
+rollback:
+    strategy: uninstall
+    backup_path: .rapidkit/backups/
+    max_backups: 3
+performance:
+    lazy_loading: true
+    caching:
+        templates: true
+        ttl: 300
+capabilities: []
+signature:
+    signature: bDhkYIWl9TJBtA6duaPUG7ygIGJeBCBFspfQ1QVhiEHCHR7DiIVH8AiEWMIEFq38DNjMI4yw2R+s4k8h1ehPBw==
+    signer_id: c7eb213b1ac6d8c6
+    signature_version: v1
+signer_id: null
+signature_version: null
+file_hashes:
+    templates/variants/nestjs/tests/stripe_payment.e2e-spec.ts: sha256:88e8c78ab7cf5b3fc2821b98f1e6e5632d1e2d7f767f1373f75f6e61b14f77a6
+    templates/variants/fastapi/tests/test_stripe_payment_e2e.py: sha256:be6181e8980e17f61bce19d460c351b41504cfe466d03a4dcaa79cbd38791795
+    scripts/run_demo.py: sha256:3ef9c3c06d25b16ec5582ad80d4550eca129c19a723a04f60e9b5b9d2437da25
+    README.md: sha256:fa06cb08654d44bfd24435c3017d1a88c960fb7f5f072f9f884bd1c650468a80
+    __init__.py: sha256:72107264269976f849670dc0c9148918e4c212481de833223f2e0ebe15a6a027
+    config/base.yaml: sha256:1f9f6b53435d77ef5b02777615d9e69e45f32e9cf6b54dea155bc35d27c8aae2
+    config/snippets/customer-portal-webhook.yaml: sha256:9460e11051666e7a697b93552cf7d75c0c55dbe7470516fb92546fc53f5ca4ab
+    config/snippets/enhanced-retries.yaml: sha256:fb968293a0405f7c72e3135176a809890384de75fe96703730249bd39ec0cdaa
+    config/snippets.yaml: sha256:05489030f7c2075afefade74b9df4435cfc7d5b6771a501b243f985ba5a8babf
+    docs/README.md: sha256:1193df040565687041e1c92bd5b1da41fa86c39f08e5a6ca7a7a12e36b918f05
+    docs/advanced.md: sha256:473470a3f11fbfb73c9504dc36c03e3f477071cd80504a2746adf2301a384006
+    docs/api-reference.md: sha256:39e3c094eb6235697ce364ffbba79588f2cf96542330c2272c672976cac56250
+    docs/changelog.md: sha256:53862a1ce3598c9f1c4b460de246b2a069fc0d602563ed0e6fc55677fcf10190
+    docs/migration.md: sha256:e200139cabc67f12f99dec7033f1c11d84ec8afd1e81549a62558848f22023f3
+    docs/overview.md: sha256:bf4b4310242df7a3e75dcaff0550b5be3a3ce4480b61791dbd159572116cc2e9
+    docs/troubleshooting.md: sha256:67091fbaaea27ee808f2a960c5f5aac2b83a416518b81a26a73d1a7878313750
+    docs/usage.md: sha256:72ce6c62b3623b86a2e758594eb3295773e4772dceb905e8e8c9ac64c5c98bf4
+    frameworks/__init__.py: sha256:8295d60244e350d32875f5d5eed07373652c3e57e4ea1d46ab3764f2e784a592
+    frameworks/fastapi.py: sha256:1361ed2709d2f94ea8385add2a06e40baba266da03b412597dbcc436394127b7
+    frameworks/nestjs.py: sha256:e8f8d70f6d90164fa05ae988a1e585504a7160699e4cfd7d30ce7034ad4916fb
+    generate.py: sha256:d16051bc22c942d5a626119152062b32fa8852c7b89d756e98bebc04f0d05d71
+    module.verify.json: sha256:2833abce73c53ec2c7fe8411a5fee30021e3fd83733977212db6053529e81c0d
+    overrides.py: sha256:c08a11a365fb8b85a7e0fbbecef5a80139b214c370c963a2afbd9c31028b88eb
+    templates/base/stripe_payment.py.j2: sha256:510e8a4a468b7f73a12ec831a821f46bb3165e567b2763b0b0ae06315432dffa
+    templates/base/stripe_payment_health.py.j2: sha256:3feac1dedc14d1271a6cb6d458ca2765f1702b1f22f3933011d55ec66e8acddc
+    templates/base/stripe_payment_types.py.j2: sha256:4e2fc59a830d0e3391aba9e42abf5b265e0257bb8ae644c460b25f567b8a2aea
+    templates/snippets/stripe_payment.snippet.j2: sha256:a46733d956a132f309030733f925cc1768c103bca0965822318bcb006432ddf7
+    templates/tests/__init__.py: sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+    templates/tests/integration/test_stripe_payment_integration.j2: sha256:f90dc3c7a7fc7605be156e4866099a364cf95ae5fac6a83eb0c7ab633bb5b06c
+    templates/variants/fastapi/stripe_payment.py.j2: sha256:178a566021182041660910d31ace9fad9c9511e6ce9d53a88c8a9cf2a6b5ace9
+    templates/variants/fastapi/stripe_payment_config.yaml.j2: sha256:3054fd7b6b12a530a2e9d72630faac12f4bbb12983cc1d2e239734dfa4aa9059
+    templates/variants/fastapi/stripe_payment_health.py.j2: sha256:633160e42446f7ba0366df5d97a1760b26a8a37a4cbab8dc12a824a1dcd29580
+    templates/variants/fastapi/stripe_payment_routes.py.j2: sha256:114968252f2ff3b812f7e9657a69b96e79c95d3a358593b977172a5b29268d99
+    templates/variants/fastapi/stripe_payment_types.py.j2: sha256:c66224ceb3b4c4b40851f71bb71810ede158bc9d70e13c9e206ac90847f1ac79
+    templates/variants/nestjs/__tests__/stripe_payment.integration.spec.ts.j2: sha256:cc5fb0a2a750f6bc6f7229758e08f9cfc0e67f93c684e1c4450864a1a994e429
+    templates/variants/nestjs/stripe_payment.configuration.ts.j2: sha256:d0e66559504ae08858ec60973aabbd6d68cbf68c21756bd88e8a541033324741
+    templates/variants/nestjs/stripe_payment.controller.ts.j2: sha256:4ac049062019cc6b242d6ee167ba64bb81ad7d4f9156fb1c9bb5d2405fcc04fa
+    templates/variants/nestjs/stripe_payment.health.ts.j2: sha256:d879f04f237536f00e5444f30990e48be2943cfd2ba3008d7721ca84e0197a32
+    templates/variants/nestjs/stripe_payment.module.ts.j2: sha256:99941726dccf3bfbea71e1052045b9bbb0f67fec4fb6f8cfdf7fdb7070d2f6ec
+    templates/variants/nestjs/stripe_payment.routes.ts.j2: sha256:bf0b6cd0eebb9cfa547e412bae4ac52f90cdf8f5801e4f0e541ca8b39a843e85
+    templates/variants/nestjs/stripe_payment.service.ts.j2: sha256:b09457d8ca4d913e428949f456a3a7c695e85830528e5ada48427e56001bcf63
+    templates/vendor/nestjs/configuration.js.j2: sha256:318767c2fb06ddd36c3ef13d139b49d4d7e7364cc13d49ebf8d8311d2b21e433

@@ -1,0 +1,13 @@
+export interface IFileUpload {
+  filename: string;
+  size: number;
+  mimetype: string;
+}
+
+export interface IFileInfo {
+  fileId: string;
+  filename: string;
+  size: number;
+  createdAt: Date;
+  url?: string;
+}

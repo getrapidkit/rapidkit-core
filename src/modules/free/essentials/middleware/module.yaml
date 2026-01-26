@@ -1,0 +1,201 @@
+name: middleware
+version: 0.1.13
+tier: free
+access: free
+status: stable
+category: essentials
+description: HTTP middleware pipeline with FastAPI and NestJS support.
+tags:
+- essentials
+- middleware
+- http
+generated_from_config: true
+depends_on: []
+profile_inherits:
+  fastapi.standard: fastapi
+  fastapi.ddd: fastapi
+  nestjs.standard: nestjs
+config_sources:
+- config/base.yaml
+- config/snippets.yaml
+metadata:
+  title: HTTP Middleware
+  description: FastAPI middleware for request/response processing, CORS, headers,
+    and timing
+  maintainer: RapidKit Core Team
+  support_contact: platform@rapidkit.top
+generation:
+  vendor:
+    root: .rapidkit/vendor
+    files:
+    - template: templates/base/middleware_health.py.j2
+      relative: src/health/middleware.py
+    - template: templates/base/middleware.py.j2
+      relative: src/modules/free/essentials/middleware/middleware.py
+    - template: templates/base/middleware_types.py.j2
+      relative: src/modules/free/essentials/middleware/types.py
+    - template: templates/vendor/nestjs/configuration.js.j2
+      relative: middleware/nestjs/configuration.js
+    - template: templates/vendor/nestjs/middleware.health.ts.j2
+      relative: middleware/nestjs/middleware.health.ts
+  variants:
+    fastapi: &fastapi_variant
+      root: .
+      context: &fastapi_context
+        framework: fastapi
+        module_class_name: Middleware
+        runtime: python
+      files: &fastapi_files
+      - template: templates/variants/fastapi/middleware.py.j2
+        output: src/modules/free/essentials/middleware/middleware.py
+      - template: templates/base/middleware_health.py.j2
+        output: src/health/middleware.py
+        description: Shared middleware health helpers for FastAPI adapters
+      - template: templates/variants/fastapi/middleware_routes.py.j2
+        output: src/modules/free/essentials/middleware/routers/middleware.py
+      - template: templates/variants/fastapi/middleware_config.yaml.j2
+        output: src/modules/free/essentials/middleware/config/middleware.yaml
+        description: Runtime configuration defaults for Middleware module
+      - template: templates/tests/integration/test_middleware_integration.j2
+        output: tests/modules/free/essentials/middleware/test_middleware_integration.py
+        description: Integration tests for Middleware module
+      - template: templates/variants/fastapi/tests/test_middleware_e2e.py
+        output: tests/modules/e2e/free/essentials/middleware/test_middleware_e2e.py
+
+
+    # Compatibility aliases: the installer uses kit profile names.
+    fastapi.standard: *fastapi_variant
+    fastapi.ddd: *fastapi_variant
+
+    nestjs: &nestjs_variant
+      root: .
+      context: &nestjs_context
+        framework: nestjs
+        vendor_configuration_relative: middleware/nestjs/configuration.js
+        module_class_name: Middleware
+        module_kebab: middleware
+        runtime: node
+      files: &nestjs_files
+      - template: templates/variants/nestjs/middleware.service.ts.j2
+        output: src/modules/free/essentials/middleware/service.ts
+      - template: templates/variants/nestjs/middleware.controller.ts.j2
+        output: src/modules/free/essentials/middleware/controller.ts
+      - template: templates/variants/nestjs/middleware.module.ts.j2
+        output: src/modules/free/essentials/middleware/module.ts
+      - template: templates/variants/nestjs/middleware.configuration.ts.j2
+        output: src/modules/free/essentials/middleware/configuration.ts
+        description: NestJS configuration registration for Middleware module
+      - template: templates/tests/integration/middleware.integration.spec.ts.j2
+        output: tests/modules/integration/essentials/middleware/middleware.integration.spec.ts
+        description: NestJS integration spec validating Middleware endpoints
+
+    nestjs.standard: *nestjs_variant
+
+  snippets:
+    enabled: true
+    config: config/snippets.yaml
+    default: []
+compatibility:
+  breaking: 1.0.0
+  deprecated: null
+  migration_guide: https://docs.rapidkit.top/modules/middleware/migration
+  python: '>=3.10'
+  frameworks:
+  - fastapi
+  - nestjs
+  os:
+  - linux
+  - darwin
+  - windows
+testing:
+  coverage_min: 85
+  integration_tests: true
+  e2e_tests: false
+  unit_tests:
+  - tests/modules/free/essentials/middleware/test_middleware_cli_entry.py
+  - tests/modules/free/essentials/middleware/test_middleware_generate.py
+  - tests/modules/free/essentials/middleware/test_middleware_vendor_layer.py
+  - tests/modules/free/essentials/middleware/test_middleware_health_check.py
+  - tests/modules/free/essentials/middleware/test_middleware_versioning.py
+  - tests/modules/free/essentials/middleware/test_middleware_framework_variants.py
+  integration_test_files:
+  - tests/modules/integration/essentials/middleware/test_middleware_integration.py
+  - tests/modules/integration/middleware/middleware.integration.spec.ts
+  fixtures: []
+documentation:
+  changelog: docs/changelog.md
+  readme: README.md
+  overview: docs/overview.md
+  usage: docs/usage.md
+  advanced: docs/advanced.md
+  migration: docs/migration.md
+  troubleshooting: docs/troubleshooting.md
+  api_docs: null
+  examples: []
+support:
+  issues: https://github.com/getrapidkit/core/issues
+  discussions: https://github.com/getrapidkit/core/discussions
+  documentation: https://docs.rapidkit.top/modules/middleware
+changelog:
+  - version: "0.1.13"
+    date: "2025-12-25"
+    notes: "See docs/changelog.md"
+validation:
+  pre_install:
+  - check_python_version
+  - check_dependencies
+  post_install:
+  - validate_generated_code
+  - run_tests
+rollback:
+  strategy: uninstall
+  backup_path: .rapidkit/backups/
+  max_backups: 5
+performance:
+  lazy_loading: true
+  caching:
+    templates: true
+    ttl: 300
+capabilities: []
+file_hashes:
+  templates/variants/fastapi/tests/test_middleware_e2e.py: sha256:cbc5f140a0497b7cc80c0ed3ba963163059631dae9e8977120395adbed6e005e
+  scripts/run_demo.py: sha256:8e8342deb23eb5631a2ad031b8e2bafc051cd3a37efb9a4f41d5e45e2b51c54a
+  README.md: sha256:24b4202d38ef011b33d8694b4d53265b6c38afa4bf3b5ece83e9ec00901431f3
+  __init__.py: sha256:6107cf5d780c22c2841237d197137ba8178ae908d14000e9d3f00f6ac44d7282
+  config/base.yaml: sha256:ea02b0a91b016100eabba5729bc1ae8c3d1db7442e0123f4e5b21cdf43159263
+  config/snippets.yaml: sha256:b8414ddee3486c8f44946d744d78f8f3baff1c1ca3c98937c3ed4b2f67b8ccc3
+  docs/README.md: sha256:60831d21dee4ef1eac6a97a122a63a76c50baef757cf69ea7e322791fa149666
+  docs/advanced.md: sha256:19acbdc2d24b6e9451488655cf63f83dc2ada3c6dea9e0541396251372710c2d
+  docs/changelog.md: sha256:ab21ea46316e8aad9cf24e922acd6d5010035080c24a6db2b271afb77ddb4db7
+  docs/migration.md: sha256:a3a1767cc35e440c3e2024f8f60a73601b8377ec288d0b151d5f3fcb43959696
+  docs/overview.md: sha256:0f2c1a3d8291715ab27c9743589174eb9f64616247e27c45a3b5f670a9325045
+  docs/troubleshooting.md: sha256:07882edb432fff1054e913d260b6a222231dc7697c242e37d408aca73453e75d
+  docs/usage.md: sha256:fcd4a73ffd061e94e6989353c21026010e4d50fd75324622f65e30dcb34f928b
+  frameworks/__init__.py: sha256:b9ecbc71e099eac5bbafdfb3298b8cb844f723fe635ead8b7e3068c637b281a6
+  frameworks/fastapi.py: sha256:1e5a0b19ba20ad9806310d1df56d76250664befc38870a437ac9415e498edcf3
+  frameworks/nestjs.py: sha256:846b88668b0c9701fceada0da60f404e4b0b1f19fd0ccb27086f0eb4739fae58
+  generate.py: sha256:997c6a5e7097f9e85c46969e7d401a5b5a696f38d4e765282ee0f9659a449628
+  module.verify.json: sha256:aa3436dd5bdeedb88d8f72da8aeab56e1e567979f86d36403bd1e0d40f9ae3f3
+  overrides.py: sha256:f2e33991beff3b32569cacb8a6ef9806dcea4eda1b5598ac3a3a29168475d293
+  templates/base/middleware.py.j2: sha256:a179c2f4797b20084077b1d1ec37edc870a89b3b717971e162e6866ef7de1b01
+  templates/base/middleware_health.py.j2: sha256:9b633458d7ec63e46215542938fd4b68b04b1dfa5e91f4388a0e7c70a8b85a69
+  templates/base/middleware_types.py.j2: sha256:93be5191a4d5ee8910476ce07e73c6288a5185642359a17afe8a200dadc49802
+  templates/snippets/middleware.snippet.j2: sha256:ab4cc60a4c5c81098c5d295b1e22d08615747295cefb72aa1a0aab9758736854
+  templates/tests/__init__.py: sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+  templates/tests/integration/middleware.integration.spec.ts.j2: sha256:2b6f31fc22acf71d4c6cbca81a1149684e3427cae287790ccdcd357ed1038fa7
+  templates/tests/integration/test_middleware_integration.j2: sha256:d758f28f96e948491eb0d9355aefc75ff0e8ace2eeb9cd417b91a011ac5bcebd
+  templates/variants/fastapi/middleware.py.j2: sha256:b3a91da379660de9ca46afe94bfba863deda72ddcd08926d8a3d7b7ee9802017
+  templates/variants/fastapi/middleware_config.yaml.j2: sha256:f14252f42d4b27d7cfce8f9dfc23bc5b283dcf978e2e5063f88aac2675c10325
+  templates/variants/fastapi/middleware_routes.py.j2: sha256:0c2596ff20f5e85fde8b7eb7c6da97686ff7d7f6b2fd094f96b8ca9b1494808e
+  templates/variants/nestjs/middleware.configuration.ts.j2: sha256:4bd20dfb3cbb9a9c6ba9cc64e4e660502417cf86a533336c185b8f9a4dae82e0
+  templates/variants/nestjs/middleware.controller.ts.j2: sha256:cdae1732a73a24e6c84dfe09ee723b1be16e9e207cd891e64846d4936a4a93ea
+  templates/variants/nestjs/middleware.module.ts.j2: sha256:cef588895d22e4a29e7e93c62ebc704878b9cfad164a8de273ed688f37f31ba9
+  templates/variants/nestjs/middleware.service.ts.j2: sha256:cd06bb18f1dcc5e338e73e8e291d59817da935f19252abb49d0b08892db03987
+  templates/vendor/nestjs/configuration.js.j2: sha256:8d65283eba020ad3eb50b12678da13f28a2965775c2b8486e58a4e60909ecabe
+  templates/vendor/nestjs/middleware.health.ts.j2: sha256:0ca8a2a60a222085fa00b8802e3374130ba2fcdb6fec0dea85e5d1577fca169e
+signature:
+  signature: null
+  signer_id: null
+  signature_version: null
+signer_id: null
+signature_version: null

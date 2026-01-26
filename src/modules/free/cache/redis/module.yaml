@@ -1,0 +1,200 @@
+name: redis
+description: Unified Redis cache integration
+category: cache
+version: 0.1.8
+access: free
+status: stable
+tags:
+- cache
+- datastore
+- redis
+generated_from_config: true
+depends_on:
+- free/essentials/settings
+profile_inherits:
+  fastapi.standard: fastapi
+  fastapi.ddd: fastapi
+  nestjs.standard: nestjs
+config_sources:
+- config/base.yaml
+- config/snippets.yaml
+generation:
+  vendor:
+    root: .rapidkit/vendor
+    files:
+    - template: templates/base/redis_client.py.j2
+      relative: src/modules/free/cache/redis/client.py
+    - template: templates/base/redis.py.j2
+      relative: src/modules/free/cache/redis/runtime.py
+    - template: templates/base/redis_types.py.j2
+      relative: src/modules/free/cache/redis/redis_types.py
+    - template: templates/base/redis_health.py.j2
+      relative: src/health/redis.py
+    - template: templates/base/redis_package_init.py.j2
+      relative: src/modules/free/cache/redis/__init__.py
+    - template: templates/vendor/nestjs/configuration.js.j2
+      relative: nestjs/configuration.js
+  variants:
+    fastapi: &fastapi_variant
+      root: .
+      context:
+        framework: fastapi
+      files:
+      - template: templates/variants/fastapi/redis_client.py.j2
+        output: src/modules/free/cache/redis/client.py
+      - template: templates/variants/fastapi/redis_package_init.py.j2
+        output: src/modules/free/cache/redis/__init__.py
+      - template: templates/variants/fastapi/redis_module.py.j2
+        output: src/modules/free/cache/redis/redis.py
+      - template: templates/variants/fastapi/redis_health.py.j2
+        output: src/health/redis.py
+      - template: templates/variants/fastapi/redis_routes.py.j2
+        output: src/modules/free/cache/redis/routers/redis.py
+      - template: templates/variants/fastapi/redis_config.yaml.j2
+        output: config/cache/redis.yaml
+      - template: templates/tests/integration/test_redis_integration.j2
+        output: tests/modules/free/cache/redis/test_redis_integration.py
+      - template: templates/variants/fastapi/tests/test_redis_e2e.py
+        output: tests/modules/e2e/free/cache/redis/test_redis_e2e.py
+    fastapi.standard: *fastapi_variant
+    fastapi.ddd: *fastapi_variant
+    nestjs: &nestjs_variant
+      root: .
+      context:
+        framework: nestjs
+      files:
+      - template: templates/variants/nestjs/configuration.ts.j2
+        output: src/modules/free/cache/redis/configuration.ts
+      - template: templates/variants/nestjs/redis.service.ts.j2
+        output: src/modules/free/cache/redis/redis.service.ts
+      - template: templates/variants/nestjs/redis.module.ts.j2
+        output: src/modules/free/cache/redis/redis.module.ts
+      - template: templates/variants/nestjs/redis.controller.ts.j2
+        output: src/modules/free/cache/redis/redis.controller.ts
+      - template: templates/variants/nestjs/redis.health.ts.j2
+        output: src/modules/free/cache/redis/redis.health.ts
+      - template: templates/variants/nestjs/index.ts.j2
+        output: src/modules/free/cache/redis/index.ts
+      - template: templates/variants/nestjs/validation.ts.j2
+        output: src/modules/free/cache/redis/redis.validation.ts
+      - template: templates/tests/integration/redis.integration.spec.ts.j2
+        output: tests/modules/integration/cache/redis/redis.integration.spec.ts
+      - template: templates/variants/nestjs/tests/redis.e2e-spec.ts
+        output: tests/modules/e2e/free/cache/redis/redis.e2e-spec.ts
+    nestjs.standard: *nestjs_variant
+  snippets:
+    enabled: true
+    config: config/snippets.yaml
+    default: []
+compatibility:
+  python: '>=3.10,<4.0'
+  node: '>=18'
+  frameworks:
+  - fastapi
+  - nestjs
+  os:
+  - linux
+  - darwin
+  - windows
+testing:
+  coverage_min: 85
+  integration_tests: true
+  e2e_tests: false
+  unit_tests:
+  - tests/modules/free/cache/redis/test_redis_generate.py
+  - tests/modules/free/cache/redis/test_redis_overrides.py
+  fixtures: []
+documentation:
+  changelog: docs/changelog.md
+  readme: README.md
+  overview: docs/overview.md
+  usage: docs/usage.md
+  advanced: docs/advanced.md
+  migration: docs/migration.md
+  troubleshooting: docs/troubleshooting.md
+  api_docs: null
+  examples: []
+support:
+  issues: https://github.com/getrapidkit/core/issues
+  discussions: https://github.com/getrapidkit/core/discussions
+  documentation: https://docs.rapidkit.top/modules/redis
+changelog:
+- version: 0.1.8
+  date: '2025-12-14'
+  notes: See docs/changelog.md
+validation:
+  pre_install:
+  - check_python_version
+  - check_dependencies
+  post_install:
+  - validate_generated_code
+  - run_tests
+rollback:
+  strategy: uninstall
+  backup_path: .rapidkit/backups/
+  max_backups: 5
+performance:
+  lazy_loading: true
+  caching:
+    templates: true
+    ttl: 300
+tier: free
+capabilities:
+- cache
+signature:
+  signature: hMhNHMW3tQqmxklom+bRhDJ8KmBi4ZthT3NP7FNzOq2HoPFuj9NLoB90s1sjab3rrTNPDMcwO8Fn4dSezn7kCw==
+  signer_id: c7eb213b1ac6d8c6
+  signature_version: v1
+signer_id: null
+signature_version: null
+file_hashes:
+  templates/variants/nestjs/tests/redis.e2e-spec.ts: sha256:1a753bfaec0e2340e6e9670896de39c0c077be75720961226fcd42fc0d6bd615
+  templates/variants/fastapi/tests/test_redis_e2e.py: sha256:7d1f607edb1fe079187b6fd3b86ef51369964d9c4fb8c61a16c22ead3c3ff42b
+  scripts/run_demo.py: sha256:a9b0936c63fe04139e304c4a6cc7bff46bebabcea244e36aac18f79d26000071
+  README.md: sha256:37d53f69444ab5efa4e19b0be49530589d47a30cf29b1c344edadcb5b40b16b6
+  __init__.py: sha256:af77568bdc73aeedeb83cd91f143e888aa16af096591e2826a6e7b7c26a7195f
+  config/base.yaml: sha256:8faa4479b18ba357bfa3ba11a39e56afc87fdfb0caa2e774497ea94e80c5af74
+  config/snippets.yaml: sha256:78ca148c24166204df2fff57d28f2c56cd071f7e32a87cdc4aee30ad952f29a7
+  docs/README.md: sha256:0c9797743cebe7a12da0f22c2936bc4ef0801017fbbd326dc1a85397f376f658
+  docs/advanced.md: sha256:ef0dd4e3d9e800981b79717210c886b3b7f2c1499daf24ae8f0ecf69dafec1a8
+  docs/changelog.md: sha256:93ae5de1f4a5a587c43f40804372a825797fc758f737a2ed0ed894e742ec8318
+  docs/migration.md: sha256:446f4e3292a1a8e9133f26f452e67c0d900b9520c1b241affa0cf65b01f38a0b
+  docs/overview.md: sha256:4081333f36e011a86e2faec070a3bf19b94dc0b3fd4ee67b430dcfc2f463f44f
+  docs/troubleshooting.md: sha256:542f06db642e2133761e67f41446f24cad5b430a91ffb866ede577d96aa9f0fb
+  docs/usage.md: sha256:4a3c590ea7123e957c601aa3d80ec64138b390117e44c970bf7a8da3ec91fa6a
+  frameworks/__init__.py: sha256:4b63e2a567fa38ac2260f042bbbab1187d71c57867b824c0a6aadd5577a97222
+  frameworks/fastapi.py: sha256:b91bd1b0c65a0fdf6c4bf73634034563e0f6cb0b9700b208f08df549796975b1
+  frameworks/nestjs.py: sha256:52a668a1480dc92c555430400d1992e129c32664952cc1259965f3c0039753a7
+  generate.py: sha256:7a7bbc9f3b8fd1d1e7375a7faacd0616918fbc02d20f07b53e32c5a5effb058e
+  module.verify.json: sha256:2600b4ca7cdc40f121b83827c76d1585beefea2606109d644fd0a0a079a342b2
+  overrides.py: sha256:331fa8af37994ce9e8ad642aaffb9c04139f364f756d9100657eb57004cf35d8
+  templates/base/redis.py.j2: sha256:3c1034a679c0e47084bb8b955d03d2c75069440983abf146560547572d78cede
+  templates/base/redis_client.py.j2: sha256:3a32f8bda4eafa478229ca4158664c4bfc6d611f3f43bd8d7dac03df36a67155
+  templates/base/redis_health.py.j2: sha256:3082021e510ee61d97738694699bd6e0f249f40574952c6d69ea24215ffe156f
+  templates/base/redis_module.py.j2: sha256:c156f54c4542737ea0d774b66ff7aacf2517ac54af7e0190708b03e11a31acd9
+  templates/base/redis_package_init.py.j2: sha256:abc80f92ae49331dd883a47588f97424ed0f7b951a4d1aca2cfd6f5250f15b35
+  templates/base/redis_types.py.j2: sha256:01d9b8d22119926f6803943959b725099a3a7db2ab04580d32ac509b614bd8f7
+  templates/snippets/env.snippet.j2: sha256:51a204f80e1daac2a2c75e22fe244d456385179ac508bf6bef07f67509fa2e94
+  templates/snippets/health_probe_redis.snippet.j2: sha256:2aaf6770559b0a4599a4d6dd2401e2f41996b3f6114a4860292cd166eaf09009
+  templates/snippets/redis.snippet.j2: sha256:79350ccb1aad767b8a57dc50e17200b1a49c09fdf076557f013cae289c0c5772
+  templates/snippets/redis_fields.snippet.j2: sha256:80000773d8870446ab52e36d76b60abfb2d1b42bbead0b35f5f6f8fcca64b9be
+  templates/snippets/redis_fields_nestjs.snippet.j2: sha256:8f4e1fb5acaa3449e58383184fb2482f04371a9a0d84f2d2f7990b5f092d415c
+  templates/tests/__init__.py: sha256:1a3638691e014fd397f0c2263455f9b3f8b4249a9750d321d7ee24bad61cc250
+  templates/tests/integration/__init__.py: sha256:e87f3ea5107522b52f772c32ed4ad35925139311bebbcd9c542ec3f19ed2a012
+  templates/tests/integration/redis.integration.spec.ts.j2: sha256:c957f3d6de6d065a25cdaf3b0df0b0a3f849c67a1916ea86314769e1e6914b07
+  templates/tests/integration/test_redis_integration.j2: sha256:58e21ae5f64ede66b3ae1e3b31f502dbbc4fa86b43a05bf86053776704074793
+  templates/variants/fastapi/redis.py.j2: sha256:edf4b98e7546252b8ae041123e56e843d4f2d5a722eee32bf79881cf5e7474ea
+  templates/variants/fastapi/redis_client.py.j2: sha256:1fe4514621dfb0fe8694cf41a6d6872ae8deb1755aee7d763082db86f811006d
+  templates/variants/fastapi/redis_config.yaml.j2: sha256:e7169010a44b90654cc004ada172935f60ce21da31a1ab108a421f37c89efca0
+  templates/variants/fastapi/redis_health.py.j2: sha256:a651a9f94b9146a840c2f859dfd76e89160433666534b0082a4ff820f229b94d
+  templates/variants/fastapi/redis_module.py.j2: sha256:af85ac5ccc2ba88b78a31166025e6f19fc11fbce10f5b03760168e75573e9fb8
+  templates/variants/fastapi/redis_package_init.py.j2: sha256:e33d9d15ae6d6088791d93953a17f160a6b55217ef174d3cd5eb06ac5e221668
+  templates/variants/fastapi/redis_routes.py.j2: sha256:baa5068ce148118ec308e5f7d19b464036ebd8b0f338926197812443e4ab085b
+  templates/variants/nestjs/configuration.ts.j2: sha256:ecec58208f708639857895d125c073fe9c9c640cf28a79c6cee90804bea040db
+  templates/variants/nestjs/index.ts.j2: sha256:28288688a43a2549782ae86ef7558a6fb39b1fc92b4fa1fbaa210bcb32d7dde2
+  templates/variants/nestjs/redis.controller.ts.j2: sha256:54820e89f02a5cb10db9a7a5d0dd62109ab03b9cd28c26d0f312ab925ea0f282
+  templates/variants/nestjs/redis.health.ts.j2: sha256:111c70d88c0285079920bcdcbb1c68c848eb04129af5619b10ce1efbc1a8ce93
+  templates/variants/nestjs/redis.module.ts.j2: sha256:da93286e252e67125be802659bb5e18a96dfbda721e1c395eef866fde97c25d7
+  templates/variants/nestjs/redis.service.ts.j2: sha256:d3838d8781b797a4e479006570f5a1373716c0d86d0461a5db46f33406d24813
+  templates/variants/nestjs/validation.ts.j2: sha256:c6e04d1f901e0979ab2a5ad009e09ed35413ca28d578d486758c6fd79fc197a9
+  templates/vendor/nestjs/configuration.js.j2: sha256:15d5bb4ccd7a7f7ce54b3e3e7f07dd398616d804f320091764e576c673ce7816

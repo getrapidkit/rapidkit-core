@@ -1,0 +1,28 @@
+"""FastAPI shim exposing the canonical session health router."""
+
+from __future__ import annotations
+
+from typing import Any
+
+from src.modules.free.auth.session.session_types import SessionHealthSnapshot
+from src.health.session import (
+    register_session_health,
+    router as session_health_router,
+    session_health_check,
+)
+
+
+def build_health_router() -> Any:
+    """Return the generated session health router."""
+
+    return session_health_router
+
+
+router = session_health_router
+
+__all__ = [
+    "build_health_router",
+    "register_session_health",
+    "session_health_check",
+    "router",
+]

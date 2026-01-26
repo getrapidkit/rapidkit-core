@@ -1,0 +1,76 @@
+# Passwordless Authentication
+
+{% set defaults = passwordless_defaults %}
+{% set ttl_default = defaults.token_ttl_seconds | default(900) | tojson %}
+{% set length_default = defaults.token_length | default(8) | tojson %}
+{% set cooldown_default = defaults.resend_cooldown_seconds | default(60) | tojson %}
+{% set attempts_default = defaults.max_attempts | default(5) | tojson %}
+{% set delivery_methods_default = defaults.delivery_methods | default(['email', 'sms']) %}
+{% set delivery_methods_expr = delivery_methods_default | tojson %}
+{% set magic_link_default = defaults.magic_link_base_url | default('https://example.com/auth/passwordless') | tojson %}
+
+if "PASSWORDLESS_TOKEN_TTL_SECONDS" in locals():
+    PASSWORDLESS_TOKEN_TTL_SECONDS = Field(
+        default={{ ttl_default }},
+        description="Lifetime (seconds) for issued passwordless codes",
+    )
+else:
+    PASSWORDLESS_TOKEN_TTL_SECONDS: int = Field(
+        default={{ ttl_default }},
+        description="Lifetime (seconds) for issued passwordless codes",
+    )
+
+if "PASSWORDLESS_TOKEN_LENGTH" in locals():
+    PASSWORDLESS_TOKEN_LENGTH = Field(
+        default={{ length_default }},
+        description="Length of generated passwordless codes",
+    )
+else:
+    PASSWORDLESS_TOKEN_LENGTH: int = Field(
+        default={{ length_default }},
+        description="Length of generated passwordless codes",
+    )
+
+if "PASSWORDLESS_RESEND_COOLDOWN_SECONDS" in locals():
+    PASSWORDLESS_RESEND_COOLDOWN_SECONDS = Field(
+        default={{ cooldown_default }},
+        description="Cooldown interval before a new passwordless code can be re-issued",
+    )
+else:
+    PASSWORDLESS_RESEND_COOLDOWN_SECONDS: int = Field(
+        default={{ cooldown_default }},
+        description="Cooldown interval before a new passwordless code can be re-issued",
+    )
+
+if "PASSWORDLESS_MAX_ATTEMPTS" in locals():
+    PASSWORDLESS_MAX_ATTEMPTS = Field(
+        default={{ attempts_default }},
+        description="Maximum verification attempts permitted per token",
+    )
+else:
+    PASSWORDLESS_MAX_ATTEMPTS: int = Field(
+        default={{ attempts_default }},
+        description="Maximum verification attempts permitted per token",
+    )
+
+if "PASSWORDLESS_DELIVERY_METHODS" in locals():
+    PASSWORDLESS_DELIVERY_METHODS = Field(
+        default={{ delivery_methods_expr }},
+        description="Allowed delivery channels for passwordless codes",
+    )
+else:
+    PASSWORDLESS_DELIVERY_METHODS: List[str] = Field(
+        default={{ delivery_methods_expr }},
+        description="Allowed delivery channels for passwordless codes",
+    )
+
+if "PASSWORDLESS_MAGIC_LINK_BASE_URL" in locals():
+    PASSWORDLESS_MAGIC_LINK_BASE_URL = Field(
+        default={{ magic_link_default }},
+        description="Base URL used when generating passwordless magic links",
+    )
+else:
+    PASSWORDLESS_MAGIC_LINK_BASE_URL: str = Field(
+        default={{ magic_link_default }},
+        description="Base URL used when generating passwordless magic links",
+    )

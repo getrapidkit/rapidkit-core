@@ -1,0 +1,44 @@
+{
+  "checked_at": "2025-12-25T17:59:56.150100+00:00",
+  "description": "Lean module layout blueprint (v3)",
+  "extra_directories": [
+    "scripts"
+  ],
+  "extra_files": [
+    "scripts/run_demo.py",
+    "templates/base/db_postgres_health.py.j2",
+    "templates/base/postgres.py.j2"
+  ],
+  "missing_directories": [],
+  "missing_files": [],
+  "module": "free/database/db_postgres",
+  "parity": {
+    "fastapi": {
+      "declared": true,
+      "has_config": true,
+      "has_health": true,
+      "has_metadata": true,
+      "has_tests": true,
+      "issues": [],
+      "plugin": true,
+      "status": "ok"
+    },
+    "nestjs": {
+      "declared": true,
+      "has_config": true,
+      "has_health": true,
+      "has_metadata": true,
+      "has_tests": true,
+      "issues": [],
+      "plugin": true,
+      "status": "ok"
+    }
+  },
+  "parity_checked_at": "2025-12-07T20:54:32.624880+00:00",
+  "parity_valid": true,
+  "spec_version": 4,
+  "structure_tree_hash": "6741f135b1f2fa279fb905fe956e51bc64028d7a5e8689c0295406e1cd91e4dc",
+  "structure_valid": true,
+  "tree_hash": "6741f135b1f2fa279fb905fe956e51bc64028d7a5e8689c0295406e1cd91e4dc",
+  "valid": true
+}

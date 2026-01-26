@@ -1,0 +1,44 @@
+"""Health helpers for {{ module_title }}."""
+
+from __future__ import annotations
+
+from typing import Any, Dict, TYPE_CHECKING
+
+from types.db_sqlite import SqliteHealthReport
+
+if TYPE_CHECKING:
+    from database.db_sqlite import SqliteConnectionManager
+
+
+def perform_health_check(
+    connection_manager: "SqliteConnectionManager",
+    *,
+    extended: bool = False,
+) -> SqliteHealthReport:
+    """Run a PRAGMA quick_check (or integrity_check when extended) against the database."""
+
+    pragma = "integrity_check" if extended else "quick_check"
+    statement = f"PRAGMA {pragma}"
+    warnings: list[str] = []
+
+    try:
+        with connection_manager.connection() as connection:
+            cursor = connection.execute(statement)
+            result = cursor.fetchone()
+            detail = result[0] if result else "unknown"
+
+            if detail != "ok":
+                warnings.append(detail)
+                status = "degraded"
+            else:
+                status = "ok"
+
+            pragmas = {
+                "journal_mode": connection.execute("PRAGMA journal_mode").fetchone()[0],
+                "synchronous": connection.execute("PRAGMA synchronous").fetchone()[0],
+                "foreign_keys": connection.execute("PRAGMA foreign_keys").fetchone()[0],
+            }
+
+            return SqliteHealthReport(status=status, detail=detail, pragmas=pragmas, warnings=tuple(warnings))
+    except Exception as exc:  # pragma: no cover - surfaced in tests
+        return SqliteHealthReport(status="error", detail=str(exc), pragmas={}, warnings=tuple(warnings))

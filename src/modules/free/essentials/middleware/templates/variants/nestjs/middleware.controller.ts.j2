@@ -1,0 +1,18 @@
+import { Controller, Get } from '@nestjs/common';
+
+import { MiddlewareService } from './service';
+
+@Controller('{{ module_kebab }}')
+export class MiddlewareController {
+  constructor(private readonly service: MiddlewareService) {}
+
+  @Get()
+  readMetadata() {
+    return this.service.describe();
+  }
+
+  @Get('health')
+  readHealth() {
+    return this.service.getStatus();
+  }
+}

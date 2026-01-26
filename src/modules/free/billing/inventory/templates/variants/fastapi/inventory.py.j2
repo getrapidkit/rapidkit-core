@@ -1,0 +1,15 @@
+{% include "templates/base/inventory.py.j2" %}
+
+# FastAPI adapter helpers for {{ module_title }}.
+
+from fastapi import APIRouter, FastAPI
+
+from {{ module_import_base }}.routers.{{ module_name }} import build_router
+
+
+def register_fastapi(app: FastAPI, *, service: {{ module_class_name }} | None = None) -> APIRouter:
+    """Attach the {{ module_title }} router to the given FastAPI app."""
+
+    router = build_router(service=service)
+    app.include_router(router)
+    return router

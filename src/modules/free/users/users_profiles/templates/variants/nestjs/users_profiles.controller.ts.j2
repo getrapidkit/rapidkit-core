@@ -1,0 +1,28 @@
+import { Controller, Get } from "@nestjs/common";
+
+import {
+  UsersProfilesFeature,
+  UsersProfilesHealthPayload,
+  UsersProfilesMetadata,
+  {{ module_class_name }}Service,
+} from "./users_profiles.service";
+
+@Controller("users_profiles")
+export class {{ module_class_name }}Controller {
+  constructor(private readonly service: {{ module_class_name }}Service) {}
+
+  @Get("metadata")
+  getMetadata(): UsersProfilesMetadata {
+    return this.service.buildMetadata();
+  }
+
+  @Get("features")
+  listFeatures(): { features: UsersProfilesFeature[] } {
+    return { features: this.service.listFeatures() };
+  }
+
+  @Get("health")
+  async getHealth(): Promise<UsersProfilesHealthPayload> {
+    return this.service.resolveHealth();
+  }
+}

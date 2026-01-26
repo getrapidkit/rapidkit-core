@@ -1,0 +1,84 @@
+import { registerAs } from '@nestjs/config';
+
+interface ObservabilityMetricsConfig {
+  enabled: boolean;
+  exporter: string;
+  endpoint: string;
+  namespace: string;
+  retentionSeconds: number;
+  registerProcessMetrics: boolean;
+  defaultLabels: Record<string, string>;
+  buckets: number[];
+}
+
+interface ObservabilityTracingConfig {
+  enabled: boolean;
+  exporter: string;
+  endpoint: string | null;
+  sampleRatio: number;
+  includeHeaders: boolean;
+}
+
+interface ObservabilityEventsConfig {
+  bufferSize: number;
+  flushIntervalSeconds: number;
+  auditEnabled: boolean;
+}
+
+interface ObservabilityLoggingConfig {
+  level: string;
+  structured: boolean;
+  includeTraceIds: boolean;
+}
+
+export interface ObservabilityCoreConfig {
+  module: string;
+  enabled: boolean;
+  serviceName: string;
+  environment: string;
+  retryAttempts: number;
+  resourceAttributes: Record<string, string>;
+  logging: ObservabilityLoggingConfig;
+  metrics: ObservabilityMetricsConfig;
+  tracing: ObservabilityTracingConfig;
+  events: ObservabilityEventsConfig;
+}
+
+export const observabilityCoreConfiguration = registerAs(
+  'observabilityCore',
+  (): ObservabilityCoreConfig => ({
+    module: {{ rapidkit_vendor_module | tojson }},
+    enabled: {{ enabled_by_default | tojson }},
+    serviceName: {{ observability_defaults.get('service_name', 'rapidkit-app') | tojson }},
+    environment: {{ observability_defaults.get('environment', 'local') | tojson }},
+    retryAttempts: {{ retry_attempts_default | tojson }},
+    resourceAttributes: {{ resource_attributes_defaults | tojson(indent=2) }},
+    logging: {
+      level: {{ logging_defaults.get('level', observability_defaults.get('log_level', 'INFO')) | tojson }},
+      structured: {{ logging_defaults.get('structured_logging', observability_defaults.get('structured_logging', True)) | tojson }},
+      includeTraceIds: {{ logging_defaults.get('include_trace_ids', observability_defaults.get('include_trace_ids', True)) | tojson }},
+    },
+    metrics: {
+      enabled: {{ metrics_defaults.get('enabled', True) | tojson }},
+      exporter: {{ metrics_defaults.get('exporter', metrics_defaults.get('client', 'prometheus')) | tojson }},
+      endpoint: {{ metrics_defaults.get('endpoint', metrics_endpoint) | tojson }},
+      namespace: {{ metrics_defaults.get('namespace', 'rapidkit') | tojson }},
+      retentionSeconds: {{ metrics_defaults.get('retention_seconds', 600) | tojson }},
+      registerProcessMetrics: {{ metrics_defaults.get('register_process_metrics', True) | tojson }},
+      defaultLabels: {{ metrics_defaults.get('default_labels', {}) | tojson(indent=2) }},
+      buckets: {{ metrics_defaults.get('buckets', [0.1, 0.5, 1, 2.5, 5, 10]) | tojson(indent=2) }},
+    },
+    tracing: {
+      enabled: {{ tracing_defaults.get('enabled', observability_defaults.get('tracing_enabled', False)) | tojson }},
+      exporter: {{ tracing_defaults.get('exporter', 'console') | tojson }},
+      endpoint: {{ tracing_defaults.get('endpoint') | tojson }},
+      sampleRatio: {{ tracing_defaults.get('sample_ratio', 0.25) | tojson }},
+      includeHeaders: {{ tracing_defaults.get('include_headers', True) | tojson }},
+    },
+    events: {
+      bufferSize: {{ events_defaults.get('buffer_size', 1000) | tojson }},
+      flushIntervalSeconds: {{ events_defaults.get('flush_interval_seconds', 5) | tojson }},
+      auditEnabled: {{ events_defaults.get('audit_enabled', False) | tojson }},
+    },
+  }),
+);

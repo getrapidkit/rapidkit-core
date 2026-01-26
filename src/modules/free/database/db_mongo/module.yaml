@@ -1,0 +1,212 @@
+name: db_mongo
+display_name: Db Mongo
+description: MongoDB integration with async driver support, health diagnostics, configuration scaffolding, and multi-framework adapters
+version: 0.1.2
+access: free
+status: stable
+tier: free
+category: database
+generated_from_config: true
+tags:
+    - database
+    - db-mongo
+depends_on:
+    - free/essentials/settings
+profile_inherits:
+    fastapi.standard: fastapi
+    fastapi.ddd: fastapi
+    nestjs.standard: nestjs
+config_sources:
+    - config/base.yaml
+    - config/snippets.yaml
+generation:
+    vendor:
+        root: .rapidkit/vendor
+        files:
+            - template: templates/base/db_mongo.py.j2
+              relative: src/modules/free/database/db_mongo/db_mongo.py
+            - template: templates/base/db_mongo_health.py.j2
+              relative: src/health/db_mongo.py
+            - template: templates/base/db_mongo_types.py.j2
+              relative: src/modules/free/database/db_mongo/types/db_mongo.py
+            - template: templates/vendor/nestjs/configuration.js.j2
+              relative: nestjs/configuration.js
+    variants:
+        fastapi: &fastapi_variant
+            root: .
+            context:
+                framework: fastapi
+                module_class_name: DbMongo
+                vendor_runtime_relative: src/modules/free/database/db_mongo/db_mongo.py
+            files:
+                - template: templates/variants/fastapi/db_mongo.py.j2
+                  output: src/modules/free/database/db_mongo/db_mongo.py
+                - template: templates/variants/fastapi/db_mongo_routes.py.j2
+                  output: src/modules/free/database/db_mongo/routers/db_mongo.py
+                - template: templates/variants/fastapi/db_mongo_config.yaml.j2
+                  output: config/database/db_mongo.yaml
+                  description: Runtime configuration defaults for Db Mongo module
+                - template: templates/tests/integration/test_db_mongo_integration.j2
+                  output: tests/modules/integration/database/test_db_mongo_integration.py
+                  description: Integration tests for Db Mongo FastAPI variant
+                - template: templates/variants/fastapi/tests/test_db_mongo_e2e.py
+                  output: tests/modules/e2e/free/database/db_mongo/test_db_mongo_e2e.py
+
+        # Compatibility aliases: the installer uses kit profile names.
+        fastapi.standard: *fastapi_variant
+        fastapi.ddd: *fastapi_variant
+
+        nestjs: &nestjs_variant
+            root: .
+            context:
+                framework: nestjs
+                vendor_configuration_relative: nestjs/configuration.js
+                vendor_runtime_relative: src/modules/free/database/db_mongo/db_mongo.py
+                module_class_name: DbMongo
+                module_kebab: db-mongo
+            files:
+                - template: templates/variants/nestjs/db_mongo.service.ts.j2
+                  output: src/modules/free/database/db_mongo/db-mongo.service.ts
+                - template: templates/variants/nestjs/db_mongo.controller.ts.j2
+                  output: src/modules/free/database/db_mongo/db-mongo.controller.ts
+                - template: templates/variants/nestjs/db_mongo.module.ts.j2
+                  output: src/modules/free/database/db_mongo/db-mongo.module.ts
+                - template: templates/variants/nestjs/db_mongo.configuration.ts.j2
+                  output: src/modules/free/database/db_mongo/db-mongo.configuration.ts
+                  description: NestJS configuration registration for Db Mongo module
+                - template: templates/variants/nestjs/db_mongo.health.controller.ts.j2
+                  output: src/health/db-mongo-health.controller.ts
+                  description: NestJS controller exposing Db Mongo health endpoint
+                - template: templates/variants/nestjs/db_mongo.health.module.ts.j2
+                  output: src/health/db-mongo-health.module.ts
+                  description: NestJS module wiring Db Mongo health controller
+                - template: templates/tests/integration/db_mongo.integration.spec.ts.j2
+                  output: tests/modules/integration/database/db_mongo.integration.spec.ts
+                  description: NestJS integration spec validating Db Mongo endpoints
+                - template: templates/variants/nestjs/tests/db_mongo.e2e-spec.ts
+                  output: tests/modules/e2e/free/database/db_mongo/db_mongo.e2e-spec.ts
+
+        nestjs.standard: *nestjs_variant
+    snippets:
+        enabled: true
+        config: config/snippets.yaml
+        default: []
+compatibility:
+    python: ">=3.10,<4.0"
+    node: ">=18,<21"
+    frameworks:
+        - fastapi
+        - nestjs
+    os:
+        - linux
+        - darwin
+        - windows
+testing:
+    coverage_min: 85
+    integration_tests: true
+    e2e_tests: false
+    unit_tests:
+        - tests/modules/free/database/db_mongo/test_db_mongo_generator.py
+        - tests/modules/free/database/db_mongo/test_db_mongo_overrides.py
+        - tests/modules/free/database/db_mongo/test_db_mongo_runtime.py
+        - tests/modules/free/database/db_mongo/test_db_mongo_adapters.py
+        - tests/modules/free/database/db_mongo/test_db_mongo_validation.py
+        - tests/modules/free/database/db_mongo/test_db_mongo_error_handling.py
+        - tests/modules/free/database/db_mongo/test_db_mongo_health_check.py
+        - tests/modules/free/database/db_mongo/test_db_mongo_framework_variants.py
+        - tests/modules/free/database/db_mongo/test_db_mongo_vendor_layer.py
+        - tests/modules/free/database/db_mongo/test_db_mongo_configuration.py
+        - tests/modules/free/database/db_mongo/test_db_mongo_versioning.py
+        - tests/modules/free/database/db_mongo/test_db_mongo_integration.py
+        - tests/modules/free/database/db_mongo/test_db_mongo_standard_module.py
+    integration_test_files:
+        - tests/modules/integration/database/test_db_mongo_integration.py
+        - tests/modules/integration/database/db_mongo.integration.spec.ts
+    fixtures:
+        - tests/modules/free/database/db_mongo/conftest.py
+documentation:
+    changelog: docs/changelog.md
+    readme: README.md
+    overview: docs/overview.md
+    usage: docs/usage.md
+    advanced: docs/advanced.md
+    migration: docs/migration.md
+    troubleshooting: docs/troubleshooting.md
+    api_docs: docs/api-reference.md
+    examples: []
+support:
+    issues: https://github.com/getrapidkit/core/issues
+    discussions: https://github.com/getrapidkit/core/discussions
+    documentation: https://docs.rapidkit.top/modules/database/db_mongo
+changelog:
+    - version: 0.1.2
+      date: "2025-12-14"
+      notes: See docs/changelog.md
+validation:
+    pre_install:
+        - check_python_version
+    post_install:
+        - validate_generated_code
+rollback:
+    strategy: uninstall
+    backup_path: .rapidkit/backups/
+    max_backups: 3
+performance:
+    lazy_loading: true
+    caching:
+        templates: true
+        ttl: 300
+capabilities:
+    - mongo
+    - database
+    - fastapi
+    - nestjs
+signature:
+    signature: WFJwzyHc31Wm+jdCL4RqlEtswV9o15NL2HWN0PsVl6YmuKgEO8gYZBvvmqvncCojI4YFE1+ZS05ho4/pCQHDDg==
+    signer_id: c7eb213b1ac6d8c6
+    signature_version: v1
+signer_id: null
+signature_version: null
+file_hashes:
+    templates/variants/nestjs/tests/db_mongo.e2e-spec.ts: sha256:e2c5aad13299aedc5d00c8fd551d25ead21fbb2aff57b466f4cc6a72e06df42b
+    templates/variants/fastapi/tests/test_db_mongo_e2e.py: sha256:59b1dcaa2841410ebcbba9a3d517dd11728cc36ba6a7d5948f1102a9abdc07b7
+    scripts/run_demo.py: sha256:3184a6f0f919bcb491633488a260c4183cd0a6f6a352963221b1b525c3f4a40b
+    README.md: sha256:213619e368b024a9f3ff1dbf18d7f84d9ef413eb453777351f69115db4f48abb
+    __init__.py: sha256:8c33c0447fc4782c83aedb9a1a830e9368585905dd8f796903bffda576a60ebd
+    config/base.yaml: sha256:05b1e480b7821fe1021f181875c9b25e0131cfe8db52b63dddf58d3e4b637036
+    config/snippets.yaml: sha256:a43940d436355105b76863a7da7a4a82c1f421b45d4e2375c6628703c965f4ce
+    docs/README.md: sha256:0176ce31251e4278d6ffd6661986de8d19112b654e34b52eb36dcccfb217fb0d
+    docs/advanced.md: sha256:473470a3f11fbfb73c9504dc36c03e3f477071cd80504a2746adf2301a384006
+    docs/api-reference.md: sha256:1e0a73a9b6b79fe2dfef186a831165cd4503d49694474ff0433921a8f64d4676
+    docs/changelog.md: sha256:a20fdffe3c4146d68a26995a48084938bd0b9fa7b411e6bd5efe1594141bb9df
+    docs/migration.md: sha256:5eaf1f2cbfad4479fb2e86a418e8b85902eac43aaa892c01f0fe0cd7f0b3b509
+    docs/overview.md: sha256:28b1e24a7c37a991e388e0060efc3d18e73825434260eadcbebb857a1c3e276a
+    docs/troubleshooting.md: sha256:c87b204e0e22b8654d0b43807fe919c61aa52f7b19cec235708a7b39b38a476f
+    docs/usage.md: sha256:5c0e505885f718a6a54fb0145079cbdece48bc742b3c3efc517ea426690ad142
+    frameworks/__init__.py: sha256:85f4108966a5b9c0042ce1b6dbf95b1de30e93a495d15cd2ee859555da0e72c4
+    frameworks/fastapi.py: sha256:a9b052dcad3097779833d82a06fe653f4c2a83c8e7cf4df0700b8c54bc31cd32
+    frameworks/nestjs.py: sha256:73f6f4a3d5c53f8994528b20bf981c68f4ce79acc73da1b8da2704c421c812c4
+    generate.py: sha256:ea120a1468b84951c6a638d4b0f789768d471c86a255a7b78ec9e2f0cc05263b
+    module.verify.json: sha256:8fb17979e74d44d4af0c416086c122ef3494f04c2bd43c2b832c99183c277802
+    overrides.py: sha256:e3b08845c6e3a73bafe68d3cafc84472e95f4ccf371ae16e7895a508d4864f3f
+    templates/base/db_mongo.py.j2: sha256:809c2e2dfc29c104f8938c2a0b60f198149a05296523f990793ea3029101c9b7
+    templates/base/db_mongo_health.py.j2: sha256:3985bd15c2d329d83b4314a7c3dff54b57a257ef2c4a7ef17eec70b3993028c1
+    templates/base/db_mongo_types.py.j2: sha256:c9dcaa303951419530ff8b4f083779b625e90f8c4c776a9a13a7db05916265a1
+    templates/snippets/db_mongo.snippet.j2: sha256:7e9ec57fb915b095aa631d3f64af417b1f17ea84376ca32b524d713e122de0f8
+    templates/snippets/db_mongo_env.snippet.j2: sha256:798f948e75435f31012ee6de0eb80a82b3741a6d543453c77b8c6282dd09d7b3
+    templates/snippets/db_mongo_settings_fields.snippet.j2: sha256:036da1e74cdac26eb2ac261cdeac017110ebabe928673cd54e306999f852e8b3
+    templates/snippets/db_mongo_settings_fields_nestjs.snippet.j2: sha256:884422404ff535bb1a645f0edfb8fae98ccc477fbb8d62166428f1102da2c8da
+    templates/tests/__init__.py: sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+    templates/tests/integration/db_mongo.integration.spec.ts.j2: sha256:329584ed0e5ac3737f938b33b4df604f7aaf80855c3c0a8e176523863c7a55fd
+    templates/tests/integration/test_db_mongo_integration.j2: sha256:f8ea208017828acc92b14b63cf01bf9133ed63af39dd315a2c9b6976fc88eaa9
+    templates/variants/fastapi/db_mongo.py.j2: sha256:19db13c082fe06153e33de06b00614e7019e2c69f63b5d217bec1a0ee60624cd
+    templates/variants/fastapi/db_mongo_config.yaml.j2: sha256:e6777172d8b7b7463a1dd292fa3d5cd9a93f76d7ca7594c7739679ebecc26104
+    templates/variants/fastapi/db_mongo_health.py.j2: sha256:c82308418a560e282280d552054c9b78ad3af684a11744f79b58d7160dac5bcc
+    templates/variants/fastapi/db_mongo_routes.py.j2: sha256:fa99b585fb1a7a78e669fc5b68e7f9118c1a9b8710a0847cce400af502a39521
+    templates/variants/nestjs/db_mongo.configuration.ts.j2: sha256:b2bd0ade00f32b4ea15a7468131c8e6b21526c3d66a45aea5c1cca0d17255277
+    templates/variants/nestjs/db_mongo.controller.ts.j2: sha256:508d70d1041e204e1666ab3c3b6da287d5c7ac16627143aee58eb6564000fb94
+    templates/variants/nestjs/db_mongo.health.controller.ts.j2: sha256:a27df57e0bb3198814a9196ca8a625916712fa8c781744fc2d9ecd7bfc24ee8e
+    templates/variants/nestjs/db_mongo.health.module.ts.j2: sha256:58a2142034a8de0cd2e767ae0c836aea48b799c387e237da190d23f4ecda5728
+    templates/variants/nestjs/db_mongo.module.ts.j2: sha256:31279331344127272824f275b99d8ed7b4e4b760af597c45e4877fdab67954db
+    templates/variants/nestjs/db_mongo.service.ts.j2: sha256:1c0e8954b9b9a87fb832049b6be7342dd56c19f67dbda1b67521b8f367b90210
+    templates/vendor/nestjs/configuration.js.j2: sha256:03f058b875ad144210f90de1273bfb87c8a0c1e605360fab151cb452d92b5735

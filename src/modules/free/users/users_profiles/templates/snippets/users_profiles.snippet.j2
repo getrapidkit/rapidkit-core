@@ -1,0 +1,21 @@
+{% if fragment == "env" %}
+# Users Profiles module
+RAPIDKIT_USERS_PROFILES_DEFAULT_TIMEZONE={{ defaults.default_timezone | default("UTC") }}
+RAPIDKIT_USERS_PROFILES_MAX_BIO_LENGTH={{ defaults.max_bio_length | default(280) }}
+RAPIDKIT_USERS_PROFILES_AVATAR_MAX_BYTES={{ defaults.avatar_max_bytes | default(2097152) }}
+RAPIDKIT_USERS_PROFILES_ALLOW_MARKETING_OPT_IN={{ defaults.allow_marketing_opt_in | default(true) | string | lower }}
+RAPIDKIT_USERS_PROFILES_SOCIAL_LINKS_LIMIT={{ defaults.social_links_limit | default(5) }}
+RAPIDKIT_USERS_PROFILES_DEFAULT_VISIBILITY={{ defaults.default_visibility | default("public") }}
+{% elif fragment == "settings" %}
+class UsersProfileSettings(BaseSettings):
+    """User profile configuration injected by RapidKit."""
+
+    default_timezone: str = Field(default="UTC")
+    max_bio_length: int = Field(default=280, ge=50, le=1000)
+    avatar_max_bytes: int = Field(default=2_097_152, ge=10_000)
+    allow_marketing_opt_in: bool = Field(default=True)
+    social_links_limit: int = Field(default=5, ge=0, le=10)
+    default_visibility: str = Field(default="public")
+
+users_profiles: UsersProfileSettings = UsersProfileSettings()
+{% endif %}

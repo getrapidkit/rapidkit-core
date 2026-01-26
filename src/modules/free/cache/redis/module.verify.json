@@ -1,0 +1,47 @@
+{
+  "checked_at": "2025-12-17T11:16:31.754449+00:00",
+  "description": "Lean module layout blueprint (v3)",
+  "extra_directories": [
+    "scripts"
+  ],
+  "extra_files": [
+    "scripts/run_demo.py",
+    "templates/base/redis_client.py.j2",
+    "templates/base/redis_health.py.j2",
+    "templates/base/redis_health_package_init.py.j2",
+    "templates/base/redis_module.py.j2",
+    "templates/base/redis_package_init.py.j2"
+  ],
+  "missing_directories": [],
+  "missing_files": [],
+  "module": "free/cache/redis",
+  "parity": {
+    "fastapi": {
+      "declared": true,
+      "has_config": true,
+      "has_health": true,
+      "has_metadata": true,
+      "has_tests": true,
+      "issues": [],
+      "plugin": true,
+      "status": "ok"
+    },
+    "nestjs": {
+      "declared": true,
+      "has_config": true,
+      "has_health": true,
+      "has_metadata": true,
+      "has_tests": true,
+      "issues": [],
+      "plugin": true,
+      "status": "ok"
+    }
+  },
+  "parity_checked_at": "2025-12-06T22:13:30.379350+00:00",
+  "parity_valid": true,
+  "spec_version": 4,
+  "structure_tree_hash": "a1eef973574583b767d950a0d366a11c181ad6a95ac774c5e560e21d56e22d83",
+  "structure_valid": true,
+  "tree_hash": "a1eef973574583b767d950a0d366a11c181ad6a95ac774c5e560e21d56e22d83",
+  "valid": true
+}

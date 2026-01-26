@@ -1,0 +1,47 @@
+import {
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Logger,
+  ServiceUnavailableException,
+} from '@nestjs/common';
+import { hostname } from 'node:os';
+
+import { {{ module_class_name }}Service } from '../modules/free/database/db_postgres/postgres.service';
+
+@Controller('api/health/module')
+export class {{ module_class_name }}HealthController {
+  private readonly logger = new Logger({{ module_class_name }}HealthController.name);
+
+  constructor(private readonly postgresService: {{ module_class_name }}Service) {}
+
+  @Get('postgres')
+  @HttpCode(HttpStatus.OK)
+  async getPostgresHealth(): Promise<Record<string, unknown>> {
+    try {
+      await this.postgresService.checkHealth();
+      const pool = await this.postgresService.getPoolStatus();
+      const payload = {
+        status: 'ok',
+        module: '{{ rapidkit_vendor_module }}',
+        url: this.postgresService.getDatabaseUrl(true),
+        hostname: hostname(),
+        pool,
+      };
+      this.logger.debug(`PostgreSQL health payload=${JSON.stringify(payload)}`);
+      return payload;
+    } catch (error) {
+      const message =
+        error instanceof Error && error.message
+          ? error.message
+          : 'postgres health check failed';
+      this.logger.error(`PostgreSQL health check failed: ${message}`);
+      throw new ServiceUnavailableException({
+        status: 'error',
+        module: '{{ rapidkit_vendor_module }}',
+        detail: message,
+      });
+    }
+  }
+}

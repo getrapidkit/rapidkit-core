@@ -1,0 +1,35 @@
+{% set include_postgres = include_postgres | default(true) %}
+version: "3.9"
+
+services:
+  app:
+    image: {{ docker_image_name | default('rapidkit/app') }}:latest
+    env_file:
+      - .env
+    restart: unless-stopped
+    environment:
+      APP_ENV: ${APP_ENV:-local}
+{% if include_postgres %}
+    depends_on:
+      - postgres
+{% endif %}
+{% if include_postgres %}
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: {{ project_name | default('rapidkit') }}
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    restart: unless-stopped
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+{% endif %}
+
+volumes:
+{% if include_postgres %}
+  postgres-data:
+    driver: local
+{% else %}
+  rapidkit-data:
+    driver: local
+{% endif %}

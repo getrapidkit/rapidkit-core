@@ -1,0 +1,166 @@
+"""Shared type definitions for {{ module_title }}."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field, replace
+from datetime import datetime, timedelta, timezone
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
+from typing import Any, Dict, Iterable, Mapping, MutableMapping, Optional
+
+DecimalLike = int | float | str | Decimal
+DEFAULT_PRECISION = {{ inventory_defaults.decimal_precision | default(2) }}
+
+
+def ensure_decimal(value: DecimalLike, *, allow_negative: bool = False, precision: int = DEFAULT_PRECISION) -> Decimal:
+    """Safely coerce *value* into a quantised :class:`~decimal.Decimal`."""
+
+    try:
+        candidate = Decimal(str(value))
+    except (InvalidOperation, ValueError, TypeError) as exc:  # pragma: no cover - defensive
+        raise ValueError(f"Unable to coerce '{value}' into Decimal") from exc
+
+    quantizer = Decimal("1") / (Decimal("10") ** precision)
+    quantised = candidate.quantize(quantizer, rounding=ROUND_HALF_UP)
+    if not allow_negative and quantised < 0:
+        raise ValueError("Negative values are not permitted")
+    return quantised
+
+
+def quantize_amount(value: DecimalLike, *, precision: int = DEFAULT_PRECISION) -> Decimal:
+    """Quantize a value using the module's rounding convention."""
+
+    return ensure_decimal(value, allow_negative=True, precision=precision)
+
+
+def utc_now() -> datetime:
+    """Return an aware UTC timestamp."""
+
+    return datetime.now(timezone.utc)
+
+
+@dataclass(slots=True)
+class InventoryItem:
+    """Represents the stock state for a single SKU."""
+
+    sku: str
+    name: str
+    quantity: int
+    reserved: int
+    price: Decimal
+    currency: str
+    metadata: Dict[str, Any] = field(default_factory=dict)
+    attributes: Dict[str, Any] = field(default_factory=dict)
+
+    def clone(self, **updates: Any) -> "InventoryItem":
+        payload: Dict[str, Any] = {
+            "sku": self.sku,
+            "name": self.name,
+            "quantity": self.quantity,
+            "reserved": self.reserved,
+            "price": self.price,
+            "currency": self.currency,
+            "metadata": dict(self.metadata),
+            "attributes": dict(self.attributes),
+        }
+        payload.update(updates)
+        return InventoryItem(**payload)
+
+    @property
+    def available(self) -> int:
+        return self.quantity - self.reserved
+
+
+@dataclass(slots=True)
+class InventoryReservation:
+    """Tracks a pending reservation against on-hand stock."""
+
+    reference: str
+    sku: str
+    quantity: int
+    created_at: datetime
+    expires_at: Optional[datetime]
+    metadata: Dict[str, Any] = field(default_factory=dict)
+
+    def expired(self, *, at: Optional[datetime] = None) -> bool:
+        if self.expires_at is None:
+            return False
+        comparison = at or utc_now()
+        return comparison >= self.expires_at
+
+
+@dataclass(slots=True)
+class InventoryMetrics:
+    """Summarised metrics for observability surfaces."""
+
+    total_skus: int
+    total_on_hand: int
+    total_reserved: int
+    low_stock_items: int
+    backorder_skus: int
+    currency: str
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "total_skus": self.total_skus,
+            "total_on_hand": self.total_on_hand,
+            "total_reserved": self.total_reserved,
+            "low_stock_items": self.low_stock_items,
+            "backorder_skus": self.backorder_skus,
+            "currency": self.currency,
+        }
+
+
+@dataclass(slots=True)
+class InventorySnapshot:
+    """Serializable view of inventory state for external consumers."""
+
+    generated_at: datetime
+    items: Dict[str, InventoryItem]
+    reservations: Dict[str, InventoryReservation]
+    metrics: InventoryMetrics
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "generated_at": self.generated_at.isoformat(),
+            "items": {
+                sku: {
+                    "sku": item.sku,
+                    "name": item.name,
+                    "quantity": item.quantity,
+                    "reserved": item.reserved,
+                    "available": item.available,
+                    "price": str(item.price),
+                    "currency": item.currency,
+                    "metadata": dict(item.metadata),
+                    "attributes": dict(item.attributes),
+                }
+                for sku, item in self.items.items()
+            },
+            "reservations": {
+                ref: {
+                    "reference": reservation.reference,
+                    "sku": reservation.sku,
+                    "quantity": reservation.quantity,
+                    "created_at": reservation.created_at.isoformat(),
+                    "expires_at": reservation.expires_at.isoformat()
+                    if reservation.expires_at
+                    else None,
+                    "metadata": dict(reservation.metadata),
+                }
+                for ref, reservation in self.reservations.items()
+            },
+            "metrics": self.metrics.to_dict(),
+        }
+
+
+def coerce_reservation_expiry(
+    *,
+    ttl_minutes: int,
+    now: Optional[datetime] = None,
+) -> Optional[datetime]:
+    """Return the UTC expiry timestamp for a reservation TTL in minutes."""
+
+    if ttl_minutes <= 0:
+        return None
+    base = now or utc_now()
+    return base + timedelta(minutes=ttl_minutes)

@@ -1,0 +1,208 @@
+"""Project-facing wrapper around the RapidKit vendor {{ module_title }} runtime."""
+
+from __future__ import annotations
+
+import importlib.util
+import os
+import sys
+from functools import lru_cache
+from pathlib import Path
+from types import ModuleType
+from typing import Any
+
+from fastapi import APIRouter, FastAPI
+
+_VENDOR_MODULE = "{{ rapidkit_vendor_module }}"
+_VENDOR_VERSION = "{{ rapidkit_vendor_version }}"
+_VENDOR_RELATIVE_PATH = "{{ vendor_runtime_relative }}"
+_VENDOR_ROOT_ENV = "RAPIDKIT_VENDOR_ROOT"
+_CACHE_PREFIX = "rapidkit_vendor_{{ module_name }}"
+
+
+def _project_root() -> Path:
+    current = Path(__file__).resolve()
+    for ancestor in (current.parent, *current.parents):
+        if (ancestor / ".rapidkit").exists():
+            return ancestor
+        if (ancestor / "pyproject.toml").exists() or (ancestor / "package.json").exists():
+            return ancestor
+    return current.parents[-1]
+
+
+def _ensure_proxy_package(name: str, path: Path) -> None:
+    if not path.exists():
+        return
+
+    original = sys.modules.get(name)
+    proxy = ModuleType(name)
+    if original is not None:
+        proxy.__dict__.update(original.__dict__)
+    proxy.__path__ = [str(path)]
+    sys.modules[name] = proxy
+
+
+def _ensure_vendor_namespaces(vendor_path: Path) -> None:
+    vendor_module_root = vendor_path.parent
+    _ensure_proxy_package("database", vendor_module_root)
+    _ensure_proxy_package("types", vendor_module_root / "types")
+    _ensure_proxy_package("health", _vendor_base_dir() / "src" / "health")
+
+
+def _vendor_root() -> Path:
+    override = os.getenv(_VENDOR_ROOT_ENV)
+    if override:
+        return Path(override).expanduser().resolve()
+    return _project_root() / ".rapidkit" / "vendor"
+
+
+def _vendor_base_dir() -> Path:
+    root = _vendor_root()
+    module_dir = root / _VENDOR_MODULE
+    preferred = module_dir / _VENDOR_VERSION if _VENDOR_VERSION else None
+    if preferred and preferred.exists():
+        return preferred
+    candidates = sorted((path for path in module_dir.glob("*") if path.is_dir()), reverse=True)
+    if candidates:
+        return candidates[0]
+    raise RuntimeError(
+        "RapidKit vendor payload for '{module}' not found under {root}. Re-run `rapidkit modules install {module}`.".format(
+            module=_VENDOR_MODULE,
+            root=root,
+        )
+    )
+
+
+def _vendor_file() -> Path:
+    if not _VENDOR_RELATIVE_PATH:
+        raise RuntimeError("{{ module_title }} vendor runtime relative path missing from generator context")
+    return _vendor_base_dir() / _VENDOR_RELATIVE_PATH
+
+
+@lru_cache(maxsize=1)
+def _load_vendor_module() -> ModuleType:
+    vendor_path = _vendor_file()
+    if not vendor_path.exists():
+        raise RuntimeError(
+            "RapidKit vendor runtime missing at {path}. Re-run `rapidkit modules install {module}`.".format(
+                path=vendor_path,
+                module=_VENDOR_MODULE,
+            )
+        )
+
+    _ensure_vendor_namespaces(vendor_path)
+
+    vendor_base = str(_vendor_base_dir())
+    if vendor_base not in sys.path:
+        sys.path.insert(0, vendor_base)
+
+    module_name = _CACHE_PREFIX + _VENDOR_MODULE.replace("/", "_") + "_runtime"
+    spec = importlib.util.spec_from_file_location(module_name, vendor_path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Unable to load vendor runtime from {vendor_path}")
+
+    module = importlib.util.module_from_spec(spec)
+    sys.modules.setdefault(module_name, module)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _resolve_export(name: str) -> Any:
+    module = _load_vendor_module()
+    try:
+        return getattr(module, name)
+    except AttributeError as exc:
+        raise RuntimeError(f"Vendor runtime missing attribute '{name}'") from exc
+
+
+def refresh_vendor_module() -> None:
+    """Clear caches to force vendor re-import (useful after upgrades)."""
+
+    _load_vendor_module.cache_clear()
+
+
+{{ module_class_name }} = _resolve_export("{{ module_class_name }}")
+DbMongoConfig = _resolve_export("DbMongoConfig")
+DbMongoClientFactory = _resolve_export("DbMongoClientFactory")
+DbMongoDependencyError = _resolve_export("DbMongoDependencyError")
+
+MongoHealthReport = _resolve_export("MongoHealthReport")
+
+
+def register_fastapi(app: FastAPI, *, runtime: {{ module_class_name }} | None = None) -> APIRouter:
+    """Attach the {{ module_title }} router to the given FastAPI app."""
+
+    try:
+        from .routers.{{ module_name }} import build_router, get_runtime_dependency
+    except ImportError:  # pragma: no cover - supports test-generated layouts
+        try:
+            from .{{ module_name }}_routes import build_router, get_runtime_dependency
+        except ImportError:
+            from fastapi import Depends, Request
+
+            async def get_runtime_dependency(request: Request) -> {{ module_class_name }}:
+                existing: {{ module_class_name }} | None = getattr(
+                    request.app.state,
+                    "{{ module_name }}_runtime",
+                    None,
+                )
+                if existing is None:
+                    existing = {{ module_class_name }}()
+                    request.app.state.{{ module_name }}_runtime = existing
+                return existing
+
+            def build_router(*, runtime_dependency=get_runtime_dependency) -> APIRouter:
+                router = APIRouter(prefix="/{{ module_kebab }}", tags=["{{ module_title }}"])
+
+                @router.get("/health", summary="{{ module_title }} health check")
+                async def read_health(
+                    runtime: {{ module_class_name }} = Depends(runtime_dependency),
+                ) -> dict[str, Any]:
+                    report = await runtime.health_check()
+                    payload: Any = report
+                    if hasattr(report, "to_payload"):
+                        payload = report.to_payload()
+                    if isinstance(payload, dict):
+                        result = dict(payload)
+                    else:
+                        result = {"status": "ok"}
+                    result.setdefault("status", "ok")
+                    result.update({"module": "{{ module_name }}"})
+                    return result
+
+                @router.get("/info", summary="MongoDB server information snapshot")
+                async def server_info(
+                    runtime: {{ module_class_name }} = Depends(runtime_dependency),
+                ) -> dict[str, Any]:
+                    info = await runtime.server_info()
+                    return {"module": "{{ module_name }}", "info": info}
+
+                return router
+
+    if runtime is None:
+        runtime = {{ module_class_name }}()
+    app.state.{{ module_name }}_runtime = runtime
+    router = build_router(runtime_dependency=get_runtime_dependency)
+    app.include_router(router)
+    return router
+
+
+def __getattr__(item: str) -> Any:
+    vendor = _load_vendor_module()
+    try:
+        return getattr(vendor, item)
+    except AttributeError as exc:  # pragma: no cover
+        raise AttributeError(item) from exc
+
+
+__all__ = sorted(
+    set(getattr(_load_vendor_module(), "__all__", []))
+    | {
+        "{{ module_class_name }}",
+        "DbMongoClientFactory",
+        "DbMongoConfig",
+        "DbMongoDependencyError",
+        "MongoHealthReport",
+        "refresh_vendor_module",
+        "register_fastapi",
+    }
+)

@@ -1,0 +1,50 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ACTIVATE_FILE="$ROOT_DIR/.rapidkit/activate"
+RAPIDKIT_BIN="$ROOT_DIR/.rapidkit/rapidkit"
+
+if [ ! -f "$ACTIVATE_FILE" ]; then
+  echo ".rapidkit/activate not found. Run this script from the project root." >&2
+  exit 1
+fi
+
+if [ ! -x "$RAPIDKIT_BIN" ]; then
+  echo "$RAPIDKIT_BIN is missing or not executable. Re-run rapidkit create." >&2
+  exit 1
+fi
+
+# shellcheck disable=SC1090
+. "$ACTIVATE_FILE"
+
+if [ -f "$ROOT_DIR/pyproject.toml" ] && [ ! -d "$ROOT_DIR/.venv" ]; then
+  echo "WARNING: Python virtualenv not detected. Run 'rapidkit init' (or 'make init') before ./bootstrap.sh." >&2
+  exit 1
+fi
+
+if [ -f "$ROOT_DIR/package.json" ] && [ ! -d "$ROOT_DIR/node_modules" ]; then
+  echo "WARNING: node_modules missing. Run 'rapidkit init' (or 'make init') before ./bootstrap.sh." >&2
+  exit 1
+fi
+
+if command -v make >/dev/null 2>&1; then
+  MAKE_BIN="make"
+else
+  echo "GNU make is required to finish bootstrapping." >&2
+  exit 127
+fi
+
+if [ -f "$ROOT_DIR/.env.example" ] && [ ! -f "$ROOT_DIR/.env" ]; then
+  cp "$ROOT_DIR/.env.example" "$ROOT_DIR/.env"
+  echo "Copied .env from .env.example (update secrets before running services)."
+fi
+
+if [ -f "$ROOT_DIR/.env" ]; then
+  echo "INFO: Review .env and set project-specific values."
+fi
+
+echo "Installing developer tooling (pre-commit hooks, formatters)..."
+SKIP_INIT=1 "$MAKE_BIN" -C "$ROOT_DIR" install
+
+echo "Bootstrap complete. Start coding with 'rapidkit dev' or 'make dev'."

@@ -1,0 +1,36 @@
+import { Controller, Get, Param } from "@nestjs/common";
+
+import { {{ module_class_name }}Service } from "./oauth.service";
+
+@Controller("oauth")
+export class {{ module_class_name }}Controller {
+  constructor(private readonly service: {{ module_class_name }}Service) {}
+
+  @Get("metadata")
+  getMetadata(): Record<string, unknown> {
+    return this.service.describe();
+  }
+
+  @Get("features")
+  getFeatures(): { features: string[] } {
+    return { features: this.service.listFeatures() };
+  }
+
+  @Get("providers")
+  listProviders(): Record<string, unknown> {
+    return this.service.listProviders();
+  }
+
+  @Get("providers/:provider")
+  getProvider(@Param("provider") provider: string): Record<string, unknown> {
+    const runtimeProvider = this.service.getProviderStrict(provider);
+    return {
+      name: runtimeProvider.name,
+      authorizeUrl: runtimeProvider.authorizeUrl,
+      tokenUrl: runtimeProvider.tokenUrl,
+      scopes: [...runtimeProvider.scopes],
+      userinfoUrl: runtimeProvider.userinfoUrl,
+      redirectUri: runtimeProvider.redirectUri,
+    };
+  }
+}

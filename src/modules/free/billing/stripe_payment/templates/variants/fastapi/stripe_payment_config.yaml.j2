@@ -1,0 +1,42 @@
+{%- set defaults = stripe_defaults or {} -%}
+{%- set retry_policy = stripe_retry_policy or {} -%}
+{%- set webhook = stripe_webhook or {} -%}
+{%- set features = stripe_features or {} -%}
+{%- set billing = stripe_billing or {} -%}
+{%- set network = stripe_network or {} -%}
+{%- set metadata_keys = stripe_metadata_keys or {} -%}
+# RapidKit generated configuration for {{ module_title }}.
+# Update values to match your Stripe account, retry strategy, and webhook setup.
+
+stripe_payment:
+  enabled: {{ defaults.get("enabled", True) | tojson }}
+  mode: {{ defaults.get("mode", "test") | tojson }}
+  default_currency: {{ defaults.get("default_currency", "usd") | tojson }}
+  capture_method: {{ defaults.get("capture_method", "automatic") | tojson }}
+  statement_descriptor: {{ defaults.get("statement_descriptor", "RapidKit") | tojson }}
+  description_prefix: {{ defaults.get("description_prefix", "RapidKit") | tojson }}
+  automatic_payment_methods: {{ defaults.get("automatic_payment_methods", True) | tojson }}
+  metadata: {{ defaults.get("metadata", {}) | tojson(indent=2) }}
+  retry_policy:
+    max_attempts: {{ retry_policy.get("max_attempts", 3) | tojson }}
+    base_delay_seconds: {{ retry_policy.get("base_delay_seconds", 2.0) | tojson }}
+    max_delay_seconds: {{ retry_policy.get("max_delay_seconds", 30.0) | tojson }}
+  webhook:
+    enabled: {{ webhook.get("enabled", True) | tojson }}
+    endpoint_secret_env: {{ webhook.get("endpoint_secret_env", "RAPIDKIT_STRIPE_WEBHOOK_SECRET") | tojson }}
+    tolerance_seconds: {{ webhook.get("tolerance_seconds", 300) | tojson }}
+    events: {{ webhook.get("events", []) | tojson(indent=2) }}
+  features:
+    allow_manual_capture: {{ features.get("allow_manual_capture", True) | tojson }}
+    enable_idempotency_keys: {{ features.get("enable_idempotency_keys", True) | tojson }}
+    verify_webhooks: {{ features.get("verify_webhooks", True) | tojson }}
+    emit_metrics: {{ features.get("emit_metrics", True) | tojson }}
+  billing:
+    minimum_amount: {{ billing.get("minimum_amount", 50) | tojson }}
+    maximum_amount: {{ billing.get("maximum_amount", 5000000) | tojson }}
+    allowed_currencies: {{ billing.get("allowed_currencies", ["usd"]) | tojson(indent=2) }}
+    default_payment_method_types: {{ billing.get("default_payment_method_types", ["card"]) | tojson(indent=2) }}
+  network:
+    timeout_seconds: {{ network.get("timeout_seconds", 10.0) | tojson }}
+    max_connections: {{ network.get("max_connections", 4) | tojson }}
+  metadata_keys: {{ metadata_keys | tojson(indent=2) }}

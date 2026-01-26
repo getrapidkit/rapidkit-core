@@ -1,0 +1,143 @@
+import { registerAs } from "@nestjs/config";
+
+type UnknownRecord = Record<string, unknown>;
+
+const DEFAULTS = {{ users_profiles_defaults | tojson(indent=2) }} as UnknownRecord;
+const MODULE_FEATURES = [
+  "profile_management",
+  "avatar_uploads",
+  "privacy_controls",
+  "marketing_preferences",
+  "timezone_support",
+] as const;
+
+const KNOWN_VISIBILITIES = ["public", "private", "team"] as const;
+
+type KnownVisibility = (typeof KNOWN_VISIBILITIES)[number];
+
+const toBoolean = (value: unknown, fallback: boolean): boolean => {
+  if (typeof value === "boolean") {
+    return value;
+  }
+  if (typeof value === "string" && value.trim()) {
+    const normalized = value.trim().toLowerCase();
+    if (["1", "true", "yes", "on", "enabled"].includes(normalized)) {
+      return true;
+    }
+    if (["0", "false", "no", "off", "disabled"].includes(normalized)) {
+      return false;
+    }
+  }
+  return fallback;
+};
+
+const toNumber = (value: unknown, fallback: number): number => {
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return value;
+  }
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number(value);
+    if (Number.isFinite(parsed)) {
+      return parsed;
+    }
+  }
+  return fallback;
+};
+
+const toStringValue = (value: unknown, fallback: string): string => {
+  if (typeof value === "string" && value.trim()) {
+    return value.trim();
+  }
+  return fallback;
+};
+
+const normalizeVisibility = (value: unknown, fallback: KnownVisibility): KnownVisibility => {
+  if (typeof value === "string" && value.trim()) {
+    const normalized = value.trim().toLowerCase();
+    if ((KNOWN_VISIBILITIES as readonly string[]).includes(normalized)) {
+      return normalized as KnownVisibility;
+    }
+  }
+  return fallback;
+};
+
+const toVisibilities = (
+  value: unknown,
+  fallback: KnownVisibility[],
+  ensure: KnownVisibility,
+): KnownVisibility[] => {
+  const visibilities: KnownVisibility[] = [];
+  if (Array.isArray(value)) {
+    for (const entry of value) {
+      const resolved = normalizeVisibility(entry, ensure);
+      if (!visibilities.includes(resolved)) {
+        visibilities.push(resolved);
+      }
+    }
+  } else if (typeof value === "string" && value.trim()) {
+    for (const segment of value.split(",")) {
+      const resolved = normalizeVisibility(segment, ensure);
+      if (!visibilities.includes(resolved)) {
+        visibilities.push(resolved);
+      }
+    }
+  }
+  if (!visibilities.includes(ensure)) {
+    visibilities.push(ensure);
+  }
+  return visibilities.length ? visibilities : [...fallback];
+};
+
+const toPositiveInt = (value: unknown, fallback: number): number => {
+  const candidate = toNumber(value, fallback);
+  if (!Number.isFinite(candidate)) {
+    return fallback;
+  }
+  const normalized = Math.max(0, Math.floor(candidate));
+  return normalized;
+};
+
+export interface UsersProfilesConfiguration {
+  module: string;
+  title: string;
+  features: readonly string[];
+  defaultTimezone: string;
+  maxBioLength: number;
+  avatarMaxBytes: number;
+  allowMarketingOptIn: boolean;
+  socialLinksLimit: number;
+  defaultVisibility: string;
+  supportedVisibilities: string[];
+}
+
+export const USERS_PROFILES_CONFIGURATION_NAMESPACE = "usersProfiles";
+
+export const usersProfilesConfiguration = registerAs(
+  USERS_PROFILES_CONFIGURATION_NAMESPACE,
+  (): UsersProfilesConfiguration => {
+    const defaultTimezone = toStringValue(DEFAULTS.default_timezone, "UTC");
+    const maxBioLength = toPositiveInt(DEFAULTS.max_bio_length, 280);
+    const avatarMaxBytes = toPositiveInt(DEFAULTS.avatar_max_bytes, 2_097_152);
+    const allowMarketingOptIn = toBoolean(DEFAULTS.allow_marketing_opt_in, true);
+    const socialLinksLimit = toPositiveInt(DEFAULTS.social_links_limit, 5);
+    const defaultVisibility = normalizeVisibility(DEFAULTS.default_visibility, "public");
+    const supportedVisibilities = toVisibilities(
+      DEFAULTS.supported_visibilities,
+      ["public", "private", "team"],
+      defaultVisibility,
+    );
+
+    return {
+      module: {{ module_name | tojson }},
+      title: {{ module_title | tojson }},
+      features: MODULE_FEATURES,
+      defaultTimezone,
+      maxBioLength,
+      avatarMaxBytes,
+      allowMarketingOptIn,
+      socialLinksLimit,
+      defaultVisibility,
+      supportedVisibilities,
+    };
+  },
+);

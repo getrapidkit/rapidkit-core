@@ -1,0 +1,287 @@
+"""Runtime facade for the {{ module_title }} module."""
+
+from __future__ import annotations
+
+import sqlite3
+from contextlib import contextmanager
+from dataclasses import dataclass, field
+from pathlib import Path
+from queue import Empty, Full, LifoQueue
+from threading import Lock
+from time import monotonic
+from typing import Any, Dict, Iterable, Iterator, Mapping, MutableMapping, Optional, Sequence, TYPE_CHECKING
+
+from types.db_sqlite import SqliteHealthReport, SqliteQueryResult, SqliteTableInfo
+
+if TYPE_CHECKING:
+    from health.db_sqlite import perform_health_check
+
+MODULE_NAME = "{{ module_name }}"
+MODULE_TITLE = "{{ module_title }}"
+
+DEFAULT_DATABASE_PATH = "{{ default_database_path }}"
+DEFAULT_TIMEOUT_SECONDS = {{ default_timeout_seconds }}
+DEFAULT_CREATE_IF_MISSING = {{ "True" if default_create_if_missing else "False" }}
+DEFAULT_POOL_MAX_SIZE = {{ default_pool.max_size }}
+DEFAULT_POOL_RECYCLE_SECONDS = {{ default_pool.recycle_seconds }}
+DEFAULT_PRAGMAS: dict[str, str] = {{ default_pragmas | tojson }}
+
+
+class DbSqliteError(RuntimeError):
+    """Base error for Db Sqlite runtime failures."""
+
+
+class DbSqliteConfigurationError(DbSqliteError):
+    """Raised when runtime configuration is invalid."""
+
+
+class DbSqliteExecutionError(DbSqliteError):
+    """Raised when executing SQL statements fails."""
+
+
+def _normalize_database_path(value: str) -> str:
+    if value.startswith("sqlite:///"):
+        candidate = value[len("sqlite///") :]
+        return candidate if candidate else DEFAULT_DATABASE_PATH
+    return value
+
+
+def _should_use_uri(path: str) -> bool:
+    return path.startswith("file:") or path.startswith("sqlite:///file:")
+
+
+@dataclass(slots=True)
+class DbSqlitePoolConfig:
+    """Connection pool configuration."""
+
+    max_size: int = DEFAULT_POOL_MAX_SIZE
+    recycle_seconds: int = DEFAULT_POOL_RECYCLE_SECONDS
+
+
+@dataclass(slots=True)
+class {{ module_class_name }}Config:
+    """Runtime configuration for {{ module_title }}."""
+
+    database_path: str = DEFAULT_DATABASE_PATH
+    create_if_missing: bool = DEFAULT_CREATE_IF_MISSING
+    timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS
+    isolation_level: Optional[str] = None
+    detect_types: int = sqlite3.PARSE_DECLTYPES | sqlite3.PARSE_COLNAMES
+    check_same_thread: bool = False
+    pragmas: MutableMapping[str, str] = field(default_factory=lambda: dict(DEFAULT_PRAGMAS))
+    pool: DbSqlitePoolConfig = field(default_factory=DbSqlitePoolConfig)
+
+    def resolve_database_path(self) -> str:
+        candidate = _normalize_database_path(self.database_path)
+        if candidate in {":memory:", "file::memory:", "file::memory:?cache=shared"}:
+            return candidate
+
+        path = Path(candidate).expanduser()
+        if not path.exists():
+            if self.create_if_missing:
+                path.parent.mkdir(parents=True, exist_ok=True)
+            else:
+                raise DbSqliteConfigurationError(
+                    f"SQLite database file '{path}' is missing and create_if_missing is disabled."
+                )
+        return str(path)
+
+
+class SqliteConnectionManager:
+    """Manage SQLite connections with a lightweight LIFO pool."""
+
+    def __init__(self, config: {{ module_class_name }}Config) -> None:
+        self._config = config
+        self._pool: LifoQueue[tuple[sqlite3.Connection, float]] = LifoQueue(
+            maxsize=max(1, config.pool.max_size)
+        )
+        self._pool_lock = Lock()
+        self._database_path = config.resolve_database_path()
+        self._ensure_database_initialized()
+
+    @property
+    def database_path(self) -> str:
+        return self._database_path
+
+    def _ensure_database_initialized(self) -> None:
+        if self._database_path in {":memory:", "file::memory:", "file::memory:?cache=shared"}:
+            return
+        # Opening and closing a connection ensures the file exists and pragmas are applied.
+        connection = self._create_connection()
+        connection.close()
+
+    def _create_connection(self) -> sqlite3.Connection:
+        path = self._database_path
+        uri = _should_use_uri(path)
+        connection = sqlite3.connect(
+            path if not uri else path,
+            timeout=self._config.timeout_seconds,
+            isolation_level=self._config.isolation_level,
+            detect_types=self._config.detect_types,
+            check_same_thread=self._config.check_same_thread,
+            uri=uri,
+        )
+        connection.row_factory = sqlite3.Row
+        self._apply_pragmas(connection)
+        return connection
+
+    def _apply_pragmas(self, connection: sqlite3.Connection) -> None:
+        for pragma_name, pragma_value in self._config.pragmas.items():
+            connection.execute(f"PRAGMA {pragma_name}={pragma_value}")
+
+    def _needs_recycle(self, acquired_at: float) -> bool:
+        recycle_after = max(0, self._config.pool.recycle_seconds)
+        if recycle_after == 0:
+            return False
+        return (monotonic() - acquired_at) > recycle_after
+
+    def acquire(self) -> sqlite3.Connection:
+        while True:
+            try:
+                connection, acquired_at = self._pool.get_nowait()
+            except Empty:
+                return self._create_connection()
+
+            if self._needs_recycle(acquired_at):
+                connection.close()
+                continue
+            return connection
+
+    def release(self, connection: sqlite3.Connection) -> None:
+        timestamp = monotonic()
+        try:
+            self._pool.put_nowait((connection, timestamp))
+        except Full:
+            connection.close()
+
+    def close_all(self) -> None:
+        with self._pool_lock:
+            while not self._pool.empty():
+                connection, _ = self._pool.get_nowait()
+                connection.close()
+
+    @contextmanager
+    def connection(self, *, commit: bool = False) -> Iterator[sqlite3.Connection]:
+        connection = self.acquire()
+        try:
+            yield connection
+            if commit:
+                connection.commit()
+        except sqlite3.DatabaseError as exc:  # pragma: no cover - exercised in tests
+            connection.rollback()
+            raise DbSqliteExecutionError(str(exc)) from exc
+        finally:
+            self.release(connection)
+
+
+class {{ module_class_name }}:
+    """Primary facade exposing {{ module_title }} capabilities."""
+
+    def __init__(self, config: {{ module_class_name }}Config | None = None) -> None:
+        self.config = config or {{ module_class_name }}Config()
+        self._manager = SqliteConnectionManager(self.config)
+
+    @contextmanager
+    def transaction(self) -> Iterator[sqlite3.Connection]:
+        """Yield a shared connection inside an explicit transaction."""
+
+        with self._manager.connection(commit=True) as connection:
+            cursor = connection.cursor()
+            cursor.execute("BEGIN")
+            try:
+                yield connection
+            except Exception:  # pragma: no cover - propagated for visibility
+                connection.rollback()
+                raise
+            else:
+                connection.commit()
+
+    def execute(
+        self,
+        sql: str,
+        parameters: Sequence[Any] | Mapping[str, Any] | None = None,
+        *,
+        commit: bool = False,
+    ) -> SqliteQueryResult:
+        """Execute a SQL statement and return the resulting payload."""
+
+        parameters = parameters or ()
+        with self._manager.connection(commit=commit) as connection:
+            cursor = connection.execute(sql, parameters)
+            return self._build_query_result(cursor)
+
+    def executemany(
+        self,
+        sql: str,
+        sequence_of_parameters: Iterable[Sequence[Any] | Mapping[str, Any]],
+        *,
+        commit: bool = False,
+    ) -> SqliteQueryResult:
+        """Execute a SQL statement against multiple parameter sets."""
+
+        with self._manager.connection(commit=commit) as connection:
+            cursor = connection.executemany(sql, sequence_of_parameters)
+            return self._build_query_result(cursor)
+
+    def list_tables(self) -> list[SqliteTableInfo]:
+        """Return a snapshot of tables available in the database."""
+
+        statement = "SELECT name, type, sql FROM sqlite_master WHERE type IN ('table', 'view') ORDER BY name"
+        with self._manager.connection() as connection:
+            cursor = connection.execute(statement)
+            entries = cursor.fetchall()
+            return [
+                SqliteTableInfo(
+                    name=row["name"],
+                    type=row["type"],
+                    sql=row["sql"],
+                )
+                for row in entries
+            ]
+
+    def health_check(self, *, extended: bool = False) -> SqliteHealthReport:
+        """Perform a health check against the underlying database."""
+
+        from health.db_sqlite import perform_health_check as _perform_health_check
+
+        return _perform_health_check(self._manager, extended=extended)
+
+    def metadata(self) -> Dict[str, Any]:
+        """Return runtime metadata for diagnostics."""
+
+        return {
+            "module": MODULE_NAME,
+            "title": MODULE_TITLE,
+            "database_path": self._manager.database_path,
+            "pool": {
+                "max_size": self.config.pool.max_size,
+                "recycle_seconds": self.config.pool.recycle_seconds,
+            },
+            "pragmas": dict(self.config.pragmas),
+        }
+
+    def close(self) -> None:
+        """Release all pooled connections."""
+
+        self._manager.close_all()
+
+    def _build_query_result(self, cursor: sqlite3.Cursor) -> SqliteQueryResult:
+        description = cursor.description or ()
+        columns = tuple(column[0] for column in description)
+        rows = [dict(row) for row in cursor.fetchall()] if columns else []
+        return SqliteQueryResult(
+            rows=rows,
+            columns=columns,
+            rowcount=cursor.rowcount,
+            last_row_id=getattr(cursor, "lastrowid", None),
+        )
+
+
+__all__ = [
+    "{{ module_class_name }}",
+    "{{ module_class_name }}Config",
+    "SqliteConnectionManager",
+    "DbSqliteError",
+    "DbSqliteConfigurationError",
+    "DbSqliteExecutionError",
+]

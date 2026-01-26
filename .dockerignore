@@ -1,0 +1,60 @@
+# Version control
+.git
+.gitignore
+
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.coverage
+htmlcov/
+*.egg-info
+dist/
+build/
+
+# Virtual environments
+.venv
+venv/
+env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Documentation
+*.md
+!README.md
+
+# Test files
+tests/
+coverage.xml
+coverage_report.txt
+final_coverage_report.txt
+COVERAGE_README.md
+
+# Development files
+.pre-commit-config.yaml
+pyrightconfig.json
+pytest.ini
+
+# CI/CD
+.github/
+
+# Temporary files
+*.tmp
+*.log
+
+# Distribution test
+dist-test/

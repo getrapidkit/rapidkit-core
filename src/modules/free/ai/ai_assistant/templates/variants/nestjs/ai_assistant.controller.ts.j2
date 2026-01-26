@@ -1,0 +1,39 @@
+import { Body, Controller, Delete, Get, HttpCode, Post } from "@nestjs/common";
+import { {{ module_class_name }}Service, CompletionResponse } from "./{{ module_name }}.service";
+import { CompletionRequestDto, HealthResponseDto } from "./{{ module_name }}.validation";
+
+@Controller("ai/assistant")
+export class {{ module_class_name }}Controller {
+    constructor(private readonly service: {{ module_class_name }}Service) {}
+
+    @Post("completions")
+    async createCompletion(@Body() payload: CompletionRequestDto): Promise<CompletionResponse> {
+        return this.service.chat(payload);
+    }
+
+    @Post("stream")
+    async streamCompletion(@Body() payload: CompletionRequestDto): Promise<{ provider: string; chunks: string[] }> {
+        const provider = payload.provider ?? this.service.listProviders()[0] ?? "echo";
+        const chunks: string[] = [];
+        for await (const chunk of this.service.stream(payload)) {
+            chunks.push(chunk);
+        }
+        return { provider, chunks };
+    }
+
+    @Get("providers")
+    listProviders(): string[] {
+        return this.service.listProviders();
+    }
+
+    @Get("health")
+    getHealth(): HealthResponseDto {
+        return this.service.health();
+    }
+
+    @Delete("cache")
+    @HttpCode(204)
+    clearCache(): void {
+        this.service.clearCache();
+    }
+}

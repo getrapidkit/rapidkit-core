@@ -1,0 +1,21 @@
+import { Module } from "@nestjs/common";
+import { ConfigModule } from "@nestjs/config";
+import { MulterModule } from "@nestjs/platform-express";
+
+import storageConfiguration from "./{{ module_kebab }}.configuration";
+import { {{ module_service_class }} } from "./{{ module_kebab }}.service";
+import { {{ module_controller_class }} } from "./{{ module_kebab }}.controller";
+import { {{ module_health_controller_class }} } from "../../../../health/{{ module_kebab }}.health";
+
+@Module({
+  imports: [
+    ConfigModule.forFeature(storageConfiguration),
+    MulterModule.register({
+      dest: process.env.RAPIDKIT_STORAGE_PATH ?? "./storage/uploads",
+    }),
+  ],
+  controllers: [{{ module_controller_class }}, {{ module_health_controller_class }}],
+  providers: [{{ module_service_class }}],
+  exports: [{{ module_service_class }}],
+})
+export class {{ module_module_class }} {}

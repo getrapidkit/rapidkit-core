@@ -1,0 +1,61 @@
+import {
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Logger,
+  ServiceUnavailableException,
+} from '@nestjs/common';
+
+import {
+  DB_MONGO_VENDOR_MODULE,
+  type {{ module_class_name }}HealthPayload,
+  {{ module_class_name }}Service,
+} from './{{ module_kebab }}.service';
+
+@Controller('{{ module_kebab }}')
+export class {{ module_class_name }}Controller {
+  private readonly logger = new Logger({{ module_class_name }}Controller.name);
+
+  constructor(private readonly service: {{ module_class_name }}Service) {}
+
+  @Get('health')
+  @HttpCode(HttpStatus.OK)
+  async getHealth(): Promise<{{ module_class_name }}HealthPayload> {
+    try {
+      const payload = await this.service.checkHealth();
+      this.logger.debug(`Mongo health payload=${JSON.stringify(payload)}`);
+      return payload;
+    } catch (error) {
+      const detail =
+        error instanceof Error && error.message
+          ? error.message
+          : String(error);
+      this.logger.error(`Mongo health check failed: ${detail}`);
+      throw new ServiceUnavailableException({
+        status: 'error',
+        module: DB_MONGO_VENDOR_MODULE,
+        detail,
+      });
+    }
+  }
+
+  @Get('info')
+  async getInfo(): Promise<Record<string, unknown>> {
+    try {
+      const info = await this.service.getServerInfo();
+      return { module: DB_MONGO_VENDOR_MODULE, info };
+    } catch (error) {
+      const detail =
+        error instanceof Error && error.message
+          ? error.message
+          : String(error);
+      this.logger.error(`Mongo server info failed: ${detail}`);
+      throw new ServiceUnavailableException({
+        status: 'error',
+        module: DB_MONGO_VENDOR_MODULE,
+        detail,
+      });
+    }
+  }
+}

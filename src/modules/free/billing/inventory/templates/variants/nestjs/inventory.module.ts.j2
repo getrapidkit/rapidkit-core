@@ -1,0 +1,25 @@
+import { Module } from "@nestjs/common";
+
+import { {{ module_class_name }}Controller } from "./{{ module_name }}.controller";
+import {
+  {{ module_class_name }}Service,
+  INVENTORY_CONFIG_TOKEN,
+  InventoryConfigBundle,
+} from "./{{ module_name }}.service";
+
+export const INVENTORY_DEFAULT_CONFIG: InventoryConfigBundle = {
+  defaults: {{ inventory_defaults_ts | tojson }},
+  warehouses: {{ inventory_warehouses | tojson }},
+  pricing: {{ inventory_pricing | tojson }},
+  notifications: {{ inventory_notifications | tojson }},
+};
+
+@Module({
+  controllers: [{{ module_class_name }}Controller],
+  providers: [
+    {{ module_class_name }}Service,
+    { provide: INVENTORY_CONFIG_TOKEN, useValue: INVENTORY_DEFAULT_CONFIG },
+  ],
+  exports: [{{ module_class_name }}Service],
+})
+export class {{ module_class_name }}Module {}

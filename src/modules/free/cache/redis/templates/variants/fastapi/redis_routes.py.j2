@@ -1,0 +1,32 @@
+"""FastAPI routes exposing Redis cache metadata."""
+
+from __future__ import annotations
+
+from fastapi import APIRouter, Depends
+
+from src.modules.free.cache.redis import describe_cache
+from src.modules.free.cache.redis.client import get_redis, redis_dependency
+
+
+def build_router() -> APIRouter:
+    """Create the Redis router scoped under the module namespace."""
+
+    router = APIRouter(prefix="/{{ module_kebab }}", tags=["{{ module_title }}"])
+
+    @router.get("/metadata", summary="Describe Redis cache configuration")
+    async def read_metadata() -> dict[str, object]:
+        return describe_cache()
+
+    @router.get("/ping", summary="Ping Redis using the shared client")
+    async def ping_cache(client=Depends(redis_dependency)) -> dict[str, object]:
+        value = await client.ping()
+        return {"status": "ok" if value else "unknown", "result": value}
+
+    @router.get("/client", summary="Access shared Redis client")
+    async def get_client(client=Depends(get_redis)) -> dict[str, str]:
+        return {"client_repr": repr(client)}
+
+    return router
+
+
+__all__ = ["build_router"]

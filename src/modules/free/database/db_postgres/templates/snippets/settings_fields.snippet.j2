@@ -1,0 +1,89 @@
+# PostgreSQL overrides
+
+if "DB_POOL_SIZE" in locals():
+    DB_POOL_SIZE = Field(
+        default={{ db_pool_size | default(10) | int }},
+        description="Primary size of the SQLAlchemy connection pool",
+    )
+else:
+    DB_POOL_SIZE: int = Field(
+        default={{ db_pool_size | default(10) | int }},
+        description="Primary size of the SQLAlchemy connection pool",
+    )
+
+if "DB_MAX_OVERFLOW" in locals():
+    DB_MAX_OVERFLOW = Field(
+        default={{ db_max_overflow | default(20) | int }},
+        description="Maximum overflow connections allowed beyond the pool size",
+    )
+else:
+    DB_MAX_OVERFLOW: int = Field(
+        default={{ db_max_overflow | default(20) | int }},
+        description="Maximum overflow connections allowed beyond the pool size",
+    )
+
+if "DB_POOL_RECYCLE" in locals():
+    DB_POOL_RECYCLE = Field(
+        default={{ db_pool_recycle | default(3600) | int }},
+        description="Seconds before recycling idle connections to avoid stale sessions",
+    )
+else:
+    DB_POOL_RECYCLE: int = Field(
+        default={{ db_pool_recycle | default(3600) | int }},
+        description="Seconds before recycling idle connections to avoid stale sessions",
+    )
+
+if "DB_POOL_TIMEOUT" in locals():
+    DB_POOL_TIMEOUT = Field(
+        default={{ db_pool_timeout | default(30) | int }},
+        description="Seconds to wait for an available connection from the pool",
+    )
+else:
+    DB_POOL_TIMEOUT: int = Field(
+        default={{ db_pool_timeout | default(30) | int }},
+        description="Seconds to wait for an available connection from the pool",
+    )
+
+if "DB_ECHO" in locals():
+    DB_ECHO = Field(
+        default={{ 'True' if (db_echo | default(False)) else 'False' }},
+        description="Enable SQLAlchemy echo logging for debugging",
+    )
+else:
+    DB_ECHO: bool = Field(
+        default={{ 'True' if (db_echo | default(False)) else 'False' }},
+        description="Enable SQLAlchemy echo logging for debugging",
+    )
+
+if "DB_EXPIRE_ON_COMMIT" in locals():
+    DB_EXPIRE_ON_COMMIT = Field(
+        default={{ 'True' if (db_expire_on_commit | default(False)) else 'False' }},
+        description="Expire ORM objects on commit (disable for better performance)",
+    )
+else:
+    DB_EXPIRE_ON_COMMIT: bool = Field(
+        default={{ 'True' if (db_expire_on_commit | default(False)) else 'False' }},
+        description="Expire ORM objects on commit (disable for better performance)",
+    )
+
+if "DATABASE_URL" in locals():
+    DATABASE_URL = Field(
+        default={{ database_url | default('postgresql://postgres:postgres@localhost:5432/myapp') | tojson }},
+        description="Primary PostgreSQL connection string",
+    )
+else:
+    DATABASE_URL: str = Field(
+        default={{ database_url | default('postgresql://postgres:postgres@localhost:5432/myapp') | tojson }},
+        description="Primary PostgreSQL connection string",
+    )
+
+if "TEST_DATABASE_URL" in locals():
+    TEST_DATABASE_URL = Field(
+        default={{ test_database_url | default('postgresql://postgres:postgres@localhost:5432/myapp_test') | tojson }},
+        description="Optional test database connection string",
+    )
+else:
+    TEST_DATABASE_URL: Optional[str] = Field(
+        default={{ test_database_url | default('postgresql://postgres:postgres@localhost:5432/myapp_test') | tojson }},
+        description="Optional test database connection string",
+    )

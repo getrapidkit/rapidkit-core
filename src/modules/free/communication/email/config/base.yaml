@@ -1,0 +1,25 @@
+# Default configuration for the RapidKit Email module
+defaults:
+    enabled: true
+    provider: smtp
+    from_email: "noreply@rapidkit.top"
+    from_name: "RapidKit"
+    reply_to: null
+    default_headers:
+        X-Email-Source: RapidKit-Core
+    smtp:
+        host: "localhost"
+        port: 1025
+        username: null
+        password: null
+        use_tls: false
+        timeout_seconds: 30
+    template:
+        directory: "templates/email"
+        auto_reload: false
+        strict: false
+
+depends_on:
+    fastapi/standard: []
+    fastapi/ddd: []
+    nestjs/standard: []

@@ -1,0 +1,13 @@
+# Default configuration scaffold for Cors
+defaults:
+  enabled: true
+  allow_origins:
+    - "*"
+  allow_credentials: true
+  allow_methods:
+    - "*"
+  allow_headers:
+    - "*"
+  max_age: 600
+  log_level: INFO
+  metadata: {}

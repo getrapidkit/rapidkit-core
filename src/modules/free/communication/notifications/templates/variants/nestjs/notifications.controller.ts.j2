@@ -1,0 +1,82 @@
+import { Body, Controller, Get, HttpException, HttpStatus, Inject, Optional, Post } from '@nestjs/common';
+
+import {
+	EmailService,
+	Notification,
+	NotificationManager,
+	NotificationsSnapshot,
+	ProviderOverrides,
+	describeNotifications,
+	listNotificationFeatures,
+	NOTIFICATIONS_EMAIL_SERVICE,
+	NOTIFICATIONS_PROVIDER_OVERRIDES,
+} from './notifications.service';
+
+interface SendNotificationDto {
+	channel?: string;
+	type?: string;
+	recipient: string;
+	title: string;
+	body: string;
+	metadata?: Record<string, unknown>;
+	priority?: 'low' | 'normal' | 'high';
+}
+
+@Controller('notifications')
+export class {{ module_class_name }}Controller {
+	constructor(
+		private readonly manager: NotificationManager,
+		@Inject(NOTIFICATIONS_EMAIL_SERVICE) private readonly emailService: EmailService,
+		@Optional()
+		@Inject(NOTIFICATIONS_PROVIDER_OVERRIDES)
+		private readonly providerOverrides?: ProviderOverrides,
+	) {}
+
+	private buildMetadata(): NotificationsSnapshot {
+		return describeNotifications(this.manager, {
+			providerOverrides: this.providerOverrides,
+		});
+	}
+
+	@Get('features')
+	listFeatures(): { features: string[] } {
+		return { features: listNotificationFeatures() };
+	}
+
+	@Get('metadata')
+	getMetadata(): NotificationsSnapshot {
+		return this.buildMetadata();
+	}
+
+	@Get('health')
+	getHealth(): NotificationsSnapshot {
+		return this.buildMetadata();
+	}
+
+	@Post('send')
+	async sendNotification(@Body() payload: SendNotificationDto): Promise<{ accepted: boolean }> {
+		const notification: Notification = {
+			channel: payload.channel ?? payload.type ?? 'email',
+			recipient: payload.recipient,
+			title: payload.title,
+			body: payload.body,
+			metadata: (payload.metadata ?? {}) as Record<string, any>,
+			priority: payload.priority,
+		};
+
+		const accepted = await this.manager.sendNotification(notification);
+		if (!accepted) {
+			throw new HttpException('Notification delivery failed', HttpStatus.BAD_GATEWAY);
+		}
+		return { accepted };
+	}
+
+	@Post('verify-email')
+	async verifyEmailTransport(): Promise<{ verified: boolean }> {
+		const verified = await this.emailService.verifyConnection();
+		if (!verified) {
+			throw new HttpException('Email verification failed', HttpStatus.BAD_GATEWAY);
+		}
+		return { verified };
+	}
+}

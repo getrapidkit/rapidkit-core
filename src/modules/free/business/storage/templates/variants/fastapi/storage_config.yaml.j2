@@ -1,0 +1,55 @@
+{%- set defaults = storage_defaults or {} -%}
+{%- set local = defaults.get("local", {}) or {} -%}
+{%- set s3 = defaults.get("s3", {}) or {} -%}
+{%- set gcs = defaults.get("gcs", {}) or {} -%}
+{%- set security = defaults.get("security", {}) or {} -%}
+{%- set image_processing = defaults.get("image_processing", {}) or {} -%}
+{%- set health_check = defaults.get("health_check", {}) or {} -%}
+{%- set logging = storage_logging or {} -%}
+{%- set performance = storage_performance or {} -%}
+{%- set retry = storage_retry or {} -%}
+# RapidKit generated configuration for {{ module_title }}.
+# Adjust adapters, security, and performance settings to suit your deployment.
+
+storage:
+  adapter: {{ defaults.get("adapter", "local") | tojson }}
+  base_path: {{ local.get("base_path", "./storage/uploads") | tojson }}
+  max_file_size: {{ local.get("max_file_size", 104857600) | tojson }}
+  allowed_extensions: {{ (local.get("allowed_extensions") or [
+    "jpg",
+    "jpeg",
+    "png",
+    "gif",
+    "pdf",
+    "doc",
+    "docx",
+    "xls",
+    "xlsx",
+    "txt",
+    "csv",
+    "zip",
+    "tar",
+    "gz",
+  ]) | tojson(indent=2) }}
+  chunk_size: {{ defaults.get("chunk_size", 1048576) | tojson }}
+  image_processing:
+    enabled: {{ image_processing.get("enabled", True) | tojson }}
+    optimize: {{ image_processing.get("optimize", True) | tojson }}
+    quality: {{ image_processing.get("quality", 85) | tojson }}
+    thumbnails: {{ image_processing.get("thumbnails", {}) | tojson(indent=4) }}
+  security:
+    scan_on_upload: {{ security.get("scan_on_upload", True) | tojson }}
+    scan_interval: {{ security.get("scan_interval", 3600) | tojson }}
+    require_authentication: {{ security.get("require_authentication", True) | tojson }}
+    rate_limit_per_minute: {{ security.get("rate_limit_per_minute", 60) | tojson }}
+  health_check:
+    enabled: {{ health_check.get("enabled", True) | tojson }}
+    timeout: {{ health_check.get("timeout", 5) | tojson }}
+    check_space: {{ health_check.get("check_space", True) | tojson }}
+    check_connectivity: {{ health_check.get("check_connectivity", True) | tojson }}
+  s3: {{ s3 | tojson(indent=2) }}
+  gcs: {{ gcs | tojson(indent=2) }}
+
+logging: {{ logging | tojson(indent=2) }}
+performance: {{ performance | tojson(indent=2) }}
+retry: {{ retry | tojson(indent=2) }}

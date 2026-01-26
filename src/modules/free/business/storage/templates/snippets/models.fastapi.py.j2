@@ -1,0 +1,17 @@
+from pydantic import BaseModel
+from datetime import datetime
+from typing import Optional, Dict
+
+class FileUploadModel(BaseModel):
+    """File upload model."""
+    filename: str
+    size: int
+    mimetype: str
+
+class FileInfoModel(BaseModel):
+    """File information model."""
+    file_id: str
+    filename: str
+    size: int
+    created_at: datetime
+    url: Optional[str] = None

@@ -1,0 +1,10 @@
+import { Module } from '@nestjs/common';
+
+import { {{ module_class_name }}Module } from '../modules/free/database/db_postgres/postgres.module';
+import { {{ module_class_name }}HealthController } from './postgres-health.controller';
+
+@Module({
+  imports: [{{ module_class_name }}Module],
+  controllers: [{{ module_class_name }}HealthController],
+})
+export class {{ module_class_name }}HealthModule {}

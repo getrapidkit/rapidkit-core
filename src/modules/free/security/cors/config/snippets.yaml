@@ -1,0 +1,19 @@
+# Register snippet bundles for Cors
+snippets:
+  - name: "cors-middleware-setup"
+    description: "Basic CORS middleware setup for FastAPI"
+    template: "templates/snippets/cors.snippet.j2"
+    context:
+      allow_origins: ["http://localhost:3000", "http://localhost:8080"]
+      allow_credentials: true
+      allow_methods: ["GET", "POST", "PUT", "DELETE"]
+      allow_headers: ["*"]
+
+  - name: "strict-cors"
+    description: "Strict CORS configuration for production"
+    template: "templates/snippets/cors.snippet.j2"
+    context:
+      allow_origins: ["https://yourdomain.com"]
+      allow_credentials: true
+      allow_methods: ["GET", "POST", "PUT", "DELETE"]
+      allow_headers: ["Content-Type", "Authorization"]

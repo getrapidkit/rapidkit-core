@@ -1,0 +1,49 @@
+import { Body, Controller, Get, Post, Query } from "@nestjs/common";
+
+import {
+  {{ module_class_name }}Service,
+  ObservabilityEvent,
+  ObservabilityMetricSnapshot,
+  ObservabilitySpan,
+  ObservabilitySummary,
+} from "./{{ module_kebab }}.service";
+
+class CreateEventDto {
+  name!: string;
+  severity?: string;
+  attributes?: Record<string, unknown>;
+}
+
+@Controller("{{ module_kebab }}")
+export class {{ module_class_name }}Controller {
+  constructor(private readonly service: {{ module_class_name }}Service) {}
+
+  @Get("health")
+  getHealth(): ObservabilitySummary {
+    return this.service.getSummary();
+  }
+
+  @Get("metrics")
+  getMetrics(): ObservabilityMetricSnapshot {
+    return this.service.exportMetrics();
+  }
+
+  @Get("events")
+  getEvents(@Query("limit") limit = 50): ObservabilityEvent[] {
+    return this.service.recentEvents(Number(limit) || 50);
+  }
+
+  @Post("events")
+  createEvent(@Body() dto: CreateEventDto): ObservabilityEvent {
+    return this.service.recordEvent(
+      dto.name,
+      dto.severity,
+      dto.attributes,
+    );
+  }
+
+  @Get("traces")
+  getTraces(@Query("limit") limit = 25): ObservabilitySpan[] {
+    return this.service.recentSpans(Number(limit) || 25);
+  }
+}

@@ -1,0 +1,212 @@
+default_language_version:
+    python: python3.10
+
+repos:
+    - repo: local
+      hooks:
+          # 0.25 Auto-bump base version from commit message (prepare-commit-msg hook)
+          - id: auto-bump-version
+            name: auto-bump-version
+            entry: poetry run python
+            language: system
+            args: [scripts/auto_bump_version.py]
+            stages: [prepare-commit-msg]
+            pass_filenames: true
+
+          # 0. Validate commit message format (commit-msg hook)
+          - id: check-commit-message
+            name: check-commit-message
+            entry: poetry run python
+            language: system
+            args: [scripts/check_commit_message.py]
+            stages: [commit-msg]
+            pass_filenames: true
+            # Allow emojis and special characters in commit messages
+            additional_dependencies: []
+
+          # 0.5 Surface GitHub Actions toggle state before committing/pushing
+          - id: github-actions-flag-status
+            name: github-actions-flag-status
+            entry: poetry run python
+            language: system
+            args: [scripts/check_actions_flag.py]
+            pass_filenames: false
+            # show GitHub Actions toggle only at commit time; no need to run this
+            # again during pre-push where it just repeats work already done.
+            stages: [pre-commit]
+            verbose: true
+
+          # 0.6 Enforce core workflow policy (no auto triggers in core)
+          - id: core-workflows-policy
+            name: core workflows policy (no auto triggers)
+            entry: poetry run python
+            language: system
+            args: [scripts/check_core_workflows_policy.py]
+            pass_filenames: false
+            stages: [pre-commit]
+            files: ^\.github/workflows/.*\.ya?ml$
+
+          # 1. Auto-format code with Black
+          - id: black
+            name: black (format)
+            entry: poetry run black
+            language: system
+            types: [python]
+            args: [--quiet]
+            # run Black at commit time (pre-commit) to keep pushes fast — avoid
+            # duplicating formatting checks in pre-push
+            stages: [pre-commit]
+            require_serial: true
+
+          # 2. Lint and fix issues with Ruff
+          - id: ruff
+            name: ruff (lint & fix)
+            entry: poetry run ruff
+            language: system
+            types: [python]
+            args: [check, --fix, --quiet, .]
+            pass_filenames: false
+            # run ruff only at commit time (pre-commit). We avoid re-running it
+            # in pre-push to reduce repeat work and speed up pushes.
+            stages: [pre-commit]
+            always_run: true
+            require_serial: true
+
+          # 3. Type check with Mypy (use project settings)
+          - id: mypy
+            name: mypy (type-check)
+            entry: poetry run mypy
+            language: system
+            types: [python]
+            # run type checks during commit to catch errors early — skip repeating
+            # in pre-push.
+            stages: [pre-commit]
+            pass_filenames: false
+
+          # 3.5 RapidKit modules doctor (scoped when modules touched)
+          - id: rapidkit-modules-doctor-fast
+            name: rapidkit modules doctor (fast)
+            entry: poetry run python scripts/modules_doctor.py
+            language: system
+            pass_filenames: false
+            files: ^src/modules/
+            stages: [pre-commit]
+            args: [fast, --modules-from-diff, --no-json]
+
+          # 3.7 Ensure audit publisher stays healthy (dry-run)
+          - id: rapidkit-audit-publisher-preview
+            name: rapidkit audit publisher (preview dry-run)
+            entry: poetry run python scripts/publish_audit_report.py
+            language: system
+            pass_filenames: false
+            stages: [pre-commit]
+            args: [--channel, preview, --dry-run]
+            always_run: true
+            require_serial: true
+
+          # 4. Consolidated pre-push gate (runs all heavy suites locally)
+          - id: rapidkit-pre-push-gate
+            name: pre-push gate (full reliability suite)
+            entry: bash
+            language: system
+            pass_filenames: false
+            stages: [pre-push]
+            require_serial: true
+            verbose: true
+            args: [scripts/pre_push_gate.sh]
+
+          # 5. Update modules lock file when modules change
+          - id: update-modules-lock
+            name: update-modules-lock
+            entry: poetry run rapidkit modules lock --overwrite
+            language: system
+            files: ^src/modules/
+            pass_filenames: false
+
+    # ===== ADVANCED HOOKS FROM PRE-COMMIT REPOS =====
+    - repo: https://github.com/pre-commit/pre-commit-hooks
+      rev: v4.6.0
+      hooks:
+          # File format and encoding checks
+          - id: trailing-whitespace
+            name: trailing-whitespace (fix)
+            types: [text]
+            args: [--markdown-linebreak-ext=md]
+          - id: end-of-file-fixer
+            name: end-of-file-fixer
+            types: [text]
+            exclude: module\.verify\.json$
+          - id: mixed-line-ending
+            name: mixed-line-ending (fix)
+            types: [text]
+            args: [--fix=lf]
+
+          # YAML/JSON validation
+          - id: check-yaml
+            name: check-yaml
+            types: [yaml]
+          - id: check-json
+            name: check-json
+            types: [json]
+          - id: check-toml
+            name: check-toml
+            types: [toml]
+
+          # Python-specific checks
+          - id: check-merge-conflict
+            name: check-merge-conflict
+            types: [text]
+          - id: check-added-large-files
+            name: check-added-large-files
+            args: [--maxkb=500]
+          - id: check-case-conflict
+            name: check-case-conflict
+          # - id: check-executables-have-shebangs
+          #   name: check-executables-have-shebangs
+          #   types: [text]
+          #   exclude: \.(yml|yaml|md|txt|cfg|ini|toml|json|xml|html|css|js|ts)$
+          - id: check-shebang-scripts-are-executable
+            name: check-shebang-scripts-are-executable
+            types: [text]
+            exclude: \.j2$
+
+    # ===== ADVANCED PYTHON HOOKS =====
+    - repo: https://github.com/psf/black
+      rev: 24.8.0
+      hooks:
+          - id: black
+            name: black (double-check)
+            # keep double-check/verification at commit time only — avoids extra
+            # duplication at pre-push.
+            stages: [pre-commit]
+            language_version: python3
+            args: [--check, --diff]
+
+    - repo: https://github.com/charliermarsh/ruff-pre-commit
+      rev: v0.6.8
+      hooks:
+          - id: ruff
+            name: ruff (double-check)
+            stages: [pre-commit]
+            args: [--exit-zero, .]
+            pass_filenames: false
+            always_run: true
+
+    # ===== MARKDOWN & DOCS =====
+    - repo: https://github.com/executablebooks/mdformat
+      rev: 0.7.17
+      hooks:
+          - id: mdformat
+            name: mdformat (markdown formatter)
+            additional_dependencies:
+                - mdformat-gfm
+                - mdformat-black
+            args: [--wrap=100]
+
+    # ===== SHELL SCRIPTS =====
+    - repo: https://github.com/shellcheck-py/shellcheck-py
+      rev: v0.10.0.1
+      hooks:
+          - id: shellcheck
+            name: shellcheck (shell script linter)
+            args: [-e, SC1091, -e, SC2002]

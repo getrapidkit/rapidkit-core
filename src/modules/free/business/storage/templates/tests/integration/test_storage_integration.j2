@@ -1,0 +1,65 @@
+"""Integration coverage for the {{ module_title }} FastAPI bindings."""
+
+from __future__ import annotations
+
+import asyncio
+from pathlib import Path
+
+import pytest
+from fastapi import FastAPI, status
+from fastapi.testclient import TestClient
+
+from src.modules.free.business.storage.storage import FileStorage
+from src.health.storage import register_storage_health
+from src.modules.free.business.storage.routers.storage import router
+
+pytestmark = [pytest.mark.integration, pytest.mark.template_integration]
+
+
+def test_storage_runtime_health_snapshot() -> None:
+    runtime = FileStorage()
+    payload = asyncio.run(runtime.health_check())
+
+    assert payload["module"] == "{{ module_name }}"
+    assert payload["status"] in {"healthy", "degraded"}
+    assert "adapter" in payload
+
+
+def test_fastapi_routes_support_file_lifecycle(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) -> None:
+    upload_root = tmp_path / "uploads"
+    monkeypatch.setenv("RAPIDKIT_STORAGE_PATH", str(upload_root))
+
+    app = FastAPI()
+    app.include_router(router)
+    register_storage_health(app)
+
+    client = TestClient(app)
+
+    upload_response = client.post(
+        "/api/v1/storage/upload",
+        content=b"hello world",
+        headers={"X-Filename": "demo.txt"},
+    )
+    assert upload_response.status_code == status.HTTP_201_CREATED
+    file_id = upload_response.json()["file_id"]
+    assert file_id
+
+    fetch_response = client.get(f"/api/v1/storage/{file_id}")
+    assert fetch_response.status_code == status.HTTP_200_OK
+    assert fetch_response.content == b"hello world"
+
+    health_response = client.get("/api/v1/storage/health/status")
+    assert health_response.status_code == status.HTTP_200_OK
+    assert health_response.json()["status"]
+
+    module_health = client.get("/api/health/module/storage")
+    assert module_health.status_code == status.HTTP_200_OK
+    assert module_health.json()["module"] == "{{ module_name }}"
+
+
+def test_generated_storage_config_exists() -> None:
+    config_path = Path("config/storage.yaml")
+    assert config_path.exists(), "Expected generated config file to exist"
+    contents = config_path.read_text(encoding="utf-8")
+    assert "storage:" in contents
+    assert "adapter:" in contents

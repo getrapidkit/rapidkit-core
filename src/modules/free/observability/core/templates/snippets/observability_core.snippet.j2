@@ -1,0 +1,56 @@
+{#
+Observability Core snippet fragments.
+
+Rendered via `config/snippets.yaml` (or referenced from module docs).
+
+Supported fragments:
+- env: inject environment defaults into .env* under `# <<<inject:module-env>>>`
+
+The module generator exposes `observability_defaults` in the render context.
+#}
+
+{% set defaults = observability_defaults | default({}) %}
+{% set metrics = defaults.get('metrics', {}) if defaults.get('metrics') is mapping else {} %}
+{% set tracing = defaults.get('tracing', {}) if defaults.get('tracing') is mapping else {} %}
+{% set events = defaults.get('events', {}) if defaults.get('events') is mapping else {} %}
+
+{% if fragment == "env" or fragment is not defined %}
+# Observability Core
+# Generation-time overrides consumed by `overrides.py`.
+
+RAPIDKIT_OBSERVABILITY_SERVICE_NAME={{ defaults.get('service_name', 'rapidkit-app') }}
+RAPIDKIT_OBSERVABILITY_ENVIRONMENT={{ defaults.get('environment', 'local') }}
+
+# JSON mapping or k=v,k2=v2
+RAPIDKIT_OBSERVABILITY_RESOURCE_ATTRS={{ defaults.get('resource_attributes', {}) | tojson }}
+
+# Metrics
+RAPIDKIT_OBSERVABILITY_METRICS_ENABLED={{ metrics.get('enabled', True) | tojson }}
+RAPIDKIT_OBSERVABILITY_METRICS_EXPORTER={{ metrics.get('exporter', 'prometheus') }}
+RAPIDKIT_OBSERVABILITY_METRICS_ENDPOINT={{ metrics.get('endpoint', '/metrics') }}
+RAPIDKIT_OBSERVABILITY_METRICS_NAMESPACE={{ metrics.get('namespace', 'rapidkit') }}
+RAPIDKIT_OBSERVABILITY_METRICS_LABELS={{ metrics.get('default_labels', {}) | tojson }}
+RAPIDKIT_OBSERVABILITY_METRICS_BUCKETS={{ metrics.get('buckets', [0.1, 0.5, 1, 2.5, 5, 10]) | tojson }}
+RAPIDKIT_OBSERVABILITY_METRICS_RETENTION={{ metrics.get('retention_seconds', 600) }}
+RAPIDKIT_OBSERVABILITY_METRICS_PROCESS={{ metrics.get('register_process_metrics', True) | tojson }}
+
+# Tracing
+RAPIDKIT_OBSERVABILITY_TRACING_ENABLED={{ tracing.get('enabled', False) | tojson }}
+RAPIDKIT_OBSERVABILITY_TRACING_EXPORTER={{ tracing.get('exporter', 'console') }}
+RAPIDKIT_OBSERVABILITY_TRACING_ENDPOINT={{ tracing.get('endpoint') | default('') }}
+RAPIDKIT_OBSERVABILITY_TRACING_SAMPLE_RATIO={{ tracing.get('sample_ratio', 0.25) }}
+RAPIDKIT_OBSERVABILITY_TRACING_HEADERS={{ tracing.get('include_headers', True) | tojson }}
+
+# Logging
+RAPIDKIT_OBSERVABILITY_LOG_LEVEL={{ defaults.get('log_level', 'INFO') }}
+RAPIDKIT_OBSERVABILITY_STRUCTURED_LOGGING={{ defaults.get('structured_logging', True) | tojson }}
+RAPIDKIT_OBSERVABILITY_INCLUDE_TRACE_IDS={{ defaults.get('include_trace_ids', True) | tojson }}
+
+# Events
+RAPIDKIT_OBSERVABILITY_EVENTS_BUFFER={{ events.get('buffer_size', 1000) }}
+RAPIDKIT_OBSERVABILITY_EVENTS_FLUSH_INTERVAL={{ events.get('flush_interval_seconds', 5) }}
+RAPIDKIT_OBSERVABILITY_EVENTS_AUDIT={{ events.get('audit_enabled', False) | tojson }}
+
+# Misc
+RAPIDKIT_OBSERVABILITY_RETRY_ATTEMPTS={{ defaults.get('retry_attempts', 3) }}
+{% endif %}

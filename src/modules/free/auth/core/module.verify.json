@@ -1,0 +1,47 @@
+{
+  "checked_at": "2025-12-22T22:00:05.140292+00:00",
+  "description": "Lean module layout blueprint (v3)",
+  "extra_directories": [
+    "scripts"
+  ],
+  "extra_files": [
+    "scripts/run_demo.py",
+    "templates/base/core_health.py.j2",
+    "templates/base/dependencies.py.j2",
+    "templates/base/health.py.j2",
+    "templates/base/jwt_advanced.py.j2",
+    "templates/base/rbac.py.j2"
+  ],
+  "missing_directories": [],
+  "missing_files": [],
+  "module": "free/auth/core",
+  "parity": {
+    "fastapi": {
+      "declared": true,
+      "has_config": true,
+      "has_health": true,
+      "has_metadata": true,
+      "has_tests": true,
+      "issues": [],
+      "plugin": true,
+      "status": "ok"
+    },
+    "nestjs": {
+      "declared": true,
+      "has_config": true,
+      "has_health": true,
+      "has_metadata": true,
+      "has_tests": true,
+      "issues": [],
+      "plugin": true,
+      "status": "ok"
+    }
+  },
+  "parity_checked_at": "2025-11-09T20:55:36.976768+00:00",
+  "parity_valid": true,
+  "spec_version": 4,
+  "structure_tree_hash": "e0c1253e76fa6e603f10e51d66cdd2196bbd1fd08ca895cee8bdeec19b4f1cea",
+  "structure_valid": true,
+  "tree_hash": "e0c1253e76fa6e603f10e51d66cdd2196bbd1fd08ca895cee8bdeec19b4f1cea",
+  "valid": true
+}

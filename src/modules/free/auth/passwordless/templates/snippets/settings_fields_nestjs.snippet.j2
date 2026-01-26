@@ -1,0 +1,24 @@
+  PASSWORDLESS_TOKEN_TTL_SECONDS:
+    process.env.PASSWORDLESS_TOKEN_TTL_SECONDS == null
+      ? undefined
+      : Number.parseInt(process.env.PASSWORDLESS_TOKEN_TTL_SECONDS, 10),
+
+  PASSWORDLESS_TOKEN_LENGTH:
+    process.env.PASSWORDLESS_TOKEN_LENGTH == null
+      ? undefined
+      : Number.parseInt(process.env.PASSWORDLESS_TOKEN_LENGTH, 10),
+
+  PASSWORDLESS_RESEND_COOLDOWN_SECONDS:
+    process.env.PASSWORDLESS_RESEND_COOLDOWN_SECONDS == null
+      ? undefined
+      : Number.parseInt(process.env.PASSWORDLESS_RESEND_COOLDOWN_SECONDS, 10),
+
+  PASSWORDLESS_MAX_ATTEMPTS:
+    process.env.PASSWORDLESS_MAX_ATTEMPTS == null
+      ? undefined
+      : Number.parseInt(process.env.PASSWORDLESS_MAX_ATTEMPTS, 10),
+
+  // Keep as raw string to avoid crashing on invalid JSON
+  PASSWORDLESS_DELIVERY_METHODS: process.env.PASSWORDLESS_DELIVERY_METHODS,
+
+  PASSWORDLESS_MAGIC_LINK_BASE_URL: process.env.PASSWORDLESS_MAGIC_LINK_BASE_URL,

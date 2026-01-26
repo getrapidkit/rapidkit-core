@@ -1,0 +1,9 @@
+from fastapi import APIRouter, UploadFile, File
+from typing import List
+
+router = APIRouter()
+
+@router.post("/upload")
+async def upload_files(files: List[UploadFile] = File(...)):
+    """Upload files endpoint."""
+    return [{"filename": f.filename, "size": len(await f.read())} for f in files]

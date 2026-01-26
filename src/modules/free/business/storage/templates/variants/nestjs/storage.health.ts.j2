@@ -1,0 +1,16 @@
+/** Health controller for the {{ module_title }} NestJS integration. */
+
+import { Controller, Get, HttpCode, HttpStatus } from "@nestjs/common";
+
+import { StorageService, StorageHealthPayload } from "./{{ module_kebab }}.service";
+
+@Controller("api/health/module")
+export class StorageHealthController {
+  constructor(private readonly service: StorageService) {}
+
+  @Get("{{ module_kebab }}")
+  @HttpCode(HttpStatus.OK)
+  async getModuleHealth(): Promise<StorageHealthPayload> {
+    return this.service.getHealthPayload();
+  }
+}

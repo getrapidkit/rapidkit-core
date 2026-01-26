@@ -1,0 +1,29 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "RapidKit Module Health Payload",
+  "type": "object",
+  "required": ["module", "status", "checked_at", "checks"],
+  "properties": {
+    "module": {"type": "string"},
+    "status": {"type": "string", "enum": ["ok", "degraded", "fail"]},
+    "checked_at": {"type": "string", "format": "date-time"},
+    "version": {"type": "string"},
+    "summary": {"type": "string"},
+    "metadata": {"type": "object"},
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "status"],
+        "properties": {
+          "name": {"type": "string"},
+          "status": {"type": "string", "enum": ["ok", "degraded", "fail"]},
+          "details": {"type": ["string", "object"]},
+          "duration_ms": {"type": "number"}
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,105 @@
+import { Controller, Get } from "@nestjs/common";
+
+import { {{ module_class_name }}Service } from "./rate-limiting.service";
+
+const RATE_LIMITING_FEATURES = [
+  "configurable_rules",
+  "distributed_backend",
+  "http_headers",
+];
+
+interface RateLimitRuleSnapshot {
+  name: string;
+  limit: number;
+  window_seconds: number;
+  scope: string;
+  priority: number;
+  routes: string[];
+  methods: string[];
+}
+
+interface RateLimiterMetadata {
+  enabled: boolean;
+  backend?: string | null;
+  default_rule: RateLimitRuleSnapshot;
+  rules: RateLimitRuleSnapshot[];
+  features: string[];
+}
+
+type UnknownRuleSnapshot = Record<string, unknown> | null | undefined;
+
+const toNumber = (value: unknown, fallback = 0): number => {
+  const parsed = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+};
+
+const toStringArray = (value: unknown): string[] => {
+  if (Array.isArray(value)) {
+    return value.map((entry) => String(entry)).filter((entry) => entry.length > 0);
+  }
+  return [];
+};
+
+const mapRuleSnapshot = (
+  rule: UnknownRuleSnapshot,
+  fallbackName: string,
+): RateLimitRuleSnapshot => {
+  const nameRaw = (rule && (rule as Record<string, unknown>).name) as string | undefined;
+  const name = typeof nameRaw === "string" && nameRaw.trim().length > 0 ? nameRaw : fallbackName;
+  const windowSeconds = toNumber(
+    rule && (rule as Record<string, unknown>).windowSeconds,
+    toNumber(rule && (rule as Record<string, unknown>).window_seconds, 0),
+  );
+  const scopeRaw = rule && (rule as Record<string, unknown>).scope;
+  const scope = typeof scopeRaw === "string" && scopeRaw.trim().length > 0 ? scopeRaw : "identity";
+  const priority = toNumber(rule && (rule as Record<string, unknown>).priority, 0);
+  const routes = toStringArray(rule && (rule as Record<string, unknown>).routes);
+  const methods = toStringArray(rule && (rule as Record<string, unknown>).methods);
+  const limit = Math.max(toNumber(rule && (rule as Record<string, unknown>).limit, 0), 0);
+  return {
+    name,
+    limit,
+    window_seconds: Math.max(windowSeconds, 0),
+    scope,
+    priority,
+    routes,
+    methods,
+  };
+};
+
+@Controller("security/rate-limiting")
+export class {{ module_class_name }}Controller {
+  constructor(private readonly service: {{ module_class_name }}Service) {}
+
+  private buildMetadata(): RateLimiterMetadata {
+    const metadata = this.service.getMetadata() as Record<string, unknown>;
+    const defaultRule = mapRuleSnapshot(metadata.defaultRule as UnknownRuleSnapshot, "default");
+    const rulesSource = Array.isArray(metadata.rules)
+      ? (metadata.rules as UnknownRuleSnapshot[])
+      : [];
+    const rules = rulesSource.map((rule, index) => mapRuleSnapshot(rule, `rule-${index}`));
+
+    return {
+      enabled: Boolean(metadata.enabled ?? true),
+      backend: (metadata.backend as string | undefined) ?? null,
+      default_rule: defaultRule,
+      rules,
+      features: [...RATE_LIMITING_FEATURES],
+    };
+  }
+
+  @Get("metadata")
+  getMetadata(): RateLimiterMetadata {
+    return this.buildMetadata();
+  }
+
+  @Get("features")
+  listFeatures(): { features: string[] } {
+    return { features: [...RATE_LIMITING_FEATURES] };
+  }
+
+  @Get("health")
+  getHealth(): RateLimiterMetadata {
+    return this.buildMetadata();
+  }
+}

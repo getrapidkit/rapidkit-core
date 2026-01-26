@@ -1,0 +1,43 @@
+name: session
+display_name: Session Management
+description: >-
+  Opinionated session management utilities offering signed session tokens,
+  cookie helpers, and pluggable storage for RapidKit applications.
+root_path: src/
+
+profiles:
+  fastapi/standard:
+    description: FastAPI dependency helpers for reading and issuing sessions.
+  nestjs/standard:
+    description: NestJS service surface for session configuration snapshots.
+
+defaults:
+  secret_key_env: RAPIDKIT_SESSION_SECRET
+  session_ttl_seconds: 2_592_000  # 30 days
+  refresh_ttl_seconds: 15_552_000  # 180 days
+  cookie_name: rapidkit_session
+  cookie_domain: null
+  cookie_secure: true
+  cookie_httponly: true
+  cookie_same_site: lax
+  storage_backend: memory
+
+variables:
+  session_cookie_name:
+    type: string
+    default: rapidkit_session
+    description: Name of the session cookie exposed to clients.
+  session_secret_env:
+    type: string
+    default: RAPIDKIT_SESSION_SECRET
+    description: Environment variable holding the signing secret.
+
+features:
+  signed_tokens:
+    status: stable
+    enabled: true
+    description: HMAC signed session identifiers for stateless verification.
+  pluggable_storage:
+    status: beta
+    enabled: true
+    description: Storage interface allowing alternative persistence layers.

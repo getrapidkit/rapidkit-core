@@ -1,0 +1,28 @@
+import { Controller, Get } from "@nestjs/common";
+
+import {
+  UsersCoreHealthPayload,
+  UsersCoreFeature,
+  UsersCoreMetadata,
+  {{ module_class_name }}Service,
+} from "./users-core.service";
+
+@Controller("users-core")
+export class {{ module_class_name }}Controller {
+  constructor(private readonly service: {{ module_class_name }}Service) {}
+
+  @Get("metadata")
+  getMetadata(): UsersCoreMetadata {
+    return this.service.buildMetadata();
+  }
+
+  @Get("features")
+  listFeatures(): { features: UsersCoreFeature[] } {
+    return { features: this.service.listFeatures() };
+  }
+
+  @Get("health")
+  async getHealth(): Promise<UsersCoreHealthPayload> {
+    return this.service.resolveHealth();
+  }
+}

@@ -1,0 +1,42 @@
+import { Test } from "@nestjs/testing";
+import { {{ module_class_name }}Controller } from "../../src/modules/{{ module_slug }}/{{ module_name }}.controller";
+import {
+  AI_ASSISTANT_CONFIG,
+  {{ module_class_name }}Service,
+  defaultAiAssistantConfig,
+} from "../../src/modules/{{ module_slug }}/{{ module_name }}.service";
+
+describe("{{ module_class_name }}Controller", () => {
+  let controller: {{ module_class_name }}Controller;
+
+  beforeEach(async () => {
+    const moduleRef = await Test.createTestingModule({
+      controllers: [{{ module_class_name }}Controller],
+      providers: [
+        {{ module_class_name }}Service,
+        {
+          provide: AI_ASSISTANT_CONFIG,
+          useValue: defaultAiAssistantConfig(),
+        },
+      ],
+    }).compile();
+
+    controller = moduleRef.get({{ module_class_name }}Controller);
+  });
+
+  it("creates a completion", async () => {
+    const response = await controller.createCompletion({ prompt: "hello" });
+    expect(response.content).toContain("hello");
+    expect(response.provider).toBeDefined();
+  });
+
+  it("lists providers", () => {
+    expect(controller.listProviders()).toContain("echo");
+  });
+
+  it("returns health snapshot", () => {
+    const health = controller.getHealth();
+    expect(health.module).toBe("{{ module_name }}");
+    expect(health.status).toBe("ok");
+  });
+});

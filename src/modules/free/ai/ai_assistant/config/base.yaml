@@ -1,0 +1,47 @@
+# Module configuration baseline for Ai Assistant
+name: ai_assistant
+display_name: "Ai Assistant"
+description: Provider-agnostic...
+root_path: src/
+
+profiles:
+  fastapi/standard:
+    description: "FastAPI runtime profile for Ai Assistant REST, health, and overrides integration."
+  nestjs/standard:
+    description: "NestJS module wiring providers and controllers for Ai Assistant."
+  vendor/baseline:
+    description: "Vendor layer templates emitted for Ai Assistant runtime contracts."
+variables:
+  log_level:
+    type: string
+    default: INFO
+    description: "Logging threshold used by Ai Assistant components."
+    validation: "^(CRITICAL|ERROR|WARNING|INFO|DEBUG|TRACE)$"
+  request_timeout_seconds:
+    type: integer
+    default: 30
+    description: "Default timeout (seconds) for outbound calls initiated by Ai Assistant."
+    validation: "^[0-9]+$"
+  feature_flag_enabled:
+    type: boolean
+    default: false
+    description: "Toggle demonstrating feature gating inside Ai Assistant workflows."
+depends_on:
+  fastapi/standard: []
+  nestjs/standard: []
+dev_dependencies:
+  -
+    name: pytest
+    source: external
+    tool: pip
+    version: ">=8.0.0,<9.0"
+  -
+    name: pytest-asyncio
+    source: external
+    tool: pip
+    version: ">=0.23.0,<1.0"
+  -
+    name: ruff
+    source: external
+    tool: pip
+    version: ">=0.4.0,<1.0"

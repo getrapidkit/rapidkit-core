@@ -1,0 +1,18 @@
+import { Global, Module } from "@nestjs/common";
+import { ConfigModule } from "@nestjs/config";
+
+import { {{ module_class_name }}Controller } from "./rate-limiting.controller";
+import { {{ module_class_name }}Service } from "./rate-limiting.service";
+import { {{ module_class_name }}Guard } from "./rate-limiting.guard";
+import { rateLimitingConfiguration } from "./rate-limiting.configuration";
+
+export const RATE_LIMITING_CONFIG_NAMESPACE = "{{ module_kebab }}";
+
+@Global()
+@Module({
+  imports: [ConfigModule.forFeature(rateLimitingConfiguration)],
+  controllers: [{{ module_class_name }}Controller],
+  providers: [{{ module_class_name }}Service, {{ module_class_name }}Guard],
+  exports: [{{ module_class_name }}Service, {{ module_class_name }}Guard],
+})
+export class {{ module_class_name }}Module {}

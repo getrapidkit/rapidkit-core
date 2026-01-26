@@ -1,0 +1,66 @@
+import { Test, TestingModule } from "@nestjs/testing";
+
+import { {{ module_class_name }}Controller } from "../../../../../src/modules/free/cache/redis/redis.controller";
+import { {{ module_class_name }}HealthController } from "../../../../../src/health/redis.health";
+import { {{ module_class_name }}Module } from "../../../../../src/modules/free/cache/redis/redis.module";
+import { {{ module_class_name }}Service } from "../../../../../src/modules/free/cache/redis/redis.service";
+
+jest.mock("ioredis", () => {
+  return jest.fn().mockImplementation(() => ({
+    status: "ready",
+    options: { host: "localhost", port: 6379 },
+    connect: jest.fn().mockResolvedValue(undefined),
+    ping: jest.fn().mockResolvedValue("PONG"),
+    quit: jest.fn().mockResolvedValue(undefined),
+    disconnect: jest.fn(),
+  }));
+});
+
+describe("{{ module_class_name }} NestJS Integration", () => {
+  let controller: {{ module_class_name }}Controller;
+  let healthController: {{ module_class_name }}HealthController;
+  let service: {{ module_class_name }}Service;
+
+  beforeAll(async () => {
+    const moduleRef: TestingModule = await Test.createTestingModule({
+      imports: [{{ module_class_name }}Module],
+    }).compile();
+
+    controller = moduleRef.get({{ module_class_name }}Controller);
+    healthController = moduleRef.get({{ module_class_name }}HealthController);
+    service = moduleRef.get({{ module_class_name }}Service);
+  });
+
+  afterAll(async () => {
+    await service.close();
+  });
+
+  it("should describe cache metadata", () => {
+    const metadata = controller.getMetadata();
+
+    expect(metadata.module).toBe("{{ rapidkit_vendor_module }}");
+    expect(metadata.retry.preconnect).toBeDefined();
+  });
+
+  it("should expose ping payload", async () => {
+    const payload = await controller.ping();
+
+    expect(payload.status).toBe("ok");
+    expect(payload.result).toBe("PONG");
+  });
+
+  it("should expose health payload", async () => {
+    const payload = await healthController.getModuleHealth();
+
+    expect(payload.status).toBe("ok");
+    expect(payload.module).toBe("{{ rapidkit_vendor_module }}");
+    expect(payload.checks.connection).toBe(true);
+  });
+
+  it("should describe client", async () => {
+    const description = await controller.getClient();
+
+    expect(description.status).toBeDefined();
+    expect(description.client_repr).toContain("Redis");
+  });
+});

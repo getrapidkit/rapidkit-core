@@ -1,0 +1,80 @@
+# ruff: noqa: I001
+
+"""Integration smoke tests for Db Mongo FastAPI variant."""
+
+from importlib import import_module
+from importlib import util as importlib_util
+import inspect
+
+import pytest
+
+
+MOTOR_AVAILABLE = importlib_util.find_spec("motor") is not None
+FASTAPI_AVAILABLE = importlib_util.find_spec("fastapi") is not None
+
+pytestmark = [
+    pytest.mark.integration,
+    pytest.mark.template_integration,
+    pytest.mark.skipif(not MOTOR_AVAILABLE, reason="motor not installed"),
+]
+
+
+def test_runtime_exports() -> None:
+    """Runtime exposes expected helpers."""
+
+    module = import_module("src.modules.free.database.db_mongo.db_mongo")
+    expected = {
+        "DbMongo",
+        "DbMongoConfig",
+        "DbMongoClientFactory",
+        "DbMongoDependencyError",
+        "register_fastapi",
+    }
+
+    missing = [name for name in expected if not hasattr(module, name)]
+    assert not missing, f"Missing expected exports: {missing}"
+
+
+def test_health_router_factory() -> None:
+    """Health router factory returns FastAPI router."""
+
+    from src.health import db_mongo as health_module
+
+    assert hasattr(health_module, "create_health_router")
+    router = health_module.create_health_router()
+    assert router is not None
+    assert any(route.path.endswith("/health") for route in getattr(router, "routes", []))
+
+
+@pytest.mark.skipif(not FASTAPI_AVAILABLE, reason="fastapi not installed")
+def test_fastapi_registration(monkeypatch):
+    """Register helper attaches router to application."""
+
+    from fastapi import FastAPI
+
+    app = FastAPI()
+    attached: dict[str, bool] = {"called": False}
+
+    def fake_include_router(router, **_: object) -> None:
+        attached["called"] = True
+        assert router is not None
+
+    monkeypatch.setattr(app, "include_router", fake_include_router)
+
+    from src.modules.free.database.db_mongo.db_mongo import register_fastapi
+
+    register_fastapi(app)
+    assert attached["called"], "Expected router to be attached"
+
+
+def test_router_factory_signatures() -> None:
+    """Verify router factory exposes expected call signatures."""
+
+    from src.modules.free.database.db_mongo.routers import db_mongo as router_module
+
+    assert hasattr(router_module, "build_router")
+    router = router_module.build_router()
+    assert router is not None
+
+    if hasattr(router_module, "async_runtime_dependency"):
+        assert inspect.iscoroutinefunction(router_module.async_runtime_dependency)

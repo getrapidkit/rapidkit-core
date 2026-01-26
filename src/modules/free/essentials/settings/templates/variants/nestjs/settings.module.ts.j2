@@ -1,0 +1,14 @@
+import { Module } from "@nestjs/common";
+import { ConfigModule } from "@nestjs/config";
+
+import { SettingsController } from "./{{ module_basename }}.controller";
+import { SettingsHealthController } from "../../../../health/{{ module_basename }}.health";
+import { SettingsService } from "./{{ module_basename }}.service";
+
+@Module({
+  imports: [ConfigModule],
+  controllers: [SettingsController, SettingsHealthController],
+  providers: [SettingsService],
+  exports: [SettingsService],
+})
+export class SettingsModule {}

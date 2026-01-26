@@ -1,0 +1,61 @@
+"""FastAPI routes exposing logging metadata and controls."""
+
+from __future__ import annotations
+
+import logging
+from typing import Any
+
+from fastapi import APIRouter, HTTPException, status
+from pydantic import BaseModel, Field
+
+from src.modules.free.essentials.logging.logging import get_logger, refresh_vendor_module
+from src.health.logging import collect_logging_health
+
+
+class LevelUpdate(BaseModel):
+    level: str = Field(
+        ..., examples=["INFO", "DEBUG", "WARNING"], description="New log level"
+    )
+
+
+def _resolve_logger(name: str) -> logging.Logger:
+    try:
+        return get_logger(name)
+    except Exception as exc:  # pragma: no cover - defensive guard
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+
+
+def build_router() -> APIRouter:
+    """Create the FastAPI router for logging endpoints."""
+
+    router = APIRouter(prefix="/{{ module_kebab }}", tags=["{{ module_title }}"])
+
+    @router.get("/", summary="Logging subsystem metadata")
+    async def read_metadata() -> dict[str, Any]:
+        return collect_logging_health()
+
+    @router.post("/refresh", summary="Reload vendor logging payload")
+    async def refresh() -> dict[str, Any]:
+        refresh_vendor_module()
+        return collect_logging_health()
+
+    @router.post("/level/{logger_name}", summary="Adjust log level for a logger")
+    async def update_level(logger_name: str, payload: LevelUpdate) -> dict[str, Any]:
+        logger = _resolve_logger(logger_name)
+        level = payload.level.upper()
+        if not hasattr(logging, level):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid log level",
+            )
+        logger.setLevel(level)
+        return {
+            "logger": logger_name,
+            "level": level,
+            "module": "{{ rapidkit_vendor_module }}",
+        }
+
+    return router

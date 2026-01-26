@@ -1,0 +1,43 @@
+{
+  "checked_at": "2025-12-24T14:27:23.620804+00:00",
+  "description": "Lean module layout blueprint (v3)",
+  "extra_directories": [
+    "scripts"
+  ],
+  "extra_files": [
+    "scripts/run_demo.py",
+    "templates/base/celery_health.py.j2"
+  ],
+  "missing_directories": [],
+  "missing_files": [],
+  "module": "free/tasks/celery",
+  "parity": {
+    "fastapi": {
+      "declared": true,
+      "has_config": true,
+      "has_health": true,
+      "has_metadata": true,
+      "has_tests": true,
+      "issues": [],
+      "plugin": true,
+      "status": "ok"
+    },
+    "nestjs": {
+      "declared": true,
+      "has_config": true,
+      "has_health": true,
+      "has_metadata": true,
+      "has_tests": true,
+      "issues": [],
+      "plugin": true,
+      "status": "ok"
+    }
+  },
+  "parity_checked_at": "2025-12-07T20:54:32.625626+00:00",
+  "parity_valid": true,
+  "spec_version": 4,
+  "structure_tree_hash": "f27b352d62e6a9f868c0d96245fd82cb35d51709ab38d859b1d4a091457453cd",
+  "structure_valid": true,
+  "tree_hash": "f27b352d62e6a9f868c0d96245fd82cb35d51709ab38d859b1d4a091457453cd",
+  "valid": true
+}

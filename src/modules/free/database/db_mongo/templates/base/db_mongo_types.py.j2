@@ -1,0 +1,110 @@
+"""Shared type definitions for {{ module_title }}."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Any, Dict, Mapping, Optional
+
+
+@dataclass(slots=True)
+class MongoClusterMetrics:
+    """Aggregated metrics describing cluster state."""
+
+    latency_ms: float = 0.0
+    connections: Dict[str, Any] = field(default_factory=dict)
+    opcounters: Dict[str, Any] = field(default_factory=dict)
+    storage: Dict[str, Any] = field(default_factory=dict)
+
+
+@dataclass(slots=True)
+class MongoReplicaState:
+    """Replica set metadata if the cluster participates in one."""
+
+    set_name: Optional[str] = None
+    primary: Optional[str] = None
+    members: tuple[str, ...] = ()
+
+
+@dataclass(slots=True)
+class MongoHealthReport:
+    """Structured health payload for {{ module_title }}."""
+
+    status: str
+    detail: str
+    module: str = "{{ module_name }}"
+    metrics: MongoClusterMetrics = field(default_factory=MongoClusterMetrics)
+    replica: MongoReplicaState = field(default_factory=MongoReplicaState)
+    server_version: Optional[str] = None
+    extra: Dict[str, Any] = field(default_factory=dict)
+    errors: tuple[str, ...] = ()
+
+    def to_payload(self) -> Dict[str, Any]:
+        return {
+            "status": self.status,
+            "detail": self.detail,
+            "module": self.module,
+            "metrics": {
+                "latency_ms": self.metrics.latency_ms,
+                "connections": dict(self.metrics.connections),
+                "opcounters": dict(self.metrics.opcounters),
+                "storage": dict(self.metrics.storage),
+            },
+            "replica": {
+                "set_name": self.replica.set_name,
+                "primary": self.replica.primary,
+                "members": list(self.replica.members),
+            },
+            "server_version": self.server_version,
+            "extra": dict(self.extra),
+            "errors": list(self.errors),
+        }
+
+
+def build_health_report(
+    *,
+    status: str,
+    detail: str,
+    module: str = "{{ module_name }}",
+    metrics: Mapping[str, Any] | None = None,
+    replica: Mapping[str, Any] | None = None,
+    server_version: Optional[str] = None,
+    extra: Mapping[str, Any] | None = None,
+    errors: object | None = None,
+) -> MongoHealthReport:
+    metrics_obj = MongoClusterMetrics(
+        latency_ms=float(metrics.get("latency_ms", 0.0)) if metrics else 0.0,
+        connections=dict(metrics.get("connections", {})) if metrics else {},
+        opcounters=dict(metrics.get("opcounters", {})) if metrics else {},
+        storage=dict(metrics.get("storage", {})) if metrics else {},
+    )
+    replica_obj = MongoReplicaState(
+        set_name=replica.get("set_name") if replica else None,
+        primary=replica.get("primary") if replica else None,
+        members=tuple(replica.get("members", ())) if replica else (),
+    )
+    error_list: list[str] = []
+    if errors:
+        if isinstance(errors, Mapping):
+            error_list.extend(str(value) for value in errors.values())
+        elif isinstance(errors, (list, tuple, set)):
+            error_list.extend(str(value) for value in errors)
+        else:
+            error_list.append(str(errors))
+    return MongoHealthReport(
+        status=status,
+        detail=detail,
+        module=module,
+        metrics=metrics_obj,
+        replica=replica_obj,
+        server_version=server_version,
+        extra=dict(extra or {}),
+        errors=tuple(error_list),
+    )
+
+
+__all__ = [
+    "MongoClusterMetrics",
+    "MongoReplicaState",
+    "MongoHealthReport",
+    "build_health_report",
+]

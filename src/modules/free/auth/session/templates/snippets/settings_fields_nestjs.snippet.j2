@@ -1,0 +1,31 @@
+  SESSION_SECRET_ENV: process.env.SESSION_SECRET_ENV,
+
+  SESSION_TTL_SECONDS:
+    process.env.SESSION_TTL_SECONDS == null
+      ? undefined
+      : Number.parseInt(process.env.SESSION_TTL_SECONDS, 10),
+
+  SESSION_REFRESH_TTL_SECONDS:
+    process.env.SESSION_REFRESH_TTL_SECONDS == null
+      ? undefined
+      : Number.parseInt(process.env.SESSION_REFRESH_TTL_SECONDS, 10),
+
+  SESSION_COOKIE_NAME: process.env.SESSION_COOKIE_NAME,
+
+  SESSION_COOKIE_DOMAIN: process.env.SESSION_COOKIE_DOMAIN ?? null,
+
+  SESSION_COOKIE_SECURE:
+    process.env.SESSION_COOKIE_SECURE == null
+      ? undefined
+      : process.env.SESSION_COOKIE_SECURE === '1' ||
+        process.env.SESSION_COOKIE_SECURE.toLowerCase() === 'true',
+
+  SESSION_COOKIE_HTTPONLY:
+    process.env.SESSION_COOKIE_HTTPONLY == null
+      ? undefined
+      : process.env.SESSION_COOKIE_HTTPONLY === '1' ||
+        process.env.SESSION_COOKIE_HTTPONLY.toLowerCase() === 'true',
+
+  SESSION_COOKIE_SAME_SITE: process.env.SESSION_COOKIE_SAME_SITE,
+
+  SESSION_STORAGE_BACKEND: process.env.SESSION_STORAGE_BACKEND,

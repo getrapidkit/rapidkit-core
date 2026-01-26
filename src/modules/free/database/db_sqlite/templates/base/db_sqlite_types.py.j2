@@ -1,0 +1,41 @@
+"""Shared type definitions for {{ module_title }}."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Any, Dict, List, Optional, Sequence, Tuple
+
+
+@dataclass(slots=True)
+class SqliteQueryResult:
+    """Envelope for query execution results."""
+
+    rows: List[Dict[str, Any]] = field(default_factory=list)
+    columns: Tuple[str, ...] = ()
+    rowcount: int = 0
+    last_row_id: Optional[int] = None
+
+    def as_rows(self) -> List[Dict[str, Any]]:
+        return self.rows
+
+    def as_columns(self) -> Tuple[str, ...]:
+        return self.columns
+
+
+@dataclass(slots=True)
+class SqliteTableInfo:
+    """Metadata about a SQLite table or view."""
+
+    name: str
+    type: str
+    sql: Optional[str] = None
+
+
+@dataclass(slots=True)
+class SqliteHealthReport:
+    """Structured health information returned by health checks."""
+
+    status: str
+    detail: str
+    pragmas: Dict[str, Any] = field(default_factory=dict)
+    warnings: Sequence[str] = ()

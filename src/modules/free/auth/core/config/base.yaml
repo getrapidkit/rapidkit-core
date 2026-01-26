@@ -1,0 +1,125 @@
+name: auth_core
+display_name: Authentication Core
+description: >-
+  Opinionated password hashing, token signing, and runtime helpers that provide
+  consistent authentication primitives across RapidKit applications.
+root_path: src/
+
+profiles:
+  fastapi/standard:
+    description: Auth Core runtime wired into the standard FastAPI starter kit.
+  fastapi/ddd:
+    inherits: fastapi/standard
+    description: DDD-flavoured starter kit with the same primitives and dependencies.
+  nestjs/standard:
+    description: NestJS configuration module exporting Auth Core helpers and providers.
+
+defaults:
+  hash_name: sha256
+  iterations: 390000
+  salt_bytes: 32
+  token_bytes: 32
+  token_ttl_seconds: 1800
+  pepper_env: RAPIDKIT_AUTH_CORE_PEPPER
+  issuer: RapidKit
+  policy:
+    min_length: 12
+    require_uppercase: true
+    require_lowercase: true
+    require_digits: true
+    require_symbols: false
+
+variables:
+  auth_pepper_env:
+    type: string
+    default: RAPIDKIT_AUTH_CORE_PEPPER
+    description: Environment variable used to source the HMAC signing pepper.
+  auth_token_ttl:
+    type: integer
+    default: 1800
+    description: Default token time-to-live (seconds).
+  auth_iterations:
+    type: integer
+    default: 390000
+    description: PBKDF2 iterations for password hashing.
+
+features:
+  password_hashing:
+    status: beta
+    enabled: true
+    description: Deterministic PBKDF2 helpers with configurable policy enforcement.
+    files:
+      - path: core/auth/core.py
+        description: Auth Core runtime with hashing utilities.
+  token_signing:
+    status: beta
+    enabled: true
+    description: Signed token issuance and verification with HMAC-SHA256.
+    files:
+      - path: core/auth/core.py
+        description: Token helper methods.
+  fastapi_dependencies:
+    status: beta
+    enabled: true
+    description: Dependency injection helpers for FastAPI projects.
+    files:
+      - path: core/auth/dependencies.py
+        description: Cached runtime wiring for DI containers.
+  health_probe:
+    status: beta
+    enabled: true
+    description: FastAPI health endpoint exposing Auth Core metadata.
+    files:
+      - path: core/health/auth_core.py
+        description: Health router and registration helper.
+  nestjs_providers:
+    status: experimental
+    enabled: true
+    description: NestJS service and module bridging Auth Core primitives to TypeScript projects.
+    files:
+      - path: auth/core/auth-core.service.ts
+        description: NestJS service implementing hashing and token logic.
+      - path: auth/core/auth-core.module.ts
+        description: NestJS module exporting Auth Core providers.
+
+snippets:
+  - name: auth_core_env
+    path: templates/snippets/auth_env.snippet.j2
+    description: Injects Auth Core pepper guidance into environment templates.
+  - name: auth_core_settings_fields
+    path: templates/snippets/settings_fields.snippet.j2
+    description: Adds Auth Core configuration fields to project settings modules.
+
+depends_on:
+  fastapi/standard:
+    - name: pydantic
+      source: external
+      tool: pip
+      version: ">=2.12.2,<3.0"
+  nestjs/standard:
+    - name: "@nestjs/common"
+      source: npm
+      tool: npm
+      version: ">=11.1.0"
+    - name: "@nestjs/core"
+      source: npm
+      tool: npm
+      version: ">=11.1.0"
+    - name: "@nestjs/config"
+      source: npm
+      tool: npm
+      version: ">=4.0.0"
+    - name: joi
+      source: npm
+      tool: npm
+      version: ">=17.0.0"
+
+dev_dependencies:
+  - name: pytest
+    source: external
+    tool: pip
+    version: ">=8.3.0,<9.0"
+  - name: ruff
+    source: external
+    tool: pip
+    version: ">=0.14.0,<1.0"

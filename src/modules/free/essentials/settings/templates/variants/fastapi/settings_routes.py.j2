@@ -1,0 +1,42 @@
+"""FastAPI router exposing settings module capabilities."""
+
+from __future__ import annotations
+
+from fastapi import APIRouter, Depends
+
+from src.modules.free.essentials.settings import Settings, get_settings
+from src.modules.free.essentials.settings.settings_types import SettingsSnapshot, as_dict
+
+
+def _resolve_settings() -> Settings:
+    return get_settings()
+
+
+def _serialize(instance: Settings) -> dict[str, object]:
+    snapshot = SettingsSnapshot.from_settings(instance)
+    return as_dict(snapshot)
+
+
+def build_router() -> APIRouter:
+    """Create the FastAPI router for the settings module."""
+
+    router = APIRouter(prefix="/{{ module_kebab }}", tags=["{{ module_title }}"])
+
+    @router.get("/", summary="Retrieve sanitized configuration state")
+    async def read_settings(
+        settings: Settings = Depends(_resolve_settings),
+    ) -> dict[str, object]:
+        """Return a JSON-serializable snapshot of runtime settings."""
+
+        return _serialize(settings)
+
+    @router.post("/refresh", summary="Reload configuration sources")
+    async def refresh_settings(
+        settings: Settings = Depends(_resolve_settings),
+    ) -> dict[str, object]:
+        """Trigger a settings refresh and return the new snapshot."""
+
+        settings.refresh()
+        return _serialize(settings)
+
+    return router

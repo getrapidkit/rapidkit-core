@@ -1,0 +1,15 @@
+{# Quick snippet for enabling Rate Limiting routes and health endpoints. #}
+
+from fastapi import FastAPI
+
+from src.modules.free.security.rate_limiting.rate_limiting_router import router as rate_limiting_router
+from src.health.rate_limiting import router as rate_limiting_health_router
+from src.modules.free.security.rate_limiting.rate_limiting_routes import router as rate_limiting_metadata_router
+
+
+def install_rate_limiting(app: FastAPI) -> None:
+    """Register Rate Limiting routers on the given FastAPI application."""
+
+    app.include_router(rate_limiting_router)
+    app.include_router(rate_limiting_health_router)
+    app.include_router(rate_limiting_metadata_router)

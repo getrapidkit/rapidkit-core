@@ -1,0 +1,42 @@
+import { DynamicModule, Module } from "@nestjs/common";
+
+import { {{ module_class_name }}Controller } from "./{{ module_kebab }}.controller";
+import {
+  {{ module_class_name }}Options,
+  {{ module_class_name }}Service,
+} from "./{{ module_kebab }}.service";
+
+export const SECURITY_HEADERS_OPTIONS_TOKEN = "SECURITY_HEADERS_OPTIONS";
+
+@Module({
+  controllers: [{{ module_class_name }}Controller],
+  providers: [
+    {
+      provide: SECURITY_HEADERS_OPTIONS_TOKEN,
+      useValue: undefined,
+    },
+    {
+      provide: {{ module_class_name }}Service,
+      useFactory: (options?: Partial<{{ module_class_name }}Options> | null) =>
+        new {{ module_class_name }}Service(options ?? undefined),
+      inject: [SECURITY_HEADERS_OPTIONS_TOKEN],
+    },
+  ],
+  exports: [{{ module_class_name }}Service],
+})
+export class {{ module_class_name }}Module {
+  static register(
+    options?: Partial<{{ module_class_name }}Options>,
+  ): DynamicModule {
+    return {
+      module: {{ module_class_name }}Module,
+      providers: [
+        {
+          provide: SECURITY_HEADERS_OPTIONS_TOKEN,
+          useValue: options ?? undefined,
+        },
+      ],
+      exports: [{{ module_class_name }}Service],
+    };
+  }
+}

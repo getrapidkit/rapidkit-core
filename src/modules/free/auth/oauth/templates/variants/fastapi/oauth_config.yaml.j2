@@ -1,0 +1,9 @@
+{%- set defaults = oauth_defaults or {} -%}
+# RapidKit generated configuration for {{ module_title }}.
+# Override values in your deployment-specific configuration repository.
+
+oauth:
+  redirect_base_url: {{ defaults.get("redirect_base_url", "https://example.com/oauth") | tojson }}
+  state_ttl_seconds: {{ defaults.get("state_ttl_seconds", 300) | tojson }}
+  state_cleanup_interval: {{ defaults.get("state_cleanup_interval", 60) | tojson }}
+  providers: {{ defaults.get("providers", {}) | tojson(indent=2) }}

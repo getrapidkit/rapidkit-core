@@ -1,0 +1,591 @@
+"""RapidKit notifications runtime for FastAPI applications."""
+
+from __future__ import annotations
+
+import logging
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from email.message import EmailMessage as SMTPEmailMessage
+from pathlib import Path
+from typing import Any, Awaitable, Callable, Dict, Iterable, Mapping, MutableMapping, Optional, Set
+
+try:  # Optional dependency, surfaced via module config
+    import aiosmtplib  # type: ignore[import]
+except ImportError:  # pragma: no cover - optional runtime dependency
+    aiosmtplib = None  # type: ignore[assignment]
+
+from fastapi import FastAPI, Request
+from jinja2 import Environment, FileSystemLoader, select_autoescape
+from pydantic import BaseModel, EmailStr, Field
+
+logger = logging.getLogger(__name__)
+
+ProviderHandler = Callable[["Notification"], Awaitable[bool]]
+
+_FEATURE_FLAGS: tuple[str, ...] = (
+    "email_channel",
+    "push_channel",
+    "sms_channel",
+    "templated_delivery",
+    "provider_metadata",
+    "health_reporting",
+)
+
+_DEFAULT_PROVIDERS: tuple[str, ...] = ("email", "push", "sms")
+
+
+@dataclass
+class EmailConfig:
+    """SMTP configuration for the notifications email provider."""
+
+    host: str
+    port: int = 587
+    username: Optional[str] = None
+    password: Optional[str] = None
+    from_email: str = "noreply@rapidkit.local"
+    from_name: Optional[str] = None
+    reply_to: Optional[str] = None
+    use_tls: bool = True
+    timeout: float = 30.0
+    template_directory: Optional[Path] = None
+
+    def sender_header(self) -> str:
+        """Return a pre-formatted From header value."""
+
+        if self.from_name:
+            return f"{self.from_name} <{self.from_email}>"
+        return self.from_email
+
+
+class EmailTemplate(BaseModel):
+    """Templated message metadata."""
+
+    name: str
+    subject: str
+    html_content: str
+    text_content: Optional[str] = None
+    variables: Dict[str, Any] = Field(default_factory=dict)
+
+
+class OutboundEmail(BaseModel):
+    """Structured outbound email payload."""
+
+    to: list[EmailStr]
+    subject: str
+    html: Optional[str] = None
+    text: Optional[str] = None
+    cc: list[EmailStr] = Field(default_factory=list)
+    bcc: list[EmailStr] = Field(default_factory=list)
+    reply_to: Optional[EmailStr] = None
+    headers: Dict[str, str] = Field(default_factory=dict)
+
+    model_config = {
+        "populate_by_name": True,
+        "str_strip_whitespace": True,
+    }
+
+
+class Notification(BaseModel):
+    """Generic notification envelope routed by the manager."""
+
+    channel: str = Field(..., min_length=1)
+    recipient: str
+    title: str
+    body: str
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+
+
+class EmailService:
+    """Async email delivery with optional Jinja2 templating."""
+
+    def __init__(
+        self,
+        config: EmailConfig,
+        *,
+        template_directory: Optional[Path] = None,
+        transport: Optional[Callable[[SMTPEmailMessage], Awaitable[Any]]] = None,
+        auto_reload_templates: bool = False,
+    ) -> None:
+        self.config = config
+        self.transport = transport
+        self.template_directory = template_directory or config.template_directory
+        self.template_env: Optional[Environment] = None
+        self.auto_reload_templates = auto_reload_templates
+        self._loaded_templates: Set[str] = set()
+        if self.template_directory:
+            self._build_environment(auto_reload=auto_reload_templates)
+
+    def _build_environment(self, *, auto_reload: bool) -> None:
+        if not self.template_directory:
+            return
+        self.template_env = Environment(
+            loader=FileSystemLoader(str(self.template_directory)),
+            autoescape=select_autoescape(["html", "xml"]),
+            auto_reload=auto_reload,
+        )
+
+    def set_template_directory(self, directory: Path, *, auto_reload: bool = False) -> None:
+        """Configure template search path at runtime."""
+
+        self.template_directory = directory
+        self.template_env = Environment(
+            loader=FileSystemLoader(str(directory)),
+            autoescape=select_autoescape(["html", "xml"]),
+            auto_reload=auto_reload,
+        )
+        self.auto_reload_templates = auto_reload
+        self._loaded_templates.clear()
+
+    def render_template(self, template_name: str, context: Dict[str, Any]) -> str:
+        """Render a template using the configured Jinja environment."""
+
+        if not self.template_env:
+            raise RuntimeError("Email template environment not configured")
+        template = self.template_env.get_template(template_name)
+        self._loaded_templates.add(template_name)
+        return template.render(**context)
+
+    def _build_email_message(self, payload: OutboundEmail) -> SMTPEmailMessage:
+        message = SMTPEmailMessage()
+        message["Subject"] = payload.subject
+        message["From"] = self.config.sender_header()
+        message["To"] = ", ".join(str(address) for address in payload.to)
+        if payload.cc:
+            message["Cc"] = ", ".join(str(address) for address in payload.cc)
+        if payload.bcc:
+            message["Bcc"] = ", ".join(str(address) for address in payload.bcc)
+        reply_to = payload.reply_to or self.config.reply_to
+        if reply_to:
+            message["Reply-To"] = reply_to
+        for header, value in payload.headers.items():
+            if value is not None:
+                message[header] = value
+
+        text_body = payload.text or payload.html or ""
+        message.set_content(text_body)
+        if payload.html:
+            message.add_alternative(payload.html, subtype="html")
+        return message
+
+    async def _deliver(self, email_message: SMTPEmailMessage) -> None:
+        if self.transport is not None:
+            await self.transport(email_message)
+            return
+
+        if aiosmtplib is None:
+            raise RuntimeError("aiosmtplib is not installed; install it to send email")
+
+        await aiosmtplib.send(  # type: ignore[attr-defined]
+            email_message,
+            hostname=self.config.host,
+            port=self.config.port,
+            username=self.config.username,
+            password=self.config.password,
+            timeout=self.config.timeout,
+            start_tls=self.config.use_tls,
+        )
+
+    async def send_email(self, payload: OutboundEmail) -> bool:
+        """Send an already constructed email payload."""
+
+        try:
+            email_message = self._build_email_message(payload)
+            await self._deliver(email_message)
+        except Exception as exc:  # pragma: no cover - safe guard for network issues
+            logger.exception("Email delivery failed", extra={"error": str(exc)})
+            return False
+        return True
+
+    async def verify_connection(self) -> bool:
+        """Verify the underlying email transport is reachable."""
+
+        if self.transport is not None:
+            return True
+
+        if aiosmtplib is None:
+            logger.warning("aiosmtplib is not installed; unable to verify SMTP connection")
+            return False
+
+        try:
+            client = aiosmtplib.SMTP(  # type: ignore[attr-defined]
+                hostname=self.config.host,
+                port=self.config.port,
+                username=self.config.username,
+                password=self.config.password,
+                timeout=self.config.timeout,
+                start_tls=self.config.use_tls,
+            )
+            await client.connect()
+            await client.quit()
+            if getattr(client, "is_connected", False):  # pragma: no cover - safety guard
+                await client.close()
+            return True
+        except Exception as exc:  # pragma: no cover - defensive guard around network issues
+            logger.exception("SMTP verification failed", extra={"error": str(exc)})
+            return False
+
+    def describe(self) -> Dict[str, Any]:
+        """Return metadata describing the configured email transport."""
+
+        return {
+            "host": self.config.host,
+            "port": self.config.port,
+            "from_email": self.config.from_email,
+            "from_name": self.config.from_name,
+            "reply_to": self.config.reply_to,
+            "use_tls": self.config.use_tls,
+            "timeout": self.config.timeout,
+            "template_directory": str(self.template_directory) if self.template_directory else None,
+            "auto_reload": self.auto_reload_templates,
+            "templates_cached": self._template_cache_size(),
+            "loaded_templates": sorted(self._loaded_templates),
+        }
+
+    def _template_cache_size(self) -> int:
+        if not self.template_env:
+            return 0
+        cache = getattr(self.template_env, "cache", None)
+        if cache is None:
+            return 0
+        try:
+            return len(cache)
+        except TypeError:  # pragma: no cover - fallback for custom cache implementations
+            return 0
+
+    async def send_templated_email(
+        self,
+        to: Iterable[EmailStr | str],
+        *,
+        template_name: str,
+        context: Dict[str, Any],
+        subject: str,
+        text_fallback: Optional[str] = None,
+    ) -> bool:
+        """Render a template and dispatch the email."""
+
+        html_content = self.render_template(template_name, context)
+        payload = OutboundEmail(
+            to=list(to),
+            subject=subject,
+            html=html_content,
+            text=text_fallback,
+        )
+        return await self.send_email(payload)
+
+
+class NotificationManager:
+    """Orchestrates notification channels and provider handlers."""
+
+    def __init__(self, *, provider_overrides: Optional[Mapping[str, Mapping[str, Any]]] = None) -> None:
+        self.email_service: Optional[EmailService] = None
+        self._handlers: Dict[str, ProviderHandler] = {}
+        self._metadata: Dict[str, Dict[str, Any]] = {}
+        self._provider_overrides: Dict[str, Dict[str, Any]] = {
+            str(name): dict(payload)
+            for name, payload in (provider_overrides or {}).items()
+        }
+
+    def register_handler(
+        self,
+        channel: str,
+        handler: ProviderHandler,
+        *,
+        metadata: Optional[Dict[str, Any]] = None,
+        overwrite: bool = True,
+    ) -> None:
+        """Register or replace a provider handler."""
+
+        if not overwrite and channel in self._handlers:
+            raise ValueError(f"Handler already registered for channel '{channel}'")
+        self._handlers[channel] = handler
+        if metadata:
+            self._metadata[channel] = metadata
+
+    def register_email_service(
+        self,
+        service: EmailService,
+        *,
+        auto_register_handler: bool = True,
+    ) -> None:
+        """Attach the email provider and optionally register the default handler."""
+
+        self.email_service = service
+        if auto_register_handler:
+            self.register_handler(
+                "email",
+                self._dispatch_email_notification,
+                metadata={
+                    "provider": "{{ default_email_provider | default('smtp') }}",
+                    "advanced": {% if enable_advanced_email %}True{% else %}False{% endif %},
+                    "email_service": service.describe(),
+                },
+                overwrite=True,
+            )
+        logger.info("Notifications email provider registered")
+
+    def has_handler(self, channel: str) -> bool:
+        return channel in self._handlers
+
+    def available_channels(self) -> Iterable[str]:
+        return tuple(self._handlers.keys())
+
+    def get_email_service(self) -> Optional[EmailService]:
+        return self.email_service
+
+    def provider_overrides(self) -> Dict[str, Dict[str, Any]]:
+        return {name: dict(payload) for name, payload in self._provider_overrides.items()}
+
+    def set_provider_overrides(
+        self, overrides: Mapping[str, Mapping[str, Any]] | None
+    ) -> None:
+        self._provider_overrides = {
+            str(name): dict(payload)
+            for name, payload in (overrides or {}).items()
+        }
+
+    async def send_notification(self, notification: Notification) -> bool:
+        """Dispatch a notification to the appropriate provider."""
+
+        handler = self._handlers.get(notification.channel)
+        if handler is None:
+            logger.warning("No handler registered for channel '%s'", notification.channel)
+            return False
+
+        try:
+            return await handler(notification)
+        except Exception as exc:  # pragma: no cover - protective guard
+            logger.exception("Notification delivery failed", extra={"channel": notification.channel})
+            return False
+
+    async def _dispatch_email_notification(self, notification: Notification) -> bool:
+        if self.email_service is None:
+            logger.error("Email service requested but not configured")
+            return False
+
+        metadata = notification.metadata or {}
+
+        def _coerce_recipients(value: Any) -> list[str]:
+            if isinstance(value, str):
+                return [value]
+            if isinstance(value, (list, tuple, set)):
+                return [str(item) for item in value if item]
+            return []
+
+        template_name = metadata.get("template")
+        template_context = metadata.get("context")
+        text_template = metadata.get("text_template")
+        text_fallback_raw = metadata.get("text_body")
+
+        if template_name and isinstance(template_context, Mapping):
+            fallback_text: Optional[str] = None
+            if isinstance(text_template, str):
+                try:
+                    fallback_text = self.email_service.render_template(
+                        text_template,
+                        dict(template_context),
+                    )
+                except Exception:  # pragma: no cover - template rendering guarded by send_email
+                    fallback_text = None
+            elif isinstance(text_fallback_raw, str):
+                fallback_text = text_fallback_raw
+
+            return await self.email_service.send_templated_email(
+                [notification.recipient],
+                template_name=str(template_name),
+                context=dict(template_context),
+                subject=notification.title,
+                text_fallback=fallback_text,
+            )
+
+        headers = {
+            str(key): str(value)
+            for key, value in (metadata.get("headers") or {}).items()
+            if isinstance(key, str) and value is not None
+        }
+
+        payload = OutboundEmail(
+            to=[notification.recipient],
+            subject=notification.title,
+            html=notification.body,
+            text=str(text_fallback_raw) if isinstance(text_fallback_raw, str) else None,
+            cc=_coerce_recipients(metadata.get("cc")),
+            bcc=_coerce_recipients(metadata.get("bcc")),
+            reply_to=str(metadata.get("reply_to")) if metadata.get("reply_to") else None,
+            headers=headers,
+        )
+        return await self.email_service.send_email(payload)
+
+    def describe_providers(self) -> Dict[str, Dict[str, Any]]:
+        """Return provider metadata for health/reporting surfaces."""
+
+        providers: Dict[str, Dict[str, Any]] = {}
+        for channel in self._handlers:
+            providers[channel] = {
+                "enabled": True,
+                "handler_registered": True,
+                "metadata": dict(self._metadata.get(channel, {})),
+            }
+
+        email_entry = providers.setdefault(
+            "email",
+            {
+                "enabled": self.email_service is not None,
+                "handler_registered": False,
+                "metadata": {},
+            },
+        )
+        email_entry["enabled"] = self.email_service is not None
+        email_entry["handler_registered"] = email_entry.get("handler_registered", False) or self.has_handler("email")
+        return providers
+
+
+def list_notification_features() -> list[str]:
+    """Return the feature flags advertised by the notifications module."""
+
+    return list(_FEATURE_FLAGS)
+
+
+def _normalize_provider_payload(name: str, payload: Mapping[str, Any] | None) -> MutableMapping[str, Any]:
+    data = dict(payload or {})
+    data.setdefault("name", name)
+    data["enabled"] = bool(data.get("enabled", False))
+    data["handler_registered"] = bool(data.get("handler_registered", False))
+    metadata = data.get("metadata")
+    if not isinstance(metadata, Mapping):
+        metadata = {}
+    data["metadata"] = dict(metadata)
+    return data
+
+
+def describe_notifications(
+    manager: "NotificationManager" | None = None,
+    *,
+    provider_overrides: Mapping[str, Mapping[str, Any]] | None = None,
+    module_name: str = "{{ module_name | default('notifications') }}",
+    module_version: str | None = "{{ version | default('0.0.0') }}",
+) -> Dict[str, Any]:
+    """Return a metadata snapshot describing configured notification providers."""
+
+    providers: MutableMapping[str, MutableMapping[str, Any]] = {}
+
+    raw_providers: Mapping[str, Mapping[str, Any]] = {}
+    if manager is not None:
+        try:
+            described = manager.describe_providers()
+            if isinstance(described, Mapping):
+                raw_providers = described  # type: ignore[assignment]
+        except Exception:  # pragma: no cover - defensive guard around user hooks
+            raw_providers = {}
+
+    if provider_overrides is None and manager is not None:
+        try:
+            overrides = manager.provider_overrides()
+        except AttributeError:  # pragma: no cover - defensive guard for custom managers
+            overrides = {}
+    else:
+        overrides = provider_overrides or {}
+
+    provider_names = set(_DEFAULT_PROVIDERS)
+    provider_names.update(str(name) for name in raw_providers.keys())
+    provider_names.update(str(name) for name in overrides.keys())
+
+    for name in sorted(provider_names):
+        providers[name] = _normalize_provider_payload(name, raw_providers.get(name))
+        if name in overrides:
+            providers[name].update(_normalize_provider_payload(name, overrides.get(name)))
+
+    if "email" in providers:
+        email_entry = providers["email"]
+        if manager is not None and manager.email_service is not None:
+            email_entry["enabled"] = True
+            email_entry.setdefault("metadata", {}).setdefault(
+                "email_service",
+                manager.email_service.describe(),
+            )
+
+    status = "ok" if providers.get("email", {}).get("enabled") else "degraded"
+
+    snapshot: Dict[str, Any] = {
+        "module": module_name,
+        "version": module_version,
+        "status": status,
+        "checked_at": datetime.now(timezone.utc).isoformat(),
+        "providers": providers,
+        "features": list_notification_features(),
+    }
+
+    if status != "ok":
+        snapshot["detail"] = "Email provider not initialized"
+
+    return snapshot
+
+
+def get_notifications_metadata(manager: "NotificationManager" | None = None) -> Dict[str, Any]:
+    """Convenience wrapper mirroring the runtime metadata signature."""
+
+    return describe_notifications(manager)
+
+
+def get_email_service(manager: "NotificationManager") -> EmailService:
+    """Return the configured email service or raise if unavailable."""
+
+    service = manager.get_email_service() if hasattr(manager, "get_email_service") else None
+    if service is None:
+        raise RuntimeError("Email service not initialized")
+    return service
+
+
+def register_notifications(
+    app: FastAPI,
+    config: Optional[EmailConfig] = None,
+    *,
+    template_directory: Optional[Path] = None,
+    auto_register_email_handler: bool = True,
+    auto_reload_templates: bool = {% if enable_template_caching %}False{% else %}True{% endif %},
+    provider_overrides: Optional[Mapping[str, Mapping[str, Any]]] = None,
+    transport: Optional[Callable[[SMTPEmailMessage], Awaitable[Any]]] = None,
+) -> NotificationManager:
+    """Attach the notifications manager to the FastAPI application state."""
+
+    manager = NotificationManager(provider_overrides=provider_overrides)
+
+    if config is not None:
+        email_service = EmailService(
+            config,
+            template_directory=template_directory,
+            transport=transport,
+            auto_reload_templates=auto_reload_templates,
+        )
+        manager.register_email_service(
+            email_service,
+            auto_register_handler=auto_register_email_handler,
+        )
+
+    app.state.notification_manager = manager
+    logger.info("Notifications module registered with FastAPI", extra={"channels": list(manager.available_channels())})
+    return manager
+
+
+def get_notification_manager(request: Request) -> NotificationManager:
+    """FastAPI dependency helper for retrieving the notifications manager."""
+
+    manager = getattr(request.app.state, "notification_manager", None)
+    if manager is None or not isinstance(manager, NotificationManager):
+        raise RuntimeError("Notifications manager not initialized. Call register_notifications() during startup.")
+    return manager
+
+
+__all__ = [
+    "EmailConfig",
+    "EmailService",
+    "EmailTemplate",
+    "Notification",
+    "NotificationManager",
+    "OutboundEmail",
+    "describe_notifications",
+    "get_notifications_metadata",
+    "get_email_service",
+    "list_notification_features",
+    "get_notification_manager",
+    "register_notifications",
+]

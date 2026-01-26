@@ -1,0 +1,47 @@
+import { INestApplication } from '@nestjs/common';
+import { Test } from '@nestjs/testing';
+import request from 'supertest';
+
+import { {{ module_class_name }}Module } from '../../../../src/modules/{{ module_tier }}/{{ module_category }}/{{ module_name }}/{{ module_kebab }}/{{ module_kebab }}.module';
+import { {{ module_class_name }}HealthModule } from '../../../../src/health/{{ module_kebab }}-health.module';
+import { {{ module_class_name }}Service } from '../../../../src/modules/{{ module_tier }}/{{ module_category }}/{{ module_name }}/{{ module_kebab }}/{{ module_kebab }}.service';
+
+async function createApplication(): Promise<INestApplication> {
+  const moduleRef = await Test.createTestingModule({
+    imports: [{{ module_class_name }}Module, {{ module_class_name }}HealthModule],
+  }).compile();
+
+  const app = moduleRef.createNestApplication();
+  await app.init();
+  return app;
+}
+
+describe('{{ module_class_name }}Module (Integration)', () => {
+  let app: INestApplication;
+  let service: {{ module_class_name }}Service;
+
+  beforeAll(async () => {
+    app = await createApplication();
+    service = app.get({{ module_class_name }}Service);
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  it('exposes service bindings', () => {
+    expect(service).toBeDefined();
+    const health = service.health();
+    expect(health).toHaveProperty('module', {{ module_name | tojson }});
+    expect(service.getHeaders()).toBeDefined();
+  });
+
+  it('serves module health endpoint', async () => {
+    const server = app.getHttpServer();
+    const response = await request(server).get('/api/health/module/{{ module_kebab }}');
+
+    expect(response.status).toBe(200);
+    expect(response.body).toHaveProperty('module', {{ module_name | tojson }});
+    expect(response.body).toHaveProperty('status');
+  });
+});

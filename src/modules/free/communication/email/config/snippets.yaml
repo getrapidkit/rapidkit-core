@@ -1,0 +1,66 @@
+# Snippet bundles for the Email module
+snippets:
+  - id: email_env
+    target: .env,.env.example,.env.local
+    anchor: "# <<<inject:module-env>>>"
+    template: email.snippet.j2
+    features: [communication, email]
+    profiles: [fastapi/standard,fastapi/ddd,nestjs/standard]
+    description: Injects email delivery environment configuration with SMTP defaults.
+    version: "1.0.0"
+    priority: 20
+    dependencies: []
+    context:
+      defaults:
+        provider: smtp
+        from_email: "noreply@rapidkit.top"
+        smtp_host: "localhost"
+        smtp_port: 1025
+    schema:
+      type: object
+      properties:
+        RAPIDKIT_EMAIL_ENABLED:
+          type: boolean
+          default: true
+          description: Toggle email delivery on or off.
+        RAPIDKIT_EMAIL_PROVIDER:
+          type: string
+          default: smtp
+          enum: [smtp, console]
+          description: Select the email transport provider.
+        RAPIDKIT_EMAIL_FROM_ADDRESS:
+          type: string
+          default: "noreply@rapidkit.top"
+        RAPIDKIT_EMAIL_FROM_NAME:
+          type: string
+          default: "RapidKit"
+        RAPIDKIT_EMAIL_SMTP_HOST:
+          type: string
+          default: "localhost"
+        RAPIDKIT_EMAIL_SMTP_PORT:
+          type: integer
+          default: 1025
+        RAPIDKIT_EMAIL_SMTP_USERNAME:
+          type: string
+          default: ""
+        RAPIDKIT_EMAIL_SMTP_PASSWORD:
+          type: string
+          default: ""
+        RAPIDKIT_EMAIL_SMTP_USE_TLS:
+          type: boolean
+          default: false
+        RAPIDKIT_EMAIL_TEMPLATE_DIRECTORY:
+          type: string
+          default: "templates/email"
+          description: Directory containing Jinja email templates.
+        RAPIDKIT_EMAIL_DRY_RUN:
+          type: boolean
+          default: false
+          description: Skip delivery while still rendering templates.
+      additionalProperties: true
+      required: []
+    metadata:
+      author: "RapidKit Team"
+      created_at: "2025-11-01"
+      last_modified: "2025-11-01"
+    conflict_resolution: merge

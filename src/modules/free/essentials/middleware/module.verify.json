@@ -1,0 +1,43 @@
+{
+  "checked_at": "2025-12-25T12:33:22.579258+00:00",
+  "description": "Lean module layout blueprint (v3)",
+  "extra_directories": [
+    "scripts"
+  ],
+  "extra_files": [
+    "scripts/run_demo.py",
+    "templates/base/middleware_health.py.j2"
+  ],
+  "missing_directories": [],
+  "missing_files": [],
+  "module": "free/essentials/middleware",
+  "parity": {
+    "fastapi": {
+      "declared": true,
+      "has_config": true,
+      "has_health": true,
+      "has_metadata": true,
+      "has_tests": true,
+      "issues": [],
+      "plugin": true,
+      "status": "ok"
+    },
+    "nestjs": {
+      "declared": true,
+      "has_config": true,
+      "has_health": true,
+      "has_metadata": true,
+      "has_tests": true,
+      "issues": [],
+      "plugin": true,
+      "status": "ok"
+    }
+  },
+  "parity_checked_at": "2025-12-06T21:56:11.636377+00:00",
+  "parity_valid": true,
+  "spec_version": 4,
+  "structure_tree_hash": "2b911e00017299709cc3ded27c7c493e4350fbbf3971b30d412aca4895cd76c4",
+  "structure_valid": true,
+  "tree_hash": "2b911e00017299709cc3ded27c7c493e4350fbbf3971b30d412aca4895cd76c4",
+  "valid": true
+}

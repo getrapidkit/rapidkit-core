@@ -1,0 +1,16 @@
+import * as Joi from "joi";
+
+export const oauthValidationSchema = Joi.object({
+  OAUTH_REDIRECT_BASE_URL: Joi.string()
+    .uri({ allowRelative: false })
+    .default({{ module_defaults.redirect_base_url | default('https://example.com/auth/oauth') | tojson }}),
+  OAUTH_STATE_TTL_SECONDS: Joi.number()
+    .integer()
+    .min(1)
+    .default({{ module_defaults.state_ttl_seconds | default(300) | tojson }}),
+  OAUTH_STATE_CLEANUP_INTERVAL: Joi.number()
+    .integer()
+    .min(1)
+    .default({{ module_defaults.state_cleanup_interval | default(60) | tojson }}),
+  OAUTH_PROVIDERS: Joi.string().optional(),
+});

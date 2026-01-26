@@ -1,0 +1,1187 @@
+# Free Modules Registry
+# This file contains all available free modules for RapidKit
+# Each module defines its metadata, dependencies, and capabilities
+
+modules:
+  # ==========================================
+  # CORE MODULES
+  # ==========================================
+
+  settings:
+    name: settings
+    version: 1.0.2
+    access: free
+    status: active
+    description: "Configuration management and settings system"
+    tags:
+      - config
+      - settings
+      - env
+    category: essentials
+    priority: essential
+    dependencies: []
+    capabilities:
+      - environment_variables
+      - configuration_validation
+      - hot_reload
+    templates_path: "essentials/settings"
+    config_sources:
+      - config/base.yaml
+      - config/snippets.yaml
+
+    # Enhanced metadata
+    compatibility:
+      python: ">=3.9,<4.0"
+      frameworks: ["fastapi", "nestjs"]
+      os: ["linux", "darwin", "windows"]
+
+    testing:
+      coverage_min: 85
+      integration_tests: true
+      e2e_tests: false
+
+    documentation:
+      readme: "essentials/settings/README.md"
+      overview: "essentials/settings/docs/overview.md"
+      usage: "essentials/settings/docs/usage.md"
+      advanced: "essentials/settings/docs/advanced.md"
+      migration: "essentials/settings/docs/migration.md"
+      troubleshooting: "essentials/settings/docs/troubleshooting.md"
+      changelog: "essentials/settings/docs/changelog.md"
+      api_docs: "essentials/settings/docs/api-reference.md"
+      examples: []
+
+    support:
+      issues: "https://github.com/getrapidkit/core/issues"
+      discussions: "https://github.com/getrapidkit/core/discussions"
+
+    changelog:
+      - version: "1.0.2"
+        date: "2025-10-10"
+        changes:
+          - type: improvement
+            description: "Normalized module structure spec and metadata"
+        breaking_changes: []
+        deprecations: []
+      - version: "1.0.1"
+        date: "2025-10-10"
+        changes:
+          - type: chore
+            description: "Synchronized metadata with module assets"
+        breaking_changes: []
+        deprecations: []
+      - version: "1.0.0"
+        date: "2025-09-21"
+        changes:
+          - type: feature
+            description: "Added hot reload support"
+          - type: fix
+            description: "Fixed memory leak in config loading"
+        breaking_changes: []
+        deprecations: []
+
+    validation:
+      pre_install:
+        - check_python_version
+        - check_dependencies
+        - validate_configuration
+      post_install:
+        - run_tests
+        - check_integration
+        - validate_generated_code
+
+    rollback:
+      strategy: "uninstall"
+      backup_path: ".rapidkit/backups/"
+      max_backups: 5
+
+    performance:
+      lazy_loading: true
+      caching:
+        templates: true
+        configs: true
+        ttl: 300
+
+  deployment:
+    name: deployment
+    version: 0.2.0
+    access: free
+    status: active
+    description: "Deployment toolkit with Docker, Compose, and CI assets"
+    tags:
+      - deployment
+      - devops
+      - docker
+    category: essentials
+    priority: essential
+    dependencies:
+      - settings
+      - logging
+    capabilities:
+      - docker_assets
+      - ci_workflows
+      - compose_services
+    templates_path: "essentials/deployment"
+    config_sources:
+      - config/base.yaml
+      - config/snippets.yaml
+
+    compatibility:
+      python: ">=3.10"
+      frameworks: ["fastapi", "nestjs"]
+      os: ["linux", "darwin", "windows"]
+
+    testing:
+      coverage_min: 85
+      integration_tests: true
+      e2e_tests: false
+
+    documentation:
+      readme: "essentials/deployment/README.md"
+      overview: "essentials/deployment/docs/overview.md"
+      usage: "essentials/deployment/docs/usage.md"
+      advanced: "essentials/deployment/docs/advanced.md"
+      migration: "essentials/deployment/docs/migration.md"
+      troubleshooting: "essentials/deployment/docs/troubleshooting.md"
+      changelog: "essentials/deployment/docs/changelog.md"
+      api_docs: null
+      examples: []
+
+    support:
+      issues: "https://github.com/getrapidkit/core/issues"
+      discussions: "https://github.com/getrapidkit/core/discussions"
+
+  logging:
+    name: logging
+    version: 1.1.2
+    access: free
+    status: active
+    description: "Structured logging and observability"
+    tags:
+      - logging
+      - observability
+      - tracing
+    category: essentials
+    priority: essential
+    dependencies:
+      - settings
+    capabilities:
+      - structured_logging
+      - log_levels
+      - log_formatters
+      - log_filters
+    templates_path: "essentials/logging"
+    config_sources:
+      - config/base.yaml
+      - config/features.yaml
+      - config/snippets.yaml
+      - config/profiles.yaml
+
+    compatibility:
+      python: ">=3.9,<4.0"
+      frameworks: ["fastapi", "nestjs"]
+      os: ["linux", "darwin", "windows"]
+
+    testing:
+      coverage_min: 85
+      integration_tests: true
+      e2e_tests: false
+
+    documentation:
+      readme: "essentials/logging/README.md"
+      overview: "essentials/logging/docs/overview.md"
+      usage: "essentials/logging/docs/usage.md"
+      advanced: "essentials/logging/docs/advanced.md"
+      migration: "essentials/logging/docs/migration.md"
+      troubleshooting: "essentials/logging/docs/troubleshooting.md"
+      changelog: "essentials/logging/docs/changelog.md"
+      api_docs: null
+      examples: []
+
+    changelog:
+      - version: "1.1.2"
+        date: "2025-09-21"
+        changes:
+          - type: feature
+            description: "Added JSON log formatting"
+        breaking_changes: []
+        deprecations: []
+
+  middleware:
+    name: middleware
+    version: 0.1.0
+    access: free
+    status: active
+    description: "Custom FastAPI middleware registration"
+    tags:
+      - middleware
+      - http
+      - observability
+    category: essentials
+    priority: recommended
+    dependencies: []
+    capabilities:
+      - custom_middleware
+      - request_context
+    templates_path: "essentials/middleware"
+    config_sources:
+      - config/base.yaml
+      - config/snippets.yaml
+      - config/profiles.yaml
+
+    documentation:
+      readme: "essentials/middleware/README.md"
+      overview: "essentials/middleware/docs/overview.md"
+      usage: "essentials/middleware/docs/usage.md"
+      advanced: "essentials/middleware/docs/advanced.md"
+      migration: "essentials/middleware/docs/migration.md"
+      troubleshooting: "essentials/middleware/docs/troubleshooting.md"
+      changelog: "essentials/middleware/docs/changelog.md"
+      api_docs: null
+      examples: []
+
+  # ==========================================
+  # DATABASE MODULES
+  # ==========================================
+
+  db_postgres:
+    name: db_postgres
+    version: 1.0.29
+    access: free
+    status: active
+    description: "PostgreSQL database integration"
+    tags:
+      - database
+      - postgresql
+      - orm
+      - sql
+    category: database
+    priority: recommended
+    dependencies:
+      - settings
+    capabilities:
+      - connection_pooling
+      - migrations
+      - query_builder
+      - transaction_support
+    templates_path: "database/db_postgres"
+    config_sources:
+      - config/base.yaml
+      - config/snippets.yaml
+
+    documentation:
+      readme: "database/db_postgres/README.md"
+      overview: "database/db_postgres/docs/overview.md"
+      usage: "database/db_postgres/docs/usage.md"
+      advanced: "database/db_postgres/docs/advanced.md"
+      migration: "database/db_postgres/docs/migration.md"
+      troubleshooting: "database/db_postgres/docs/troubleshooting.md"
+      changelog: "database/db_postgres/docs/changelog.md"
+      api_docs: null
+      examples: []
+
+    compatibility:
+      python: ">=3.9,<4.0"
+      frameworks: ["fastapi", "nestjs"]
+      databases: ["postgresql>=12.0"]
+
+  db_sqlite:
+    name: db_sqlite
+    version: 1.0.8
+    access: free
+    status: active
+    description: "SQLite database integration for development"
+    tags:
+      - database
+      - sqlite
+      - orm
+      - sql
+    category: database
+    priority: optional
+    dependencies:
+      - settings
+    capabilities:
+      - lightweight_database
+      - file_based
+      - development_friendly
+    templates_path: "database/db_sqlite"
+    config_sources:
+      - config/base.yaml
+      - config/features.yaml
+      - config/snippets.yaml
+      - config/profiles.yaml
+
+    documentation:
+      readme: "database/db_sqlite/README.md"
+      overview: "database/db_sqlite/docs/overview.md"
+      usage: "database/db_sqlite/docs/usage.md"
+      advanced: "database/db_sqlite/docs/advanced.md"
+      migration: "database/db_sqlite/docs/migration.md"
+      troubleshooting: "database/db_sqlite/docs/troubleshooting.md"
+      changelog: "database/db_sqlite/docs/changelog.md"
+      api_docs: null
+      examples: []
+
+  db_mongo:
+    name: db_mongo
+    version: 1.0.1
+    access: free
+    status: stable
+    description: "MongoDB integration with async driver support, health diagnostics, configuration scaffolding, and multi-framework adapters"
+    tags:
+      - database
+      - mongodb
+      - nosql
+    category: database
+    priority: optional
+    dependencies:
+      - settings
+    capabilities:
+      - document_store
+      - aggregation_pipeline
+      - health_checks
+    templates_path: "database/db_mongo"
+    config_sources:
+      - config/base.yaml
+      - config/snippets.yaml
+
+    documentation:
+      readme: "database/db_mongo/README.md"
+      overview: "database/db_mongo/docs/overview.md"
+      usage: "database/db_mongo/docs/usage.md"
+      advanced: "database/db_mongo/docs/advanced.md"
+      migration: "database/db_mongo/docs/migration.md"
+      troubleshooting: "database/db_mongo/docs/troubleshooting.md"
+      changelog: "database/db_mongo/docs/changelog.md"
+      api_docs: null
+      examples: []
+
+    compatibility:
+      python: ">=3.10,<4.0"
+      frameworks: ["fastapi", "nestjs"]
+      databases: ["mongodb>=6.0"]
+
+  # ==========================================
+  # CACHE MODULES
+  # ==========================================
+
+  redis:
+    name: redis
+    version: 1.0.1
+    access: free
+    status: active
+    description: "Redis caching and session storage"
+    tags:
+      - cache
+      - redis
+      - session
+      - nosql
+    category: cache
+    priority: optional
+    dependencies:
+      - settings
+    capabilities:
+      - caching
+      - session_storage
+      - pubsub
+      - data_structures
+    templates_path: "cache/redis"
+    config_sources:
+      - config/base.yaml
+      - config/snippets.yaml
+
+    documentation:
+      readme: "cache/redis/README.md"
+      overview: "cache/redis/docs/overview.md"
+      usage: "cache/redis/docs/usage.md"
+      advanced: "cache/redis/docs/advanced.md"
+      migration: "cache/redis/docs/migration.md"
+      troubleshooting: "cache/redis/docs/troubleshooting.md"
+      changelog: "cache/redis/docs/changelog.md"
+      api_docs: null
+      examples: []
+
+  # ==========================================
+  # OBSERVABILITY MODULES
+  # ==========================================
+
+  observability_core:
+    name: observability_core
+    version: 1.0.0
+    access: free
+    status: stable
+    description: "Unified telemetry runtime for metrics, tracing, logging, and eventing"
+    tags:
+      - observability
+      - telemetry
+      - metrics
+      - tracing
+      - logging
+    category: observability
+    priority: essential
+    dependencies:
+      - settings
+      - logging
+    capabilities:
+      - metrics_export
+      - tracing_spans
+      - structured_logging
+      - telemetry_events
+      - fastapi_adapter
+      - nestjs_provider
+    templates_path: "observability/core"
+    config_sources:
+      - config/base.yaml
+      - config/snippets.yaml
+
+    compatibility:
+      python: ">=3.10,<4.0"
+      frameworks: ["fastapi", "nestjs"]
+      os: ["linux", "darwin", "windows"]
+
+    testing:
+      coverage_min: 85
+      integration_tests: true
+      e2e_tests: false
+
+    documentation:
+      readme: "observability/core/README.md"
+      overview: "observability/core/docs/overview.md"
+      usage: "observability/core/docs/usage.md"
+      advanced: "observability/core/docs/advanced.md"
+      migration: "observability/core/docs/migration.md"
+      troubleshooting: "observability/core/docs/troubleshooting.md"
+      changelog: "observability/core/docs/changelog.md"
+      api_docs: "observability/core/docs/api-reference.md"
+      examples:
+        - "observability/core/templates/snippets/observability_core.snippet.j2"
+
+    support:
+      issues: "https://github.com/getrapidkit/core/issues"
+      discussions: "https://github.com/getrapidkit/core/discussions"
+
+    changelog:
+      - version: "1.0.0"
+        date: "2025-11-03"
+        changes:
+          - type: feature
+            description: "Production-ready observability runtime with metrics, tracing, and structured logging."
+          - type: enhancement
+            description: "FastAPI and NestJS adapters exposing metrics, event, and trace endpoints."
+        breaking_changes: []
+        deprecations: []
+
+  # ==========================================
+  # SECURITY MODULES
+  # ==========================================
+
+  auth_core:
+    name: auth_core
+    version: 0.1.0
+    access: free
+    status: experimental
+    description: "Authentication primitives for password hashing, token signing, and health telemetry"
+    tags:
+      - auth
+      - security
+      - passwords
+      - tokens
+    category: security
+    priority: recommended
+    dependencies: []
+    capabilities:
+      - password_hashing
+      - token_signing
+      - health_checks
+      - dependency_injection
+    templates_path: "auth/core"
+    config_sources:
+      - config/base.yaml
+      - config/snippets.yaml
+
+    compatibility:
+      python: ">=3.10,<4.0"
+      frameworks: ["fastapi", "nestjs"]
+      os: ["linux", "darwin", "windows"]
+
+    testing:
+      coverage_min: 85
+      integration_tests: true
+      e2e_tests: false
+      unit_tests:
+        - tests/modules/free_auth_core/test_auth_core_generate.py
+        - tests/modules/free_auth_core/test_auth_core_overrides.py
+        - tests/modules/free_auth_core/test_auth_core_runtime.py
+
+    documentation:
+      readme: "auth/core/README.md"
+      overview: "auth/core/docs/overview.md"
+      usage: "auth/core/docs/usage.md"
+      advanced: "auth/core/docs/advanced.md"
+      migration: "auth/core/docs/migration.md"
+      troubleshooting: "auth/core/docs/troubleshooting.md"
+      changelog: "auth/core/docs/changelog.md"
+      api_docs: null
+      examples: []
+
+    support:
+      issues: "https://github.com/getrapidkit/core/issues"
+      discussions: "https://github.com/getrapidkit/core/discussions"
+
+    changelog:
+      - version: "0.1.0"
+        date: "2025-10-25"
+        changes:
+          - type: feature
+            description: "Initial release of the Auth Core module with hashing, token, and health primitives."
+        breaking_changes: []
+        deprecations: []
+
+  security_headers:
+    name: security_headers
+    version: 1.0.3
+    access: free
+    status: stable
+    description: "Harden HTTP responses with industry-standard security headers"
+    tags:
+      - security
+      - headers
+      - http
+      - middleware
+    category: security
+    priority: recommended
+    dependencies: []
+    capabilities:
+      - header_hardening
+      - http_middleware
+      - health_reporting
+    templates_path: "security/security_headers"
+    config_sources:
+      - config/base.yaml
+      - config/snippets.yaml
+
+    compatibility:
+      python: ">=3.10,<4.0"
+      frameworks:
+        - fastapi
+        - nestjs
+      os:
+        - linux
+        - darwin
+        - windows
+
+    testing:
+      coverage_min: 85
+      integration_tests: true
+      e2e_tests: false
+      unit_tests:
+        - tests/modules/free/security/security_headers/test_security_headers_generator.py
+        - tests/modules/free/security/security_headers/test_security_headers_overrides.py
+        - tests/modules/free/security/security_headers/test_security_headers_runtime.py
+        - tests/modules/free/security/security_headers/test_security_headers_adapters.py
+        - tests/modules/free/security/security_headers/test_security_headers_validation.py
+        - tests/modules/free/security/security_headers/test_security_headers_error_handling.py
+        - tests/modules/free/security/security_headers/test_security_headers_health_check.py
+        - tests/modules/free/security/security_headers/test_security_headers_framework_variants.py
+        - tests/modules/free/security/security_headers/test_security_headers_vendor_layer.py
+        - tests/modules/free/security/security_headers/test_security_headers_configuration.py
+        - tests/modules/free/security/security_headers/test_security_headers_versioning.py
+        - tests/modules/free/security/security_headers/test_security_headers_integration.py
+        - tests/modules/free/security/security_headers/test_security_headers_standard_module.py
+      fixtures:
+        - tests/modules/free/security/security_headers/conftest.py
+
+    documentation:
+      readme: "security/security_headers/README.md"
+      overview: "security/security_headers/docs/overview.md"
+      usage: "security/security_headers/docs/usage.md"
+      advanced: "security/security_headers/docs/advanced.md"
+      migration: "security/security_headers/docs/migration.md"
+      troubleshooting: "security/security_headers/docs/troubleshooting.md"
+      changelog: "security/security_headers/docs/changelog.md"
+      api_docs: "security/security_headers/docs/api-reference.md"
+      examples: []
+
+    support:
+      issues: "https://github.com/getrapidkit/core/issues"
+      discussions: "https://github.com/getrapidkit/core/discussions"
+      documentation: "https://docs.rapidkit.top/modules/security/security_headers"
+
+    changelog:
+      - version: "1.0.0"
+        date: "2025-11-03"
+        changes:
+          - type: feat
+            description: "Promote Security Headers module to stable with FastAPI and NestJS integrations, documentation, and tests"
+        breaking_changes: []
+        deprecations: []
+
+  # ==========================================
+  # BUSINESS MODULES
+  # ==========================================
+
+  storage:
+    name: storage
+    version: 1.0.2
+    access: free
+    status: active
+    description: "File storage and media management"
+    tags:
+      - storage
+      - uploads
+      - media
+      - files
+    category: business
+    priority: optional
+    dependencies:
+      - settings
+      - logging
+    capabilities:
+      - file_upload
+      - media_management
+      - local_storage
+      - health_checks
+    templates_path: "business/storage"
+    config_sources:
+      - config/base.yaml
+      - config/snippets.yaml
+
+    compatibility:
+      python: ">=3.10,<4.0"
+      node: ">=18.0,<21.0"
+      frameworks: ["fastapi", "nestjs"]
+      os: ["linux", "darwin", "windows"]
+
+    testing:
+      coverage_min: 85
+      integration_tests: false
+      e2e_tests: false
+      unit_tests:
+        - tests/modules/free/business/storage/test_storage_generator.py
+        - tests/modules/free/business/storage/test_storage_overrides.py
+        - tests/modules/free/business/storage/test_storage_runtime.py
+        - tests/modules/free/business/storage/test_storage_adapters.py
+        - tests/modules/free/business/storage/test_storage_validation.py
+        - tests/modules/free/business/storage/test_storage_error_handling.py
+        - tests/modules/free/business/storage/test_storage_standard_module.py
+        - tests/modules/free/business/storage/test_storage_health_check.py
+        - tests/modules/free/business/storage/test_storage_vendor_layer.py
+        - tests/modules/free/business/storage/test_storage_framework_variants.py
+        - tests/modules/free/business/storage/test_storage_configuration.py
+        - tests/modules/free/business/storage/test_storage_versioning.py
+        - tests/modules/free/business/storage/test_storage_integration.py
+
+    documentation:
+      readme: "business/storage/README.md"
+      overview: "business/storage/docs/overview.md"
+      usage: "business/storage/docs/usage.md"
+      advanced: "business/storage/docs/advanced.md"
+      migration: "business/storage/docs/migration.md"
+      troubleshooting: "business/storage/docs/troubleshooting.md"
+      changelog: "business/storage/docs/changelog.md"
+      api_docs: "business/storage/docs/api-reference.md"
+      examples: []
+
+    support:
+      issues: "https://github.com/getrapidkit/core/issues"
+      discussions: "https://github.com/getrapidkit/core/discussions"
+      documentation: "https://docs.rapidkit.top/modules/business/storage"
+
+  users:
+    name: users
+    version: 1.1.3
+    access: free
+    status: active
+    description: "User management system"
+    tags:
+      - users
+      - authentication
+      - profiles
+      - management
+    category: business
+    priority: optional
+    dependencies:
+      - settings
+      - security
+      - db_postgres
+    capabilities:
+      - user_registration
+      - user_profiles
+      - user_permissions
+      - user_sessions
+    templates_path: "business/users"
+    config_sources:
+      - config/base.yaml
+      - config/features.yaml
+      - config/snippets.yaml
+      - config/profiles.yaml
+
+    documentation:
+      readme: "business/users/README.md"
+      overview: "business/users/docs/overview.md"
+      usage: "business/users/docs/usage.md"
+      advanced: "business/users/docs/advanced.md"
+      migration: "business/users/docs/migration.md"
+      troubleshooting: "business/users/docs/troubleshooting.md"
+      changelog: "business/users/docs/changelog.md"
+      api_docs: null
+      examples: []
+
+  users_profiles:
+    name: users_profiles
+    version: 0.1.0
+    access: free
+    status: beta
+    description: "Profile management capabilities layered on top of core users."
+    tags:
+      - users
+      - profiles
+      - personalization
+      - http
+    category: business
+    priority: optional
+    dependencies:
+      - users
+    capabilities:
+      - user_profiles
+      - personalization
+      - http_apis
+      - cross_framework
+    templates_path: "users/users_profiles"
+    config_sources:
+      - config/base.yaml
+      - config/snippets.yaml
+
+    compatibility:
+      python: ">=3.10,<4.0"
+      frameworks: ["fastapi", "nestjs"]
+      os: ["linux", "darwin", "windows"]
+
+    testing:
+      coverage_min: 85
+      integration_tests: false
+      e2e_tests: false
+      unit_tests:
+        - tests/modules/free/users/profiles/test_users_profiles_generator.py
+        - tests/modules/free/users/profiles/test_users_profiles_overrides.py
+        - tests/modules/free/users/profiles/test_users_profiles_plugins.py
+        - tests/modules/free/users/profiles/test_users_profiles_cli_entry.py
+
+    documentation:
+      readme: "users/users_profiles/README.md"
+      overview: "users/users_profiles/docs/overview.md"
+      usage: "users/users_profiles/docs/usage.md"
+      advanced: "users/users_profiles/docs/advanced.md"
+      migration: "users/users_profiles/docs/migration.md"
+      troubleshooting: "users/users_profiles/docs/troubleshooting.md"
+      changelog: "users/users_profiles/docs/changelog.md"
+      api_docs: null
+      examples: []
+
+    support:
+      issues: "https://github.com/getrapidkit/core/issues"
+      discussions: "https://github.com/getrapidkit/core/discussions"
+      documentation: "https://docs.rapidkit.top/modules/users_profiles"
+
+    changelog:
+      - version: "0.1.0"
+        date: "2025-10-29"
+        changes:
+          - type: feature
+            description: "Initial release with cross-framework generators, overrides, and documentation placeholders."
+        breaking_changes: []
+        deprecations: []
+
+  stripe_payment:
+    name: stripe_payment
+    version: 0.1.0
+    access: free
+    status: stable
+    description: "Stripe payments and subscription management"
+    tags:
+      - billing
+      - payments
+      - stripe
+      - subscriptions
+    category: billing
+    priority: optional
+    dependencies:
+      - settings
+      - users
+      - db_postgres
+    capabilities:
+      - payment_processing
+      - subscription_management
+      - invoice_generation
+      - webhook_handling
+    templates_path: "billing/stripe_payment"
+    config_sources:
+      - config/base.yaml
+      - config/snippets.yaml
+
+    documentation:
+      readme: "billing/stripe_payment/README.md"
+      overview: "billing/stripe_payment/docs/overview.md"
+      usage: "billing/stripe_payment/docs/usage.md"
+      advanced: "billing/stripe_payment/docs/advanced.md"
+      migration: "billing/stripe_payment/docs/migration.md"
+      troubleshooting: "billing/stripe_payment/docs/troubleshooting.md"
+      changelog: "billing/stripe_payment/docs/changelog.md"
+      api_docs: null
+      examples: []
+
+  cart:
+    name: cart
+    version: 0.1.1
+    access: free
+    status: stable
+    description: "Shopping cart service for managing items prior to checkout"
+    tags:
+      - billing
+      - cart
+      - ecommerce
+    category: billing
+    priority: optional
+    dependencies:
+      - settings
+      - users
+    capabilities:
+      - cart_sessions
+      - line_items
+      - pricing_rules
+      - checkout_summary
+    templates_path: "billing/cart"
+    config_sources:
+      - config/base.yaml
+      - config/snippets.yaml
+
+    documentation:
+      readme: "billing/cart/README.md"
+      overview: "billing/cart/docs/overview.md"
+      usage: "billing/cart/docs/usage.md"
+      advanced: "billing/cart/docs/advanced.md"
+      migration: "billing/cart/docs/migration.md"
+      troubleshooting: "billing/cart/docs/troubleshooting.md"
+      changelog: "billing/cart/docs/changelog.md"
+      api_docs: null
+      examples: []
+
+  # ==========================================
+  # COMMUNICATION MODULES
+  # ==========================================
+
+  notifications:
+    name: notifications
+    version: 1.0.4
+    access: free
+    status: active
+    description: "Email and push notification system"
+    tags:
+      - notifications
+      - email
+      - sms
+      - push
+    category: communication
+    priority: optional
+    dependencies:
+      - settings
+    capabilities:
+      - email_notifications
+      - sms_notifications
+      - push_notifications
+      - notification_templates
+    templates_path: "communication/notifications"
+    config_sources:
+      - config/base.yaml
+      - config/features.yaml
+      - config/snippets.yaml
+      - config/profiles.yaml
+
+    documentation:
+      readme: "communication/notifications/README.md"
+      overview: "communication/notifications/docs/overview.md"
+      usage: "communication/notifications/docs/usage.md"
+      advanced: "communication/notifications/docs/advanced.md"
+      migration: "communication/notifications/docs/migration.md"
+      troubleshooting: "communication/notifications/docs/troubleshooting.md"
+      changelog: "communication/notifications/docs/changelog.md"
+      api_docs: null
+      examples: []
+
+  # ==========================================
+  # TASK MODULES
+  # ==========================================
+
+
+# ==========================================
+# ENHANCED CATEGORIES
+# ==========================================
+
+categories:
+  essentials:
+    name: "Essential Modules"
+    description: "Foundational modules for application setup"
+    color: "blue"
+    icon: "🏗️"
+    priority: 1
+    essential_count: 3
+
+  database:
+    name: "Database Modules"
+    description: "Database integration and management"
+    color: "green"
+    icon: "🗄️"
+    priority: 2
+    essential_count: 0
+
+  cache:
+    name: "Cache Modules"
+    description: "Caching and session storage"
+    color: "yellow"
+    icon: "⚡"
+    priority: 3
+    essential_count: 0
+
+  observability:
+    name: "Observability Modules"
+    description: "Monitoring, logging, and metrics"
+    color: "purple"
+    icon: "📊"
+    priority: 4
+    essential_count: 0
+
+  security:
+    name: "Security Modules"
+    description: "Authentication and authorization"
+    color: "red"
+    icon: "🔒"
+    priority: 5
+    essential_count: 0
+
+  business:
+    name: "Business Modules"
+    description: "Business logic and domain features"
+    color: "orange"
+    icon: "💼"
+    priority: 6
+    essential_count: 0
+
+  billing:
+    name: "Billing Modules"
+    description: "Payments and monetization features"
+    color: "pink"
+    icon: "💳"
+    priority: 7
+    essential_count: 0
+
+  communication:
+    name: "Communication Modules"
+    description: "Notifications and messaging"
+    color: "cyan"
+    icon: "📧"
+    priority: 8
+    essential_count: 0
+
+  documentation:
+    name: "Documentation Modules"
+    description: "API documentation and guides"
+    color: "gray"
+    icon: "📚"
+    priority: 9
+    essential_count: 0
+
+  presentation:
+    name: "Presentation Modules"
+    description: "HTTP and user-facing interfaces"
+    color: "violet"
+    icon: "🧭"
+    priority: 10
+    essential_count: 0
+
+  application:
+    name: "Application Modules"
+    description: "Use cases and application services"
+    color: "teal"
+    icon: "🧠"
+    priority: 11
+    essential_count: 0
+
+  domain:
+    name: "Domain Modules"
+    description: "Domain entities and aggregates"
+    color: "indigo"
+    icon: "🧬"
+    priority: 12
+    essential_count: 0
+
+  infrastructure:
+    name: "Infrastructure Modules"
+    description: "Adapters and data providers"
+    color: "brown"
+    icon: "🏗️"
+    priority: 13
+    essential_count: 0
+
+  shared:
+    name: "Shared Modules"
+    description: "Reusable helpers and utilities"
+    color: "silver"
+    icon: "🛠️"
+    priority: 14
+    essential_count: 0
+
+  tasks:
+    name: "Task Modules"
+    description: "Background jobs and schedulers"
+    color: "magenta"
+    icon: "⏱️"
+    priority: 15
+    essential_count: 0
+
+# ==========================================
+# ENHANCED PRIORITIES
+# ==========================================
+
+priorities:
+  essential:
+    name: "Essential"
+    description: "Required for basic application functionality"
+    install_by_default: true
+    color: "red"
+    icon: "🔴"
+    auto_install: true
+
+  recommended:
+    name: "Recommended"
+    description: "Highly recommended for production applications"
+    install_by_default: false
+    color: "yellow"
+    icon: "🟡"
+    auto_install: false
+
+  optional:
+    name: "Optional"
+    description: "Optional features based on specific needs"
+    install_by_default: false
+    color: "green"
+    icon: "🟢"
+    auto_install: false
+
+# ==========================================
+# GLOBAL CONFIGURATION
+# ==========================================
+
+global_config:
+  version: "1.0.0"
+  last_updated: "2025-10-29"
+  maintainer: "RapidKit Team"
+  repository: "https://github.com/getrapidkit/core"
+  documentation: "https://docs.rapidkit.top"
+
+  # Compatibility matrix
+  compatibility:
+    python_versions: ["3.9", "3.10", "3.11", "3.12"]
+    frameworks: ["fastapi", "nestjs"]
+    operating_systems: ["linux", "darwin", "windows"]
+
+# ==========================================
+# KIT COMPATIBILITY MATRIX
+# ==========================================
+
+kit_support:
+  settings:
+    fastapi.standard: supported
+    fastapi.ddd: supported
+    nestjs.standard: experimental
+  logging:
+    fastapi.standard: supported
+    fastapi.ddd: supported
+    nestjs.standard: planned
+  security_headers:
+    fastapi.standard: supported
+    fastapi.ddd: supported
+    nestjs.standard: supported
+  db_postgres:
+    fastapi.standard: supported
+    fastapi.ddd: supported
+    fastapi.pro: supported
+    fastapi.ai: supported
+    nestjs.standard: unsupported
+  db_sqlite:
+    fastapi.standard: supported
+    fastapi.ddd: supported
+    nestjs.standard: unsupported
+  redis:
+    fastapi.standard: supported
+    fastapi.ddd: supported
+    nestjs.standard: supported
+  monitoring:
+    fastapi.standard: supported
+    fastapi.ddd: supported
+    nestjs.standard: planned
+  auth:
+    fastapi.standard: supported
+    fastapi.ddd: supported
+    nestjs.standard: planned
+  auth_core:
+    fastapi.standard: supported
+    fastapi.ddd: supported
+    nestjs.standard: experimental
+  users:
+    fastapi.standard: supported
+    fastapi.ddd: supported
+    nestjs.standard: unsupported
+  users_profiles:
+    fastapi.standard: supported
+    fastapi.ddd: supported
+    nestjs.standard: experimental
+  stripe_payment:
+    fastapi.standard: experimental
+    fastapi.ddd: experimental
+    nestjs.standard: unsupported
+  cart:
+    fastapi.standard: experimental
+    fastapi.ddd: experimental
+    nestjs.standard: unsupported
+  notifications:
+    fastapi.standard: experimental
+    fastapi.ddd: experimental
+    nestjs.standard: planned
+  middleware:
+    fastapi.standard: supported
+    fastapi.ddd: supported
+  presentation_http:
+    fastapi.standard: supported
+    fastapi.ddd: supported
+  application_user_profile:
+    fastapi.standard: supported
+    fastapi.ddd: supported
+  domain_user_profile:
+    fastapi.standard: supported
+    fastapi.ddd: supported
+  infrastructure_user_profile:
+    fastapi.standard: supported
+    fastapi.ddd: supported
+  shared_utils:
+    fastapi.standard: supported
+    fastapi.ddd: supported
+  tracing:
+    fastapi.standard: supported
+    fastapi.ddd: supported
+  tasks_background:
+    fastapi.standard: supported
+    fastapi.ddd: supported
+
+  # Default settings
+  defaults:
+    install_essential: true
+    enable_telemetry: false
+    backup_before_install: true
+    validate_after_install: true
+
+  # Feature flags
+  features:
+    experimental_modules: false
+    beta_features: false
+    performance_monitoring: true
+    error_reporting: true

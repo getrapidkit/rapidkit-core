@@ -1,0 +1,20 @@
+"""FastAPI health helper for {{ module_title }}."""
+
+from __future__ import annotations
+
+from fastapi import APIRouter
+
+from .{{ module_name }} import build_router, get_runtime
+
+
+def create_health_router(prefix: str = "/{{ module_kebab }}") -> APIRouter:
+    """Return a router wired for health-only exposure."""
+
+    runtime = get_runtime()
+    router = build_router(runtime=runtime, prefix=prefix)
+    # Limit to health endpoint only
+    for route in list(router.routes):
+        if getattr(route, "path", "").endswith("/health"):
+            continue
+        router.routes.remove(route)
+    return router

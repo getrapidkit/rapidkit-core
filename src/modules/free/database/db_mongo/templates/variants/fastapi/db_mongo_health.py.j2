@@ -1,0 +1,21 @@
+"""FastAPI health helper for {{ module_title }}."""
+
+from __future__ import annotations
+
+from fastapi import APIRouter
+
+from .{{ module_name }}_routes import build_router, get_runtime_dependency
+
+
+def create_health_router() -> APIRouter:
+    """Return a router exposing only the health endpoint for infrastructure wiring."""
+
+    router = APIRouter()
+    generated = build_router(runtime_dependency=get_runtime_dependency)
+    for route in generated.routes:
+        if getattr(route, "path", "").endswith("/health"):
+            router.routes.append(route)
+    return router
+
+
+__all__ = ["create_health_router"]

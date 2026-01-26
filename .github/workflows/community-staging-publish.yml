@@ -1,0 +1,29 @@
+name: "🧪 Publish to TestPyPI (Community Staging)"
+
+on:
+    push:
+        tags:
+            - "v*rc*"
+    workflow_dispatch:
+
+concurrency:
+    group: community-staging-publish-${{ github.ref }}
+    cancel-in-progress: true
+
+permissions:
+    contents: read
+    id-token: write
+
+jobs:
+    publish:
+        name: Community staging publish pipeline
+        uses: ./.github/workflows/python-publish.yml
+        secrets: inherit
+        with:
+            environment: test
+            python-version: ${{ vars.PYTHON_VERSION || '3.10' }}
+            distribution-tier: community
+            limited-mode: true
+            run-tests: true
+            build-docs: true
+            allow-production: false

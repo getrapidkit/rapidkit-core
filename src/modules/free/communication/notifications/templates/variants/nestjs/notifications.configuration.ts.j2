@@ -1,0 +1,27 @@
+import { registerAs } from '@nestjs/config';
+
+export default registerAs('notifications', () => ({
+  enabled: {{ notifications_defaults.get('enabled', True) | tojson }},
+  defaultChannel: {{ notifications_defaults.get('default_channel', 'email') | tojson }},
+  projectName: {{ project_name | tojson }},
+  channels: {{ notifications_defaults.get('channels', ['email', 'push', 'sms']) | tojson }},
+  retryPolicy: {{ notifications_defaults.get('retry_policy', {'max_attempts': 3, 'backoff_seconds': 10}) | tojson }},
+  email: {
+    {% set email_defaults = notifications_defaults.get('email', {}) %}
+    host: {{ email_defaults.get('host', 'smtp.example.com') | tojson }},
+    port: {{ email_defaults.get('port', 587) }},
+    username: {{ email_defaults.get('username') | tojson }},
+    password: {{ email_defaults.get('password') | tojson }},
+    fromEmail: {{ email_defaults.get('from_email', 'noreply@rapidkit.top') | tojson }},
+    fromName: {{ email_defaults.get('from_name', 'RapidKit Notifications') | tojson }},
+    replyTo: {{ email_defaults.get('reply_to') | tojson }},
+    useTls: {{ email_defaults.get('use_tls', True) | tojson }},
+    timeoutSeconds: {{ email_defaults.get('timeout_seconds', 30) | tojson }},
+  },
+  template: {
+    {% set template_defaults = notifications_defaults.get('template', {}) %}
+    directory: {{ template_defaults.get('directory', 'templates/notifications') | tojson }},
+    autoReload: {{ template_defaults.get('auto_reload', False) | tojson }},
+    cache: {{ template_defaults.get('cache', True) | tojson }},
+  },
+}));

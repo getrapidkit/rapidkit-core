@@ -1,0 +1,316 @@
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+  Optional,
+} from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { Pool, PoolClient, PoolConfig } from 'pg';
+
+export interface {{ module_class_name }}Config {
+  databaseUrl: string;
+  testDatabaseUrl: string | null;
+  poolSize: number;
+  maxOverflow: number;
+  poolTimeout: number;
+  poolRecycle: number;
+}
+
+export interface {{ module_class_name }}PoolStatus {
+  pool_size: number;
+  checked_in: number;
+  checked_out: number;
+  overflow: number;
+  total_connections: number;
+  waiting: number;
+}
+
+export interface {{ module_class_name }}HealthPayload {
+  status: 'ok';
+  module: string;
+  url: string;
+  hostname: string;
+  pool: {{ module_class_name }}PoolStatus;
+}
+
+export const DATABASE_POSTGRES_MODULE = '{{ rapidkit_vendor_module }}';
+export const DATABASE_POSTGRES_VERSION = '{{ rapidkit_vendor_version }}';
+
+@Injectable()
+export class {{ module_class_name }}Service
+  implements OnModuleInit, OnModuleDestroy
+{
+  private readonly logger = new Logger({{ module_class_name }}Service.name);
+  private readonly config: {{ module_class_name }}Config;
+  private pool: Pool | null = null;
+  private testPool: Pool | null = null;
+
+  constructor(
+    @Optional()
+    private readonly configService?: ConfigService<Record<string, unknown>>,
+  ) {
+    this.config = this.resolveConfig();
+  }
+
+  async onModuleInit(): Promise<void> {
+    this.ensurePrimaryPool();
+    if (this.config.testDatabaseUrl) {
+      this.ensureTestPool();
+    }
+    try {
+      await this.checkHealth();
+    } catch (error) {
+      this.logger.warn(`Initial PostgreSQL health check failed: ${this.stringifyError(error)}`);
+    }
+  }
+
+  async onModuleDestroy(): Promise<void> {
+    await this.close();
+  }
+
+  getConfig(): {{ module_class_name }}Config {
+    return { ...this.config };
+  }
+
+  getDatabaseUrl(hidePassword = true): string {
+    return hidePassword ? this.maskUrl(this.config.databaseUrl) : this.config.databaseUrl;
+  }
+
+  getTestDatabaseUrl(hidePassword = true): string | null {
+    if (!this.config.testDatabaseUrl) {
+      return null;
+    }
+    return hidePassword
+      ? this.maskUrl(this.config.testDatabaseUrl)
+      : this.config.testDatabaseUrl;
+  }
+
+  async execute<T = unknown>(sql: string, params: unknown[] = []): Promise<T[]> {
+    return this.withClient(async (client) => {
+      const result = await client.query(sql, params);
+      return (result as unknown as { rows: T[] }).rows;
+    });
+  }
+
+  async withClient<T>(work: (client: PoolClient) => Promise<T>): Promise<T> {
+    const pool = this.ensurePrimaryPool();
+    const client = await pool.connect();
+    try {
+      return await work(client);
+    } finally {
+      client.release();
+    }
+  }
+
+  async runInTransaction<T>(work: (client: PoolClient) => Promise<T>): Promise<T> {
+    return this.withClient(async (client) => {
+      await client.query('BEGIN');
+      try {
+        const result = await work(client);
+        await client.query('COMMIT');
+        return result;
+      } catch (error) {
+        await client.query('ROLLBACK');
+        throw error;
+      }
+    });
+  }
+
+  async checkHealth(): Promise<void> {
+    await this.withClient(async (client) => {
+      await client.query('SELECT 1');
+    });
+  }
+
+  async getPoolStatus(): Promise<{{ module_class_name }}PoolStatus> {
+    const pool = this.ensurePrimaryPool();
+    const configuredPool = this.config.poolSize + this.config.maxOverflow;
+    const runtimePool = pool as unknown as {
+      options?: { max?: number };
+      idleCount?: number;
+      totalCount?: number;
+      waitingCount?: number;
+    };
+    const maxConnections = runtimePool.options?.max ?? configuredPool;
+    const checkedIn = runtimePool.idleCount ?? 0;
+    const totalCount = runtimePool.totalCount ?? 0;
+    const waiting = runtimePool.waitingCount ?? 0;
+    const checkedOut = Math.max(totalCount - checkedIn, 0);
+    const overflow = Math.max(totalCount - maxConnections, 0);
+    return {
+      pool_size: maxConnections,
+      checked_in: checkedIn,
+      checked_out: checkedOut,
+      overflow,
+      total_connections: totalCount,
+      waiting,
+    };
+  }
+
+  async close(): Promise<void> {
+    const tasks: Promise<void>[] = [];
+    if (this.pool) {
+      tasks.push(this.pool.end().catch((error: unknown) => {
+        this.logger.error(`Error closing primary PostgreSQL pool: ${this.stringifyError(error)}`);
+      }));
+    }
+    if (this.testPool) {
+      tasks.push(this.testPool.end().catch((error: unknown) => {
+        this.logger.error(`Error closing test PostgreSQL pool: ${this.stringifyError(error)}`);
+      }));
+    }
+    await Promise.all(tasks);
+    this.pool = null;
+    this.testPool = null;
+  }
+
+  private ensurePrimaryPool(): Pool {
+    if (!this.pool) {
+      this.pool = this.createPool(this.config.databaseUrl, 'primary');
+    }
+    return this.pool;
+  }
+
+  private ensureTestPool(): Pool | null {
+    if (!this.config.testDatabaseUrl) {
+      return null;
+    }
+    if (!this.testPool) {
+      this.testPool = this.createPool(this.config.testDatabaseUrl, 'test');
+    }
+    return this.testPool;
+  }
+
+  private createPool(url: string, label: string): Pool {
+    const poolConfig: PoolConfig = this.buildPoolConfig(url);
+    const pool = new Pool(poolConfig);
+    pool.on('error', (error: unknown) => {
+      this.logger.error(
+        `PostgreSQL pool (${label}) reported an error: ${this.stringifyError(error)}`,
+      );
+    });
+    this.logger.log(
+      `PostgreSQL pool (${label}) initialised (max=${poolConfig.max}, timeout=${poolConfig.connectionTimeoutMillis}ms)`,
+    );
+    return pool;
+  }
+
+  private buildPoolConfig(url: string): PoolConfig {
+    const poolSize = Math.max(this.config.poolSize, 1);
+    const maxOverflow = Math.max(this.config.maxOverflow, 0);
+    const maxConnections = poolSize + maxOverflow;
+    const connectionTimeoutMillis = Math.max(this.config.poolTimeout, 1) * 1000;
+    const idleTimeoutMillis = Math.max(this.config.poolRecycle, 1) * 1000;
+    const config: PoolConfig = {
+      connectionString: url,
+      max: maxConnections,
+      connectionTimeoutMillis,
+      idleTimeoutMillis,
+    };
+    return config;
+  }
+
+  private resolveConfig(): {{ module_class_name }}Config {
+    const databaseUrl = this.lookupString(
+      ['DATABASE_URL', 'DB_POSTGRES_URL', 'POSTGRES_URL'],
+      'postgresql://postgres:postgres@localhost:5432/app',
+    );
+    const testDatabaseUrl = this.lookupOptionalString(
+      ['TEST_DATABASE_URL', 'DB_TEST_DATABASE_URL'],
+    );
+    const poolSize = this.lookupInt(['DB_POOL_SIZE'], 10);
+    const maxOverflow = this.lookupInt(['DB_MAX_OVERFLOW'], 20);
+    const poolTimeout = this.lookupInt(['DB_POOL_TIMEOUT'], 30);
+    const poolRecycle = this.lookupInt(['DB_POOL_RECYCLE'], 3600);
+
+    return {
+      databaseUrl,
+      testDatabaseUrl,
+      poolSize,
+      maxOverflow,
+      poolTimeout,
+      poolRecycle,
+    };
+  }
+
+  private lookupString(keys: string[], fallback: string): string {
+    for (const key of keys) {
+      const value = this.lookupEnv(key);
+      if (typeof value === 'string' && value.trim().length > 0) {
+        return value.trim();
+      }
+    }
+    return fallback;
+  }
+
+  private lookupOptionalString(keys: string[]): string | null {
+    for (const key of keys) {
+      const value = this.lookupEnv(key);
+      if (typeof value === 'string' && value.trim().length > 0) {
+        return value.trim();
+      }
+    }
+    return null;
+  }
+
+  private lookupInt(keys: string[], fallback: number): number {
+    for (const key of keys) {
+      const raw = this.lookupEnv(key);
+      if (raw === undefined) {
+        continue;
+      }
+      const parsed = Number.parseInt(String(raw), 10);
+      if (!Number.isNaN(parsed)) {
+        return parsed;
+      }
+    }
+    return fallback;
+  }
+
+  private lookupEnv(key: string): unknown {
+    if (this.configService) {
+      const value = this.configService.get(key);
+      if (value !== undefined) {
+        return value;
+      }
+    }
+    if (process.env[key] !== undefined) {
+      return process.env[key];
+    }
+    return undefined;
+  }
+
+  private maskUrl(value: string): string {
+    try {
+      const url = new URL(value);
+      if (url.password) {
+        url.password = '***';
+      }
+      return url.toString();
+    } catch {
+      const atIndex = value.indexOf('@');
+      if (atIndex === -1) {
+        return value;
+      }
+      const prefix = value.slice(0, atIndex);
+      const protocolIndex = prefix.indexOf('://');
+      if (protocolIndex === -1) {
+        return `***@${value.slice(atIndex + 1)}`;
+      }
+      const userInfo = prefix.slice(protocolIndex + 3);
+      const user = userInfo.split(':')[0];
+      return `${value.slice(0, protocolIndex + 3)}${user}:***@${value.slice(atIndex + 1)}`;
+    }
+  }
+
+  private stringifyError(error: unknown): string {
+    if (error instanceof Error) {
+      return error.message;
+    }
+    if (typeof error === 'string') {
+      return error;
+    }
+    return JSON.stringify(error);
+  }
+}

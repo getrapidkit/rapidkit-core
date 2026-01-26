@@ -1,0 +1,7 @@
+import { registerAs } from "@nestjs/config";
+import { AiAssistantModuleConfig, defaultAiAssistantConfig } from "./{{ module_name }}.service";
+
+export const configuration = registerAs(
+    "{{ module_name }}",
+    (): AiAssistantModuleConfig => defaultAiAssistantConfig(),
+);

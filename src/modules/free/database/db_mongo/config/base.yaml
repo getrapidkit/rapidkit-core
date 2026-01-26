@@ -1,0 +1,37 @@
+# Default configuration scaffold for Db Mongo
+defaults:
+    enabled: true
+    connection:
+        primary_uri: "mongodb://localhost:27017"
+        database: "rapidkit"
+        app_name: "rapidkit-db-mongo"
+        auth_source: "admin"
+        username: null
+        password: null
+        replica_set: null
+        read_preference: "primary"
+        retry_reads: true
+        retry_writes: true
+        compressors:
+            - zlib
+        connect_timeout_ms: 5000
+        server_selection_timeout_ms: 8000
+        max_idle_time_ms: 120000
+    pool:
+        min_pool_size: 0
+        max_pool_size: 20
+    security:
+        tls: false
+        tls_allow_invalid_certificates: false
+    health:
+        ping_timeout_ms: 1500
+        metrics: true
+
+depends_on:
+    fastapi/standard: []
+    fastapi/ddd: []
+    nestjs/standard:
+        - name: mongodb
+          source: npm
+          tool: npm
+          version: "^6.0.0"

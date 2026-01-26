@@ -1,0 +1,175 @@
+"""Shared health helpers and router builders for the deployment module."""
+
+from __future__ import annotations
+
+import platform
+import socket
+import time
+from datetime import datetime, timezone
+from types import SimpleNamespace
+from typing import Any, Dict, cast
+
+
+_START_MONOTONIC = time.monotonic()
+
+
+def _load_plan() -> tuple[Any, Any]:
+    """Best-effort load of deployment plan helpers.
+
+    Avoid failing at import time during template rendering/tests by resolving lazily.
+    """
+
+    try:  # Attempt project-local deployment helpers first.
+        from src.modules.free.essentials.deployment import deployment as _deployment  # type: ignore
+
+        return _deployment.build_plan, _deployment.describe_plan
+    except Exception:  # pragma: no cover - fall back to defaults
+        def _describe_plan() -> Dict[str, Any]:
+            return {
+                "module": "{{ rapidkit_vendor_module }}",
+                "version": "{{ rapidkit_vendor_version }}",
+            }
+
+        def _build_plan() -> SimpleNamespace:
+            return SimpleNamespace(assets=[])
+
+        return _build_plan, _describe_plan
+
+
+build_plan, describe_plan = _load_plan()
+
+
+DEFAULT_HEALTH_PREFIX = "/api/health/module/deployment"
+DEFAULT_RUNTIME = "{{ runtime | default('python') }}"
+DEFAULT_RUNTIME_VERSION = "{{ python_version | default('3.10') }}"
+DEFAULT_INCLUDE_CI = {{ include_ci | default(true) }}
+DEFAULT_INCLUDE_POSTGRES = {{ include_postgres | default(true) }}
+
+try:  # pragma: no cover - FastAPI is optional when rendering templates
+    from fastapi import APIRouter, FastAPI as FastAPIApp, status
+    from fastapi.responses import JSONResponse
+except ImportError:  # pragma: no cover - generated file must import safely
+    APIRouter = cast(Any, None)
+    FastAPIApp = cast(Any, None)
+    status = SimpleNamespace(
+        HTTP_200_OK=200,
+        HTTP_503_SERVICE_UNAVAILABLE=503,
+    )
+    JSONResponse = None
+    _FASTAPI_AVAILABLE = False
+else:
+    _FASTAPI_AVAILABLE = True
+
+
+def _normalise_prefix(prefix: str | None = None) -> str:
+    value = (prefix or DEFAULT_HEALTH_PREFIX).strip()
+    if not value:
+        return DEFAULT_HEALTH_PREFIX
+    if not value.startswith("/"):
+        value = "/" + value
+    return value.rstrip("/") or DEFAULT_HEALTH_PREFIX
+
+
+def build_health_payload(
+    *,
+    status: str = "ok",
+    runtime: str | None = DEFAULT_RUNTIME,
+    include_ci: bool | None = DEFAULT_INCLUDE_CI,
+    include_postgres: bool | None = DEFAULT_INCLUDE_POSTGRES,
+    runtime_version: str | None = DEFAULT_RUNTIME_VERSION,
+    python_version: str | None = platform.python_version(),
+    hostname: str | None = socket.gethostname(),
+    **extras: Any,
+) -> Dict[str, Any]:
+    """Construct a canonical health payload for framework adapters."""
+
+    plan_summary = describe_plan()
+    payload: Dict[str, Any] = {
+        "status": status,
+        "module": plan_summary.get("module", "{{ rapidkit_vendor_module }}"),
+        "version": "{{ rapidkit_vendor_version }}",
+        "uptime": max(0.0, time.monotonic() - _START_MONOTONIC),
+        "module_version": plan_summary.get("version", "{{ rapidkit_vendor_version }}"),
+        "asset_count": len(build_plan().assets),
+        "plan": plan_summary,
+    }
+
+    if runtime is not None:
+        payload["runtime"] = runtime
+    if runtime_version is not None:
+        payload["runtime_version"] = runtime_version
+    if python_version is not None:
+        payload["python_version"] = python_version
+        payload.setdefault("runtime_version", python_version)
+    if include_ci is not None:
+        payload["ci_enabled"] = include_ci
+    if include_postgres is not None:
+        payload["postgres_enabled"] = include_postgres
+    if hostname is not None:
+        payload["hostname"] = hostname
+    payload.setdefault("checked_at", datetime.now(timezone.utc).isoformat())
+    if extras:
+        payload.update(extras)
+    return payload
+
+
+def build_health_router(prefix: str = DEFAULT_HEALTH_PREFIX) -> Any:
+    """Create a FastAPI router that exposes the deployment health endpoint."""
+
+    if not _FASTAPI_AVAILABLE:
+        raise RuntimeError(
+            "FastAPI must be installed to build deployment health routers"
+        )
+
+    router = APIRouter(prefix=_normalise_prefix(prefix), tags=["health"])
+
+    @router.get(
+        "",
+        status_code=status.HTTP_200_OK,
+        summary="Deployment module health check",
+        responses={
+            status.HTTP_503_SERVICE_UNAVAILABLE: {
+                "description": "Deployment assets unavailable",
+            }
+        },
+    )
+    async def deployment_health_check() -> Any:  # pragma: no cover - exercised in integration tests
+        payload = build_health_payload()
+        if payload.get("status") != "ok" and JSONResponse is not None:
+            return JSONResponse(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                content=payload,
+            )
+        return payload
+
+    return router
+
+
+def register_deployment_health(app: Any, prefix: str = DEFAULT_HEALTH_PREFIX) -> None:
+    """Attach the deployment health router to the given FastAPI application."""
+
+    if not _FASTAPI_AVAILABLE:
+        raise RuntimeError(
+            "FastAPI must be installed to register deployment health routes"
+        )
+    if FastAPIApp is not None and not isinstance(app, FastAPIApp):  # pragma: no cover - runtime guard
+        raise TypeError(
+            "register_deployment_health expects a FastAPI application instance"
+        )
+
+    app.include_router(build_health_router(prefix=prefix))
+
+
+if _FASTAPI_AVAILABLE:
+    router = build_health_router()
+else:  # pragma: no cover - executed only when FastAPI is unavailable
+    router = None
+
+
+__all__ = [
+    "build_health_payload",
+    "build_health_router",
+    "register_deployment_health",
+    "router",
+    "DEFAULT_HEALTH_PREFIX",
+]

@@ -1,0 +1,105 @@
+import path from "node:path";
+import { createRequire } from "node:module";
+
+import { registerAs } from "@nestjs/config";
+
+const VENDOR_ROOT_ENV = "RAPIDKIT_VENDOR_ROOT";
+const VENDOR_MODULE = "{{ rapidkit_vendor_module }}";
+const VENDOR_VERSION = "{{ rapidkit_vendor_version }}";
+const VENDOR_CONFIGURATION_RELATIVE = "{{ vendor_configuration_relative }}";
+const SETTINGS_NAMESPACE = "settings";
+
+type VendorModule = {
+  getSettings: () => SettingsConfig;
+  refreshSettings: () => SettingsConfig;
+  loadSettings: () => SettingsConfig;
+};
+
+function resolveVendorRoot(): string {
+  const override = process.env[VENDOR_ROOT_ENV];
+  if (override && override.trim().length > 0) {
+    return path.resolve(override);
+  }
+  return path.resolve(process.cwd(), ".rapidkit", "vendor");
+}
+
+const requireModule = createRequire(__filename);
+
+function resolveVendorModule(): VendorModule | null {
+  const vendorPath = path.join(
+    resolveVendorRoot(),
+    VENDOR_MODULE,
+    VENDOR_VERSION,
+    VENDOR_CONFIGURATION_RELATIVE,
+  );
+  try {
+    return requireModule(vendorPath) as VendorModule;
+  } catch (err: unknown) {
+    const e = err as { code?: string } | undefined;
+      if (e && (e.code === 'MODULE_NOT_FOUND' || e.code === 'ENOENT')) {
+      // No vendor snapshot found - fall back to safe defaults
+      // eslint-disable-next-line no-console
+      console.warn(`WARN: vendor settings not found at ${vendorPath} - using default settings fallback.`);
+      return null;
+    }
+    throw err;
+  }
+}
+
+const vendor = resolveVendorModule();
+
+export const SETTINGS_VENDOR_MODULE = VENDOR_MODULE;
+export const SETTINGS_VENDOR_VERSION = VENDOR_VERSION;
+
+export interface SettingsConfig {
+  ENV: string;
+  DEBUG: boolean;
+  PROJECT_NAME: string;
+  SECRET_KEY: string;
+  VERSION: string;
+  ALLOWED_HOSTS: string[];
+  CONFIG_FILES: string[];
+  CONFIG_REFRESH_INTERVAL: number;
+  VAULT_URL: string | null;
+  AWS_REGION: string | null;
+  HOT_RELOAD_ENABLED: boolean;
+  HOT_RELOAD_ENV_ALLOWLIST: string[];
+  // <<<inject:settings-fields>>>
+  [key: string]: unknown;
+}
+
+export const SETTINGS_CONFIG_KEY = SETTINGS_NAMESPACE;
+
+function buildDefault(): SettingsConfig {
+  const toList = (raw: string | undefined, fallback: string) =>
+    (raw ?? fallback)
+      .split(',')
+      .map((entry: string) => entry.trim())
+      .filter((entry: string) => entry.length > 0);
+
+  return {
+    ENV: process.env.NODE_ENV ?? 'development',
+    DEBUG: process.env.DEBUG === '1' || process.env.DEBUG?.toLowerCase() === 'true',
+    PROJECT_NAME: process.env.APP_NAME ?? 'RapidKit Service',
+    SECRET_KEY: process.env.SECRET_KEY ?? '{{ '' | generate_secret(48) }}',
+    VERSION: process.env.APP_VERSION ?? '0.0.1',
+    ALLOWED_HOSTS: toList(process.env.ALLOWED_HOSTS, '*'),
+    CONFIG_FILES: [],
+    CONFIG_REFRESH_INTERVAL: Number.parseInt(process.env.CONFIG_REFRESH_INTERVAL ?? '60', 10),
+    VAULT_URL: process.env.VAULT_URL ?? null,
+    AWS_REGION: process.env.AWS_REGION ?? null,
+    HOT_RELOAD_ENABLED:
+      process.env.HOT_RELOAD_ENABLED === '1' || process.env.HOT_RELOAD_ENABLED?.toLowerCase() === 'true',
+    HOT_RELOAD_ENV_ALLOWLIST: toList(process.env.HOT_RELOAD_ENV_ALLOWLIST, ''),
+  } as SettingsConfig;
+}
+
+export const settingsConfiguration = registerAs(SETTINGS_CONFIG_KEY, (): SettingsConfig =>
+  vendor ? vendor.getSettings() : buildDefault(),
+);
+
+export const getSettings = (): SettingsConfig => (vendor ? vendor.getSettings() : buildDefault());
+
+export const refreshSettings = (): SettingsConfig => (vendor ? vendor.refreshSettings() : buildDefault());
+
+export const loadSettings = (): SettingsConfig => (vendor ? vendor.loadSettings() : buildDefault());

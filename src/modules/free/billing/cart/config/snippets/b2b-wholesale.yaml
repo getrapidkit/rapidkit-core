@@ -1,0 +1,17 @@
+# B2B wholesale snippet overrides
+# Includes volume-based discounts for bulk orders.
+
+defaults:
+  max_unique_items: 250
+  metadata:
+    segment: b2b
+
+additional_discount_rules:
+  - code: BULK15
+    description: 15% off orders over $500
+    percentage: '0.15'
+    minimum_subtotal: '500.00'
+  - code: BULK25
+    description: 25% off orders over $1500
+    percentage: '0.25'
+    minimum_subtotal: '1500.00'

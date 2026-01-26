@@ -1,0 +1,62 @@
+import { Test, TestingModule } from "@nestjs/testing";
+
+import { {{ module_class_name }}Controller } from "../../../../src/modules/free/security/cors/cors.controller";
+import { {{ module_class_name }}HealthController } from "../../../../src/health/cors.health";
+import { {{ module_class_name }}Service } from "../../../../src/modules/free/security/cors/cors.service";
+
+describe("{{ module_class_name }} Module Integration", () => {
+  let controller: {{ module_class_name }}Controller;
+  let healthController: {{ module_class_name }}HealthController;
+  let service: {{ module_class_name }}Service;
+
+  beforeAll(async () => {
+    const moduleRef: TestingModule = await Test.createTestingModule({
+      controllers: [
+        {{ module_class_name }}Controller,
+        {{ module_class_name }}HealthController,
+      ],
+      providers: [{{ module_class_name }}Service],
+    }).compile();
+
+    controller = moduleRef.get({{ module_class_name }}Controller);
+    healthController = moduleRef.get({{ module_class_name }}HealthController);
+    service = moduleRef.get({{ module_class_name }}Service);
+  });
+
+  it("should expose metadata with enabled policy", () => {
+    const metadata = controller.getMetadata();
+
+    expect(metadata).toBeDefined();
+    expect(metadata.module).toBe("{{ module_name }}");
+    expect(metadata.enabled).toBe(true);
+    expect(metadata.policy.allow_origins.length).toBeGreaterThan(0);
+    expect(metadata.log_level).toBe("INFO");
+    expect(metadata.metadata).toEqual({});
+    expect(metadata.features).toContain("cors_middleware");
+  });
+
+  it("should report feature catalogue", () => {
+    const payload = controller.listFeatures();
+
+    expect(payload.features).toContain("cors_middleware");
+    expect(payload.features).toContain("http_security_headers");
+  });
+
+  it("should surface health payload through both controllers", () => {
+    const controllerHealth = controller.getHealth();
+    const dedicatedHealth = healthController.getModuleHealth();
+
+    expect(controllerHealth.status).toBe("ok");
+    expect(dedicatedHealth.status).toBe("ok");
+    expect(controllerHealth.policy.allow_origins).toBeDefined();
+    expect(Array.isArray(dedicatedHealth.features)).toBe(true);
+  });
+
+  it("should allow service overrides", () => {
+    service.setCorsOptions({ origin: ["https://example.com"] });
+
+    const metadata = controller.getMetadata();
+
+    expect(metadata.policy.allow_origins).toContain("https://example.com");
+  });
+});

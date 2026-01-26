@@ -1,0 +1,194 @@
+name: inventory
+display_name: Inventory
+description: Inventory and pricing service backing Cart + Stripe
+version: 0.1.4
+access: free
+status: stable
+tier: free
+category: billing
+generated_from_config: true
+depends_on: []
+tags:
+    - billing
+    - inventory
+profile_inherits:
+    fastapi.standard: fastapi
+    fastapi.ddd: fastapi
+    nestjs.standard: nestjs
+config_sources:
+    - config/base.yaml
+    - config/snippets.yaml
+generation:
+    vendor:
+        root: .rapidkit/vendor
+        files:
+            - template: templates/base/inventory.py.j2
+              relative: src/modules/free/billing/inventory/inventory.py
+            - template: templates/base/inventory_health.py.j2
+              relative: src/health/inventory.py
+            - template: templates/base/inventory_types.py.j2
+              relative: src/modules/free/billing/inventory/types/inventory.py
+            - template: templates/vendor/nestjs/configuration.js.j2
+              relative: nestjs/configuration.js
+    variants:
+        fastapi: &fastapi_variant
+            root: .
+            context:
+                framework: fastapi
+                module_class_name: InventoryService
+                vendor_runtime_relative: src/modules/free/billing/inventory/inventory.py
+            files:
+                - template: templates/variants/fastapi/inventory.py.j2
+                  output: src/modules/free/billing/inventory/inventory.py
+                - template: templates/variants/fastapi/inventory_routes.py.j2
+                  output: src/modules/free/billing/inventory/routers/inventory.py
+                - template: templates/variants/fastapi/inventory_types.py.j2
+                  output: src/modules/free/billing/inventory/types/inventory.py
+                - template: templates/variants/fastapi/inventory_config.yaml.j2
+                  output: config/inventory.yaml
+                - template: templates/tests/integration/test_inventory_integration.j2
+                  output: tests/modules/integration/billing/inventory/test_inventory_integration.py
+                - template: templates/variants/fastapi/tests/test_inventory_e2e.py
+                  output: tests/modules/e2e/free/billing/inventory/test_inventory_e2e.py
+        fastapi.standard: *fastapi_variant
+        fastapi.ddd: *fastapi_variant
+        nestjs: &nestjs_variant
+            root: .
+            context:
+                framework: nestjs
+                vendor_configuration_relative: nestjs/configuration.js
+                vendor_runtime_relative: src/modules/free/billing/inventory/inventory.py
+                module_class_name: InventoryService
+                module_kebab: inventory
+            files:
+                - template: templates/variants/nestjs/inventory.service.ts.j2
+                  output: src/modules/free/billing/inventory/inventory.service.ts
+                - template: templates/variants/nestjs/inventory.controller.ts.j2
+                  output: src/modules/free/billing/inventory/inventory.controller.ts
+                - template: templates/variants/nestjs/inventory.module.ts.j2
+                  output: src/modules/free/billing/inventory/inventory.module.ts
+                - template: templates/variants/nestjs/inventory.configuration.ts.j2
+                  output: src/modules/free/billing/inventory/inventory.configuration.ts
+                - template: templates/variants/nestjs/inventory.health.ts.j2
+                  output: src/modules/free/billing/inventory/inventory.health.ts
+                - template: templates/variants/nestjs/inventory.routes.ts.j2
+                  output: src/modules/free/billing/inventory/inventory.routes.ts
+                - template: templates/variants/nestjs/inventory.spec.ts.j2
+                  output: test/inventory/inventory.spec.ts
+                - template: templates/variants/nestjs/tests/inventory.e2e-spec.ts
+                  output: tests/modules/e2e/free/billing/inventory/inventory.e2e-spec.ts
+        nestjs.standard: *nestjs_variant
+    snippets:
+        enabled: true
+        config: config/snippets.yaml
+        default: []
+compatibility:
+    python: ">=3.10,<4.0"
+    node: ">=18,<21"
+    frameworks:
+        - fastapi
+        - nestjs
+    os:
+        - linux
+        - darwin
+        - windows
+testing:
+    coverage_min: 85
+    integration_tests: true
+    e2e_tests: false
+    unit_tests:
+        - test_inventory_generator.py
+        - test_inventory_overrides.py
+        - test_inventory_runtime.py
+        - test_inventory_adapters.py
+        - test_inventory_validation.py
+        - test_inventory_error_handling.py
+        - test_inventory_health_check.py
+        - test_inventory_framework_variants.py
+        - test_inventory_vendor_layer.py
+        - test_inventory_configuration.py
+        - test_inventory_versioning.py
+        - test_inventory_integration.py
+        - test_inventory_standard_module.py
+    fixtures:
+        - conftest.py
+documentation:
+    changelog: docs/changelog.md
+    readme: README.md
+    overview: docs/overview.md
+    usage: docs/usage.md
+    advanced: docs/advanced.md
+    migration: docs/migration.md
+    troubleshooting: docs/troubleshooting.md
+    api_docs: docs/api-reference.md
+    examples: []
+support:
+    issues: https://github.com/getrapidkit/core/issues
+    discussions: https://github.com/getrapidkit/core/discussions
+    documentation: https://docs.rapidkit.top/modules/billing/inventory
+changelog:
+  - version: "0.1.4"
+    date: "2026-01-04"
+    notes: "See docs/changelog.md"
+validation:
+    pre_install:
+        - check_python_version
+    post_install:
+        - validate_generated_code
+rollback:
+    strategy: uninstall
+    backup_path: .rapidkit/backups/
+    max_backups: 3
+performance:
+    lazy_loading: true
+    caching:
+        templates: true
+        ttl: 300
+capabilities:
+    - stock-management
+    - reservations
+    - activity-metrics
+signature: null
+signer_id: null
+signature_version: null
+file_hashes:
+    templates/variants/nestjs/tests/inventory.e2e-spec.ts: sha256:1f0f47f6acacc7efa6b5b85c6325d2ad814b96fa3bf612f14037d700b84ac52b
+    templates/variants/fastapi/tests/test_inventory_e2e.py: sha256:7656226dea91671693fecbf385093cb598ab54151c61ed4913a84b9a6cac5867
+    scripts/run_demo.py: sha256:189e010d509e70cdd6b1daeda4d3fdf59e132059c25df60305689a77f979bfa7
+    README.md: sha256:c3894f0c452849935c7af685ceeeb2d6df49c911414dd01fd7a30674ef45c92a
+    __init__.py: sha256:29e8c25f1fda4a07603ce809ad970d164e3143943fae346f58d5ba7c3d478e07
+    config/base.yaml: sha256:0063287f50c794ae5517149970cd7cb00ca4e57f9d9cd86f0b135d47cc29e5aa
+    config/snippets.yaml: sha256:0548f7e30007c609cfabc9c77659c49214944180186c1f3de378802cf1b2a741
+    docs/README.md: sha256:fe22197f4ad7c0baa799ef708792256691bfc29bc67242f4a09ada3ffa84c9d7
+    docs/advanced.md: sha256:473470a3f11fbfb73c9504dc36c03e3f477071cd80504a2746adf2301a384006
+    docs/api-reference.md: sha256:22241c01d81c197fe2ce49e7feb515ca79086de40d773a614b3fa16375a45fcb
+    docs/changelog.md: sha256:e81b0733d89a71c91a939a9ebde160c48539e5c8b64663fc60ac1accde9ad800
+    docs/migration.md: sha256:80b1acaef7cc62d5a96b4e7e710e101f36ec8d3a2221cf94fd0781bf3a947c18
+    docs/overview.md: sha256:e8e3bd4bac50b6f8b04c5e4dce49aeb02a6664c1c9d971c7ef7df8916c4aa1f0
+    docs/troubleshooting.md: sha256:be3957db551844d319ce39432436275b3f0d0afa6531ba2241e42d908e9ba3f4
+    docs/usage.md: sha256:8fc7bc7d8a731887cde13959852fe27b1c8a2d89e6d674be7dbae002fb5dd31d
+    frameworks/__init__.py: sha256:2c578a062be44a014a7b30f0122c004603608c2ce29d8da95bc46160f9fb8f5e
+    frameworks/fastapi.py: sha256:b9310865a0d7f56aae9f5720ecfaa93072bd2e7eee2107e78923e2eca419716e
+    frameworks/nestjs.py: sha256:e5ab7dbe0ade5335966af2ea4debae4cebb386243eedaaab02a5b0aaf9c3b0aa
+    generate.py: sha256:cbb36b0c1ba983035de47569575c831666650a97924c375643645f55a33ffd87
+    module.verify.json: sha256:9ba7fc73b224b7ae225a1103e171370eb0fda1f84a084b2684f37e9a1509a5c7
+    overrides.py: sha256:635cf4fe35b3d689bf0c7a10d01b012eaa8295be4942fa4e25265e51d6511ca3
+    templates/base/inventory.py.j2: sha256:2aadd5c68df8fa81bdd4e5ca77d97be12b03845f75da4806cb84bab1b86cbe8d
+    templates/base/inventory_health.py.j2: sha256:1a26b51d3636983098cbbb3fdf7c9470de064ff238d0dafd301458be996b46ba
+    templates/base/inventory_types.py.j2: sha256:83e8c379bd7974ef4f11399c654267e643725b5c1a41ac01b20e81b27ed1806c
+    templates/snippets/inventory.snippet.j2: sha256:aec1ffaeef22a55d6f94a6ecbda0418839c953a0da1370130ec4020ff97d448e
+    templates/tests/__init__.py: sha256:738dc049ecde5e4fb9a0199928d95a3713f90ecfc5f5f788f2b3bb12c732d977
+    templates/tests/integration/test_inventory_integration.j2: sha256:f86af9f8ee59d8e0ce5c1f8dbd580c87d095aee4623df8e910af946d519c9a2e
+    templates/variants/fastapi/inventory.py.j2: sha256:a42841b836ddac6e4281407c9630e65b698300d4ebee2bd00127d87b4e2016c9
+    templates/variants/fastapi/inventory_config.yaml.j2: sha256:aee8e637f8daad1e022945bad396221abc2d82b7cd61f3f6874ae04b30644df6
+    templates/variants/fastapi/inventory_health.py.j2: sha256:95f731d845ace2e11e31185cd7024cdb2dc6c1a45078ae3ade4de82acf9d44fa
+    templates/variants/fastapi/inventory_routes.py.j2: sha256:9219c37f590fb3fd0beb6466edc0a039045425cdda7a8c66e68a7f1d9ffe24af
+    templates/variants/fastapi/inventory_types.py.j2: sha256:9d40dbb40c8fd30ee79aca6d4e17f6154fd8f4f48153971f84c8a9634d042dc9
+    templates/variants/nestjs/inventory.configuration.ts.j2: sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+    templates/variants/nestjs/inventory.controller.ts.j2: sha256:a1fe0b20578b308d159fcf40b47811756f3c343a0c4881e3a3e989eb0faf8128
+    templates/variants/nestjs/inventory.health.ts.j2: sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+    templates/variants/nestjs/inventory.module.ts.j2: sha256:b27f1cff42d197be6958f0705684ae933243a7fa08d16198caa0fa935bcca0af
+    templates/variants/nestjs/inventory.routes.ts.j2: sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+    templates/variants/nestjs/inventory.service.ts.j2: sha256:c98a2215c5dfd240f5689ed6c2ac5c1785717ed20671e789e49e2b631d38326f
+    templates/variants/nestjs/inventory.spec.ts.j2: sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
+    templates/vendor/nestjs/configuration.js.j2: sha256:4a01bde5594f004e4b41fea113bf589352788674862c5a201b9699a590e22461

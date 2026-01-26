@@ -1,0 +1,32 @@
+# Default configuration for the Inventory module. These values are merged with
+# environment-driven overrides and are shipped with the vendor runtime.
+defaults:
+  enabled: true
+  default_currency: usd
+  log_level: INFO
+  allow_backorders: false
+  allow_negative_inventory: false
+  low_stock_threshold: 5
+  reservation_expiry_minutes: 30
+  decimal_precision: 2
+  metadata:
+    module: inventory
+pricing:
+  min_price: 0.01
+  max_price: 250000
+  tax_inclusive: false
+  rounding_mode: half_up
+warehouses:
+  primary:
+    code: primary
+    name: Primary Warehouse
+    location: global
+    allow_backorders: false
+notifications:
+  enabled: true
+  channels:
+    - email
+    - webhook
+  low_stock:
+    threshold: 3
+    include_reservations: true

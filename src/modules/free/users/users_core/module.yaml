@@ -1,0 +1,222 @@
+name: users_core
+display_name: Users Core
+description: Opinionated domain services and HTTP adapters for managing RapidKit users
+version: 0.1.0
+access: free
+status: stable
+category: users
+tags:
+- users
+- domain
+- application
+generated_from_config: true
+depends_on:
+- free/database/db_postgres
+- free/essentials/settings
+- free/security/security_headers
+profile_inherits:
+  fastapi.standard: fastapi
+  fastapi.ddd: fastapi
+  nestjs.standard: nestjs
+config_sources:
+- config/base.yaml
+- config/snippets.yaml
+generation:
+  vendor:
+    root: .rapidkit/vendor
+    files:
+    - template: templates/base/__init__.py.j2
+      relative: src/modules/free/users/users_core/core/users/__init__.py
+    - template: templates/base/users_core_models.py.j2
+      relative: src/modules/free/users/users_core/core/users/models.py
+    - template: templates/base/users_core_dto.py.j2
+      relative: src/modules/free/users/users_core/core/users/dto.py
+    - template: templates/base/users_core_errors.py.j2
+      relative: src/modules/free/users/users_core/core/users/errors.py
+    - template: templates/base/users_core_repository.py.j2
+      relative: src/modules/free/users/users_core/core/users/repository.py
+    - template: templates/base/users_core_settings.py.j2
+      relative: src/modules/free/users/users_core/core/users/settings.py
+    - template: templates/base/users_core_service.py.j2
+      relative: src/modules/free/users/users_core/core/users/service.py
+    - template: templates/base/users_core_in_memory_repository.py.j2
+      relative: src/modules/free/users/users_core/core/users/in_memory_repository.py
+    - template: templates/base/users_core_health.py.j2
+      relative: src/health/users_core.py
+    - template: templates/base/users_core.py.j2
+      relative: src/modules/free/users/users_core/users_core.py
+    - template: templates/base/users_core_types.py.j2
+      relative: src/modules/free/users/users_core/users_core_types.py
+    - template: templates/vendor/nestjs/configuration.js.j2
+      relative: nestjs/configuration.js
+  variants:
+    fastapi: &fastapi_variant
+      root: .
+      context:
+        framework: fastapi
+        module_class_name: UsersCore
+        module_slug: users_core
+        vendor_runtime_relative: src/modules/free/users/users_core/users_core.py
+        vendor_configuration_relative: nestjs/configuration.js
+      files:
+      - template: templates/variants/fastapi/users_core.py.j2
+        output: src/modules/free/users/users_core/users_core.py
+        description: Project-facing runtime wrapper around Users Core vendor module
+      - template: templates/variants/fastapi/users_core_types_runtime.py.j2
+        output: src/modules/free/users/users_core/users_core_types.py
+        description: Project-facing wrapper for Users Core health snapshot types
+      - template: templates/variants/fastapi/__init__.py.j2
+        output: src/modules/free/users/users_core/core/users/__init__.py
+      - template: templates/variants/fastapi/users_core_models.py.j2
+        output: src/modules/free/users/users_core/core/users/models.py
+      - template: templates/variants/fastapi/users_core_dto.py.j2
+        output: src/modules/free/users/users_core/core/users/dto.py
+      - template: templates/variants/fastapi/users_core_errors.py.j2
+        output: src/modules/free/users/users_core/core/users/errors.py
+      - template: templates/variants/fastapi/users_core_repository.py.j2
+        output: src/modules/free/users/users_core/core/users/repository.py
+      - template: templates/variants/fastapi/users_core_settings.py.j2
+        output: src/modules/free/users/users_core/core/users/settings.py
+      - template: templates/variants/fastapi/users_core_service.py.j2
+        output: src/modules/free/users/users_core/core/users/service.py
+      - template: templates/variants/fastapi/users_core_in_memory_repository.py.j2
+        output: src/modules/free/users/users_core/core/users/in_memory_repository.py
+        description: FastAPI health endpoints backed by shared runtime metadata helpers
+      - template: templates/variants/fastapi/users_core_dependencies.py.j2
+        output: src/modules/free/users/users_core/core/users/dependencies.py
+      - template: templates/variants/fastapi/users_core_router.py.j2
+        output: src/modules/free/users/users_core/core/users/router.py
+      - template: templates/variants/fastapi/users_core_routes.py.j2
+        output: src/modules/free/users/users_core/core/users/metadata_routes.py
+        description: FastAPI metadata and feature discovery routes for Users Core
+      - template: templates/variants/fastapi/users_core_config.yaml.j2
+        output: src/modules/free/users/users_core/config/users_core.yaml
+        description: Default Users Core configuration bundle for FastAPI projects
+      - template: templates/tests/integration/test_users_core_integration.py.j2
+        output: tests/modules/free/users/users_core/test_users_core_integration.py
+        description: FastAPI integration test exercising Users Core router and health
+          endpoints
+      - template: templates/variants/fastapi/tests/test_users_core_e2e.py
+        output: tests/modules/e2e/free/users/users_core/test_users_core_e2e.py
+    fastapi.standard: *fastapi_variant
+    fastapi.ddd: *fastapi_variant
+    nestjs: &nestjs_variant
+      root: .
+      context:
+        framework: nestjs
+        module_class_name: UsersCore
+        module_kebab: users-core
+        vendor_configuration_relative: nestjs/configuration.js
+      files:
+      - template: templates/variants/nestjs/users-core.service.ts.j2
+        output: src/modules/free/users/users_core/users-core.service.ts
+      - template: templates/variants/nestjs/users_core.controller.ts.j2
+        output: src/modules/free/users/users_core/users-core.controller.ts
+      - template: templates/variants/nestjs/users_core.module.ts.j2
+        output: src/modules/free/users/users_core/users-core.module.ts
+      - template: templates/variants/nestjs/index.ts.j2
+        output: src/modules/free/users/users_core/index.ts
+      - template: templates/variants/nestjs/users_core.configuration.ts.j2
+        output: src/modules/free/users/users_core/users-core.configuration.ts
+        description: NestJS configuration namespace for Users Core defaults
+      - template: templates/variants/nestjs/users_core.health.controller.ts.j2
+        output: src/health/users-core-health.controller.ts
+        description: NestJS health controller exposing Users Core status
+      - template: templates/variants/nestjs/users_core.health.module.ts.j2
+        output: src/health/users-core-health.module.ts
+        description: NestJS health module wiring Users Core diagnostics
+      - template: templates/variants/nestjs/users_core.metadata.controller.ts.j2
+        output: src/modules/free/users/users_core/core/users/metadata.controller.ts
+        description: NestJS metadata controller exposing Users Core metadata endpoints
+      - template: templates/tests/integration/test_users_core_integration.spec.ts.j2
+        output: tests/modules/free/users/users_core/users-core.integration.spec.ts
+      - template: templates/variants/nestjs/tests/users_core.e2e-spec.ts
+        output: tests/modules/e2e/free/users/users_core/users_core.e2e-spec.ts
+    nestjs.standard: *nestjs_variant
+  snippets:
+    enabled: true
+    config: config/snippets.yaml
+    default: []
+compatibility:
+  python: '>=3.10,<4.0'
+  node: '>=18'
+  frameworks:
+  - fastapi
+  - nestjs
+  os:
+  - linux
+  - darwin
+  - windows
+testing:
+  coverage_min: 85
+  integration_tests: false
+  e2e_tests: false
+  unit_tests:
+  - tests/modules/free/users/core/test_users_core_generator.py
+  - tests/modules/free/users/core/test_users_core_overrides.py
+  - tests/modules/free/users/core/test_users_core_plugins.py
+  - tests/modules/free/users/core/test_users_core_cli_entry.py
+  - tests/modules/free/users/core/test_users_core_integration.py
+  fixtures: []
+documentation:
+  changelog: docs/changelog.md
+  readme: README.md
+  overview: docs/overview.md
+  usage: docs/usage.md
+  advanced: docs/advanced.md
+  migration: docs/migration.md
+  troubleshooting: docs/troubleshooting.md
+  api_docs: null
+  examples: []
+support:
+  issues: https://github.com/getrapidkit/core/issues
+  discussions: https://github.com/getrapidkit/core/discussions
+  documentation: https://docs.rapidkit.top/modules/users-core
+changelog:
+- version: 0.1.0
+  date: '2025-12-14'
+  notes: See docs/changelog.md
+validation:
+  pre_install:
+  - check_python_version
+  post_install:
+  - validate_generated_code
+  - run_tests
+rollback:
+  strategy: uninstall
+  backup_path: .rapidkit/backups/
+  max_backups: 5
+performance:
+  lazy_loading: true
+  caching:
+    templates: true
+    ttl: 300
+tier: free
+capabilities:
+- user_lifecycle
+- user_directory
+- http_apis
+- cross_framework
+signature:
+  signature: UD4Yrcp0YcerooSwL+hEOuB5rkf5WEBXOm41DK9uZ1Vf+iuZGfG4oDz5g29rcd8NPIxz0mreoIQRI2D9jlA9Ag==
+  signer_id: c7eb213b1ac6d8c6
+  signature_version: v1
+signer_id: null
+signature_version: null
+file_hashes:
+  templates/variants/nestjs/tests/users_core.e2e-spec.ts: sha256:e96d1eb297f6eb7e5fc564e53a41d43f3c541478c00589b129f07b950febfa39
+  templates/variants/fastapi/tests/test_users_core_e2e.py: sha256:7219f328e589e6b2ebc7d6e2bf1580be6755da62c46e33a9f4de6fb8d8722329
+  templates/snippets/users_core.snippet.j2: sha256:cd187ff06b6077fb81a56a37d842c409bde8fa228fd20169496628229b670121
+  scripts/run_demo.py: sha256:ada8fdee75b16ae8a6ccec4d012982b4a37e99d8274304635afa6102a360f10e
+  README.md: sha256:dc8b97ff4a7ab6efadc0a2a6ac9e360552313b45380fbc1ff2b534d45f360b24
+  __init__.py: sha256:8333906c5ca41790f685d1dec1516f002acb201863e9348c28e9d25a764bdfaa
+  config/base.yaml: sha256:7331c7bfb2d3a51920119f6b016c1cfa8bfda9737768e02732e7173da84db00a
+  config/snippets.yaml: sha256:166a42aa7f2197f02e3d9a0009ac8d34244285ce67c22aee3dadd1c4579b7370
+  docs/README.md: sha256:e54c136dbee1cfc0424a81b1c75a27190f11a97a94c9f64b39a28f02bfa7b9d7
+  docs/advanced.md: sha256:e86b03d871cd67786577024f84cfb2ccfcd70ff315816c07270dd2d4fff6928f
+  docs/changelog.md: sha256:51c245bc56200242fde1b27a344301fc3c11173862134a502316170bc0dbad0f
+  docs/migration.md: sha256:c5454fc5ad4ebe145afc27323022a7aa9787a59a8f7c305ebc653cdeb1525c85
+  docs/overview.md: sha256:9a5151353948ba7b37bdfc19e355e5d81da91002a4f17c8f983fb81eb68ce13c
+  docs/troubleshooting.md: sha256:6984c55b5d5201e636c7b23458f5c137cb6414a24c26902411bb5274e1901c96
+  docs/usage.md: sha256:77098bd22c9fa2dbf7942e88b6f1dd21f9f399030fd45cf20daeb1547432b599
+  module.verify.json: sha256:cde1510b70dcd1250245c81bf0f886a8d8ce387d4d9f0f6e62ad412ea17ae4cd

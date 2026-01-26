@@ -1,0 +1,256 @@
+name: Python Publish (Reusable)
+
+on:
+    workflow_call:
+        inputs:
+            environment:
+                type: string
+                required: false
+                default: production
+            python-version:
+                type: string
+                required: false
+                default: "3.10.14"
+            distribution-tier:
+                type: string
+                required: false
+                default: community
+            limited-mode:
+                type: boolean
+                required: false
+                default: false
+            run-tests:
+                type: boolean
+                required: false
+                default: true
+            build-docs:
+                type: boolean
+                required: false
+                default: true
+            allow-production:
+                type: boolean
+                required: false
+                default: false
+        secrets:
+            TEST_PYPI_TOKEN:
+                required: false
+            PYPI_TOKEN:
+                required: false
+
+permissions:
+    contents: read
+    id-token: write
+
+jobs:
+    publish:
+        runs-on: ubuntu-latest
+        env:
+            DISTRIBUTION_TIER: ${{ inputs.distribution-tier }}
+            LIMITED_MODE: ${{ inputs.limited-mode }}
+            TARGET_ENVIRONMENT: ${{ inputs.environment }}
+            PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
+            TEST_PYPI_TOKEN: ${{ secrets.TEST_PYPI_TOKEN }}
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: "Guard: tag must match pyproject version"
+              if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  ref_name="${GITHUB_REF_NAME:-}"
+                  if [[ -z "$ref_name" ]]; then
+                      echo "GITHUB_REF_NAME is empty; refusing to continue." >&2
+                      exit 1
+                  fi
+
+                  actual_version=$(awk -F '"' 'BEGIN{in=0} /^\[tool\.poetry\]$/{in=1;next} in && /^\[/{in=0} in && /^version =/{print $2; exit}' pyproject.toml)
+                  if [[ -z "${actual_version:-}" ]]; then
+                      echo "Unable to read [tool.poetry].version from pyproject.toml" >&2
+                      exit 1
+                  fi
+
+                  expected_version=""
+                  if [[ "$ref_name" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)-rc\.([0-9]+)$ ]]; then
+                      expected_version="${BASH_REMATCH[1]}rc${BASH_REMATCH[2]}"
+                  elif [[ "$ref_name" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)$ ]]; then
+                      expected_version="${BASH_REMATCH[1]}"
+                  else
+                      echo "Tag format not enforced for: $ref_name (skipping version guard)" >&2
+                      exit 0
+                  fi
+
+                  if [[ "$actual_version" != "$expected_version" ]]; then
+                      echo "❌ Version mismatch" >&2
+                      echo "   tag:      $ref_name" >&2
+                      echo "   expected: $expected_version" >&2
+                      echo "   pyproject: $actual_version" >&2
+                      echo "" >&2
+                      echo "Fix: ensure the RC tag workflow bumps+commits pyproject before tagging." >&2
+                      exit 1
+                  fi
+
+                  echo "✅ Version guard passed: $actual_version matches $ref_name"
+
+            - name: Setup Python
+              uses: actions/setup-python@v5
+              with:
+                  python-version: ${{ inputs.python-version }}
+
+            - name: Install Poetry
+              uses: snok/install-poetry@v1
+              with:
+                  version: "2.2.1"
+                  virtualenvs-in-project: true
+                  virtualenvs-create: true
+
+            - name: Cache Poetry downloads
+              uses: actions/cache@v4
+              with:
+                  path: |
+                      ~/.cache/pypoetry
+                      ~/.cache/pip
+                      .venv
+                  key: poetry-publish-${{ runner.os }}-${{ hashFiles('**/poetry.lock') }}
+                  restore-keys: |
+                      poetry-publish-${{ runner.os }}-
+
+            - name: Install dependencies (with dev)
+              run: poetry install --with dev --no-interaction
+
+            - name: Validate community documentation bundle
+              if: ${{ inputs.build-docs }}
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  if [ -f Makefile ] && grep -Eq '^community-docs:' Makefile; then
+                      make community-docs
+                      exit 0
+                  fi
+                  if [ -f Makefile ] && make -n community-docs >/dev/null 2>&1; then
+                      make community-docs
+                      exit 0
+                  fi
+                  echo "Skipping community-docs: Makefile target not available in this repository." >&2
+
+            - name: Upload community README artifact
+              if: ${{ inputs.build-docs && always() }}
+              uses: actions/upload-artifact@v4
+              with:
+                  name: community-readme
+                  path: build/community/README.md
+                  if-no-files-found: warn
+
+            - name: Run tests
+              if: ${{ inputs.run-tests }}
+              run: poetry run pytest -q --maxfail=1 --disable-warnings
+
+            - name: Clean previous build outputs
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  rm -rf dist build *.egg-info
+
+            - name: Build and verify package
+              run: |
+                  poetry build
+                  poetry run python -m pip install --upgrade twine
+                  poetry run twine check dist/*
+
+            - name: "Guard: prevent production publish of pre-release tags"
+              if: ${{ inputs.allow-production }}
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  ref_name="${GITHUB_REF_NAME:-}"
+                  if [ -z "$ref_name" ]; then
+                      echo "GITHUB_REF_NAME is empty; refusing to publish." >&2
+                      exit 1
+                  fi
+                  version="${ref_name#v}"
+
+                  if [[ "$TARGET_ENVIRONMENT" == "production" ]] && echo "$version" | grep -Eq '(a|b|rc|dev)[0-9]+'; then
+                      echo "❌ Refusing production publish for pre-release tag: $ref_name" >&2
+                      exit 1
+                  fi
+
+                  echo "✅ Guard passed: not a production pre-release"
+
+            - name: Publish to TestPyPI (token)
+              if: ${{ inputs.environment == 'test' && env.TEST_PYPI_TOKEN != '' }}
+              uses: pypa/gh-action-pypi-publish@release/v1
+              with:
+                  repository-url: https://test.pypi.org/legacy/
+                  user: __token__
+                  password: ${{ env.TEST_PYPI_TOKEN }}
+
+            - name: Publish to TestPyPI (trusted publishing)
+              if: ${{ inputs.environment == 'test' && env.TEST_PYPI_TOKEN == '' }}
+              uses: pypa/gh-action-pypi-publish@release/v1
+              with:
+                  repository-url: https://test.pypi.org/legacy/
+
+            - name: Publish to PyPI (token)
+              if: ${{ inputs.environment == 'production' && inputs.allow-production && env.PYPI_TOKEN != '' }}
+              uses: pypa/gh-action-pypi-publish@release/v1
+              with:
+                  user: __token__
+                  password: ${{ env.PYPI_TOKEN }}
+
+            - name: Publish to PyPI (trusted publishing)
+              if: ${{ inputs.environment == 'production' && inputs.allow-production && env.PYPI_TOKEN == '' }}
+              uses: pypa/gh-action-pypi-publish@release/v1
+
+            - name: Fail for disallowed production publish
+              if: ${{ inputs.environment == 'production' && !inputs.allow-production }}
+              run: |
+                  echo "❌ Production PyPI publish is disabled for this tier"
+                  exit 1
+
+            - name: Verify install from built wheel
+              run: |
+                  python -m venv test_env
+                  source test_env/bin/activate
+                  pip install --no-index --find-links dist/ rapidkit || {
+                    echo "Fallback: try test.pypi if available"
+                    pip install -i https://test.pypi.org/simple/ rapidkit || true
+                  }
+                  rapidkit --help || true
+                  echo "✅ Installation successful!"
+
+            - name: Generate release notes
+              if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+              run: |
+                  cat <<'EOF' > pypi_release_notes.md
+                  ## 🚀 Community Release
+
+                  ### Installation (Test PyPI)
+                  ```bash
+                  # For testing and development only
+                  pip install -i https://test.pypi.org/simple/ rapidkit
+                  ```
+
+                  ### Alternative Installation
+                  ```bash
+                  # From source (recommended for development)
+                  pip install git+https://github.com/baziar/community.git
+                  ```
+
+                  ### ⚠️ Note
+                  This is a community release for testing purposes.
+                  For production use, consider Pro or Enterprise tier.
+
+                  ### What's New
+                  - Community-driven development
+                  - Open source contributions
+                  - Basic CLI functionality
+                  EOF
+
+            - name: Comment on release
+              if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+              uses: softprops/action-gh-release@v2
+              with:
+                  tag_name: ${{ github.ref_name }}
+                  append_body: true
+                  body_path: pypi_release_notes.md

@@ -1,0 +1,8 @@
+# Enhanced retry profile for payment confirmations.
+retry_policy:
+  max_attempts: 5
+  base_delay_seconds: 1.5
+  max_delay_seconds: 60.0
+features:
+  emit_metrics: true
+  enable_idempotency_keys: true

@@ -1,0 +1,21 @@
+"use strict";
+
+const defaults = {{ inventory_defaults | tojson(indent=2) }};
+const pricing = {{ inventory_pricing | tojson(indent=2) }};
+const warehouses = {{ inventory_warehouses | tojson(indent=2) }};
+const notifications = {{ inventory_notifications | tojson(indent=2) }};
+
+function loadConfiguration() {
+  return {
+    module: "{{ module_name }}",
+    title: "{{ module_title }}",
+    defaults,
+    pricing,
+    warehouses,
+    notifications,
+  };
+}
+
+module.exports = {
+  loadConfiguration,
+};

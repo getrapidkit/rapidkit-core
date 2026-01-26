@@ -1,0 +1,38 @@
+from dataclasses import dataclass
+from typing import Any, Dict, List, Optional
+
+
+@dataclass
+class {{ module_class_name }}Config:
+    """Runtime configuration for {{ module_title }}."""
+
+    enabled: bool = True
+    enabled: bool = True
+    allow_origins: List[str] = None
+    allow_credentials: bool = True
+    allow_methods: List[str] = None
+    allow_headers: List[str] = None
+    expose_headers: Optional[List[str]] = None
+    max_age: int = 600
+    log_level: str = "INFO"
+    metadata: Dict[str, Any] | None = None
+    metadata: Dict[str, Any] | None = None
+
+    def __post_init__(self):
+        """Set default values for lists if None."""
+        if self.allow_origins is None:
+            self.allow_origins = ["*"]
+        if self.allow_methods is None:
+            self.allow_methods = ["*"]
+        if self.allow_headers is None:
+            self.allow_headers = ["*"]
+        if self.expose_headers is None:
+            self.expose_headers = []
+        if self.metadata is None:
+            self.metadata = {}
+
+
+def build_default_config() -> {{ module_class_name }}Config:
+    """Return default configuration payload."""
+
+    return {{ module_class_name }}Config()

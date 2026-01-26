@@ -1,0 +1,223 @@
+name: observability_core
+display_name: Observability Core
+description:
+    Cohesive metrics, tracing, and structured logging foundation for RapidKit
+    services.
+version: 0.1.10
+access: free
+status: stable
+tier: free
+category: observability
+generated_from_config: true
+depends_on:
+    - free/essentials/logging
+    - free/essentials/settings
+tags:
+    - observability
+    - telemetry
+    - metrics
+    - tracing
+    - logging
+profile_inherits:
+    fastapi.standard: fastapi
+    fastapi.ddd: fastapi
+    nestjs.standard: nestjs
+config_sources:
+    - config/base.yaml
+    - config/snippets.yaml
+generation:
+    vendor:
+        root: .rapidkit/vendor
+        files:
+            - template: templates/base/observability_core.py.j2
+              relative: src/modules/free/observability/core/observability_core.py
+            - template: templates/base/observability_core_health.py.j2
+              relative: src/health/observability_core.py
+            - template: templates/base/observability_core_types.py.j2
+              relative: src/modules/free/observability/core/observability_core_types.py
+            - template: templates/vendor/nestjs/configuration.js.j2
+              relative: nestjs/configuration.js
+    variants:
+        fastapi: &fastapi_variant
+            root: .
+            context:
+                framework: fastapi
+                module_class_name: ObservabilityCore
+                vendor_runtime_relative: src/modules/free/observability/core/observability_core.py
+            files:
+                - template: templates/variants/fastapi/observability_core.py.j2
+                  output: src/modules/free/observability/core/observability_core.py
+                - template: templates/base/observability_core_types.py.j2
+                  output: src/modules/free/observability/core/observability_core_types.py
+                - template: templates/variants/fastapi/observability_core_routes.py.j2
+                  output: src/modules/free/observability/core/routers/observability_core.py
+                - template: templates/variants/fastapi/observability_core_config.yaml.j2
+                  output: config/observability/observability_core.yaml
+                - template: templates/tests/integration/test_observability_core_integration.j2
+                  output: tests/modules/integration/observability/test_observability_core_integration.py
+                - template: templates/variants/fastapi/tests/test_core_e2e.py
+                  output: tests/modules/e2e/free/observability/core/test_core_e2e.py
+        fastapi.standard: *fastapi_variant
+        fastapi.ddd: *fastapi_variant
+        nestjs: &nestjs_variant
+            root: .
+            context:
+                framework: nestjs
+                vendor_configuration_relative: nestjs/configuration.js
+                vendor_runtime_relative: src/modules/free/observability/core/observability_core.py
+                module_class_name: ObservabilityCore
+                module_kebab: observability-core
+            files:
+                - template: templates/variants/nestjs/observability_core.service.ts.j2
+                  output: src/modules/free/observability/core/observability-core/observability-core.service.ts
+                - template: templates/variants/nestjs/observability_core.controller.ts.j2
+                  output: src/modules/free/observability/core/observability-core/observability-core.controller.ts
+                - template: templates/variants/nestjs/observability_core.module.ts.j2
+                  output: src/modules/free/observability/core/observability-core/observability-core.module.ts
+                - template: templates/variants/nestjs/observability_core.configuration.ts.j2
+                  output: src/modules/free/observability/core/observability-core/observability-core.configuration.ts
+                - template: templates/variants/nestjs/observability_core.health.controller.ts.j2
+                  output: src/health/observability-core-health.controller.ts
+                - template: templates/variants/nestjs/observability_core.health.module.ts.j2
+                  output: src/health/observability-core-health.module.ts
+                - template: templates/tests/integration/observability_core.integration.spec.ts.j2
+                  output: tests/modules/integration/observability/observability_core.integration.spec.ts
+                - template: templates/variants/nestjs/tests/core.e2e-spec.ts
+                  output: tests/modules/e2e/free/observability/core/core.e2e-spec.ts
+        nestjs.standard: *nestjs_variant
+    snippets:
+        enabled: true
+        config: config/snippets.yaml
+        default: []
+compatibility:
+    python: ">=3.10,<4.0"
+    node: ">=18,<21"
+    frameworks:
+        - fastapi
+        - nestjs
+    os:
+        - linux
+        - darwin
+        - windows
+testing:
+    coverage_min: 85
+    integration_tests: true
+    e2e_tests: false
+    unit_tests:
+        - tests/modules/free/observability/observability_core/test_observability_core_generator.py
+        - tests/modules/free/observability/observability_core/test_observability_core_overrides.py
+        - tests/modules/free/observability/observability_core/test_observability_core_runtime.py
+        - tests/modules/free/observability/observability_core/test_observability_core_adapters.py
+        - tests/modules/free/observability/observability_core/test_observability_core_validation.py
+        - tests/modules/free/observability/observability_core/test_observability_core_error_handling.py
+        - tests/modules/free/observability/observability_core/test_observability_core_health_check.py
+        - tests/modules/free/observability/observability_core/test_observability_core_framework_variants.py
+        - tests/modules/free/observability/observability_core/test_observability_core_vendor_layer.py
+        - tests/modules/free/observability/observability_core/test_observability_core_configuration.py
+        - tests/modules/free/observability/observability_core/test_observability_core_versioning.py
+        - tests/modules/free/observability/observability_core/test_observability_core_integration.py
+        - tests/modules/free/observability/observability_core/test_observability_core_standard_module.py
+    integration_test_files:
+        - tests/modules/integration/observability/test_observability_core_integration.py
+        - tests/modules/integration/observability/observability_core.integration.spec.ts
+    fixtures:
+        - tests/modules/free/observability/observability_core/conftest.py
+documentation:
+    changelog: docs/changelog.md
+    readme: README.md
+    overview: docs/overview.md
+    usage: docs/usage.md
+    advanced: docs/advanced.md
+    migration: docs/migration.md
+    troubleshooting: docs/troubleshooting.md
+    api_docs: docs/api-reference.md
+    examples:
+        - templates/snippets/observability_core.snippet.j2
+support:
+    issues: https://github.com/getrapidkit/core/issues
+    discussions: https://github.com/getrapidkit/core/discussions
+    documentation: https://docs.rapidkit.top/modules/observability/observability_core
+changelog:
+    - version: "0.1.10"
+      date: "2025-12-25"
+      notes: "See docs/changelog.md"
+validation:
+    pre_install:
+        - check_python_version
+        - check_dependencies
+    post_install:
+        - validate_generated_code
+        - run_tests
+rollback:
+    strategy: uninstall
+    backup_path: .rapidkit/backups/
+    max_backups: 3
+performance:
+    lazy_loading: true
+    caching:
+        templates: true
+        ttl: 300
+capabilities:
+    - metrics_export
+    - tracing_spans
+    - structured_logging
+    - telemetry_events
+    - fastapi_adapter
+    - nestjs_provider
+signature:
+    signature: ie1vMd1aRgp4Gy1mG1Cb33yAOKxULWKhjYE0mmTKft0OED4skT51iN/eURdR6MoeFNj5Zf7XK/gJIsfS0/5uBw==
+    signer_id: c7eb213b1ac6d8c6
+    signature_version: v1
+signer_id: null
+signature_version: null
+file_hashes:
+    templates/variants/nestjs/tests/core.e2e-spec.ts: sha256:a96a7e6fc6896bd26b3c5179b2b6303c83e3b373131acbcb57b8f7c9aa843519
+    templates/variants/fastapi/tests/test_core_e2e.py: sha256:24bc2816cd25a7a4d17a7200fc510fa4a42c3fc4e243b2f0ad50a27525467fb2
+    scripts/run_demo.py: sha256:39649936a6a52562c5e611e8486a2fba31ac82dcbaf8d6fbf2b78c7d594cf7bf
+    README.md: sha256:14fb0b1f52463066ce32499fe35f036d0485b7df5d4787a9a3f3e4d31fee82b6
+    __init__.py: sha256:3e65746eff9a2e8a094b1a8a0115da0b93a33a4e10410ca3f2c749fbf6b7037f
+    config/base.yaml: sha256:27f4bbcc15526650b122bfd67f6f9fe3e8155d8ec323c8cbd27ae1d99d28b216
+    config/snippets.yaml: sha256:acaef625a7bd89cb0cec53dc89bdc1c24b47bd59331fb2506fdb7e998b78dfe6
+    docs/README.md: sha256:49ca42b877e09bb64952e0f00638d1bceebd4459c26620d5ec64c01cf3237c60
+    docs/advanced.md: sha256:1e86c6b3953848416e26cb65d63a3495fc36b806c833bb4d4e11ad2ae9a724a4
+    docs/api-reference.md: sha256:4fd188c5dae1b443b01d97102a7100de55ee30693f7c2f6733a961f44e5caadf
+    docs/changelog.md: sha256:91fd830085f2799ef262d3b3d03dbde1c312ea6633c741c54fe883bc8a9ee362
+    docs/migration.md: sha256:b6755ae7b78acfdc756e19e00ef626f330e8861c56554f2a0a783c33ca046d1f
+    docs/overview.md: sha256:ee69484d3987eb4625ccaf4000b19e32b37e14946533ed846a7806b8a7c9b050
+    docs/troubleshooting.md: sha256:44e7bb1c12ba37ada5232888ff3ed1e30ba256a4aa8e61a15faf924c76e58ce0
+    docs/usage.md: sha256:7950e6c7643cd5f7eff151eff905afa0b3ec30dc1fe4003e020494ae084518d1
+    frameworks/__init__.py: sha256:7702aba567e8a5d8ab86cd8f01c03985cd8ce7008cbfc9fac1b3a17e574840b7
+    frameworks/fastapi.py: sha256:03e74264345a6fb03f067cda0e2c51b07642d3f3b55a7deb1a9904f4eff59429
+    frameworks/nestjs.py: sha256:36971da359e64085a0ac5210c89f0ef2e8364fa691577002f22df3ffc1e02b60
+    generate.py: sha256:e88c260297277c3c49bd00037bcd87dacc1a22c421efdea25f33f5d10739b3bf
+    module.verify.json: sha256:378c3fe2bccaf00c04982572dc8c8a6201bc1cf919c88c7303611acf61abc41b
+    overrides.py: sha256:c1e4c88b1d5ffe20f75b5e444114cc276b407afa05c994efe453c18e3342400c
+    templates/base/core.py.j2: sha256:67820383727369291c56cb128fa2591d549cebbc9a7280a12e40660b6131f776
+    templates/base/core_health.py.j2: sha256:713cd6f0a33e923e3f4519c71decc34d13ca6aa76fef5e625bd5ea948cf12b83
+    templates/base/core_types.py.j2: sha256:e0107c73523c130ce460c8d3c6aa2f66cbf04ed2e443a08b831d530adcf87fab
+    templates/base/observability_core.py.j2: sha256:d561ea2f8c513e81af00e1e07412f5edfee906846ba1f12d73156a01d1e8641d
+    templates/base/observability_core_health.py.j2: sha256:55d840cd5a25de05b5526c2126df60067d6e3fe9ee199d4bf3b85b4da0466b61
+    templates/base/observability_core_types.py.j2: sha256:a388682c40d69ca440cf8f36bb505811d9728643acfe55f6792e5dbc99bdf5fc
+    templates/snippets/core.snippet.j2: sha256:713880e940765bc3a2f7b0f74419f31cf241aba45838c7670cb8d31b11e679aa
+    templates/snippets/observability_core.snippet.j2: sha256:6c4151c6d4e7c0b631f1a36a33e21333297787d43e42562c16ae63133cc2627e
+    templates/tests/__init__.py: sha256:aed9b373df2e0f3d038f8414c82f688b1a4a33f003214d6a5df8098a8219a6ea
+    templates/tests/integration/observability_core.integration.spec.ts.j2: sha256:3cbaba54eded7ad26ca8751d638303ffdd59aab27db4d64d1a68615ea7024ff0
+    templates/tests/integration/test_core_integration.j2: sha256:fb867626bc75ae6fcc2ef2fdaa0b0dfa0bb82fa90fe57cbbafa277ac6f53cc67
+    templates/tests/integration/test_observability_core_integration.j2: sha256:25831eb9d9277006e6b4318776b82f943d7bb12dd3ed61adf79e30ed96aa22f4
+    templates/variants/fastapi/core.py.j2: sha256:67820383727369291c56cb128fa2591d549cebbc9a7280a12e40660b6131f776
+    templates/variants/fastapi/core_health.py.j2: sha256:713cd6f0a33e923e3f4519c71decc34d13ca6aa76fef5e625bd5ea948cf12b83
+    templates/variants/fastapi/core_routes.py.j2: sha256:502854214e18ea6e5eb482003f32522ef5e1c190adb112b8ad276a6eb3db8951
+    templates/variants/fastapi/observability_core.py.j2: sha256:9e504dd90b2e22ee7e428f8e9b1c6ffbb9f19d583249dbba6706267c9c1e2997
+    templates/variants/fastapi/observability_core_config.yaml.j2: sha256:20ec8838f9048029f93cc3cd766db9e8af71f181a7adef841b3fefb7a50a3207
+    templates/variants/fastapi/observability_core_health.py.j2: sha256:d969ff5f2983f5d90ed8b03b454d01de0e35ac13b823ae99cfad036477731f21
+    templates/variants/fastapi/observability_core_routes.py.j2: sha256:9007774c43f86c604d84202ce267cccd31179632a016bf9db5e95c64c0d53222
+    templates/variants/nestjs/core.controller.ts.j2: sha256:cf2aa1dce92f8b8d116211ef36f159eae73ca7ab214c0fb9bacf356a21ed1315
+    templates/variants/nestjs/core.module.ts.j2: sha256:6f6f5e8e0b2762fb4dab9c604f2b989d1652d2f96d6effe33af77787d0214c9b
+    templates/variants/nestjs/core.service.ts.j2: sha256:8937e08d8dfbe9532ce128e8769c2e3125a757a549f146737e15f645201c494b
+    templates/variants/nestjs/observability_core.configuration.ts.j2: sha256:95c2a5cd3c526a8dbba12c2e4b88c62bf9b669e8a4d9762590999cf80eb149ba
+    templates/variants/nestjs/observability_core.controller.ts.j2: sha256:fa28ddbdf4e5e629f5429d95cd3020244d7d729f3ca897b202db9ae0a94474ab
+    templates/variants/nestjs/observability_core.health.controller.ts.j2: sha256:5093436e4a0f7326c6bd2a0d2079eafc30e0e9f0462e762253ffe10e4075a447
+    templates/variants/nestjs/observability_core.health.module.ts.j2: sha256:0e5c04e03a526f074b4c962762aba975b11e21c0afa205717a7feebfd5c777a5
+    templates/variants/nestjs/observability_core.module.ts.j2: sha256:de098f51b445402880bcdc61e088bc8f85ef9941cc52f83041634b554086781a
+    templates/variants/nestjs/observability_core.service.ts.j2: sha256:90fe53a582f6c70a207bdd9c9377e9dc854d2f55b2a2aca5b3a089df259d0408
+    templates/vendor/nestjs/configuration.js.j2: sha256:76dcfc70f97706120094fea5b47934751eb920fe93f3c2ef324efa7405abae38

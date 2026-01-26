@@ -1,0 +1,190 @@
+name: cors
+description: Cross-Origin Resource Sharing security module
+category: security
+version: 0.1.0
+access: free
+status: stable
+tags:
+- security
+generated_from_config: true
+depends_on: []
+profile_inherits:
+  fastapi.standard: fastapi
+  fastapi.ddd: fastapi
+  nestjs.standard: nestjs
+config_sources:
+- config/base.yaml
+- config/snippets.yaml
+generation:
+  vendor:
+    root: .rapidkit/vendor
+    files:
+    - template: templates/base/cors.py.j2
+      relative: src/modules/free/security/cors/cors.py
+    - template: templates/base/cors_health.py.j2
+      relative: src/health/cors.py
+    - template: templates/base/cors_types.py.j2
+      relative: src/modules/free/security/cors/cors_types.py
+    - template: templates/vendor/nestjs/configuration.js.j2
+      relative: nestjs/configuration.js
+  variants:
+    fastapi: &fastapi_variant
+      root: .
+      context:
+        framework: fastapi
+        module_class_name: Cors
+      files:
+      - template: templates/variants/fastapi/cors.py.j2
+        output: src/modules/free/security/cors/cors.py
+      - template: templates/variants/fastapi/cors_health_runtime.py.j2
+        output: src/health/cors.py
+        description: Framework-agnostic helpers consumed by health routers
+      - template: templates/base/cors_types.py.j2
+        output: src/modules/free/security/cors/cors_types.py
+      - template: templates/variants/fastapi/cors_routes.py.j2
+        output: src/modules/free/security/cors/routers/cors.py
+        description: FastAPI routes exposing CORS metadata
+      - template: templates/variants/fastapi/cors_config.yaml.j2
+        output: config/security/cors.yaml
+        description: Default CORS configuration scaffold for FastAPI projects
+      - template: templates/tests/integration/test_cors_integration.j2
+        output: tests/modules/integration/security/test_cors_integration.py
+        description: CORS module integration test scaffold
+      - template: templates/variants/fastapi/tests/test_cors_e2e.py
+        output: tests/modules/e2e/free/security/cors/test_cors_e2e.py
+    fastapi.standard: *fastapi_variant
+    fastapi.ddd: *fastapi_variant
+    nestjs: &nestjs_variant
+      root: .
+      context:
+        framework: nestjs
+        vendor_configuration_relative: nestjs/configuration.js
+        module_class_name: Cors
+        module_kebab: cors
+      files:
+      - template: templates/variants/nestjs/cors.service.ts.j2
+        output: src/modules/free/security/cors/cors.service.ts
+      - template: templates/variants/nestjs/cors.controller.ts.j2
+        output: src/modules/free/security/cors/cors.controller.ts
+      - template: templates/variants/nestjs/cors.module.ts.j2
+        output: src/modules/free/security/cors/cors.module.ts
+      - template: templates/variants/nestjs/cors.health.ts.j2
+        output: src/modules/free/security/cors/cors.health.ts
+        description: NestJS health endpoint wiring for CORS
+      - template: templates/variants/nestjs/cors_health_runtime.py.j2
+        output: src/health/cors.py
+        description: Shared runtime helpers for health integrations
+      - template: templates/base/cors_types.py.j2
+        output: src/modules/free/security/cors/cors_types.py
+      - template: templates/variants/nestjs/cors.routes.ts.j2
+        output: src/modules/free/security/cors/cors.routes.ts
+        description: Route registration export for CORS controllers
+      - template: templates/variants/nestjs/cors.configuration.ts.j2
+        output: src/modules/free/security/cors/cors.configuration.ts
+        description: NestJS configuration registration for CORS defaults
+      - template: templates/tests/integration/test_cors_integration.spec.ts.j2
+        output: tests/modules/integration/security/cors.integration.spec.ts
+      - template: templates/variants/nestjs/tests/cors.e2e-spec.ts
+        output: tests/modules/e2e/free/security/cors/cors.e2e-spec.ts
+    nestjs.standard: *nestjs_variant
+  snippets:
+    enabled: true
+    config: config/snippets.yaml
+    default: []
+compatibility:
+  python: '>=3.10,<4.0'
+  node: '>=18,<21'
+  frameworks:
+  - fastapi
+  - nestjs
+  os:
+  - linux
+  - darwin
+  - windows
+testing:
+  coverage_min: 85
+  integration_tests: true
+  e2e_tests: false
+  unit_tests: []
+  fixtures: []
+documentation:
+  changelog: docs/changelog.md
+  readme: README.md
+  overview: docs/overview.md
+  usage: docs/usage.md
+  advanced: docs/advanced.md
+  migration: docs/migration.md
+  troubleshooting: docs/troubleshooting.md
+  api_docs: null
+  examples: []
+support:
+  issues: https://github.com/getrapidkit/core/issues
+  discussions: https://github.com/getrapidkit/core/discussions
+  documentation: https://docs.rapidkit.top/modules/cors
+changelog:
+- version: 0.1.0
+  date: '2025-12-14'
+  notes: See docs/changelog.md
+validation:
+  pre_install:
+  - check_python_version
+  post_install:
+  - validate_generated_code
+rollback:
+  strategy: uninstall
+  backup_path: .rapidkit/backups/
+  max_backups: 3
+performance:
+  lazy_loading: true
+  caching:
+    templates: true
+    ttl: 300
+tier: free
+capabilities: []
+signature:
+  signature: uvGwC1GLN+4FPRZ/uueBfslTrn2RlLd01zU9N8l8pevp7OY8ina6CUZW0rsxVjuWN/sT3ZIDeeZrI6A+6xPuAQ==
+  signer_id: c7eb213b1ac6d8c6
+  signature_version: v1
+signer_id: null
+signature_version: null
+file_hashes:
+  templates/variants/nestjs/tests/cors.e2e-spec.ts: sha256:ed7e19ee14daccf868c24dd475dc4815a29c53d58960beb67c0fad19fb9b8849
+  templates/variants/fastapi/tests/test_cors_e2e.py: sha256:006990f6bb10f17733ce6e83aa383fe8d11a49b343fbf5878ddbc620d36571c3
+  scripts/run_demo.py: sha256:fcd10826184a359f104bbc728f86db2740e47e3a1e38c7eb5bb3a3b2d6e22ff3
+  README.md: sha256:0122a73f6f17a7b96dffbcef69b655a42e2c33aa8600a550eb711a6be5bebdfe
+  __init__.py: sha256:c606357727d6095bdce32d1a54119aa897d8e87319c275c96037ce3f32f5152c
+  config/base.yaml: sha256:9f27987ecda181ca92e2e3cdfc5ac92f72733188a4d3c3dcbb4b16c2c03731bb
+  config/snippets.yaml: sha256:81d26ae983408a3741f9626c5756809cc11d4f784263196f243be8f511adf60e
+  docs/README.md: sha256:d3235b0aac0c349d3fef7c9b011b3b2e0c2d7ed04c3b11e275d6f5df29171062
+  docs/advanced.md: sha256:86708f343155273fad42edeb9a5260b271557ee90fd0dd85f31e15fb2f3abe74
+  docs/changelog.md: sha256:1c3ae762c6a13945ce207f161d5923061d599aea40c6fbd3bf0ea0bf9cab120c
+  docs/migration.md: sha256:78a4927d254560197c276ef2350832b47553d85b684bd7d81a9060bb37601cf3
+  docs/overview.md: sha256:ca0ac502cce41b66d342ca8d85c1d579b90923dc56e675eea721aac358e035ab
+  docs/troubleshooting.md: sha256:e665d02bb650363f54889f8cd5d2afbac73c188b3966be0c9915f85033cb4fe1
+  docs/usage.md: sha256:9377597f941b52d8409672b7cdf153995786b7a91b2f8cb338b2a8021289df49
+  frameworks/__init__.py: sha256:1703ea0beebcdd59fb1a80759e671747958c78fccdba24b70fd29aa4d21569a4
+  frameworks/fastapi.py: sha256:63e0bf200cd5a8edbf54c04c57777c7c3136eb71d7f61abb0efd1a4d2fe39cf0
+  frameworks/nestjs.py: sha256:845d07911b194ac0a44353b416b591d805e22ddf0dec4df1237731472b844847
+  generate.py: sha256:70de66f462efbec00854dae08847321a62b69994fc88ce9623728addd7e95491
+  module.verify.json: sha256:30e90e148de773ce50f5721f86853b6cd0b0778726d55133e476bc004eb7468a
+  overrides.py: sha256:9d08e42d33579ed1aed08227c213ff1ab680b6ee2e7f74be0b519da290ef5d1c
+  templates/base/cors.py.j2: sha256:e1a209dc44e6df93ef4dd9be89978f85aefc0e9d56a124fc1f30eae75510d8c6
+  templates/base/cors_health.py.j2: sha256:6923d3641a0a87c6cd1a28e54b8f58d687baf63d5feae828338588ee0941b69c
+  templates/base/cors_types.py.j2: sha256:999362e918dbb53f40f8250f35b177c47f03c80bb043bc559fa3c7d413948f02
+  templates/snippets/cors.snippet.j2: sha256:b9c6611b6150bac90bcf2e36a313aa6ca0747aece30105a49c75daedfeddaeb6
+  templates/tests/__init__.py: sha256:321b50cd4a19e13e49451d8563f2528002c28673faeea7a1b1f93f3d68ee2e14
+  templates/tests/integration/test_cors_integration.j2: sha256:f86af9f8ee59d8e0ce5c1f8dbd580c87d095aee4623df8e910af946d519c9a2e
+  templates/tests/integration/test_cors_integration.spec.ts.j2: sha256:d1203cd25791167cf258744bc7906c8bb665bc930d2c53cc2c1ad9f4425ecafd
+  templates/variants/fastapi/cors.py.j2: sha256:cae7384a962b84c6a10e6eb564386e8af969e1406a1f99c89f7fa8144ba8ec3a
+  templates/variants/fastapi/cors_config.yaml.j2: sha256:022b315bec324deae13ea6325a069bc93c23a9f68667ddd2a47904f4359f6237
+  templates/variants/fastapi/cors_health.py.j2: sha256:74c106360c52e6a6c108937d99105c287a1a639b238fbed6579b9956f11d766d
+  templates/variants/fastapi/cors_health_runtime.py.j2: sha256:c507e3722329e4d72690b941a9cf3763ed8e51be7b9ffd856a8caaedef7d15a7
+  templates/variants/fastapi/cors_routes.py.j2: sha256:a56732debc0534668672252cd286af8aa17c6c8a57878adc92848d5d433f3e59
+  templates/variants/nestjs/cors.configuration.ts.j2: sha256:11455255e7ed4c80d08bbef20bc0e4f97b940d2ef51856d5f52fd1a28239a970
+  templates/variants/nestjs/cors.controller.ts.j2: sha256:3c6b0a454cf386daba19da2df4ca44ba05eb9e8dddc1b0c613feeadfa86b239a
+  templates/variants/nestjs/cors.health.ts.j2: sha256:b257fa3158b7fa88d181d3f2719659feb110e203a096a656f925857ba40e9a31
+  templates/variants/nestjs/cors.module.ts.j2: sha256:d24d44b47d7ef4061d095344aeaf5b8a775d2724bac999c7cc4e2506ac52979e
+  templates/variants/nestjs/cors.routes.ts.j2: sha256:033897c41b085ccb9fdf4aee8d82fd7c9da57574702e567eadc8aac7725c8f36
+  templates/variants/nestjs/cors.service.ts.j2: sha256:57dd4234955c0fac0eefb6ec5fa60c445271b4aa2220b27ea8c7ad7b1d1aaade
+  templates/variants/nestjs/cors_health_runtime.py.j2: sha256:c507e3722329e4d72690b941a9cf3763ed8e51be7b9ffd856a8caaedef7d15a7
+  templates/vendor/nestjs/configuration.js.j2: sha256:aa4262ae45ed3e773914b45f53115af3f6c32b9f34c6202c65b9a8fc506f2307

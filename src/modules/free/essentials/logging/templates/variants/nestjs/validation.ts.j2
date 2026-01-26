@@ -1,0 +1,29 @@
+import * as Joi from 'joi';
+
+const truthyValues = ['true', '1', 'yes', 'on'];
+const falsyValues = ['false', '0', 'no', 'off'];
+
+export const validationSchema = Joi.object({
+  APP_NAME: Joi.string().default("{{ project_name | replace('-', ' ') | title }}"),
+  NODE_ENV: Joi.string().valid('development', 'production', 'test').default('development'),
+  HOST: Joi.string().default('0.0.0.0'),
+  PORT: Joi.number().port().default(3000),
+  LOG_LEVEL: Joi.string()
+    .valid('debug', 'info', 'warning', 'error', 'critical')
+    .default('info'),
+  // <<<inject:env-schema>>>
+});
+
+export const loggingValidationSchema = Joi.object({
+  LOG_LEVEL: Joi.string().valid('debug', 'info', 'warning', 'error', 'critical').default('info'),
+  LOG_FORMAT: Joi.string().valid('json', 'text', 'colored').default('json'),
+  LOG_SINKS: Joi.alternatives().try(Joi.string(), Joi.array().items(Joi.string())).default('stderr'),
+  LOG_ASYNC_QUEUE: Joi.boolean().truthy(...truthyValues).falsy(...falsyValues).default(true),
+  LOG_FILE_PATH: Joi.string().default('logs/app.log'),
+  LOG_SAMPLING_RATE: Joi.number().min(0).max(1).default(1),
+  LOG_ENABLE_REDACTION: Joi.boolean().truthy(...truthyValues).falsy(...falsyValues).default(true),
+  OTEL_BRIDGE_ENABLED: Joi.boolean().truthy(...truthyValues).falsy(...falsyValues).default(false),
+  METRICS_BRIDGE_ENABLED: Joi.boolean().truthy(...truthyValues).falsy(...falsyValues).default(false),
+  RAPIDKIT_LOGGING_REQUEST_CONTEXT: Joi.boolean().truthy(...truthyValues).falsy(...falsyValues).default(true),
+  // <<<inject:env-schema>>>
+});

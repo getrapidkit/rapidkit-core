@@ -1,0 +1,47 @@
+import {
+  Controller,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Logger,
+  ServiceUnavailableException,
+} from '@nestjs/common';
+import { hostname } from 'node:os';
+
+import {
+  DB_SQLITE_VENDOR_MODULE,
+  DbSqliteService,
+} from '../modules/free/database/db_sqlite/db-sqlite/db-sqlite.service';
+
+@Controller('api/health/module')
+export class DbSqliteHealthController {
+  private readonly logger = new Logger(DbSqliteHealthController.name);
+
+  constructor(private readonly dbSqliteService: DbSqliteService) {}
+
+  @Get('db-sqlite')
+  @HttpCode(HttpStatus.OK)
+  getModuleHealth(): Record<string, unknown> {
+    try {
+      const payload = this.dbSqliteService.getHealthPayload();
+      this.logger.debug(`SQLite health payload=${JSON.stringify(payload)}`);
+      return {
+        status: payload.status,
+        module: payload.module,
+        detail: payload.detail,
+        warnings: payload.warnings,
+        pragmas: payload.pragmas,
+        hostname: hostname(),
+      };
+    } catch (error) {
+      const detail =
+        error instanceof Error && error.message ? error.message : 'sqlite health check failed';
+      this.logger.error(`SQLite health check failed: ${detail}`);
+      throw new ServiceUnavailableException({
+        status: 'error',
+        module: DB_SQLITE_VENDOR_MODULE,
+        detail,
+      });
+    }
+  }
+}

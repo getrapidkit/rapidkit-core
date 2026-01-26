@@ -1,0 +1,10 @@
+import { Module } from '@nestjs/common';
+
+import { DbSqliteModule } from '../modules/free/database/db_sqlite/db-sqlite/db-sqlite.module';
+import { DbSqliteHealthController } from './db-sqlite-health.controller';
+
+@Module({
+  imports: [DbSqliteModule],
+  controllers: [DbSqliteHealthController],
+})
+export class DbSqliteHealthModule {}

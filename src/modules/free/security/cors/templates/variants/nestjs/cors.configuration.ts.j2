@@ -1,0 +1,132 @@
+{%- set defaults = cors_defaults or {} -%}
+import { registerAs } from "@nestjs/config";
+
+const DEFAULTS = {{ defaults | tojson(indent=2) }} as Record<string, unknown>;
+
+const toStringArray = (value: unknown, fallback: string[]): string[] => {
+  if (Array.isArray(value)) {
+    return value
+      .map((item) => String(item).trim())
+      .filter((item) => item.length > 0);
+  }
+  if (typeof value === "string" && value.trim().length > 0) {
+    return [value.trim()];
+  }
+  return [...fallback];
+};
+
+const parseBoolean = (value: string | undefined, fallback: boolean): boolean => {
+  if (typeof value !== "string") {
+    return fallback;
+  }
+  const normalized = value.trim().toLowerCase();
+  if (["1", "true", "yes", "on"].includes(normalized)) {
+    return true;
+  }
+  if (["0", "false", "no", "off"].includes(normalized)) {
+    return false;
+  }
+  return fallback;
+};
+
+const parseNumber = (value: string | undefined, fallback: number): number => {
+  if (typeof value !== "string") {
+    return fallback;
+  }
+  const parsed = Number.parseInt(value, 10);
+  if (Number.isNaN(parsed)) {
+    return fallback;
+  }
+  return parsed < 0 ? 0 : parsed;
+};
+
+const parseList = (value: string | undefined, fallback: string[]): string[] => {
+  if (typeof value !== "string") {
+    return [...fallback];
+  }
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return [...fallback];
+  }
+  if (trimmed.startsWith("[")) {
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) {
+        return toStringArray(parsed, fallback);
+      }
+    } catch {
+      // Fall through to comma parsing
+    }
+  }
+  return trimmed
+    .split(",")
+    .map((item) => item.trim())
+    .filter((item) => item.length > 0);
+};
+
+const parseRecord = (
+  value: string | undefined,
+  fallback: Record<string, unknown>,
+): Record<string, unknown> => {
+  if (typeof value !== "string") {
+    return { ...fallback };
+  }
+  try {
+    const parsed = JSON.parse(value);
+    if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
+      return { ...fallback, ...(parsed as Record<string, unknown>) };
+    }
+  } catch {
+    // Ignore malformed JSON payloads and continue with fallback
+  }
+  return { ...fallback };
+};
+
+const fallbackAllowOrigins = toStringArray(DEFAULTS.allow_origins, ["*"]);
+const fallbackAllowMethods = toStringArray(DEFAULTS.allow_methods, ["*"]);
+const fallbackAllowHeaders = toStringArray(DEFAULTS.allow_headers, ["*"]);
+const fallbackExposeHeaders = toStringArray(DEFAULTS.expose_headers, []);
+const defaultMetadata =
+  DEFAULTS.metadata && typeof DEFAULTS.metadata === "object" && !Array.isArray(DEFAULTS.metadata)
+    ? (DEFAULTS.metadata as Record<string, unknown>)
+    : {};
+
+export interface CorsConfiguration {
+  enabled: boolean;
+  allowOrigins: string[];
+  allowCredentials: boolean;
+  allowMethods: string[];
+  allowHeaders: string[];
+  exposeHeaders: string[];
+  maxAge: number;
+  logLevel: string;
+  metadata: Record<string, unknown>;
+}
+
+export default registerAs("cors", (): CorsConfiguration => {
+  const allowOrigins = parseList(process.env.RAPIDKIT_CORS_ALLOW_ORIGINS, fallbackAllowOrigins);
+  const allowMethods = parseList(process.env.RAPIDKIT_CORS_ALLOW_METHODS, fallbackAllowMethods);
+  const allowHeaders = parseList(process.env.RAPIDKIT_CORS_ALLOW_HEADERS, fallbackAllowHeaders);
+  const exposeHeaders = parseList(process.env.RAPIDKIT_CORS_EXPOSE_HEADERS, fallbackExposeHeaders);
+
+  return {
+    enabled: parseBoolean(
+      process.env.RAPIDKIT_CORS_ENABLED,
+      Boolean(DEFAULTS.enabled ?? true),
+    ),
+    allowOrigins,
+    allowCredentials: parseBoolean(
+      process.env.RAPIDKIT_CORS_ALLOW_CREDENTIALS,
+      Boolean(DEFAULTS.allow_credentials ?? true),
+    ),
+    allowMethods,
+    allowHeaders,
+    exposeHeaders,
+    maxAge: parseNumber(
+      process.env.RAPIDKIT_CORS_MAX_AGE,
+      Number.isFinite(Number(DEFAULTS.max_age)) ? Number(DEFAULTS.max_age) : 600,
+    ),
+    logLevel: (process.env.RAPIDKIT_CORS_LOG_LEVEL ?? String(DEFAULTS.log_level ?? "INFO")).toUpperCase(),
+    metadata: parseRecord(process.env.RAPIDKIT_CORS_METADATA, defaultMetadata),
+  };
+});

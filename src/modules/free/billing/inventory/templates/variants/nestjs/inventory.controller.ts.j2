@@ -1,0 +1,60 @@
+import { Body, Controller, Get, Param, Post } from "@nestjs/common";
+
+import { {{ module_class_name }}Service, InventoryItem } from "./{{ module_name }}.service";
+
+@Controller("{{ module_kebab }}")
+export class {{ module_class_name }}Controller {
+  constructor(private readonly service: {{ module_class_name }}Service) {}
+
+  @Get("health")
+    getHealth(): ReturnType<{{ module_class_name }}Service["getHealth"]> {
+    return this.service.getHealth();
+    }
+
+    @Get("metadata")
+    getMetadata(): Record<string, unknown> {
+      return this.service.getMetadata();
+    }
+
+    @Get("warehouses")
+    listWarehouses(): { warehouses: Array<Record<string, unknown>> } {
+      return { warehouses: this.service.listWarehouses() };
+    }
+
+    @Get("status")
+    getStatus(): Record<string, unknown> {
+      return this.service.getStatus();
+    }
+
+  @Get("items")
+  listItems(): InventoryItem[] {
+    return this.service.list();
+  }
+
+  @Post("items/:sku")
+  upsertItem(
+    @Param("sku") sku: string,
+    @Body()
+    payload: {
+      name: string;
+      quantity: number;
+      price: number;
+      currency?: string;
+      metadata?: Record<string, unknown>;
+      attributes?: Record<string, unknown>;
+    },
+  ): InventoryItem {
+    return this.service.upsert({
+      sku,
+      ...payload,
+    });
+  }
+
+  @Post("items/:sku/adjust")
+  adjustItem(
+    @Param("sku") sku: string,
+    @Body() payload: { delta: number },
+  ): InventoryItem {
+    return this.service.adjustStock(sku, payload.delta);
+  }
+}

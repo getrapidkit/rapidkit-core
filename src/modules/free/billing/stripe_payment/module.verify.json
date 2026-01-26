@@ -1,0 +1,46 @@
+{
+  "checked_at": "2025-12-23T21:12:05.879462+00:00",
+  "description": "Lean module layout blueprint (v3)",
+  "extra_directories": [
+    "config/snippets",
+    "scripts"
+  ],
+  "extra_files": [
+    "config/snippets/customer-portal-webhook.yaml",
+    "config/snippets/enhanced-retries.yaml",
+    "scripts/run_demo.py",
+    "templates/base/stripe_payment_health.py.j2"
+  ],
+  "missing_directories": [],
+  "missing_files": [],
+  "module": "free/billing/stripe_payment",
+  "parity": {
+    "fastapi": {
+      "declared": true,
+      "has_config": true,
+      "has_health": true,
+      "has_metadata": true,
+      "has_tests": true,
+      "issues": [],
+      "plugin": true,
+      "status": "ok"
+    },
+    "nestjs": {
+      "declared": true,
+      "has_config": true,
+      "has_health": true,
+      "has_metadata": true,
+      "has_tests": true,
+      "issues": [],
+      "plugin": true,
+      "status": "ok"
+    }
+  },
+  "parity_checked_at": "2025-11-23T14:25:21.818254+00:00",
+  "parity_valid": true,
+  "spec_version": 4,
+  "structure_tree_hash": "f9534c5d1a2c99271dc3d90f4bd79bafdafe25f56531ddcce49429b2b1c52b99",
+  "structure_valid": true,
+  "tree_hash": "f9534c5d1a2c99271dc3d90f4bd79bafdafe25f56531ddcce49429b2b1c52b99",
+  "valid": true
+}

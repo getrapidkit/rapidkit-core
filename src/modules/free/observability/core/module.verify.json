@@ -1,0 +1,46 @@
+{
+  "checked_at": "2025-12-17T10:47:32.738625+00:00",
+  "description": "Lean module layout blueprint (v3)",
+  "extra_directories": [
+    "scripts"
+  ],
+  "extra_files": [
+    "scripts/run_demo.py",
+    "templates/base/core_health.py.j2",
+    "templates/base/observability_core.py.j2",
+    "templates/base/observability_core_health.py.j2",
+    "templates/base/observability_core_types.py.j2"
+  ],
+  "missing_directories": [],
+  "missing_files": [],
+  "module": "free/observability/core",
+  "parity": {
+    "fastapi": {
+      "declared": true,
+      "has_config": true,
+      "has_health": true,
+      "has_metadata": true,
+      "has_tests": true,
+      "issues": [],
+      "plugin": true,
+      "status": "ok"
+    },
+    "nestjs": {
+      "declared": true,
+      "has_config": true,
+      "has_health": true,
+      "has_metadata": true,
+      "has_tests": true,
+      "issues": [],
+      "plugin": true,
+      "status": "ok"
+    }
+  },
+  "parity_checked_at": "2025-12-06T21:54:30.732002+00:00",
+  "parity_valid": true,
+  "spec_version": 4,
+  "structure_tree_hash": "aaf2041db15e3a8e2b4cb55fef365ec4f698dda80e44b699299cc852d63d3df9",
+  "structure_valid": true,
+  "tree_hash": "aaf2041db15e3a8e2b4cb55fef365ec4f698dda80e44b699299cc852d63d3df9",
+  "valid": true
+}

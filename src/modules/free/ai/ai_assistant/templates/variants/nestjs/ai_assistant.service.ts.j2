@@ -1,0 +1,287 @@
+import { Inject, Injectable, Logger } from "@nestjs/common";
+
+export type AssistantRole = "user" | "assistant" | "system";
+
+export interface AssistantMessage {
+    role: AssistantRole;
+    content: string;
+    metadata?: Record<string, unknown>;
+}
+
+export interface CompletionRequest {
+    prompt: string;
+    provider?: string;
+    context?: AssistantMessage[];
+    settings?: Record<string, unknown>;
+}
+
+export interface CompletionResponse {
+    provider: string;
+    content: string;
+    latencyMs: number;
+    cached: boolean;
+    usage: Record<string, number>;
+    metadata?: Record<string, unknown>;
+}
+
+export interface AiAssistantProviderConfig {
+    name: string;
+    providerType: "echo" | "template" | string;
+    options?: Record<string, unknown>;
+    enabled?: boolean;
+}
+
+export interface AiAssistantModuleConfig {
+    defaultProvider: string;
+    conversationWindow: number;
+    cacheEnabled: boolean;
+    providers: AiAssistantProviderConfig[];
+}
+
+export interface ProviderStatus {
+    name: string;
+    status: "ok" | "degraded";
+    latencyMs?: number;
+    details?: Record<string, unknown>;
+}
+
+export interface HealthSnapshot {
+    module: string;
+    status: "ok" | "degraded";
+    providers: ProviderStatus[];
+    cacheEntries: number;
+    historyLength: number;
+    checkedAt: string;
+}
+
+type ProviderHandler = (
+    prompt: string,
+    context: AssistantMessage[],
+    settings?: Record<string, unknown>,
+) => Promise<string> | string;
+
+const DEFAULT_CONFIG: AiAssistantModuleConfig = {
+    defaultProvider: "echo",
+    conversationWindow: 20,
+    cacheEnabled: true,
+    providers: [
+        {
+            name: "echo",
+            providerType: "echo",
+            options: { prefix: "[echo] " },
+            enabled: true,
+        },
+    ],
+};
+
+export const AI_ASSISTANT_CONFIG = "{{ module_name | upper }}_CONFIG";
+
+@Injectable()
+export class {{ module_class_name }}Service {
+    private readonly logger = new Logger({{ module_class_name }}Service.name);
+    private readonly history: AssistantMessage[] = [];
+    private readonly providers = new Map<string, ProviderHandler>();
+    private readonly providerMetadata = new Map<string, ProviderStatus>();
+    private readonly cache = new Map<string, CompletionResponse>();
+
+    constructor(@Inject(AI_ASSISTANT_CONFIG) private readonly config: AiAssistantModuleConfig = DEFAULT_CONFIG) {
+        this.bootstrapProviders(config.providers ?? []);
+    }
+
+    async chat(request: CompletionRequest): Promise<CompletionResponse> {
+        const providerName = request.provider ?? this.config.defaultProvider;
+        const handler = this.providers.get(providerName);
+        if (!handler) {
+            throw new Error(`Provider '${providerName}' is not registered`);
+        }
+
+        this.history.push({ role: "user", content: request.prompt });
+        this.trimHistory();
+
+        const context = this.mergeContext(request.context ?? []);
+
+        const cacheKey = this.createCacheKey(providerName, request.prompt, context, request.settings ?? {});
+        if (this.config.cacheEnabled && cacheKey && this.cache.has(cacheKey)) {
+            return this.cache.get(cacheKey)!;
+        }
+
+        const started = Date.now();
+        const content = await handler(request.prompt, context, request.settings);
+        const latencyMs = Date.now() - started;
+        this.recordProviderLatency(providerName, latencyMs);
+
+        const response: CompletionResponse = {
+            provider: providerName,
+            content,
+            latencyMs,
+            cached: false,
+            usage: this.calculateUsage(request.prompt, content),
+        };
+
+        if (this.config.cacheEnabled && cacheKey) {
+            this.cache.set(cacheKey, { ...response, cached: true });
+        }
+
+        this.history.push({ role: "assistant", content });
+        this.trimHistory();
+        return response;
+    }
+
+    stream(request: CompletionRequest): AsyncIterable<string> {
+        const provider = request.provider ?? this.config.defaultProvider;
+        const iterator = this.providers.get(provider);
+        if (!iterator) {
+            throw new Error(`Provider '${provider}' is not registered`);
+        }
+
+        this.history.push({ role: "user", content: request.prompt });
+        this.trimHistory();
+
+        const context = this.mergeContext(request.context ?? []);
+
+        const chunks = iterator(request.prompt, context, request.settings);
+        const produce = async function* (): AsyncGenerator<string> {
+            const resolved = await chunks;
+            for (const token of resolved.split(" ")) {
+                yield token;
+            }
+        };
+        return produce();
+    }
+
+    listProviders(): string[] {
+        return Array.from(this.providers.keys());
+    }
+
+    clearCache(): void {
+        this.cache.clear();
+    }
+
+    health(): HealthSnapshot {
+        const providers = Array.from(this.providerMetadata.values());
+        const degraded = providers.some((provider) => provider.status === "degraded");
+        return {
+            module: "{{ module_name }}",
+            status: degraded ? "degraded" : "ok",
+            providers,
+            cacheEntries: this.cache.size,
+            historyLength: this.history.length,
+            checkedAt: new Date().toISOString(),
+        };
+    }
+
+    private bootstrapProviders(configs: AiAssistantProviderConfig[]): void {
+        configs.forEach((provider) => {
+            if (provider.enabled === false) {
+                return;
+            }
+            if (provider.providerType === "echo") {
+                this.registerProvider(provider.name, (prompt, context) => {
+                    const suffix = this.getStringOption(provider.options, "suffix");
+                    const prefix = this.getStringOption(provider.options, "prefix");
+                    const mirror = this.getBooleanOption(provider.options, "mirror_context");
+                    const mirrored = mirror && context.length ? ` (context: ${context[context.length - 1].content})` : "";
+                    return `${prefix}${prompt}${mirrored}${suffix}`;
+                });
+            } else if (provider.providerType === "template") {
+                const responses = this.getStringArrayOption(provider.options, "responses") ?? ["I'm unable to help with that right now."];
+                let cursor = 0;
+                this.registerProvider(provider.name, (prompt, context) => {
+                    const template = responses[cursor % responses.length];
+                    cursor += 1;
+                    const summary = context.slice(-3).map((msg) => msg.content).join(" | ");
+                    return template.replace("{prompt}", prompt).replace("{context}", summary ?? "");
+                });
+            } else {
+                this.logger.warn(`Provider type '${provider.providerType}' is not supported`);
+            }
+        });
+    }
+
+    private registerProvider(name: string, handler: ProviderHandler): void {
+        this.providers.set(name, handler);
+        this.providerMetadata.set(name, { name, status: "ok" });
+    }
+
+    private mergeContext(context: AssistantMessage[]): AssistantMessage[] {
+        const merged = [...this.history, ...context];
+        return merged.slice(-this.config.conversationWindow);
+    }
+
+    private trimHistory(): void {
+        if (this.history.length > this.config.conversationWindow) {
+            this.history.splice(0, this.history.length - this.config.conversationWindow);
+        }
+    }
+
+    private createCacheKey(
+        provider: string,
+        prompt: string,
+        context: AssistantMessage[],
+        settings: Record<string, unknown>,
+    ): string | null {
+        if (!this.config.cacheEnabled) {
+            return null;
+        }
+        const contextKey = context.map((msg) => `${msg.role}:${msg.content}`).join("|");
+        const settingsKey = Object.keys(settings)
+            .sort()
+            .map((key) => `${key}:${this.serializeSetting(settings[key])}`)
+            .join("|");
+        return `${provider}|${prompt}|${contextKey}|${settingsKey}`;
+    }
+
+    private calculateUsage(prompt: string, completion: string): Record<string, number> {
+        const promptTokens = prompt.split(/\s+/).filter(Boolean).length;
+        const completionTokens = completion.split(/\s+/).filter(Boolean).length;
+        return {
+            promptTokens,
+            completionTokens,
+            totalTokens: promptTokens + completionTokens,
+        };
+    }
+
+    private recordProviderLatency(provider: string, latency: number): void {
+        const snapshot = this.providerMetadata.get(provider) ?? { name: provider, status: "ok" };
+        snapshot.latencyMs = latency;
+        this.providerMetadata.set(provider, snapshot);
+    }
+
+    private getStringOption(options: Record<string, unknown> | undefined, key: string, fallback = ""): string {
+        const value = options?.[key];
+        return typeof value === "string" ? value : fallback;
+    }
+
+    private getBooleanOption(options: Record<string, unknown> | undefined, key: string, fallback = false): boolean {
+        const value = options?.[key];
+        return typeof value === "boolean" ? value : fallback;
+    }
+
+    private getStringArrayOption(options: Record<string, unknown> | undefined, key: string): string[] | null {
+        const value = options?.[key];
+        if (Array.isArray(value) && value.every((entry) => typeof entry === "string")) {
+            return value;
+        }
+        return null;
+    }
+
+    private serializeSetting(value: unknown): string {
+        if (value === undefined) {
+            return "";
+        }
+        if (typeof value === "string" || typeof value === "number" || typeof value === "boolean") {
+            return String(value);
+        }
+        try {
+            return JSON.stringify(value);
+        } catch (error) {
+            this.logger.warn(`Failed to serialize setting value: ${String(error)}`);
+            return "[unserializable]";
+        }
+    }
+}
+
+export const defaultAiAssistantConfig = (): AiAssistantModuleConfig => ({
+    ...DEFAULT_CONFIG,
+    providers: DEFAULT_CONFIG.providers.map((provider) => ({ ...provider })),
+});

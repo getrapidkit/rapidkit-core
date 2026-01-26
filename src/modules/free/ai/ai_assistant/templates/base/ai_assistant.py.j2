@@ -1,0 +1,402 @@
+"""Runtime primitives for the {{ module_title }} module."""
+
+from __future__ import annotations
+
+import itertools
+import time
+from collections import deque
+from dataclasses import dataclass
+from datetime import datetime, timezone
+from typing import Any, Deque, Dict, Iterable, Iterator, Mapping, Protocol, Sequence, Tuple
+
+from .ai_assistant_types import (
+    AssistantMessage,
+    AssistantResponse,
+    ProviderConfig,
+    ProviderStatus,
+    {{ module_class_name }}Config,
+)
+
+
+class {{ module_class_name }}Error(RuntimeError):
+    """Base exception for the assistant runtime."""
+
+
+class AssistantConfigurationError({{ module_class_name }}Error):
+    """Raised when the configuration payload is invalid."""
+
+
+class ProviderNotFoundError({{ module_class_name }}Error):
+    """Raised when the requested provider is not registered."""
+
+
+class UnsupportedProviderError({{ module_class_name }}Error):
+    """Raised when a provider type is not supported by the runtime."""
+
+
+class ChatProvider(Protocol):
+    """Protocol implemented by provider backends."""
+
+    name: str
+
+    def generate(
+        self,
+        prompt: str,
+        *,
+        conversation: Sequence[AssistantMessage],
+        settings: Mapping[str, Any] | None = None,
+    ) -> str:
+        """Return a response for the supplied prompt."""
+
+    def stream(
+        self,
+        prompt: str,
+        *,
+        conversation: Sequence[AssistantMessage],
+        settings: Mapping[str, Any] | None = None,
+    ) -> Iterable[str]:
+        """Yield response fragments for streaming scenarios."""
+
+    def health(self) -> ProviderStatus:
+        """Return health metadata describing the provider state."""
+
+
+@dataclass(slots=True)
+class _BaseProvider:
+    """Helper base class providing default streaming behaviour."""
+
+    name: str
+
+    def stream(
+        self,
+        prompt: str,
+        *,
+        conversation: Sequence[AssistantMessage],
+        settings: Mapping[str, Any] | None = None,
+    ) -> Iterable[str]:
+        response = self.generate(prompt, conversation=conversation, settings=settings)
+        for token in response.split():
+            yield token
+
+
+class EchoProvider(_BaseProvider):
+    """Deterministic provider that echoes the prompt for smoke testing."""
+
+    def __init__(self, *, prefix: str = "", suffix: str = "", mirror_context: bool = False) -> None:
+        super().__init__(name="echo")
+        self._prefix = prefix
+        self._suffix = suffix
+        self._mirror_context = mirror_context
+        self._last_latency_ms: float | None = None
+
+    def generate(
+        self,
+        prompt: str,
+        *,
+        conversation: Sequence[AssistantMessage],
+        settings: Mapping[str, Any] | None = None,
+    ) -> str:
+        del settings  # unused but part of the contract
+        context_fragment = ""
+        if self._mirror_context and conversation:
+            last_user = next((msg.content for msg in reversed(conversation) if msg.role == "user"), "")
+            if last_user:
+                context_fragment = f" (context: {last_user})"
+        return f"{self._prefix}{prompt}{context_fragment}{self._suffix}"
+
+    def note_latency(self, latency_ms: float) -> None:
+        self._last_latency_ms = latency_ms
+
+    def health(self) -> ProviderStatus:
+        details: Dict[str, Any] = {
+            "prefix": self._prefix,
+            "suffix": self._suffix,
+            "mirror_context": self._mirror_context,
+        }
+        return ProviderStatus(name=self.name, status="ok", latency_ms=self._last_latency_ms, details=details)
+
+
+class TemplateProvider(_BaseProvider):
+    """Provider that renders responses using configured templates."""
+
+    def __init__(self, *, name: str, responses: Sequence[str]) -> None:
+        super().__init__(name=name)
+        self._responses = tuple(responses) or ("I'm unable to help with that right now.",)
+        self._counter = itertools.count()
+        self._last_latency_ms: float | None = None
+
+    def generate(
+        self,
+        prompt: str,
+        *,
+        conversation: Sequence[AssistantMessage],
+        settings: Mapping[str, Any] | None = None,
+    ) -> str:
+        del settings
+        template = self._responses[next(self._counter) % len(self._responses)]
+        summary = " | ".join(msg.content for msg in conversation[-3:])
+        safe_context = summary if summary else ""
+        return template.format(prompt=prompt, context=safe_context)
+
+    def note_latency(self, latency_ms: float) -> None:
+        self._last_latency_ms = latency_ms
+
+    def health(self) -> ProviderStatus:
+        status = "ok" if self._responses else "degraded"
+        return ProviderStatus(
+            name=self.name,
+            status=status,
+            latency_ms=self._last_latency_ms,
+            details={"responses": len(self._responses)},
+        )
+
+
+def validate_config(config: {{ module_class_name }}Config) -> None:
+    """Validate configuration values and raise when unsupported."""
+
+    if config.conversation_window <= 0:
+        raise AssistantConfigurationError("conversation_window must be greater than zero")
+
+    provider_names = [provider.name for provider in config.providers if provider.enabled]
+    if not provider_names:
+        raise AssistantConfigurationError("At least one enabled provider must be configured")
+
+    if len(set(provider_names)) != len(provider_names):
+        raise AssistantConfigurationError("Provider names must be unique")
+
+    if config.default_provider not in provider_names:
+        raise AssistantConfigurationError(
+            f"Default provider '{config.default_provider}' is not present in the provider list"
+        )
+
+
+def build_default_config() -> {{ module_class_name }}Config:
+    """Return a safe default configuration."""
+
+    return {{ module_class_name }}Config()
+
+
+class {{ module_class_name }}:
+    """High-level facade orchestrating provider dispatch and caching."""
+
+    def __init__(self, config: {{ module_class_name }}Config | None = None) -> None:
+        self._config = config or {{ module_class_name }}Config()
+        validate_config(self._config)
+
+        self._history: Deque[AssistantMessage] = deque(maxlen=self._config.conversation_window)
+        self._providers: Dict[str, ChatProvider] = {}
+        self._cache: Dict[Tuple[Any, ...], AssistantResponse] = {}
+
+        self._register_builtin_providers(self._config.providers)
+        self._default_provider = self._config.default_provider
+
+    @property
+    def config(self) -> {{ module_class_name }}Config:
+        return self._config
+
+    def register_provider(self, provider: ChatProvider) -> None:
+        """Register a provider implementation at runtime."""
+
+        self._providers[provider.name] = provider
+
+    def list_providers(self) -> Tuple[str, ...]:
+        """Return a tuple of available provider names."""
+
+        return tuple(self._providers.keys())
+
+    def get_provider(self, name: str | None = None) -> ChatProvider:
+        provider_name = name or self._default_provider
+        try:
+            return self._providers[provider_name]
+        except KeyError as exc:  # pragma: no cover - defensive guard
+            raise ProviderNotFoundError(f"Provider '{provider_name}' is not registered") from exc
+
+    def set_default_provider(self, provider_name: str) -> None:
+        if provider_name not in self._providers:
+            raise ProviderNotFoundError(f"Provider '{provider_name}' is not registered")
+        self._default_provider = provider_name
+
+    def chat(
+        self,
+        prompt: str,
+        *,
+        provider: str | None = None,
+        context: Sequence[AssistantMessage] | None = None,
+        settings: Mapping[str, Any] | None = None,
+    ) -> AssistantResponse:
+        """Request a completion from the configured provider."""
+
+        self._record_user_prompt(prompt, context)
+        target = self.get_provider(provider)
+        conversation = self._build_conversation(context)
+        cache_key = self._build_cache_key(target.name, prompt, conversation, settings)
+
+        if cache_key is not None and cache_key in self._cache:
+            cached = self._cache[cache_key]
+            assistant_message = AssistantMessage(role="assistant", content=cached.content)
+            self._history.append(assistant_message)
+            return AssistantResponse(
+                provider=cached.provider,
+                content=cached.content,
+                created_at=datetime.now(timezone.utc),
+                latency_ms=cached.latency_ms,
+                cached=True,
+                usage=cached.usage,
+                metadata=dict(cached.metadata),
+            )
+
+        start = time.perf_counter()
+        content = target.generate(prompt, conversation=conversation, settings=settings)
+        latency_ms = (time.perf_counter() - start) * 1000
+        self._note_latency(target, latency_ms)
+
+        response = AssistantResponse(
+            provider=target.name,
+            content=content,
+            created_at=datetime.now(timezone.utc),
+            latency_ms=latency_ms,
+            cached=False,
+            usage=self._calculate_usage(prompt, content),
+        )
+
+        assistant_message = AssistantMessage(role="assistant", content=content)
+        self._history.append(assistant_message)
+
+        if cache_key is not None:
+            self._cache[cache_key] = response
+
+        return response
+
+    def stream_chat(
+        self,
+        prompt: str,
+        *,
+        provider: str | None = None,
+        context: Sequence[AssistantMessage] | None = None,
+        settings: Mapping[str, Any] | None = None,
+    ) -> Iterator[str]:
+        """Yield streamed response tokens using the provider implementation."""
+
+        target = self.get_provider(provider)
+        conversation = self._build_conversation(context)
+        return iter(target.stream(prompt, conversation=conversation, settings=settings))
+
+    def health_report(self) -> Dict[str, Any]:
+        """Return aggregated provider health information."""
+
+        providers: list[Dict[str, Any]] = []
+        overall_status = "ok" if self._providers else "error"
+
+        for provider in self._providers.values():
+            status = provider.health()
+            providers.append(
+                {
+                    "name": status.name,
+                    "status": status.status,
+                    "latency_ms": status.latency_ms,
+                    "details": dict(status.details),
+                }
+            )
+            if status.status not in {"ok", "healthy"}:
+                overall_status = "degraded"
+
+        return {
+            "module": "{{ module_name }}",
+            "status": overall_status,
+            "providers": providers,
+            "cache_entries": len(self._cache),
+            "history_length": len(self._history),
+            "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        }
+
+    def clear_cache(self) -> None:
+        """Remove cached responses."""
+
+        self._cache.clear()
+
+    def get_history(self) -> Tuple[AssistantMessage, ...]:
+        """Return the tracked conversation history."""
+
+        return tuple(self._history)
+
+    def _record_user_prompt(
+        self, prompt: str, context: Sequence[AssistantMessage] | None
+    ) -> None:
+        self._history.append(AssistantMessage(role="user", content=prompt))
+
+    def _build_conversation(
+        self, context: Sequence[AssistantMessage] | None
+    ) -> Tuple[AssistantMessage, ...]:
+        if context:
+            merged = list(self._history)
+            merged.extend(context)
+            return tuple(merged[-self._config.conversation_window :])
+        return tuple(self._history)
+
+    def _note_latency(self, provider: ChatProvider, latency_ms: float) -> None:
+        note = getattr(provider, "note_latency", None)
+        if callable(note):
+            note(latency_ms)
+
+    def _register_builtin_providers(self, providers: Sequence[ProviderConfig]) -> None:
+        for provider_config in providers:
+            if not provider_config.enabled:
+                continue
+            provider = self._build_provider(provider_config)
+            self.register_provider(provider)
+
+    def _build_provider(self, config: ProviderConfig) -> ChatProvider:
+        provider_type = config.provider_type.lower()
+        if provider_type == "echo":
+            return EchoProvider(
+                prefix=str(config.options.get("prefix", "")),
+                suffix=str(config.options.get("suffix", "")),
+                mirror_context=bool(config.options.get("mirror_context", False)),
+            )
+
+        if provider_type == "template":
+            responses = config.options.get("responses", [])
+            if not isinstance(responses, Sequence) or isinstance(responses, (str, bytes)):
+                raise AssistantConfigurationError(
+                    f"Provider '{config.name}' responses must be a sequence of template strings"
+                )
+            return TemplateProvider(name=config.name, responses=tuple(str(item) for item in responses))
+
+        raise UnsupportedProviderError(f"Provider type '{config.provider_type}' is not supported")
+
+    def _build_cache_key(
+        self,
+        provider_name: str,
+        prompt: str,
+        conversation: Sequence[AssistantMessage],
+        settings: Mapping[str, Any] | None,
+    ) -> Tuple[Any, ...] | None:
+        if not self._config.cache_enabled:
+            return None
+        context_fingerprint = tuple((msg.role, msg.content) for msg in conversation)
+        settings_fingerprint = tuple(sorted((settings or {}).items()))
+        return (provider_name, prompt, context_fingerprint, settings_fingerprint)
+
+    def _calculate_usage(self, prompt: str, completion: str) -> Dict[str, int]:
+        return {
+            "prompt_tokens": len(prompt.split()),
+            "completion_tokens": len(completion.split()),
+            "total_tokens": len(prompt.split()) + len(completion.split()),
+        }
+
+
+__all__ = [
+    "{{ module_class_name }}",
+    "{{ module_class_name }}Config",
+    "{{ module_class_name }}Error",
+    "AssistantConfigurationError",
+    "ProviderNotFoundError",
+    "UnsupportedProviderError",
+    "AssistantMessage",
+    "AssistantResponse",
+    "ProviderConfig",
+    "ProviderStatus",
+    "ChatProvider",
+    "build_default_config",
+    "validate_config",
+]

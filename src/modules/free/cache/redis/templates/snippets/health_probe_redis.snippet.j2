@@ -1,0 +1,13 @@
+from src.health.probes import register_probe
+from src.modules.free.cache.redis import check_redis_connection
+
+
+async def probe_redis():
+    try:
+        await check_redis_connection()
+        return {"status": "ok"}
+    except Exception as exc:  # pragma: no cover - diagnostic helper
+        return {"status": "unavailable", "error": str(exc)}
+
+
+register_probe("redis", probe_redis)
