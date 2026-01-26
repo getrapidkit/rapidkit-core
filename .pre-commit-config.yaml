@@ -4,13 +4,15 @@ default_language_version:
 repos:
     - repo: local
       hooks:
-          # 0.25 Auto-bump base version from commit message (prepare-commit-msg hook)
+          # 0.25 Auto-bump base version from commit message
           - id: auto-bump-version
             name: auto-bump-version
             entry: poetry run python
             language: system
             args: [scripts/auto_bump_version.py]
-            stages: [prepare-commit-msg]
+            # Use commit-msg so the message is final (git -m can otherwise yield
+            # stale content during prepare-commit-msg).
+            stages: [commit-msg]
             pass_filenames: true
 
           # 0. Validate commit message format (commit-msg hook)
