@@ -33,6 +33,9 @@ jobs:
         needs: publish-testpypi
         runs-on: ubuntu-latest
         steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
             - name: Setup Python
               uses: actions/setup-python@v5
               with:
@@ -44,11 +47,24 @@ jobs:
               run: |
                   set -euo pipefail
                   ref_name="${GITHUB_REF_NAME:-}"
-                  if [[ ! "$ref_name" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)-rc\.([0-9]+)$ ]]; then
-                    echo "Unexpected tag format: $ref_name" >&2
+                  version=""
+
+                  # Tag-triggered run: vX.Y.Z-rc.N -> X.Y.ZrcN
+                  if [[ "$ref_name" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)-rc\.([0-9]+)$ ]]; then
+                    version="${BASH_REMATCH[1]}rc${BASH_REMATCH[2]}"
+                  else
+                    # workflow_dispatch on a branch (e.g. main): read version from pyproject.toml
+                    if [ -f pyproject.toml ]; then
+                      version=$(awk -F '"' 'BEGIN{in_poetry=0} /^\[tool\.poetry\]$/{in_poetry=1;next} in_poetry && /^\[/{in_poetry=0} in_poetry && /^version =/{print $2; exit}' pyproject.toml)
+                    fi
+                  fi
+
+                  if [ -z "${version:-}" ]; then
+                    echo "Unable to determine package version (ref_name=$ref_name)" >&2
                     exit 1
                   fi
-                  echo "version=${BASH_REMATCH[1]}rc${BASH_REMATCH[2]}" >> "$GITHUB_OUTPUT"
+
+                  echo "version=$version" >> "$GITHUB_OUTPUT"
 
             - name: Install RC from TestPyPI (no deps)
               shell: bash
@@ -83,6 +99,9 @@ jobs:
         needs: publish-pypi-prerelease
         runs-on: ubuntu-latest
         steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
             - name: Setup Python
               uses: actions/setup-python@v5
               with:
@@ -94,11 +113,24 @@ jobs:
               run: |
                   set -euo pipefail
                   ref_name="${GITHUB_REF_NAME:-}"
-                  if [[ ! "$ref_name" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)-rc\.([0-9]+)$ ]]; then
-                    echo "Unexpected tag format: $ref_name" >&2
+                  version=""
+
+                  # Tag-triggered run: vX.Y.Z-rc.N -> X.Y.ZrcN
+                  if [[ "$ref_name" =~ ^v([0-9]+\.[0-9]+\.[0-9]+)-rc\.([0-9]+)$ ]]; then
+                    version="${BASH_REMATCH[1]}rc${BASH_REMATCH[2]}"
+                  else
+                    # workflow_dispatch on a branch (e.g. main): read version from pyproject.toml
+                    if [ -f pyproject.toml ]; then
+                      version=$(awk -F '"' 'BEGIN{in_poetry=0} /^\[tool\.poetry\]$/{in_poetry=1;next} in_poetry && /^\[/{in_poetry=0} in_poetry && /^version =/{print $2; exit}' pyproject.toml)
+                    fi
+                  fi
+
+                  if [ -z "${version:-}" ]; then
+                    echo "Unable to determine package version (ref_name=$ref_name)" >&2
                     exit 1
                   fi
-                  echo "version=${BASH_REMATCH[1]}rc${BASH_REMATCH[2]}" >> "$GITHUB_OUTPUT"
+
+                  echo "version=$version" >> "$GITHUB_OUTPUT"
 
             - name: Install RC from PyPI (full)
               shell: bash
