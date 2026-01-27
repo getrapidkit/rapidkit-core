@@ -31,6 +31,10 @@ on:
                 type: boolean
                 required: false
                 default: false
+            allow-prerelease-production:
+                type: boolean
+                required: false
+                default: false
         secrets:
             TEST_PYPI_TOKEN:
                 required: false
@@ -171,8 +175,13 @@ jobs:
                   version="${ref_name#v}"
 
                   if [[ "$TARGET_ENVIRONMENT" == "production" ]] && echo "$version" | grep -Eq '(a|b|rc|dev)[0-9]+'; then
-                      echo "❌ Refusing production publish for pre-release tag: $ref_name" >&2
-                      exit 1
+                      if [[ "${{ inputs.allow-prerelease-production }}" != "true" ]]; then
+                          echo "❌ Refusing production publish for pre-release tag: $ref_name" >&2
+                          echo "   Set allow-prerelease-production=true for the RC pipeline." >&2
+                          exit 1
+                      fi
+                      echo "✅ Guard passed: prerelease production publish explicitly allowed"
+                      exit 0
                   fi
 
                   echo "✅ Guard passed: not a production pre-release"
@@ -212,44 +221,72 @@ jobs:
                   echo "❌ Production PyPI publish is disabled for this tier"
                   exit 1
 
-            - name: Verify install from built wheel
+            - name: Verify install from built wheel (end-user)
+              shell: bash
               run: |
+                  set -euo pipefail
+
+                  pkg=$(awk -F '"' 'BEGIN{in=0} /^\[tool\.poetry\]$/{in=1;next} in && /^\[/{in=0} in && /^name =/{print $2; exit}' pyproject.toml)
+                  if [ -z "${pkg:-}" ]; then
+                      echo "Unable to read [tool.poetry].name from pyproject.toml" >&2
+                      exit 1
+                  fi
+
                   python -m venv test_env
                   source test_env/bin/activate
-                  pip install --no-index --find-links dist/ rapidkit || {
-                    echo "Fallback: try test.pypi if available"
-                    pip install -i https://test.pypi.org/simple/ rapidkit || true
-                  }
-                  rapidkit --help || true
-                  echo "✅ Installation successful!"
+                  python -m pip install --upgrade pip
+
+                  constraints_args=()
+                  if [ -f constraints.txt ]; then
+                      constraints_args=(-c constraints.txt)
+                  fi
+
+                  # Install the just-built wheel from dist/, but resolve dependencies like a real user (PyPI).
+                  python -m pip install --only-binary "$pkg" --find-links dist/ "${constraints_args[@]}" "$pkg"
+
+                  rapidkit --help
+                  rapidkit list
+                  echo "✅ End-user installation smoke test passed"
 
             - name: Generate release notes
               if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+              shell: bash
               run: |
-                  cat <<'EOF' > pypi_release_notes.md
-                  ## 🚀 Community Release
+                  set -euo pipefail
 
-                  ### Installation (Test PyPI)
+                  repo_url=$(awk -F '"' 'BEGIN{in=0} /^\[tool\.poetry\]$/{in=1;next} in && /^\[/{in=0} in && /^repository =/{print $2; exit}' pyproject.toml)
+                  repo_url="${repo_url%/}"
+                  if [ -z "${repo_url:-}" ]; then
+                      repo_url="https://github.com/getrapidkit/community"
+                  fi
+
+                  cat <<'EOF' > pypi_release_notes.md
+                  ## 🚀 RapidKit Release
+
+                  ### Installation (Stable)
                   ```bash
-                  # For testing and development only
-                  pip install -i https://test.pypi.org/simple/ rapidkit
+                  pip install rapidkit
+                  ```
+
+                  ### Installation (Pre-release / RC)
+                  ```bash
+                  pip install --pre rapidkit
+                  ```
+
+                  ### CI Validation (TestPyPI)
+                  ```bash
+                  pip install --pre --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple rapidkit
                   ```
 
                   ### Alternative Installation
                   ```bash
                   # From source (recommended for development)
-                  pip install git+https://github.com/baziar/community.git
+                  pip install "git+REPO_URL.git"
                   ```
-
-                  ### ⚠️ Note
-                  This is a community release for testing purposes.
-                  For production use, consider Pro or Enterprise tier.
-
-                  ### What's New
-                  - Community-driven development
-                  - Open source contributions
-                  - Basic CLI functionality
                   EOF
+
+                  # Replace placeholder in a safe way without leaking private URLs.
+                  sed -i "s|REPO_URL|${repo_url}|g" pypi_release_notes.md
 
             - name: Comment on release
               if: ${{ startsWith(github.ref, 'refs/tags/v') }}

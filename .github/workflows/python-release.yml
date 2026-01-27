@@ -251,20 +251,6 @@ jobs:
                     exit 1
                   fi
 
-            - name: Publish to PyPI (token)
-              if: ${{ inputs.allow-production && env.PYPI_TOKEN != '' }}
-              uses: pypa/gh-action-pypi-publish@release/v1
-              with:
-                  packages-dir: dist/
-                  user: __token__
-                  password: ${{ env.PYPI_TOKEN }}
-
-            - name: Publish to PyPI (trusted publishing)
-              if: ${{ inputs.allow-production && env.PYPI_TOKEN == '' }}
-              uses: pypa/gh-action-pypi-publish@release/v1
-              with:
-                  packages-dir: dist/
-
             - name: Publish to TestPyPI (token)
               if: ${{ inputs['publish-testpypi'] && (!inputs['publish-testpypi-on-release'] || github.event_name == 'release') && env.TEST_PYPI_TOKEN != '' }}
               uses: pypa/gh-action-pypi-publish@release/v1
@@ -280,3 +266,32 @@ jobs:
               with:
                   packages-dir: dist/
                   repository-url: https://test.pypi.org/legacy/
+
+            - name: Smoke test install from TestPyPI (no deps)
+              if: ${{ inputs['publish-testpypi'] }}
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  version="${TAG#${{ inputs.tag-prefix }}}"
+                  python -m venv testpypi_env
+                  source testpypi_env/bin/activate
+                  python -m pip install --upgrade pip
+                  python -m pip install --no-deps \
+                    --index-url https://test.pypi.org/simple \
+                    --extra-index-url https://pypi.org/simple \
+                    "rapidkit==${version}"
+                  rapidkit --help
+
+            - name: Publish to PyPI (token)
+              if: ${{ inputs.allow-production && env.PYPI_TOKEN != '' }}
+              uses: pypa/gh-action-pypi-publish@release/v1
+              with:
+                  packages-dir: dist/
+                  user: __token__
+                  password: ${{ env.PYPI_TOKEN }}
+
+            - name: Publish to PyPI (trusted publishing)
+              if: ${{ inputs.allow-production && env.PYPI_TOKEN == '' }}
+              uses: pypa/gh-action-pypi-publish@release/v1
+              with:
+                  packages-dir: dist/

@@ -19,7 +19,11 @@ Public staging playground where we polish the next wave of RapidKit magic togeth
 ## 📦 Installation
 
 ```bash
-pip install rapidkit-community-staging
+pip install rapidkit
+```
+
+```bash
+pip install --pre rapidkit
 ```
 
 ## 🛠️ Usage

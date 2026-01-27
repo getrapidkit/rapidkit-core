@@ -1,6 +1,6 @@
 [tool.poetry]
-name = "rapidkit-community-staging"
-version = "0.1.1rc1"
+name = "rapidkit"
+version = "0.1.1"
 description = "Public staging playground where we polish the next wave of RapidKit magic together"
 authors = ["RapidKit Team <team@rapidkit.com>"]
 readme = "README.md"
@@ -44,7 +44,7 @@ pygithub = "^2.7.0"
 packaging = "^25.0"
 black = "^25.9.0"
 yamllint = "^1.37.1"
-fastapi = ">=0.119.0"
+fastapi = ">=0.119.0,<1.0.0"
 starlette = ">=0.49.1,<0.50"
 uvicorn = { version = ">=0.37.0", extras = ["standard"] }
 
@@ -64,7 +64,7 @@ cryptography = "^46.0.2"
 httpx = "^0.28.0"
 
 [tool.poetry.scripts]
-rapidkit = "cli.main:main"
+rapidkit = "cli.global_cli:main"
 
 [tool.coverage.run]
 branch = false
