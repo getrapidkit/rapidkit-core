@@ -13,7 +13,7 @@ ecosystem. Everything here applies to the single RapidKit Community edition.
 RapidKit is published to PyPI. Install it into a virtual environment or your preferred toolchain.
 
 ```bash
-pip install rapidkit
+pip install rapidkit-core
 
 # Verify install
 rapidkit --version

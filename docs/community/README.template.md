@@ -13,11 +13,11 @@ ______________________________________________________________________
 
 ```bash
 # Recommended: install via pipx for an isolated CLI
-pipx install rapidkit
+pipx install rapidkit-core
 
 # Alternative installs
-pip install rapidkit
-pip install --user rapidkit
+pip install rapidkit-core
+pip install --user rapidkit-core
 
 # Launch the interactive wizard (recommended)
 rapidkit create

@@ -12,10 +12,10 @@ ______________________________________________________________________
 
 ```bash
 # Recommended: isolated install via pipx
-pipx install rapidkit
+pipx install rapidkit-core
 
 # Alternative: install into the active interpreter
-pip install rapidkit
+pip install rapidkit-core
 
 rapidkit --version
 ```

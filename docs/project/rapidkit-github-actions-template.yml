@@ -27,7 +27,7 @@ jobs:
                   python-version: "3.10.14"
 
             - name: Install RapidKit
-              run: pip install rapidkit
+              run: pip install rapidkit-core
 
             - name: Generate updated lock file
               run: rapidkit modules lock --overwrite

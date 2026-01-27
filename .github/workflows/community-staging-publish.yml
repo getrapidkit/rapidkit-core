@@ -60,7 +60,7 @@ jobs:
                   python -m pip install --pre --no-deps \
                     --index-url https://test.pypi.org/simple \
                     --extra-index-url https://pypi.org/simple \
-                    "rapidkit==${{ steps.ver.outputs.version }}"
+                    "rapidkit-core==${{ steps.ver.outputs.version }}"
                   rapidkit --help || true
 
     publish-pypi-prerelease:
@@ -107,6 +107,6 @@ jobs:
                   python -m venv smoke
                   source smoke/bin/activate
                   python -m pip install --upgrade pip
-                  python -m pip install --pre "rapidkit==${{ steps.ver.outputs.version }}"
+                  python -m pip install --pre "rapidkit-core==${{ steps.ver.outputs.version }}"
                   rapidkit --help
                   rapidkit list || true

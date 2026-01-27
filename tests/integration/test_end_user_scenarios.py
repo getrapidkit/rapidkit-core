@@ -18,20 +18,20 @@ class TestRapidKitInstallation:
         self.runner = CliRunner()
 
     def test_pip_install_simulation(self):
-        """Test pip install rapidkit simulation."""
-        # Simulate pip install rapidkit
+        """Test pip install rapidkit-core simulation."""
+        # Simulate pip install rapidkit-core
         with patch("subprocess.run") as mock_run:
             mock_run.return_value = subprocess.CompletedProcess(
-                args=["pip", "install", "rapidkit"],
+                args=["pip", "install", "rapidkit-core"],
                 returncode=0,
-                stdout="Successfully installed rapidkit",
+                stdout="Successfully installed rapidkit-core",
                 stderr="",
             )
 
             # Test that installation command would work
-            result = mock_run(["pip", "install", "rapidkit"])
+            result = mock_run(["pip", "install", "rapidkit-core"])
             assert result.returncode == 0
-            assert "rapidkit" in result.stdout
+            assert "rapidkit-core" in result.stdout
 
     def test_cli_available_after_install(self):
         """Test that CLI is available after installation."""

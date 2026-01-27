@@ -1,12 +1,12 @@
 # 🚀 RapidKit Package Distribution Guide
 
-## 📦 How to Implement `pip install rapidkit-core` (and graduate to `pip install rapidkit`)
+## 📦 How to Implement `pip install rapidkit-core` (while keeping the `rapidkit` CLI)
 
 ### Overview
 
 This guide shows how to create a complete package distribution system that allows users to install
-RapidKit today with `pip install rapidkit-core` (current package name) and outlines the extra steps
-required when you eventually rebrand to `pip install rapidkit`.
+RapidKit today with `pip install rapidkit-core` (current package name) while the CLI command remains
+`rapidkit`.
 
 ______________________________________________________________________
 
@@ -431,9 +431,9 @@ class UpdateManager:
     def update_package(self, target_version: str = None):
         """Update RapidKit package"""
         if target_version:
-            version_spec = f"rapidkit=={target_version}"
+            version_spec = f"rapidkit-core=={target_version}"
         else:
-            version_spec = "rapidkit"
+            version_spec = "rapidkit-core"
 
         # Use pip to update
         subprocess.check_call(
@@ -528,7 +528,7 @@ fi
 
 # Install RapidKit
 echo "📦 Installing RapidKit package..."
-pip3 install --user rapidkit
+pip3 install --user rapidkit-core
 
 # Add to PATH if needed
 if [[ ":$PATH:" != *":$HOME/.local/bin:"* ]]; then

@@ -19,11 +19,11 @@ Public staging playground where we polish the next wave of RapidKit magic togeth
 ## 📦 Installation
 
 ```bash
-pip install rapidkit
+pip install rapidkit-core
 ```
 
 ```bash
-pip install --pre rapidkit
+pip install --pre rapidkit-core
 ```
 
 ## 🛠️ Usage

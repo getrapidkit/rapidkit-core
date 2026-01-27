@@ -69,7 +69,7 @@ jobs:
                       exit 1
                   fi
 
-                  actual_version=$(awk -F '"' 'BEGIN{in=0} /^\[tool\.poetry\]$/{in=1;next} in && /^\[/{in=0} in && /^version =/{print $2; exit}' pyproject.toml)
+                  actual_version=$(awk -F '"' 'BEGIN{in_poetry=0} /^\[tool\.poetry\]$/{in_poetry=1;next} in_poetry && /^\[/{in_poetry=0} in_poetry && /^version =/{print $2; exit}' pyproject.toml)
                   if [[ -z "${actual_version:-}" ]]; then
                       echo "Unable to read [tool.poetry].version from pyproject.toml" >&2
                       exit 1
@@ -226,7 +226,7 @@ jobs:
               run: |
                   set -euo pipefail
 
-                  pkg=$(awk -F '"' 'BEGIN{in=0} /^\[tool\.poetry\]$/{in=1;next} in && /^\[/{in=0} in && /^name =/{print $2; exit}' pyproject.toml)
+                  pkg=$(awk -F '"' 'BEGIN{in_poetry=0} /^\[tool\.poetry\]$/{in_poetry=1;next} in_poetry && /^\[/{in_poetry=0} in_poetry && /^name =/{print $2; exit}' pyproject.toml)
                   if [ -z "${pkg:-}" ]; then
                       echo "Unable to read [tool.poetry].name from pyproject.toml" >&2
                       exit 1
@@ -254,7 +254,7 @@ jobs:
               run: |
                   set -euo pipefail
 
-                  repo_url=$(awk -F '"' 'BEGIN{in=0} /^\[tool\.poetry\]$/{in=1;next} in && /^\[/{in=0} in && /^repository =/{print $2; exit}' pyproject.toml)
+                  repo_url=$(awk -F '"' 'BEGIN{in_poetry=0} /^\[tool\.poetry\]$/{in_poetry=1;next} in_poetry && /^\[/{in_poetry=0} in_poetry && /^repository =/{print $2; exit}' pyproject.toml)
                   repo_url="${repo_url%/}"
                   if [ -z "${repo_url:-}" ]; then
                       repo_url="https://github.com/getrapidkit/community"
@@ -265,17 +265,22 @@ jobs:
 
                   ### Installation (Stable)
                   ```bash
-                  pip install rapidkit
+                  pip install rapidkit-core
                   ```
 
                   ### Installation (Pre-release / RC)
                   ```bash
-                  pip install --pre rapidkit
+                  pip install --pre rapidkit-core
                   ```
 
                   ### CI Validation (TestPyPI)
                   ```bash
-                  pip install --pre --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple rapidkit
+                  pip install --pre --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple rapidkit-core
+                  ```
+
+                  ### CLI
+                  ```bash
+                  rapidkit --help
                   ```
 
                   ### Alternative Installation
