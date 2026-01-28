@@ -17,6 +17,16 @@ class ProjectCreatorService:
     def __init__(self) -> None:
         self.registry = KitRegistry()
 
+    def _ensure_rapidkit_dir(self, project_root: Path) -> None:
+        rapidkit_dir = project_root / ".rapidkit"
+        project_json = rapidkit_dir / "project.json"
+        if not rapidkit_dir.exists() or not rapidkit_dir.is_dir() or not project_json.exists():
+            raise RapidKitError(
+                "Project creation did not produce a valid .rapidkit/ directory. "
+                "Expected .rapidkit/project.json to exist. This folder is required for RapidKit tooling "
+                "(including the VS Code extension) to detect and operate on the project."
+            )
+
     def _parse_variables(self, vars_list: Optional[List[str]]) -> Dict[str, str]:
         variables: Dict[str, str] = {}
         if vars_list:
@@ -292,11 +302,15 @@ class ProjectCreatorService:
         )
         try:
             save_project_metadata(output_path, metadata)
-        except (
-            OSError,
-            ValueError,
-        ) as exc:  # pragma: no cover - metadata failure shouldn't block project creation
-            print_error_func(f"⚠️ Failed to persist project metadata: {exc}")
+        except (OSError, ValueError) as exc:
+            # `.rapidkit/project.json` is required for project detection and adapter integrations.
+            # If we cannot write it, treat creation as failed.
+            raise RapidKitError(
+                f"Failed to persist required .rapidkit/project.json metadata: {exc}"
+            ) from exc
+
+        # Enforce the contract that all generated projects contain `.rapidkit/`.
+        self._ensure_rapidkit_dir(output_path)
 
         if install_essential_modules:
             self._install_essential_modules(

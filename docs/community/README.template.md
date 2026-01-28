@@ -3,9 +3,14 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python](https://img.shields.io/badge/Python-3.10+-blue.svg)](https://www.python.org/)
 
-RapidKit Community is the single, production-ready CLI and kit library we publish for everyone. It
-pairs a clean architecture FastAPI starter with a consistent module system, opinionated tooling, and
-automation-first workflows.
+RapidKit Community is the production-ready Python engine + CLI. Install the package as
+`rapidkit-core`, then use the `rapidkit` command.
+
+- Website: https://www.getrapidkit.com/
+- Docs: https://www.getrapidkit.com/docs
+- Stable repo: https://github.com/getrapidkit/community
+
+Pre-releases (RCs) are published separately from stable.
 
 ______________________________________________________________________
 
@@ -32,6 +37,10 @@ rapidkit init
 # Run the development server
 rapidkit dev
 ```
+
+Note about the npm CLI: there is also an npm package named `rapidkit` that provides a `rapidkit`
+command. If you install both globally, whichever one comes first in your PATH will win. For now,
+pick one entrypoint (pip/pipx OR npm) to avoid confusion.
 
 > ℹ️ Prefer not to adjust your PATH? Use `python -m rapidkit …` — it executes the CLI module from
 > whichever interpreter already has RapidKit installed.
@@ -162,11 +171,16 @@ ______________________________________________________________________
 
 ## 🧭 Documentation Map
 
-- **[Getting Started](docs/getting-started/README.md)** – Install, scaffold, and iterate
-- **[Developer Guide](docs/developer-guide/README.md)** – Internals, templating, automation
-- **[API Reference](docs/api-reference/README.md)** – Command details and examples
-- **[Configuration](docs/configuration/CONFIG_FILES.md)** – Environment files and structure
-- **[Modules System](docs/modules/overview.md)** – Authoring reusable modules
+- Getting started: https://www.getrapidkit.com/docs
+- Community repo docs: https://github.com/getrapidkit/community/tree/main/docs
+
+Tip: The CLI help is always up-to-date:
+
+```bash
+rapidkit --help
+rapidkit create --help
+rapidkit add --help
+```
 
 All public documentation assumes the community edition. Internal engine processes stay private so
 contributors can focus on the toolkit they actually use.
@@ -190,7 +204,8 @@ ______________________________________________________________________
 
 ## 📄 License
 
-RapidKit Community ships under the [MIT License](LICENSE). Build on it, extend it, and share what
-you ship.
+RapidKit Community ships under the MIT License.
+
+- License (repo): https://github.com/getrapidkit/community/blob/main/LICENSE
 
 Ready to launch something new? Run `rapidkit create` and move fast.

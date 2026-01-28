@@ -1,5 +1,6 @@
 # cli/commands/doctor.py
 
+import json
 import re
 import shutil
 import subprocess  # nosec
@@ -17,7 +18,65 @@ NODE_MIN_MAJOR = 20
 
 
 @doctor_app.command("check")
-def check_env() -> None:
+def check_env(
+    json_output: bool = typer.Option(False, "--json", help="Emit JSON"),
+) -> None:
+    if json_output:
+        payload: dict[str, object] = {
+            "schema_version": 1,
+            "python": {
+                "ok": sys.version_info >= (3, 8),
+                "version": sys.version.split()[0],
+            },
+            "poetry": {
+                "present": bool(shutil.which("poetry")),
+            },
+        }
+
+        kits_path = Path(__file__).parent.parent.parent / "kits"
+        payload["kits"] = {
+            "path": str(kits_path),
+            "present": kits_path.exists(),
+        }
+
+        # project venv hints (best-effort, cwd-based)
+        payload["project"] = {
+            "venvPresent": Path(".venv").exists(),
+        }
+
+        node = shutil.which("node")
+        node_version: str | None = None
+        node_major: int | None = None
+        node_ok: bool | None = None
+        if node:
+            try:
+                out = subprocess.check_output([node, "--version"], text=True).strip()  # nosec
+                node_version = out
+                m = re.match(r"v?(\d+)\.(\d+)\.(\d+)", out)
+                if m:
+                    node_major = int(m.group(1))
+                    node_ok = node_major >= NODE_MIN_MAJOR
+            except subprocess.CalledProcessError:
+                node_version = None
+        payload["node"] = {
+            "present": bool(node),
+            "path": node,
+            "version": node_version,
+            "major": node_major,
+            "minMajor": NODE_MIN_MAJOR,
+            "ok": node_ok,
+        }
+
+        pms = {
+            "npm": shutil.which("npm"),
+            "yarn": shutil.which("yarn"),
+            "pnpm": shutil.which("pnpm"),
+        }
+        payload["packageManagers"] = {k: bool(v) for k, v in pms.items()}
+
+        typer.echo(json.dumps(payload, ensure_ascii=False))
+        return
+
     print_info("🔬 Starting environment diagnostics...\n")
 
     # Check Python version

@@ -53,8 +53,8 @@ automates the common first-run tasks so new users don't need to remember multipl
   the install.
 
 This makes `rapidkit init` the simplest, least error-prone way to prepare a generated project for
-development. Advanced users can still run `poetry install` / `pip install -r requirements.txt` or
-native node package manager commands themselves.
+development. Advanced users can still run `poetry install`, export a requirements file via Poetry
+when needed, or use native node package manager commands themselves.
 
 RapidKit projects rely on Poetry for dependency management. A `requirements.txt` file is not
 generated; export one with `poetry export --format requirements.txt --output requirements.txt` if a

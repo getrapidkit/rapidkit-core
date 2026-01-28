@@ -1,3 +1,5 @@
+import json
+
 import typer
 from rich.console import Console
 from rich.table import Table
@@ -15,6 +17,7 @@ def list_kits(
     category: str = typer.Option(None, "--category", "-c", help="Filter by category"),
     tag: str = typer.Option(None, "--tag", "-t", help="Filter by tag"),
     detailed: bool = typer.Option(False, "--detailed", "-d", help="Show detailed info"),
+    json_output: bool = typer.Option(False, "--json", help="Output machine-readable JSON"),
 ) -> None:
     """
     📦 List all available kits in the registry.
@@ -25,28 +28,61 @@ def list_kits(
       rapidkit list --tag auth
       rapidkit list --detailed
     """
+    # NOTE: When called directly from Python (e.g. unit tests), Typer's
+    # Option(...) defaults are OptionInfo objects (truthy). Normalise them.
+    category_val = category if isinstance(category, str) else None
+    tag_val = tag if isinstance(tag, str) else None
+    detailed_flag = detailed if isinstance(detailed, bool) else False
+    json_flag = json_output if isinstance(json_output, bool) else False
+
     try:
         registry = KitRegistry()
         kits = registry.list_kits()
 
         # Filters
-        if category:
-            kits = [k for k in kits if k.category.lower() == category.lower()]
+        if category_val:
+            kits = [k for k in kits if k.category.lower() == category_val.lower()]
 
-        if tag:
-            kits = [k for k in kits if tag.lower() in map(str.lower, k.tags)]
+        if tag_val:
+            kits = [k for k in kits if tag_val.lower() in map(str.lower, k.tags)]
 
         if not kits:
             print_error("😕 No kits found matching the criteria.")
             raise typer.Exit()
 
-        if detailed:
+        if json_flag:
+            payload = {
+                "schema_version": 1,
+                "ok": True,
+                "filters": {
+                    "category": category_val,
+                    "tag": tag_val,
+                    "detailed": bool(detailed_flag),
+                },
+                "count": len(kits),
+                "kits": [
+                    {
+                        "name": kit.name,
+                        "display_name": kit.display_name,
+                        "category": kit.category,
+                        "version": kit.version,
+                        "tags": list(kit.tags or []),
+                        "modules": list(kit.modules or []),
+                        "description": kit.description,
+                    }
+                    for kit in kits
+                ],
+            }
+            print(json.dumps(payload, ensure_ascii=False))
+            return
+
+        if detailed_flag:
             for kit in kits:
                 console.rule(f"[bold green]📦 {kit.display_name}[/bold green]")
                 console.print(f"[bold]Name:[/bold] {kit.name}")
                 console.print(f"[bold]Version:[/bold] {kit.version}")
                 console.print(f"[bold]Category:[/bold] {kit.category}")
-                console.print(f"[bold]Tags:[/bold] {', '.join(kit.tags)}")
+                console.print(f"[bold]Tags:[/bold] {', '.join(kit.tags or [])}")
                 console.print(f"[bold]Modules:[/bold] {', '.join(kit.modules or [])}")
                 console.print(f"[bold]Description:[/bold] {kit.description}")
                 console.print()
@@ -73,5 +109,15 @@ def list_kits(
         console.print(f"\n📊 Total: {len(kits)} kit(s)")
 
     except (OSError, ValueError, KeyError) as e:
+        if json_flag:
+            payload = {
+                "schema_version": 1,
+                "ok": False,
+                "error": "LIST_FAILED",
+                "message": str(e),
+            }
+            print(json.dumps(payload, ensure_ascii=False))
+            raise typer.Exit(code=1) from None
+
         print_error(f"❌ Error: {e}")
         raise typer.Exit(code=1) from None

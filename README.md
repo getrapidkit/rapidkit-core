@@ -1,47 +1,50 @@
-# RapidKit Community-staging
+# RapidKit Core (Pre-release / RC)
 
-Public staging playground where we polish the next wave of RapidKit magic together
+This is the **pre-release channel** for RapidKit Core.
 
-[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+- Website: https://www.getrapidkit.com/
+- Docs: https://www.getrapidkit.com/docs
+- Staging repo: https://github.com/getrapidkit/community-staging
+- Stable repo: https://github.com/getrapidkit/community
 
-## 🚀 Features
+## What you get
 
-- Clean Architecture FastAPI applications
-- Modular structure with dependency injection
-- Comprehensive testing setup
-- Docker-ready deployments
-- CLI tools for rapid development
+- A production-grade scaffolding engine for FastAPI + NestJS
+- A consistent modules system (install, uninstall, upgrade, diff)
+- Project-aware commands (`init`, `dev`, `build`, `test`, `lint`, `format`)
+- Docker-ready defaults and quality gates
 
-## ✅ Requirements
+## Install
 
-- Python 3.10+
-
-## 📦 Installation
-
-```bash
-pip install rapidkit-core
-```
+The PyPI project is `rapidkit-core` and the CLI command is `rapidkit`.
 
 ```bash
-pip install --pre rapidkit-core
+# Recommended: isolated CLI (supports prereleases)
+pipx install --pip-args="--pre" rapidkit-core
+
+# Or: in the current interpreter
+python -m pip install --pre -U rapidkit-core
+
+rapidkit --version
+rapidkit --help
 ```
 
-## 🛠️ Usage
+## Quick start
 
 ```bash
-rapidkit create myapp
-cd myapp
-rapidkit info
+# Create a project (interactive)
+rapidkit create
+
+# Or: non-interactive
+rapidkit create project fastapi.standard my-api
+
+cd my-api
+rapidkit init
+rapidkit dev
 ```
 
-## 📚 Documentation
+## Notes (important)
 
-For detailed documentation, visit our docs.
-
-## 🤝 Contributing
-
-We welcome contributions! Please see our contributing guide.
-
-## 📄 License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
+- RC builds can include breaking changes between versions.
+- There is also an npm package named `rapidkit` that provides a `rapidkit` command. If you install
+  both globally, whichever one comes first in your PATH will run.

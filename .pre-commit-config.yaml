@@ -10,9 +10,10 @@ repos:
             entry: poetry run python
             language: system
             args: [scripts/auto_bump_version.py]
-            # Use commit-msg so the message is final (git -m can otherwise yield
-            # stale content during prepare-commit-msg).
-            stages: [commit-msg]
+            # Run early enough that updating/staging pyproject.toml can be
+            # included in the commit itself. (Git's commit-msg hook is too late
+            # for reliably changing the commit content.)
+            stages: [prepare-commit-msg]
             pass_filenames: true
 
           # 0. Validate commit message format (commit-msg hook)

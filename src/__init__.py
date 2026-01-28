@@ -4,7 +4,7 @@
 
 __version__ = "1.0.0"
 __author__ = "RapidKit Team"
-__email__ = "team@rapidkit.com"
+__email__ = "team@getrapidkit.com"
 __license__ = "MIT"
 
 from typing import Any, Dict

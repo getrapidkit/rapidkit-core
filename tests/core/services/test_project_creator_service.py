@@ -218,6 +218,96 @@ def test_create_project_skips_essential_when_false(
     )
 
 
+def test_create_project_writes_required_rapidkit_metadata(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    pc = ProjectCreatorService()
+
+    monkeypatch.setattr(pc.registry, "list_kits_names", lambda: ["fastapi.standard"])
+
+    class _DummyKit:
+        variables: list[Any] = []
+        min_rapidkit_version = "0.0.1"
+        display_name = "Demo Kit"
+        description = "desc"
+
+    monkeypatch.setattr(pc.registry, "get_kit", lambda *_a, **_k: _DummyKit())
+
+    class _DummyGenerator:
+        def generate(self, out: Path, *_args: Any, **_kwargs: Any) -> list[str]:
+            # Intentionally do not create `.rapidkit/`; the service must still create it via metadata.
+            (out / "README.md").parent.mkdir(parents=True, exist_ok=True)
+            (out / "README.md").write_text("demo", encoding="utf-8")
+            return [str(out / "README.md")]
+
+    monkeypatch.setattr(pc.registry, "get_generator", lambda *_a, **_k: _DummyGenerator())
+
+    pc.create_project(
+        kit_name="fastapi.standard",
+        project_name="Proj",
+        output_dir=tmp_path,
+        variables={},
+        force=True,
+        interactive=False,
+        debug=False,
+        prompt_func=None,
+        print_funcs={
+            "info": lambda *_a: None,
+            "error": lambda *_a: None,
+            "success": lambda *_a: None,
+        },
+        install_essential_modules=False,
+    )
+
+    assert (tmp_path / "Proj" / ".rapidkit" / "project.json").exists()
+
+
+def test_create_project_fails_if_metadata_cannot_be_written(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    pc = ProjectCreatorService()
+
+    monkeypatch.setattr(pc.registry, "list_kits_names", lambda: ["fastapi.standard"])
+
+    class _DummyKit:
+        variables: list[Any] = []
+        min_rapidkit_version = "0.0.1"
+        display_name = "Demo Kit"
+        description = "desc"
+
+    monkeypatch.setattr(pc.registry, "get_kit", lambda *_a, **_k: _DummyKit())
+
+    class _DummyGenerator:
+        def generate(self, out: Path, *_args: Any, **_kwargs: Any) -> list[str]:
+            out.mkdir(parents=True, exist_ok=True)
+            return []
+
+    monkeypatch.setattr(pc.registry, "get_generator", lambda *_a, **_k: _DummyGenerator())
+
+    def _fail_save(*_args: Any, **_kwargs: Any) -> None:
+        raise OSError("nope")
+
+    monkeypatch.setattr("core.services.project_creator.save_project_metadata", _fail_save)
+
+    with pytest.raises(RapidKitError):
+        pc.create_project(
+            kit_name="fastapi.standard",
+            project_name="Proj",
+            output_dir=tmp_path,
+            variables={},
+            force=True,
+            interactive=False,
+            debug=False,
+            prompt_func=None,
+            print_funcs={
+                "info": lambda *_a: None,
+                "error": lambda *_a: None,
+                "success": lambda *_a: None,
+            },
+            install_essential_modules=False,
+        )
+
+
 def test_create_project_programmatic_install_flag_affects_generator(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:

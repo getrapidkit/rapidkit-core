@@ -8,12 +8,42 @@ import shlex
 import subprocess  # nosec # safe: controlled command execution for Poetry delegation
 import sys
 from importlib import import_module
+from json import JSONDecodeError
 from pathlib import Path
 from typing import Callable, Protocol, cast
 
 from core.config.version import get_version
 
 ENGINE_FLAG_MIN_ARGS = 2
+
+
+def _distribution_tier() -> str | None:
+    """Best-effort distribution tier detection for installed packages."""
+
+    forced = os.environ.get("RAPIDKIT_FORCE_TIER")
+    if forced:
+        return forced.strip().lower()
+
+    try:
+        import core as core_pkg
+    except ModuleNotFoundError:
+        return None
+
+    core_file = getattr(core_pkg, "__file__", None)
+    if not core_file:
+        return "community"
+
+    marker_path = Path(core_file).resolve().parent / "distribution.json"
+    if not marker_path.exists():
+        return "community"
+
+    try:
+        data = json.loads(marker_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, JSONDecodeError):
+        return "community"
+
+    tier = data.get("tier")
+    return str(tier).strip().lower() if tier else "community"
 
 
 def _activation_snippet(project_root: Path) -> str:
@@ -141,7 +171,9 @@ def _print_banner(emoji: str, message: str, color_code: str = "36") -> None:
 def _get_engine_commands() -> dict[str, str]:
     """Get available engine commands with descriptions."""
     # Use comprehensive static list - more reliable and complete
-    return {
+    commands = {
+        "version": "ℹ️  Show version information",
+        "project": "🧭 Project detection utilities",
         "create": "📦 Create new project",
         "add": "➕ Add module to project",
         "list": "📋 List available kits",
@@ -161,6 +193,12 @@ def _get_engine_commands() -> dict[str, str]:
         "modules": "🧩 Module utilities",
         "merge": "🔀 Merge changes",
     }
+
+    # Community distributions must not expose UI bridge HTTP surface.
+    if _distribution_tier() in {"community", "community-staging"}:
+        commands.pop("ui", None)
+
+    return commands
 
 
 def _get_project_commands() -> dict[str, str]:
@@ -452,12 +490,20 @@ def _run_global_command(argv: list[str]) -> None:
 
     if command in {"--version", "-v"}:
         package_version = get_version()
-        print(f"RapidKit Version v{package_version}")
+        if "--json" in argv:
+            print(json.dumps({"schema_version": 1, "version": package_version}, ensure_ascii=False))
+        else:
+            print(f"RapidKit Version v{package_version}")
         return
 
     if command == "--tui":
         _launch_tui()
         return
+
+    if command == "ui" and _distribution_tier() in {"community", "community-staging"}:
+        # Do not reveal paid/internal surfaces in community builds.
+        print("Error: No such command 'ui'.", file=sys.stderr)
+        sys.exit(2)
 
     project_commands = {"dev", "start", "build", "test", "lint", "format", "help"}
     if command in project_commands:
@@ -466,6 +512,8 @@ def _run_global_command(argv: list[str]) -> None:
         return
 
     global_commands = {
+        "version",
+        "project",
         "create",
         "add",
         "diff",
@@ -486,6 +534,9 @@ def _run_global_command(argv: list[str]) -> None:
         "info",
         "ui",
     }
+
+    if _distribution_tier() in {"community", "community-staging"}:
+        global_commands.discard("ui")
     if command in global_commands:
         try:
             from cli.main import main as cli_main  # noqa: E402

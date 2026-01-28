@@ -1,12 +1,13 @@
 [tool.poetry]
 name = "rapidkit-core"
-version = "0.1.2rc2"
+version = "0.2.0"
 description = "Public staging playground where we polish the next wave of RapidKit magic together"
-authors = ["RapidKit Team <team@rapidkit.com>"]
+authors = ["RapidKit Team <team@getrapidkit.com>"]
 readme = "README.md"
 license = "MIT"
-homepage = "https://github.com/getrapidkit/community-staging"
+homepage = "https://www.getrapidkit.com/"
 repository = "https://github.com/getrapidkit/community-staging"
+documentation = "https://www.getrapidkit.com/docs"
 keywords = ["scaffolding", "boilerplate", "fastapi", "codegen", "devtools"]
 classifiers = [
   "Programming Language :: Python :: 3 :: Only",

@@ -16,13 +16,13 @@ Open Source Code Generation Engine
 ## 📦 Installation
 
 ```bash
-pip install community
+pip install rapidkit-core
 ```
 
 ## 🛠️ Usage
 
 ```bash
-rapidkit create myapp
+rapidkit create project
 cd myapp
 rapidkit info
 ```

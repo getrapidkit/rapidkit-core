@@ -9,6 +9,7 @@ surface for help rendering.
 import contextlib
 import importlib
 import inspect
+import json
 import sys
 from typing import Any, Callable, Iterable, Optional, Sequence, Tuple, cast
 
@@ -34,11 +35,13 @@ from .commands.merge import merge_app
 from .commands.migrate import migrate_app
 from .commands.modules import modules_app
 from .commands.optimize import opt_app
+from .commands.project import project_app
 from .commands.reconcile import reconcile
 from .commands.rollback import rollback_app
 from .commands.snapshot import snapshot_app
 from .commands.uninstall import uninstall_app
 from .commands.upgrade import upgrade_app
+from .commands.version import version as version_cmd
 from .ui.printer import print_banner, print_error, print_info, sanitize_console_text
 
 ui_app: Optional[typer.Typer] = None
@@ -191,6 +194,8 @@ app.add_typer(uninstall_app, name="uninstall")
 app.add_typer(checkpoint_app, name="checkpoint")
 app.command(name="list")(list_kits)
 app.command(name="info")(info)
+app.command(name="version")(version_cmd)
+app.add_typer(project_app, name="project")
 app.add_typer(doctor_app, name="doctor")
 app.add_typer(opt_app, name="optimize")
 app.add_typer(snapshot_app, name="snapshot")
@@ -239,6 +244,11 @@ def main() -> None:
         argv = sys.argv[1:]
 
         if "--version" in argv or "-v" in argv:
+            if "--json" in argv:
+                typer.echo(
+                    json.dumps({"schema_version": 1, "version": get_version()}, ensure_ascii=False)
+                )
+                return
             typer.echo(f"RapidKit Version v{get_version()}")
             return
         # Check for CI mode before Typer processes arguments

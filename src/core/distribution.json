@@ -1,0 +1,7 @@
+{
+  "schema_version": 1,
+  "tier": "community-staging",
+  "name": "rapidkit-core",
+  "repo": "https://github.com/getrapidkit/community-staging",
+  "license": "MIT"
+}
