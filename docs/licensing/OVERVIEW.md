@@ -5,10 +5,10 @@ offerings for teams that need access to premium capabilities.
 
 ## Distribution Tiers
 
-| Tier                              | Contents                                                                                                   | License                                                    |
-| --------------------------------- | ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| **Community**                     | Open-source engine bundle, standard starter kits (one per framework), community documentation, CLI tooling | [MIT License](../../LICENSE)                               |
-| **Commercial (Pro / Enterprise)** | RapidKit Core engine, premium automation, paid marketplace modules, advanced tooling, internal playbooks   | [RapidKit Commercial License](../../LICENSE_COMMERCIAL.md) |
+| Tier                              | Contents                                                                                                   | License                                            |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------- | -------------------------------------------------- |
+| **Community**                     | Open-source engine bundle, standard starter kits (one per framework), community documentation, CLI tooling | [MIT License](../../LICENSE)                       |
+| **Commercial (Pro / Enterprise)** | RapidKit Core engine, premium automation, paid marketplace modules, advanced tooling, internal playbooks   | RapidKit Commercial License (shipped to customers) |
 
 ## How to Use
 

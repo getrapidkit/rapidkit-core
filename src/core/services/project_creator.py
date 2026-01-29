@@ -99,10 +99,13 @@ class ProjectCreatorService:
         rapidkit_exe: Optional[str] = None
 
         # Prefer the currently-running console script path.
+        # NOTE: sys.argv[0] may be a *relative* path (e.g. ".venv/bin/rapidkit").
+        # When we later run subprocesses with cwd=project_path, relative paths break.
+        # Always resolve to an absolute path here.
         try:
             argv0 = Path(sys.argv[0])
             if argv0.name == "rapidkit" and argv0.exists():
-                rapidkit_exe = str(argv0)
+                rapidkit_exe = str(argv0.resolve())
         except (OSError, ValueError):
             rapidkit_exe = None
 
@@ -110,11 +113,16 @@ class ProjectCreatorService:
         if rapidkit_exe is None:
             venv_candidate = Path(sys.prefix) / "bin" / "rapidkit"
             if venv_candidate.exists():
-                rapidkit_exe = str(venv_candidate)
+                rapidkit_exe = str(venv_candidate.resolve())
 
         # Finally, fall back to PATH.
         if rapidkit_exe is None:
-            rapidkit_exe = shutil.which("rapidkit")
+            found = shutil.which("rapidkit")
+            if found:
+                try:
+                    rapidkit_exe = str(Path(found).resolve())
+                except (OSError, ValueError):
+                    rapidkit_exe = found
 
         if not rapidkit_exe:
             raise RapidKitError(

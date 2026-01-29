@@ -268,4 +268,4 @@ Please follow these guidelines when adding entries:
 1. **Reference issues/PRs** when applicable
 1. **Test changes** before documenting
 
-For more information, see [Contributing Guide](CONTRIBUTING.md).
+For more information, see [Contributing Guide](../../contributing/CONTRIBUTING.md).

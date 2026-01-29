@@ -5,16 +5,16 @@ repos:
     - repo: local
       hooks:
           # 0.25 Auto-bump base version from commit message
+          #
+          # This runs post-commit and amends the just-created commit (no-edit, no-verify)
+          # to include the version bump, avoiding the "hook modified files" failure mode.
           - id: auto-bump-version
-            name: auto-bump-version
+            name: auto-bump-version (amend)
             entry: poetry run python
             language: system
-            args: [scripts/auto_bump_version.py]
-            # Run early enough that updating/staging pyproject.toml can be
-            # included in the commit itself. (Git's commit-msg hook is too late
-            # for reliably changing the commit content.)
-            stages: [prepare-commit-msg]
-            pass_filenames: true
+            args: [scripts/auto_bump_version.py, --post-commit-amend]
+            stages: [post-commit]
+            pass_filenames: false
 
           # 0. Validate commit message format (commit-msg hook)
           - id: check-commit-message

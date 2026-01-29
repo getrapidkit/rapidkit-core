@@ -332,5 +332,4 @@ ______________________________________________________________________
 
 Override contracts enable safe, upgrade-compatible customization of RapidKit modules. Use decorators
 for simple overrides and mixins for complex class customization. Always preserve original behavior
-and validate compatibility.</content>
-<parameter name="filePath">/home/debux/WOSP/core/docs/developer-guide/override-contracts.md
+and validate compatibility.

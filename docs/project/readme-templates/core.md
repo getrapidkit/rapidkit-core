@@ -27,7 +27,7 @@ cd myapp
 rapidkit info
 ```
 
-## � Docker Support
+## 🐳 Docker Support
 
 RapidKit includes comprehensive Docker support:
 
@@ -58,7 +58,7 @@ docker-compose down            # Stop services
 docker-compose down -v         # Remove volumes
 ```
 
-## �📚 Documentation
+## 📚 Documentation
 
 For detailed documentation, visit our [docs](https://github.com/getrapidkit/community).
 
@@ -69,7 +69,8 @@ We welcome contributions! Please see our
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the MIT License - see the [LICENSE](../../../LICENSE) file for
+details.
 
 ## 🌟 Community
 

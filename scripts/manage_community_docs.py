@@ -22,13 +22,13 @@ TEMPLATE_PATH = REPO_ROOT / "docs" / "community" / "README.template.md"
 ROOT_README_PATH = REPO_ROOT / "README.md"
 DEFAULT_RENDER_PATH = REPO_ROOT / "build" / "community" / "README.md"
 
-COMMUNITY_STAGING_TOKEN = "community" + "-staging"
+COMMUNITY_STAGING_MARKER = "community" + "-staging"
 
 BANNED_TOKENS: Dict[str, str] = {
     "fastapi.minimal": "Use the fastapi.standard kit in community documentation.",
     "pip install -e .": "Community docs should point to poetry install instead of editable installs.",
     "pip install -r": "Generated projects rely on Poetry; avoid pip install -r instructions.",
-    COMMUNITY_STAGING_TOKEN: "Staging markers must not reach the community distribution.",
+    COMMUNITY_STAGING_MARKER: "Staging markers must not reach the community distribution.",
 }
 
 

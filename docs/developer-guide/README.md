@@ -129,13 +129,13 @@ jobs:
 ## 📚 Further Reading
 
 - **[Override Contracts](override-contracts.md)** – Safe customisation techniques for modules
-- **[Module Standards](module-standards.md)** – Enforcing the structure contract and validator tools
 - **[Module System](../modules/overview.md)** – Lean layout and module requirements
-- **[Template Engine](../api-reference/templates.md)** – Template engine internals
-- **[CLI JSON Schemas](../architecture/CLI_JSON_SCHEMAS.md)** – CLI schema reference
 - **[Testing Guide](../testing/README.md)** – Testing policies and coverage tooling
 - **[GitHub Actions Overview](github-actions-overview.md)** – How CI, distribution, and release
   workflows connect
+
+> ℹ️ Some maintainer-only references (module standards, schema internals) live in `docs/internal/`
+> and are intentionally not shipped with the community distribution.
 
 ## 🤝 Community
 

@@ -95,7 +95,7 @@ GitHub automatically recognizes and uses templates from the `.github/` directory
 For information on how to use these templates, see:
 
 - [Contributing Guide](../contributing/CONTRIBUTING.md)
-- [Development Workflow](../development/README.md)
+- [Developer Guide](../developer-guide/README.md)
 
 ## 🔄 Template Maintenance
 

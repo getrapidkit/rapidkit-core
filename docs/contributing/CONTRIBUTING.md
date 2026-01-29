@@ -7,14 +7,12 @@ platform. This guide will help you get started with contributing effectively.
 
 ### For New Contributors
 
-1. **� Read the Docs**: Familiarize yourself with our [architecture](../architecture/)---
-
-## 🙏 Thank You
-
-Thank you for contributing to RapidKit! 🚀evelopment guide\](../developer-guide/) 2. **🔧 Setup
-Environment**: Follow our [getting started guide](../getting-started/) 3. **💡 Find Issues**: Check
-our [GitHub Issues](https://github.com/getrapidkit/core/issues) for good first issues 4. **🚀 Make
-Changes**: Follow our development workflow below
+1. **📚 Read the docs**: Start with the [Developer Guide](../developer-guide/) and
+   [Getting Started](../getting-started/).
+1. **🔧 Set up your environment**: Follow the [Getting Started guide](../getting-started/).
+1. **💡 Find an issue**: Check [GitHub Issues](https://github.com/getrapidkit/core/issues) for “good
+   first issue”.
+1. **🚀 Make changes**: Follow the development workflow below.
 
 ______________________________________________________________________
 
@@ -326,7 +324,7 @@ ______________________________________________________________________
 
 ### Documentation Resources
 
-- **[🏗️ Architecture Guide](../architecture/)**: System design and principles
+- **[🏗️ Module Architecture](../modules/architecture/)**: Module system design and contracts
 - **[🛠️ Developer Guide](../developer-guide/)**: Development best practices
 - **[📚 API Reference](../api-reference/)**: Complete API documentation
 - **[🚀 Getting Started](../getting-started/)**: Quick start tutorials

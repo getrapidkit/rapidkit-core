@@ -716,6 +716,6 @@ else:
 ```
 
 This API reference covers the core components of the RapidKit modular system. For more detailed
-examples and advanced usage, see the [documentation](docs/) directory.
+examples and advanced usage, see the [documentation](../../README.md).
 
 -->
