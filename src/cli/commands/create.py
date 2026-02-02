@@ -1,3 +1,4 @@
+import json
 import shutil
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional, Tuple, cast
@@ -17,6 +18,44 @@ from ..ui.printer import print_error, print_info, print_success, print_warning
 from ..utils.module_scaffold import ModuleScaffolder
 from ..utils.prompts import prompt_variables
 from ..utils.validators import validate_project_name
+
+
+def _detect_workspace_engine() -> str:
+    """Detect the package manager used in the current workspace.
+
+    Checks for workspace marker file and returns the engine type.
+    Falls back to 'pip' if no workspace is detected.
+    """
+    cwd = Path.cwd()
+
+    # Check for npm-created workspace marker
+    marker_file = cwd / ".rapidkit-workspace"
+    if marker_file.exists():
+        try:
+            with open(marker_file, encoding="utf-8") as f:
+                marker_data = json.load(f)
+                install_method = marker_data.get("metadata", {}).get("npm", {}).get("installMethod")
+                if install_method in ("poetry", "venv", "pipx"):
+                    return str(install_method)
+        except (OSError, json.JSONDecodeError, KeyError):
+            pass
+
+    # Check for Poetry workspace
+    pyproject = cwd / "pyproject.toml"
+    if pyproject.exists():
+        try:
+            content = pyproject.read_text(encoding="utf-8")
+            if "[tool.poetry]" in content:
+                return "poetry"
+        except OSError:
+            pass
+
+    # Check for venv
+    if (cwd / ".venv").exists():
+        return "venv"
+
+    # Default fallback
+    return "pip"
 
 
 def _format_kit_choice(slug: str) -> str:
@@ -201,6 +240,14 @@ def create_project(
             variables[key] = value
 
         normalized_kit = kit_name.lower()
+
+        # Auto-detect workspace engine for Python projects (unless explicitly provided)
+        if "engine" not in variables and normalized_kit.startswith("fastapi"):
+            detected_engine = _detect_workspace_engine()
+            variables["engine"] = detected_engine
+            if detected_engine != "pip":
+                print_info(f"Detected workspace engine: {detected_engine}")
+
         if normalized_kit.startswith("nestjs") and "package_manager" not in variables:
             should_prompt_pm = (
                 interactive
