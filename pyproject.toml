@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "rapidkit-core"
-version = "0.2.2rc1"
+version = "0.3.0"
 description = "Public staging playground where we polish the next wave of RapidKit magic together"
 authors = ["RapidKit Team <team@getrapidkit.com>"]
 readme = "README.md"

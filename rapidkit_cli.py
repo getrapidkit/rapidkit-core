@@ -25,36 +25,57 @@ if str(src_path) not in sys.path:
 def _print_global_help() -> None:
     """Display global CLI help message."""
     parser = argparse.ArgumentParser(
-        description="🚀 RapidKit Global CLI - Next.js-style professional commands",
+        description="🚀 RapidKit Global CLI",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
-🏗️  Global Engine Commands (run anywhere):
-  rapidkit create <name>    📦 Create new project
-  rapidkit add <module>     ➕ Add module to project
-  rapidkit dev <command>    🔧 Developer tools for contributors
-  rapidkit upgrade          🔄 Upgrade project templates
-  rapidkit diff             📋 Compare template changes
-  rapidkit doctor           🩺 Check development environment
-  rapidkit --tui            🖥️  Launch interactive TUI
-  rapidkit --version        ℹ️  Show version information
+Global commands:
+  rapidkit version       Show version information
+    rapidkit project       Detect project and show metadata
+    rapidkit create        Create new project from a kit
+    rapidkit add           Add module to current project
+  rapidkit list          List available kits
+  rapidkit info          Show kit information
+  rapidkit upgrade       Upgrade project templates
+  rapidkit diff          Compare template changes
+  rapidkit doctor        Diagnose environment
+  rapidkit license       Manage license
+  rapidkit reconcile     Resolve pending snippets
+  rapidkit rollback      Roll back changes
+  rapidkit uninstall     Remove module
+  rapidkit checkpoint    Create checkpoint
+  rapidkit optimize      Optimize project
+  rapidkit snapshot      Snapshot utilities
+    rapidkit frameworks    Detect or scaffold frameworks
+    rapidkit modules       List/install/manage modules
+  rapidkit merge         Merge changes
+  rapidkit --tui         Launch interactive TUI
+  rapidkit --version     Show version information
 
-🚀 Project Commands (run within RapidKit projects):
-  rapidkit init             📦 Initialize project (create .venv, install poetry, dependencies)
-  rapidkit dev              ⚡ Start development server
-  rapidkit build            📦 Build for production
-  rapidkit start            ⚡ Start production server
-  rapidkit test             🧪 Run tests with coverage
-  rapidkit lint             🔧 Run linting checks
-  rapidkit format           ✨ Format code automatically
-  rapidkit help             📚 Show project help
+Project commands (inside a RapidKit project):
+  rapidkit init          Initialize project dependencies
+    rapidkit dev           Start dev server
+  rapidkit start         Start production server
+  rapidkit build         Build for production
+  rapidkit test          Run tests
+  rapidkit lint          Run lint checks
+  rapidkit format        Format code
+  rapidkit help          Show project help
 
-Examples:
-  rapidkit create my-api          # Create FastAPI project
-  cd my-api && rapidkit dev       # Start development
-  rapidkit add module auth        # Add authentication
-  rapidkit test                   # Run project tests
+Common tasks:
+    rapidkit create project
+    rapidkit create project fastapi.standard my-api
+    rapidkit create project nestjs.standard my-api
+    rapidkit create project fastapi.standard my-api --output /path/to/workspace
+    cd my-api && rapidkit init
+    rapidkit dev
+    rapidkit add module auth
+    rapidkit modules list
 
-Note: Project commands auto-detect .rapidkit/ directory
+Quick start:
+    rapidkit create project fastapi.standard my-api && cd my-api && rapidkit init && rapidkit dev
+
+Notes:
+  • Project commands auto-detect .rapidkit/
         """,
     )
     parser.print_help()

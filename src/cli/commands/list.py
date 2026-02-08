@@ -38,6 +38,7 @@ def list_kits(
     try:
         registry = KitRegistry()
         kits = registry.list_kits()
+        kits.sort(key=lambda k: (k.name.lower(), k.version))
 
         # Filters
         if category_val:
@@ -66,8 +67,8 @@ def list_kits(
                         "display_name": kit.display_name,
                         "category": kit.category,
                         "version": kit.version,
-                        "tags": list(kit.tags or []),
-                        "modules": list(kit.modules or []),
+                        "tags": sorted(kit.tags or []),
+                        "modules": sorted(kit.modules or []),
                         "description": kit.description,
                     }
                     for kit in kits

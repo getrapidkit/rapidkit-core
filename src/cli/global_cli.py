@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""RapidKit Global CLI Entry Point - Next.js-style professional commands."""
+"""RapidKit Global CLI Entry Point - Professional commands."""
 
 import contextlib
 import json
@@ -172,26 +172,27 @@ def _get_engine_commands() -> dict[str, str]:
     """Get available engine commands with descriptions."""
     # Use comprehensive static list - more reliable and complete
     commands = {
-        "version": "ℹ️  Show version information",
-        "project": "🧭 Project detection utilities",
-        "create": "📦 Create new project",
-        "add": "➕ Add module to project",
-        "list": "📋 List available kits",
-        "info": "🔍 Show kit information",
-        "ui": "🖥️ UI bridge utilities",
-        "upgrade": "🔄 Upgrade project templates",
-        "diff": "📋 Compare template changes",
-        "doctor": "🩺 Diagnose environment",
-        "license": "📄 Manage license",
-        "reconcile": "🧩 Reconcile pending snippet injections",
-        "rollback": "↩️  Rollback changes",
-        "uninstall": "🗑️  Remove module",
-        "checkpoint": "💾 Create checkpoint",
-        "optimize": "⚡ Optimize project",
-        "snapshot": "📸 Snapshot utilities",
-        "frameworks": "🏗️  Framework adapters",
-        "modules": "🧩 Module utilities",
-        "merge": "🔀 Merge changes",
+        "version": "Show version information",
+        "project": "Detect project and show metadata",
+        "create": "Create new project from a kit",
+        "add": "Add module to current project",
+        "list": "List available kits",
+        "info": "Show kit information",
+        "commands": "List available core commands",
+        "ui": "UI bridge utilities",
+        "upgrade": "Upgrade project templates",
+        "diff": "Compare template changes",
+        "doctor": "Diagnose environment",
+        "license": "Manage license",
+        "reconcile": "Reconcile pending snippet injections",
+        "rollback": "Roll back changes",
+        "uninstall": "Remove module",
+        "checkpoint": "Create checkpoint",
+        "optimize": "Optimize project",
+        "snapshot": "Snapshot utilities",
+        "frameworks": "Detect or scaffold frameworks",
+        "modules": "List/install/manage modules",
+        "merge": "Merge changes",
     }
 
     # Community distributions must not expose UI bridge HTTP surface.
@@ -204,32 +205,42 @@ def _get_engine_commands() -> dict[str, str]:
 def _get_project_commands() -> dict[str, str]:
     """Get available project commands with descriptions."""
     return {
-        "init": "📦 Initialize project (create .venv, install poetry, dependencies)",
-        "dev": "🔥 Start development server",
-        "start": "⚡ Start production server",
-        "build": "📦 Build for production",
-        "test": "🧪 Run tests with coverage",
-        "lint": "🔧 Run linting checks",
-        "format": "✨ Format code automatically",
-        "help": "📚 Show project help",
+        "init": "Initialize project dependencies",
+        "dev": "Start dev server",
+        "start": "Start production server",
+        "build": "Build for production",
+        "test": "Run tests",
+        "lint": "Run lint checks",
+        "format": "Format code",
+        "help": "Show project help",
+    }
+
+
+def _commands_payload() -> dict[str, object]:
+    """Return a stable JSON payload of global engine commands."""
+    commands = _get_engine_commands()
+    return {
+        "schema_version": 1,
+        "commands": sorted(commands.keys()),
+        "descriptions": commands,
     }
 
 
 def _print_global_command_help() -> None:
     """Print global command help section."""
-    print("🏗️  Global Engine Commands (run anywhere):")
+    print("Global commands:")
     for cmd, desc in _get_engine_commands().items():
         print(f"  rapidkit {cmd:<12} {desc}")
 
-    print("  rapidkit --tui       🖥️  Launch interactive TUI")
-    print("  rapidkit --version   ℹ️  Show version information")
-    print("  rapidkit -v          ℹ️  Alias for --version")
+    print(f"  rapidkit {'--tui':<12} Launch interactive TUI")
+    print(f"  rapidkit {'--version':<12} Show version information")
+    print(f"  rapidkit {'-v':<12} Alias for --version")
     print()
 
 
 def _print_project_command_help() -> None:
     """Print project command help section."""
-    print("🚀 Project Commands (run within RapidKit projects):")
+    print("Project commands (inside a RapidKit project):")
     for cmd, desc in _get_project_commands().items():
         print(f"  rapidkit {cmd:<12} {desc}")
 
@@ -238,7 +249,7 @@ def _print_project_command_help() -> None:
 
 def _show_help() -> None:
     """Show professional help with comprehensive command listing."""
-    print("🚀 RapidKit Global CLI - Next.js-style professional commands")
+    print("🚀 RapidKit Core CLI")
     print()
 
     is_project_context = _find_project_root() is not None
@@ -249,13 +260,23 @@ def _show_help() -> None:
     else:
         _print_global_command_help()
         _print_project_command_help()
-    print("Examples:")
-    print("  rapidkit create my-api          # Create FastAPI project")
-    print("  cd my-api && rapidkit dev       # Start development")
-    print("  rapidkit add module auth        # Add authentication")
-    print("  rapidkit test                   # Run project tests")
+    print("Common tasks:")
+    print("  rapidkit create project")
+    print("  rapidkit create project fastapi.standard my-api")
+    print("  rapidkit create project nestjs.standard my-api")
+    print("  rapidkit create project fastapi.standard my-api --output /path/to/workspace")
+    print("  cd my-api && rapidkit init")
+    print("  rapidkit dev")
+    print("  rapidkit add module auth")
+    print("  rapidkit modules list")
     print()
-    print("Note: Project commands auto-detect .rapidkit/ directory")
+    print("Quick start:")
+    print(
+        "  rapidkit create project fastapi.standard my-api && cd my-api && rapidkit init && rapidkit dev"
+    )
+    print()
+    print("Notes:")
+    print("  • Project commands auto-detect .rapidkit/")
 
 
 class _RapidTUILike(Protocol):
@@ -477,7 +498,7 @@ def _handle_shell_command(args: list[str]) -> bool:
     return False
 
 
-def _run_global_command(argv: list[str]) -> None:
+def _run_global_command(argv: list[str]) -> None:  # noqa: PLR0911
     command = argv[0] if argv else None
     if command is None or command in {"--help", "-h"}:
         _show_help()
@@ -494,6 +515,16 @@ def _run_global_command(argv: list[str]) -> None:
             print(json.dumps({"schema_version": 1, "version": package_version}, ensure_ascii=False))
         else:
             print(f"RapidKit Version v{package_version}")
+        return
+
+    if command == "commands":
+        payload = _commands_payload()
+        if "--json" in argv or "--ci" in argv:
+            print(json.dumps(payload, ensure_ascii=False))
+            return
+        print("Global commands:")
+        for cmd, desc in _get_engine_commands().items():
+            print(f"  {cmd:<12} {desc}")
         return
 
     if command == "--tui":

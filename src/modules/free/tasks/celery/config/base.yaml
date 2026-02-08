@@ -16,3 +16,9 @@ defaults:
     beat_schedule: {}
     worker_max_tasks_per_child: null
     result_expires: 3600
+depends_on:
+  nestjs/standard:
+    - name: "celery-node"
+      source: npm
+      tool: npm
+      version: ">=0.5.9"

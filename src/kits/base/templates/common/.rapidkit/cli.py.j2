@@ -182,7 +182,7 @@ def dev(port: int = 8000, host: str = "0.0.0.0", allow_global_runtime: bool = Fa
             }.items()
             if v is not None
         })
-        rc = _call_launcher("dev", f"--port={port}", f"--host={host}", env=env)
+        rc = _call_launcher("dev", env=env)
         if rc != 0:
             sys.exit(rc)
     else:
@@ -262,9 +262,34 @@ def start(port: int = 8000, host: str = "0.0.0.0", allow_global_runtime: bool = 
         if rc != 0:
             sys.exit(rc)
     else:
+        if not (root / "node_modules").exists():
+            print("❌ Project dependencies appear to be missing (node_modules not found).")
+            print("")
+            print("💡 Run the following to bootstrap the project and install dependencies:")
+            print("")
+            print("  rapidkit init")
+            sys.exit(1)
+
+        dist_dir = root / "dist"
+        dist_main = dist_dir / "main"
+        dist_main_js = dist_dir / "main.js"
+        if not dist_main.exists() and not dist_main_js.exists():
+            print("❌ Build output not found (dist/main).")
+            print("")
+            print("💡 Running build before start:")
+            print("")
+            print("  rapidkit build")
+            rc = _call_launcher("build")
+            if rc != 0:
+                sys.exit(rc)
+            if not dist_main.exists() and not dist_main_js.exists():
+                print("❌ Build output still missing after build (dist/main).")
+                print("💡 Ensure the build script outputs dist/main or dist/main.js")
+                sys.exit(1)
+
         env = dict()
         env.update({"PORT": str(port), "HOST": host})
-        rc = _call_launcher("start", f"--port={port}", f"--host={host}", env=env)
+        rc = _call_launcher("start", env=env)
         if rc != 0:
             sys.exit(rc)
 

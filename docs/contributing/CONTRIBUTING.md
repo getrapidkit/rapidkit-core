@@ -183,7 +183,7 @@ For changes to the core engine (`community`):
 
 ```bash
 # For pro features
-git clone https://github.com/getrapidkit/community.git
+git clone https://github.com/getrapidkit/rapidkit-core.git
 cd pro
 git checkout -b feature/commercial-feature
 ```

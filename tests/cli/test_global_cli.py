@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import os
 import sys
 from pathlib import Path
@@ -30,8 +31,20 @@ def test_main_without_args_shows_help(
     global_cli.main()
 
     captured = capsys.readouterr()
-    assert "RapidKit Global CLI" in captured.out
-    assert "Global Engine Commands" in captured.out
+    assert "RapidKit Core CLI" in captured.out
+    assert "Global commands:" in captured.out
+
+
+def test_commands_json(monkeypatch: MonkeyPatch, capsys: CaptureFixture[str]) -> None:
+    monkeypatch.setattr(sys, "argv", ["rapidkit", "commands", "--json"])
+
+    global_cli.main()
+
+    captured = capsys.readouterr().out.strip()
+    payload = json.loads(captured)
+    assert payload["schema_version"] == 1
+    assert "commands" in payload
+    assert "create" in payload["commands"]
 
 
 def test_show_help_outside_project_lists_global_first(
@@ -42,8 +55,8 @@ def test_show_help_outside_project_lists_global_first(
     global_cli._show_help()
 
     captured = capsys.readouterr().out
-    global_index = captured.index("🏗️  Global Engine Commands (run anywhere):")
-    project_index = captured.index("🚀 Project Commands (run within RapidKit projects):")
+    global_index = captured.index("Global commands:")
+    project_index = captured.index("Project commands (inside a RapidKit project):")
     assert global_index < project_index
 
 
@@ -55,8 +68,8 @@ def test_show_help_inside_project_lists_project_first(
     global_cli._show_help()
 
     captured = capsys.readouterr().out
-    project_index = captured.index("🚀 Project Commands (run within RapidKit projects):")
-    global_index = captured.index("🏗️  Global Engine Commands (run anywhere):")
+    project_index = captured.index("Project commands (inside a RapidKit project):")
+    global_index = captured.index("Global commands:")
     assert project_index < global_index
 
 

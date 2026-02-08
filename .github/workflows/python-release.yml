@@ -49,6 +49,7 @@ jobs:
         env:
             DISTRIBUTION_TIER: ${{ inputs.distribution-tier }}
             LIMITED_MODE: ${{ inputs.limited-mode }}
+            RAPIDKIT_NPM_DIR: rapidkit-npm
         strategy:
             matrix:
                 python-version:
@@ -86,6 +87,48 @@ jobs:
             - name: Run tests
               run: poetry run pytest -q --maxfail=1 --disable-warnings
 
+            - name: Detect npm workspace
+              id: npm_detect
+              run: |
+                  if [ -d "${{ env.RAPIDKIT_NPM_DIR }}" ]; then
+                    echo "found=true" >> "$GITHUB_OUTPUT"
+                  else
+                    echo "found=false" >> "$GITHUB_OUTPUT"
+                  fi
+
+            - name: Setup Node.js
+              if: steps.npm_detect.outputs.found == 'true'
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "20"
+                  cache: npm
+                  cache-dependency-path: ${{ env.RAPIDKIT_NPM_DIR }}/package-lock.json
+
+            - name: Install npm dependencies
+              if: steps.npm_detect.outputs.found == 'true'
+              working-directory: ${{ env.RAPIDKIT_NPM_DIR }}
+              run: npm ci
+
+            - name: Check contracts sync (Core ↔ NPM)
+              if: steps.npm_detect.outputs.found == 'true'
+              working-directory: ${{ env.RAPIDKIT_NPM_DIR }}
+              env:
+                  RAPIDKIT_CORE_SCHEMA_PATH: ${{ github.workspace }}/docs/contracts/rapidkit-cli-contracts.json
+              run: |
+                  if [ -f "${RAPIDKIT_CORE_SCHEMA_PATH}" ]; then
+                    npm run check:contracts
+                  else
+                    echo "Skipping contract sync check (schema missing)"
+                  fi
+
+            - name: Run drift guard (Core ↔ NPM contracts)
+              if: steps.npm_detect.outputs.found == 'true'
+              working-directory: ${{ env.RAPIDKIT_NPM_DIR }}
+              env:
+                  RAPIDKIT_DRIFT_GUARD: "1"
+                  RAPIDKIT_DRIFT_GUARD_MODE: "monorepo"
+              run: npm run test:drift
+
             - name: Build package
               run: poetry build
 
@@ -103,6 +146,7 @@ jobs:
             LIMITED_MODE: ${{ inputs.limited-mode }}
             PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
             TEST_PYPI_TOKEN: ${{ secrets.TEST_PYPI_TOKEN }}
+            RAPIDKIT_NPM_DIR: rapidkit-npm
         steps:
             - name: Checkout repository
               uses: actions/checkout@v4

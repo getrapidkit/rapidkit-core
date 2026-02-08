@@ -39,7 +39,5 @@ def test_nestjs_plugin_pre_generation(tmp_path: Path) -> None:
 
     plugin.pre_generation_hook(tmp_path)
 
-    assert (
-        tmp_path / "src" / "modules" / "free" / "users" / "users_profiles" / "users_profiles"
-    ).is_dir()
+    assert (tmp_path / "src" / "modules" / "free" / "users" / "users_profiles").is_dir()
     assert plugin.get_dependencies(), "nestjs plugin should declare dependencies"

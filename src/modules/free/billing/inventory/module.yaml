@@ -1,7 +1,7 @@
 name: inventory
 display_name: Inventory
 description: Inventory and pricing service backing Cart + Stripe
-version: 0.1.4
+version: 0.1.5
 access: free
 status: stable
 tier: free
@@ -127,8 +127,8 @@ support:
     discussions: https://github.com/getrapidkit/core/discussions
     documentation: https://docs.rapidkit.top/modules/billing/inventory
 changelog:
-  - version: "0.1.4"
-    date: "2026-01-04"
+  - version: "0.1.5"
+    date: "2026-02-06"
     notes: "See docs/changelog.md"
 validation:
     pre_install:
@@ -173,7 +173,7 @@ file_hashes:
     generate.py: sha256:cbb36b0c1ba983035de47569575c831666650a97924c375643645f55a33ffd87
     module.verify.json: sha256:9ba7fc73b224b7ae225a1103e171370eb0fda1f84a084b2684f37e9a1509a5c7
     overrides.py: sha256:635cf4fe35b3d689bf0c7a10d01b012eaa8295be4942fa4e25265e51d6511ca3
-    templates/base/inventory.py.j2: sha256:2aadd5c68df8fa81bdd4e5ca77d97be12b03845f75da4806cb84bab1b86cbe8d
+    templates/base/inventory.py.j2: sha256:933b2bc6a3ea47279a4b911fa7695422b9764a87722191cf5ffd5ccac0ed4beb
     templates/base/inventory_health.py.j2: sha256:1a26b51d3636983098cbbb3fdf7c9470de064ff238d0dafd301458be996b46ba
     templates/base/inventory_types.py.j2: sha256:83e8c379bd7974ef4f11399c654267e643725b5c1a41ac01b20e81b27ed1806c
     templates/snippets/inventory.snippet.j2: sha256:aec1ffaeef22a55d6f94a6ecbda0418839c953a0da1370130ec4020ff97d448e

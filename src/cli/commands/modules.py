@@ -146,6 +146,20 @@ def _load_yaml_dict(path: Path) -> Dict[str, Any]:
     return cast(Dict[str, Any], data)
 
 
+def _load_yaml_list(path: Path) -> List[Dict[str, Any]]:
+    if not path.exists():
+        return []
+    if yaml is None:
+        raise RuntimeError(f"PyYAML is required to parse {path}")
+    try:
+        data = yaml.safe_load(path.read_text(encoding="utf-8")) or []
+    except YAML_ERROR_TYPES as exc:  # pragma: no cover - depends on PyYAML runtime
+        raise RuntimeError(f"Failed to parse {path}: {exc}") from exc
+    if not isinstance(data, list):
+        raise RuntimeError(f"{path} must contain a list at top level")
+    return [item for item in data if isinstance(item, dict)]
+
+
 def _load_verification_metadata(module_dir: Path, filename: Optional[str]) -> Dict[str, Any]:
     if not filename:
         return {}
@@ -227,6 +241,230 @@ def _module_matches_filter(recorded: Optional[str], requested: Optional[str]) ->
     if recorded == requested_norm:
         return True
     return recorded.endswith(f"/{requested_norm}")
+
+
+def _registry_lookup_by_slug(registry: Any, slug: str) -> Optional[Dict[str, Any]]:
+    if not slug:
+        return None
+    candidate = str(slug).strip("/")
+    if not candidate:
+        return None
+    candidate_no_tier = "/".join(candidate.split("/")[1:]) if "/" in candidate else candidate
+    for module in registry.modules.values():
+        templates_path = module.get("templates_path") if isinstance(module, dict) else None
+        if not isinstance(templates_path, str):
+            continue
+        templates_path = templates_path.strip().strip("/")
+        if not templates_path:
+            continue
+        if f"free/{templates_path}" == candidate:
+            return cast(Dict[str, Any], module)
+        if templates_path in (candidate, candidate_no_tier):
+            return cast(Dict[str, Any], module)
+    return None
+
+
+def _manifest_lookup_by_identifier(identifier: str) -> Optional[Dict[str, Any]]:
+    requested = str(identifier or "").strip().strip("/")
+    if not requested:
+        return None
+    modules_root = MODULES_PATH
+    manifest_paths = _discover_free_manifest_paths(modules_root)
+    if not manifest_paths:
+        return None
+
+    for manifest_path in manifest_paths:
+        try:
+            slug = manifest_path.parent.relative_to(modules_root).as_posix()
+        except ValueError:
+            continue
+
+        slug_no_tier = "/".join(slug.split("/")[1:]) if "/" in slug else slug
+        if requested in (slug, slug_no_tier) or slug.endswith(f"/{requested}"):
+            match_slug = slug
+        else:
+            match_slug = None
+
+        try:
+            manifest_data = _load_yaml_dict(manifest_path)
+        except RuntimeError:
+            continue
+
+        if not match_slug:
+            manifest_name = str(manifest_data.get("name") or "").strip()
+            if manifest_name and manifest_name == requested:
+                match_slug = slug
+
+        if not match_slug:
+            continue
+
+        try:
+            config_base = _load_yaml_dict(manifest_path.parent / "config" / "base.yaml")
+        except RuntimeError:
+            config_base = {}
+
+        validation = validate_module_structure(match_slug, modules_root=modules_root)
+        if not validation.valid:
+            continue
+
+        verification_meta = _load_verification_metadata(
+            manifest_path.parent, validation.verification_file
+        )
+
+        record = _build_module_record(
+            slug=match_slug,
+            module_dir=manifest_path.parent,
+            manifest=manifest_data,
+            config_base=config_base,
+            tree_hash=validation.tree_hash,
+            spec_version=validation.spec_version,
+            verification_file=validation.verification_file,
+            checked_at=verification_meta.get("checked_at") if verification_meta else None,
+        )
+        record["validation"]["messages"] = validation.messages
+        _merge_manifest_details(record, manifest_data, config_base, manifest_path.parent)
+        return record
+
+    return None
+
+
+def _load_manifest_bundle(slug: str) -> Optional[Tuple[Dict[str, Any], Dict[str, Any], Path]]:
+    if not slug:
+        return None
+    modules_root = MODULES_PATH
+    slug_path = slug.strip().strip("/")
+    if not slug_path:
+        return None
+    module_dir = modules_root / slug_path
+    manifest_path = module_dir / "module.yaml"
+    if not manifest_path.exists():
+        return None
+    try:
+        manifest_data = _load_yaml_dict(manifest_path)
+    except RuntimeError:
+        return None
+    try:
+        config_base = _load_yaml_dict(module_dir / "config" / "base.yaml")
+    except RuntimeError:
+        config_base = {}
+    return manifest_data, config_base, module_dir
+
+
+def _summarize_variables(variables: Dict[str, Any]) -> List[Dict[str, Any]]:
+    summarized: List[Dict[str, Any]] = []
+    for key, meta in variables.items():
+        if not isinstance(meta, dict):
+            continue
+        summarized.append(
+            {
+                "key": key,
+                "type": meta.get("type"),
+                "default": meta.get("default"),
+                "description": meta.get("description"),
+            }
+        )
+    return summarized
+
+
+def _summarize_snippets(snippets: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    summarized: List[Dict[str, Any]] = []
+    for snippet in snippets:
+        schema_value = snippet.get("schema")
+        schema = schema_value if isinstance(schema_value, dict) else {}
+        properties_value = schema.get("properties")
+        properties = properties_value if isinstance(properties_value, dict) else {}
+        env_vars = sorted(properties.keys()) if properties else []
+        summarized.append(
+            {
+                "id": snippet.get("id") or snippet.get("name"),
+                "target": snippet.get("target"),
+                "description": snippet.get("description"),
+                "profiles": snippet.get("profiles"),
+                "version": snippet.get("version"),
+                "priority": snippet.get("priority"),
+                "env_vars": env_vars,
+            }
+        )
+    return summarized
+
+
+def _merge_manifest_details(
+    record: Dict[str, Any],
+    manifest: Dict[str, Any],
+    config_base: Dict[str, Any],
+    module_dir: Optional[Path] = None,
+) -> None:
+    record.setdefault(
+        "access", manifest.get("access") or manifest.get("tier") or record.get("tier")
+    )
+    record.setdefault("priority", manifest.get("priority") or config_base.get("priority"))
+    record.setdefault(
+        "templates_path",
+        manifest.get("templates_path") or config_base.get("templates_path"),
+    )
+
+    record.setdefault("module_dependencies", manifest.get("depends_on"))
+    record.setdefault("runtime_dependencies", config_base.get("depends_on"))
+    record.setdefault("dev_dependencies", config_base.get("dev_dependencies"))
+    record.setdefault(
+        "config_sources", manifest.get("config_sources") or config_base.get("config_sources")
+    )
+    defaults = config_base.get("defaults")
+    if isinstance(defaults, dict) and defaults:
+        record.setdefault("defaults", defaults)
+
+    variables = config_base.get("variables")
+    if isinstance(variables, dict) and variables:
+        record.setdefault("variables", _summarize_variables(variables))
+
+    profiles = config_base.get("profiles")
+    if isinstance(profiles, dict) and profiles:
+        record.setdefault("profiles", profiles)
+
+    features = config_base.get("features")
+    if isinstance(features, dict) and features:
+        record.setdefault("features", features)
+
+    for key in (
+        "dependencies",
+        "documentation",
+        "compatibility",
+        "testing",
+        "changelog",
+        "support",
+    ):
+        value = manifest.get(key)
+        if value is None:
+            value = config_base.get(key)
+        if value is not None:
+            record.setdefault(key, value)
+
+    if module_dir is not None:
+        snippets_path = module_dir / "config" / "snippets.yaml"
+        try:
+            snippets = _load_yaml_list(snippets_path)
+        except RuntimeError:
+            snippets = []
+        if snippets:
+            record.setdefault("snippets", _summarize_snippets(snippets))
+
+
+def _prune_empty_fields(payload: Any) -> Any:
+    if isinstance(payload, dict):
+        cleaned: Dict[str, Any] = {}
+        for key, item in payload.items():
+            cleaned_item = _prune_empty_fields(item)
+            if cleaned_item is None:
+                continue
+            if cleaned_item == "":
+                continue
+            if isinstance(cleaned_item, (list, dict)) and not cleaned_item:
+                continue
+            cleaned[key] = cleaned_item
+        return cleaned
+    if isinstance(payload, list):
+        return [_prune_empty_fields(item) for item in payload if item is not None]
+    return payload
 
 
 @modules_app.command("status")
@@ -1269,12 +1507,22 @@ def verify_all(
         raise typer.Exit(2)
 
 
+CATEGORY_OPTION: Optional[str] = typer.Option(None, "--category", "-c", help="Filter by category")
+TAG_OPTION: Optional[str] = typer.Option(None, "--tag", "-t", help="Filter by tag")
+DETAILED_OPTION: bool = typer.Option(False, "--detailed", "-d", help="Show detailed info")
+JSON_OUTPUT_OPTION: bool = typer.Option(False, "--json", help="Emit machine readable JSON output.")
+JSON_SCHEMA_OPTION: Optional[int] = typer.Option(
+    None, "--json-schema", help="Emit versioned JSON schema output."
+)
+
+
 @modules_app.command("list")
-def modules_list(
-    category: Optional[str] = typer.Option(None, "--category", "-c", help="Filter by category"),
-    tag: Optional[str] = typer.Option(None, "--tag", "-t", help="Filter by tag"),
-    detailed: bool = typer.Option(False, "--detailed", "-d", help="Show detailed info"),
-    json_output: bool = typer.Option(False, "--json", help="Emit machine readable JSON output."),
+def modules_list(  # noqa: PLR0911
+    category: Optional[str] = CATEGORY_OPTION,
+    tag: Optional[str] = TAG_OPTION,
+    detailed: bool = DETAILED_OPTION,
+    json_output: bool = JSON_OUTPUT_OPTION,
+    json_schema: Optional[int] = JSON_SCHEMA_OPTION,
 ) -> None:
     """
     📋 List spec-compliant free-tier modules discovered in the workspace.
@@ -1288,15 +1536,34 @@ def modules_list(
       rapidkit modules list --tag auth
       rapidkit modules list --detailed
     """
+
+    def _normalize_option(value: Any, default: Any) -> Any:
+        return default if isinstance(value, typer.models.OptionInfo) else value
+
+    category_val = cast(Optional[str], _normalize_option(category, None))
+    tag_val = cast(Optional[str], _normalize_option(tag, None))
+    detailed_flag = bool(_normalize_option(detailed, False))
+    json_output_flag = bool(_normalize_option(json_output, False))
+    json_schema_val = cast(Optional[int], _normalize_option(json_schema, None))
+
+    if json_schema_val is not None and json_schema_val != 1:
+        print_error("Unsupported --json-schema version. Supported versions: 1")
+        raise typer.Exit(code=2)
+    if json_schema_val is not None:
+        json_output_flag = True
     modules_root = MODULES_PATH
     manifest_paths = _discover_free_manifest_paths(modules_root)
-
-    if not manifest_paths:
-        print_warning("😕 No free-tier modules discovered under src/modules/free.")
-        return
+    no_manifest_paths = not manifest_paths
 
     records: List[Dict[str, Any]] = []
     invalid_modules: List[Tuple[str, List[str]]] = []
+
+    if not manifest_paths:
+        if json_schema_val == 1:
+            manifest_paths = []
+        else:
+            print_warning("😕 No free-tier modules discovered under src/modules/free.")
+            return
 
     for manifest_path in manifest_paths:
         try:
@@ -1337,26 +1604,106 @@ def modules_list(
         record["validation"]["messages"] = validation.messages
         records.append(record)
 
-    records.sort(key=lambda r: ((r.get("category") or ""), (r.get("display_name") or "").lower()))
+    records.sort(
+        key=lambda r: (
+            (r.get("category") or ""),
+            (r.get("display_name") or "").lower(),
+            str(r.get("name") or "").lower(),
+        )
+    )
 
     filtered = list(records)
-    if category:
-        category_lower = category.lower()
+    if category_val:
+        category_lower = category_val.lower()
         filtered = [
             rec for rec in filtered if str(rec.get("category", "")).lower() == category_lower
         ]
 
-    if tag:
-        tag_lower = tag.lower()
+    if tag_val:
+        tag_lower = tag_val.lower()
         filtered = [
             rec
             for rec in filtered
             if any(tag_lower == t.lower() for t in rec.get("tags", []) if isinstance(t, str))
         ]
 
+    def _normalize_record(rec: Dict[str, Any]) -> Dict[str, Any]:
+        normalized = dict(rec)
+        for key in ("tags", "modules", "capabilities"):
+            if isinstance(normalized.get(key), list):
+                normalized[key] = sorted([v for v in normalized.get(key, []) if isinstance(v, str)])
+        validation = normalized.get("validation")
+        if isinstance(validation, dict):
+            if isinstance(validation.get("messages"), list):
+                validation["messages"] = sorted(
+                    [m for m in validation.get("messages", []) if isinstance(m, str)]
+                )
+        return normalized
+
+    def _build_summary_payload(recs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        payload: List[Dict[str, Any]] = []
+        for rec in recs:
+            normalized = _normalize_record(rec)
+            description_text = normalized.get("description") or ""
+            payload.append(
+                {
+                    "name": normalized.get("name"),
+                    "display_name": normalized.get("display_name"),
+                    "version": normalized.get("version"),
+                    "category": normalized.get("category"),
+                    "status": normalized.get("status"),
+                    "description": truncate_text(description_text, DESCRIPTION_TRUNCATE_LIMIT),
+                    "tags": normalized.get("tags", []),
+                    "slug": normalized.get("slug"),
+                    "validation": normalized.get("validation"),
+                }
+            )
+        return payload
+
+    def _build_catalog_payload(
+        recs: List[Dict[str, Any]], warnings: Optional[List[str]] = None
+    ) -> Dict[str, Any]:
+        modules_payload = (
+            [_normalize_record(r) for r in recs] if detailed_flag else _build_summary_payload(recs)
+        )
+        etag_payload = json.dumps(modules_payload, sort_keys=True, ensure_ascii=False)
+        etag = f"sha256:{hashlib.sha256(etag_payload.encode('utf-8')).hexdigest()}"
+        payload: Dict[str, Any] = {
+            "schema_version": 1,
+            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "etag": etag,
+            "filters": {
+                "category": category_val,
+                "tag": tag_val,
+                "detailed": detailed_flag,
+            },
+            "stats": {
+                "total": len(records),
+                "returned": len(modules_payload),
+                "invalid": len(invalid_modules),
+            },
+            "modules": modules_payload,
+        }
+        if invalid_modules:
+            payload["invalid_modules"] = [
+                {"slug": slug, "messages": messages} for slug, messages in invalid_modules
+            ]
+        if warnings:
+            payload["warnings"] = warnings
+        return payload
+
     if not filtered:
+        if json_schema_val == 1:
+            warning = (
+                "No free-tier modules discovered under src/modules/free."
+                if no_manifest_paths
+                else "No standard modules matched the provided filters."
+            )
+            payload = _build_catalog_payload([], [warning])
+            typer.echo(json.dumps(payload, indent=2))
+            return
         print_warning("😕 No standard modules matched the provided filters.")
-        if invalid_modules and not json_output:
+        if invalid_modules and not json_output_flag:
             skipped = ", ".join(slug for slug, _ in invalid_modules[:SKIPPED_MODULES_DISPLAY_LIMIT])
             if len(invalid_modules) > SKIPPED_MODULES_DISPLAY_LIMIT:
                 skipped += ", ..."
@@ -1365,31 +1712,20 @@ def modules_list(
             )
         return
 
-    if json_output:
-        if detailed:
-            console.print_json(json.dumps(filtered, indent=2))
+    if json_output_flag:
+        if json_schema_val == 1:
+            payload = _build_catalog_payload(filtered)
+            typer.echo(json.dumps(payload, indent=2))
+            return
+        if detailed_flag:
+            typer.echo(json.dumps([_normalize_record(r) for r in filtered], indent=2))
             return
 
-        payload: List[Dict[str, Any]] = []
-        for rec in filtered:
-            description_text = rec.get("description") or ""
-            payload.append(
-                {
-                    "name": rec.get("name"),
-                    "display_name": rec.get("display_name"),
-                    "version": rec.get("version"),
-                    "category": rec.get("category"),
-                    "status": rec.get("status"),
-                    "description": truncate_text(description_text, DESCRIPTION_TRUNCATE_LIMIT),
-                    "tags": rec.get("tags", []),
-                    "slug": rec.get("slug"),
-                    "validation": rec.get("validation"),
-                }
-            )
-        console.print_json(json.dumps(payload, indent=2))
+        summary_payload = _build_summary_payload(filtered)
+        typer.echo(json.dumps(summary_payload, indent=2))
         return
 
-    if detailed:
+    if detailed_flag:
         for rec in filtered:
             console.rule(
                 f"[bold blue]📦 {rec.get('display_name', rec.get('name', 'Unknown'))}[/bold blue]"
@@ -1496,6 +1832,29 @@ def modules_info(
     module = registry.get_module(name)
 
     if not module:
+        module = _registry_lookup_by_slug(registry, name)
+
+    if not module:
+        module = _manifest_lookup_by_identifier(name)
+
+    if module and isinstance(module, dict):
+        if not module.get("slug"):
+            templates_path = module.get("templates_path")
+            if isinstance(templates_path, str) and templates_path.strip():
+                module["slug"] = f"free/{templates_path.strip().strip('/')}"
+        if not module.get("access"):
+            module["access"] = module.get("tier")
+        if not module.get("dependencies") and isinstance(module.get("dependencies"), list) is False:
+            module["dependencies"] = []
+
+        slug = module.get("slug")
+        if isinstance(slug, str) and slug:
+            bundle = _load_manifest_bundle(slug)
+            if bundle:
+                manifest_data, config_base, module_dir = bundle
+                _merge_manifest_details(module, manifest_data, config_base, module_dir)
+
+    if not module:
         print_error(f"❌ Module '{name}' not found.")
         available = [str(mod_name) for mod_name in registry.modules]
         if available:
@@ -1505,7 +1864,37 @@ def modules_info(
         raise typer.Exit(1)
 
     if json_output:
-        console.print_json(json.dumps(module, indent=2))
+        normalized = dict(module)
+        for key in ("tags", "dependencies", "capabilities"):
+            if isinstance(normalized.get(key), list):
+                normalized[key] = sorted([v for v in normalized.get(key, []) if isinstance(v, str)])
+        user_facing: Dict[str, Any] = {
+            "slug": normalized.get("slug"),
+            "name": normalized.get("name"),
+            "display_name": normalized.get("display_name"),
+            "version": normalized.get("version"),
+            "category": normalized.get("category"),
+            "tier": normalized.get("tier") or normalized.get("access"),
+            "status": normalized.get("status"),
+            "description": normalized.get("description"),
+            "tags": normalized.get("tags"),
+            "dependencies": normalized.get("dependencies"),
+            "capabilities": normalized.get("capabilities"),
+            "module_dependencies": normalized.get("module_dependencies"),
+            "runtime_dependencies": normalized.get("runtime_dependencies"),
+            "config_sources": normalized.get("config_sources"),
+            "defaults": normalized.get("defaults"),
+            "variables": normalized.get("variables"),
+            "profiles": normalized.get("profiles"),
+            "features": normalized.get("features"),
+            "snippets": normalized.get("snippets"),
+            "documentation": normalized.get("documentation"),
+            "compatibility": normalized.get("compatibility"),
+            "changelog": normalized.get("changelog"),
+            "support": normalized.get("support"),
+        }
+        user_facing = _prune_empty_fields(user_facing)
+        console.print_json(json.dumps(user_facing, indent=2))
         return
 
     console.rule(f"[bold blue]📦 {module.get('name', 'Unknown Module')}[/bold blue]")

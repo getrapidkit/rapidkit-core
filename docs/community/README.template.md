@@ -8,7 +8,7 @@ RapidKit Community is the production-ready Python engine + CLI. Install the pack
 
 - Website: https://www.getrapidkit.com/
 - Docs: https://www.getrapidkit.com/docs
-- Stable repo: https://github.com/getrapidkit/community
+- Stable repo: https://github.com/getrapidkit/rapidkit-core
 
 Pre-releases (RCs) are published separately from stable.
 
@@ -172,7 +172,7 @@ ______________________________________________________________________
 ## 🧭 Documentation Map
 
 - Getting started: https://www.getrapidkit.com/docs
-- Community repo docs: https://github.com/getrapidkit/community/tree/main/docs
+- Community repo docs: https://github.com/getrapidkit/rapidkit-core/tree/main/docs
 
 Tip: The CLI help is always up-to-date:
 
@@ -206,6 +206,6 @@ ______________________________________________________________________
 
 RapidKit Community ships under the MIT License.
 
-- License (repo): https://github.com/getrapidkit/community/blob/main/LICENSE
+- License (repo): https://github.com/getrapidkit/rapidkit-core/blob/main/LICENSE
 
 Ready to launch something new? Run `rapidkit create` and move fast.

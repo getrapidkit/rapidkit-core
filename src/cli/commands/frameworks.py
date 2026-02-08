@@ -15,9 +15,10 @@ frameworks_app = typer.Typer(help="Inspect and use framework adapters")
 
 @frameworks_app.command("list")
 def list_frameworks(json_output: bool = typer.Option(False, "--json")) -> None:
-    data = {name: cls.__name__ for name, cls in available().items()}
+    items = sorted(available().items(), key=lambda pair: pair[0].lower())
+    data = {name: cls.__name__ for name, cls in items}
     if json_output:
-        print_info(json.dumps(data, indent=2))
+        typer.echo(json.dumps(data, indent=2))
     else:
         print_info("Available frameworks:")
         for name, cls_name in data.items():

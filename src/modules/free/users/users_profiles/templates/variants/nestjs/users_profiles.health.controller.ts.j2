@@ -1,8 +1,8 @@
 import { Controller, Get, HttpCode, HttpStatus, Logger } from "@nestjs/common";
 import { hostname } from "node:os";
 
-import { USERS_PROFILES_CONFIGURATION_NAMESPACE } from "./users_profiles.configuration";
-import { {{ module_class_name }}Service } from "./users_profiles.service";
+import { USERS_PROFILES_CONFIGURATION_NAMESPACE } from "../modules/free/users/users_profiles/users-profiles.configuration";
+import { {{ module_class_name }}Service } from "../modules/free/users/users_profiles/users-profiles.service";
 
 @Controller("api/health/module")
 export class {{ module_class_name }}HealthController {

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
+import json
 from threading import RLock
 from typing import Any, Callable, Dict, Iterable, Mapping, Optional
 
@@ -49,10 +50,20 @@ class {{ module_class_name }}Config:
     reservation_expiry_minutes: int = {{ inventory_defaults.reservation_expiry_minutes | default(30) }}
     decimal_precision: int = {{ inventory_defaults.decimal_precision | default(2) }}
     log_level: str = {{ inventory_defaults.log_level | default('INFO') | upper | tojson }}
-    metadata: Dict[str, Any] = field(default_factory=lambda: dict({{ inventory_defaults.metadata | default({'module': module_name}) | tojson }}))
-    pricing: Dict[str, Any] = field(default_factory=lambda: dict({{ inventory_pricing | tojson }}))
-    warehouses: Dict[str, Dict[str, Any]] = field(default_factory=lambda: dict({{ inventory_warehouses | tojson }}))
-    notifications: Dict[str, Any] = field(default_factory=lambda: dict({{ inventory_notifications | tojson }}))
+    metadata: Dict[str, Any] = field(
+        default_factory=lambda: dict(
+            json.loads('{{ inventory_defaults.metadata | default({"module": module_name}) | tojson }}')
+        )
+    )
+    pricing: Dict[str, Any] = field(
+        default_factory=lambda: dict(json.loads('{{ inventory_pricing | tojson }}'))
+    )
+    warehouses: Dict[str, Dict[str, Any]] = field(
+        default_factory=lambda: dict(json.loads('{{ inventory_warehouses | tojson }}'))
+    )
+    notifications: Dict[str, Any] = field(
+        default_factory=lambda: dict(json.loads('{{ inventory_notifications | tojson }}'))
+    )
 
     @classmethod
     def from_mapping(cls, config: Mapping[str, Any] | None) -> "{{ module_class_name }}Config":

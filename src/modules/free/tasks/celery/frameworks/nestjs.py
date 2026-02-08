@@ -72,6 +72,9 @@ class NestJSPlugin(FrameworkPlugin):
     def validate_requirements(self) -> list[str]:
         return []
 
+    def get_dependencies(self) -> list[str]:
+        return ["celery-node@^0.7.0"]
+
     def pre_generation_hook(self, output_dir: Path) -> None:
         celery_root = output_dir / "src" / "modules" / "free" / "tasks" / "celery"
         health_root = output_dir / "src" / "health"

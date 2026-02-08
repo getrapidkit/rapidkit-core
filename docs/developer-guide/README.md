@@ -29,7 +29,7 @@ ______________________________________________________________________
 Clone the community repository and install dependencies:
 
 ```bash
-git clone https://github.com/getrapidkit/community.git rapidkit-community
+git clone https://github.com/getrapidkit/rapidkit-core.git rapidkit-core
 cd rapidkit-community
 
 # Create and activate a virtual environment if you prefer

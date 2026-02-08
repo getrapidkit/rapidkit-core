@@ -5,7 +5,7 @@ This is the **pre-release channel** for RapidKit Core.
 - Website: https://www.getrapidkit.com/
 - Docs: https://www.getrapidkit.com/docs
 - Staging repo: https://github.com/getrapidkit/community-staging
-- Stable repo: https://github.com/getrapidkit/community
+- Stable repo: https://github.com/getrapidkit/rapidkit-core
 
 ## What you get
 

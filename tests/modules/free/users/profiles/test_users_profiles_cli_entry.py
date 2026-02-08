@@ -44,9 +44,9 @@ def test_generate_main_nestjs(generate_cli):
 
     profiles_dir = output_dir / "src" / "modules" / "free" / "users" / "users_profiles"
     expected = {
-        profiles_dir / "users_profiles.service.ts",
-        profiles_dir / "users_profiles.controller.ts",
-        profiles_dir / "users_profiles.module.ts",
+        profiles_dir / "users-profiles.service.ts",
+        profiles_dir / "users-profiles.controller.ts",
+        profiles_dir / "users-profiles.module.ts",
         profiles_dir / "index.ts",
     }
 
@@ -54,7 +54,7 @@ def test_generate_main_nestjs(generate_cli):
         assert artefact.exists(), f"Expected NestJS artefact {artefact} to be generated"
         assert artefact.read_text().strip(), f"Generated file {artefact} should not be empty"
 
-    controller_src = (profiles_dir / "users_profiles.controller.ts").read_text()
+    controller_src = (profiles_dir / "users-profiles.controller.ts").read_text()
     assert (
         "@Controller('users_profiles')" in controller_src
         or '@Controller("users_profiles")' in controller_src

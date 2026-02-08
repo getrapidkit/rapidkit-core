@@ -29,6 +29,14 @@ def _safe_project_name(name: str) -> str:
     return name
 
 
+def _find_project_root(start: Optional[Path] = None) -> Optional[Path]:
+    cur = (start or Path.cwd()).resolve()
+    for p in [cur] + list(cur.parents):
+        if (p / ".rapidkit").is_dir() and (p / ".rapidkit" / "project.json").exists():
+            return p
+    return None
+
+
 @opt_app.callback(invoke_without_command=True)
 def optimize(
     project: Optional[str] = typer.Option(None, help="Project name inside boilerplates"),
@@ -48,16 +56,39 @@ def optimize(
 
     Usage: rapidkit optimize --project <name> [--dry-run]
     """
-    proj = project or "test"
-    try:
-        proj = _safe_project_name(proj)
-    except ValueError as e:
-        print_warning(f"⚠️ {e}")
-        raise typer.Exit(1) from None
+    project_root: Optional[Path] = None
+    proj: Optional[str] = None
+    if project:
+        candidate = Path(project).expanduser()
+        is_path_like = False
+        try:
+            is_path_like = bool(
+                candidate.is_absolute() or candidate.exists() or len(candidate.parts) > 1
+            )
+        except OSError:
+            is_path_like = False
 
-    project_root = Path(__file__).resolve().parents[3] / "boilerplates" / proj
-    if not project_root.exists():
-        print_warning(f"⚠️ Project root not found: {project_root}")
+        if is_path_like:
+            try:
+                resolved = candidate.resolve()
+            except OSError:
+                resolved = candidate
+            if resolved.exists():
+                project_root = resolved
+
+        if project_root is None:
+            try:
+                proj = _safe_project_name(project)
+            except ValueError as e:
+                print_warning(f"⚠️ {e}")
+                raise typer.Exit(1) from None
+            project_root = Path(__file__).resolve().parents[3] / "boilerplates" / proj
+    else:
+        project_root = _find_project_root()
+
+    if project_root is None or not project_root.exists():
+        print_warning("⚠️ Project root not found.")
+        print_warning("💡 Run from inside a RapidKit project or pass --project /path/to/project")
         raise typer.Exit(1)
 
     print_info(f"🔍 Scanning project: {project_root} (dry_run={dry_run})")

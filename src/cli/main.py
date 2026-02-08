@@ -162,17 +162,56 @@ def _apply_option_sanitizers(typer_app: typer.Typer) -> None:
 # --- CLI App -----------------------------------------------------------------
 app = typer.Typer(
     help=sanitize_console_text(
-        """🚀 RapidKit - FastAPI project generator with Clean Architecture
+        """🚀 RapidKit Core CLI
 
-🎯 Interactive Features:
-  • rapidkit create project --interactive    # Guided project setup
-  • rapidkit modules install-interactive     # Browse & install modules
-  • rapidkit modules configure               # Setup project configuration
+Global commands:
+  rapidkit version       Show version information
+  rapidkit project       Detect project and show metadata
+  rapidkit create        Create new project from a kit
+  rapidkit add           Add module to current project
+  rapidkit list          List available kits
+  rapidkit info          Show kit information
+  rapidkit upgrade       Upgrade project templates
+  rapidkit diff          Compare template changes
+  rapidkit doctor        Diagnose environment
+  rapidkit license       Manage license
+  rapidkit reconcile     Resolve pending snippets
+  rapidkit rollback      Roll back changes
+  rapidkit uninstall     Remove module
+  rapidkit checkpoint    Create checkpoint
+  rapidkit optimize      Optimize project
+  rapidkit snapshot      Snapshot utilities
+  rapidkit frameworks    Detect or scaffold frameworks
+  rapidkit modules       List/install/manage modules
+  rapidkit merge         Merge changes
+  rapidkit --tui         Launch interactive TUI
+  rapidkit --version     Show version information
 
-🔍 Module Management:
-  • rapidkit modules list                    # Browse available modules
-  • rapidkit modules search <query>          # Search modules
-  • rapidkit modules info <name>             # Detailed module info"""
+Project commands (inside a RapidKit project):
+  rapidkit init          Initialize project dependencies
+  rapidkit dev           Start dev server
+  rapidkit start         Start production server
+  rapidkit build         Build for production
+  rapidkit test          Run tests
+  rapidkit lint          Run lint checks
+  rapidkit format        Format code
+  rapidkit help          Show project help
+
+Common tasks:
+    rapidkit create project
+    rapidkit create project fastapi.standard my-api
+    rapidkit create project nestjs.standard my-api
+    rapidkit create project fastapi.standard my-api --output /path/to/workspace
+    cd my-api && rapidkit init
+    rapidkit dev
+    rapidkit add module auth
+    rapidkit modules list
+
+Quick start:
+    rapidkit create project fastapi.standard my-api && cd my-api && rapidkit init && rapidkit dev
+
+Notes:
+  • Project commands auto-detect .rapidkit/"""
     ),
     no_args_is_help=True,
     rich_markup_mode=None,  # Disable rich markup to avoid compatibility issues

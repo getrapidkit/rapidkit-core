@@ -1,7 +1,7 @@
 import { Module } from "@nestjs/common";
 
-import { {{ module_class_name }}Module } from "./users_profiles.module";
-import { {{ module_class_name }}HealthController } from "./users_profiles.health.controller";
+import { {{ module_class_name }}Module } from "../modules/free/users/users_profiles/users-profiles.module";
+import { {{ module_class_name }}HealthController } from "./users_profiles-health.controller";
 
 @Module({
   imports: [{{ module_class_name }}Module],

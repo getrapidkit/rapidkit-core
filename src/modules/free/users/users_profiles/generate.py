@@ -46,12 +46,10 @@ PYTHON_TYPES_BRIDGE_REL = "src/modules/free/users/users_profiles/users_profiles_
 FASTAPI_CONFIG_REL = "config/users/users_profiles.yaml"
 FASTAPI_TEST_REL = "tests/modules/integration/users/test_users_profiles_integration.py"
 
-NEST_SERVICE_REL = "src/modules/free/users/users_profiles/users_profiles/users_profiles.service.ts"
-NEST_MODULE_REL = "src/modules/free/users/users_profiles/users_profiles/users_profiles.module.ts"
-NEST_INDEX_REL = "src/modules/free/users/users_profiles/users_profiles/index.ts"
-NEST_CONFIGURATION_REL = (
-    "src/modules/free/users/users_profiles/users_profiles/users_profiles.configuration.ts"
-)
+NEST_SERVICE_REL = "src/modules/free/users/users_profiles/users-profiles.service.ts"
+NEST_MODULE_REL = "src/modules/free/users/users_profiles/users-profiles.module.ts"
+NEST_INDEX_REL = "src/modules/free/users/users_profiles/index.ts"
+NEST_CONFIGURATION_REL = "src/modules/free/users/users_profiles/users-profiles.configuration.ts"
 NEST_HEALTH_CONTROLLER_REL = "src/health/users_profiles-health.controller.ts"
 NEST_HEALTH_MODULE_REL = "src/health/users_profiles-health.module.ts"
 NEST_TEST_REL = "tests/modules/integration/users/users_profiles.integration.spec.ts"

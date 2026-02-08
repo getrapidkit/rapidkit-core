@@ -24,8 +24,12 @@ install-dev: ## Install all development dependencies
 	poetry install
 
 install-pre-commit: ## Install pre-commit hooks
-	poetry run pre-commit install
-	poetry run pre-commit install --hook-type commit-msg
+	@if [ ! -d .git ]; then \
+		echo "Skipping pre-commit install (not a git repo)."; \
+	else \
+		poetry run pre-commit install; \
+		poetry run pre-commit install --hook-type commit-msg; \
+	fi
 
 install-all: install-dev install-pre-commit ## Install dev deps + hooks
 

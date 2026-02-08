@@ -37,11 +37,11 @@ class NestJSPlugin(FrameworkPlugin):
 
     def get_output_paths(self) -> Dict[str, str]:
         return {
-            "profiles_index": "src/modules/free/users/users_profiles/users_profiles/index.ts",
-            "profiles_service": "src/modules/free/users/users_profiles/users_profiles/users_profiles.service.ts",
-            "profiles_controller": "src/modules/free/users/users_profiles/users_profiles/users_profiles.controller.ts",
-            "profiles_module": "src/modules/free/users/users_profiles/users_profiles/users_profiles.module.ts",
-            "profiles_configuration": "src/modules/free/users/users_profiles/users_profiles/users_profiles.configuration.ts",
+            "profiles_index": "src/modules/free/users/users_profiles/index.ts",
+            "profiles_service": "src/modules/free/users/users_profiles/users-profiles.service.ts",
+            "profiles_controller": "src/modules/free/users/users_profiles/users-profiles.controller.ts",
+            "profiles_module": "src/modules/free/users/users_profiles/users-profiles.module.ts",
+            "profiles_configuration": "src/modules/free/users/users_profiles/users-profiles.configuration.ts",
             "profiles_health_controller": "src/health/users_profiles-health.controller.ts",
             "profiles_health_module": "src/health/users_profiles-health.module.ts",
             "integration_test": "tests/modules/integration/users/users_profiles.integration.spec.ts",
@@ -67,7 +67,7 @@ class NestJSPlugin(FrameworkPlugin):
 
     def pre_generation_hook(self, output_dir: Path) -> None:
         base = output_dir / "src" / "modules" / "free" / "users" / "users_profiles"
-        (base / "users_profiles").mkdir(parents=True, exist_ok=True)
+        base.mkdir(parents=True, exist_ok=True)
         (output_dir / "tests" / "modules" / "integration" / "users").mkdir(
             parents=True, exist_ok=True
         )

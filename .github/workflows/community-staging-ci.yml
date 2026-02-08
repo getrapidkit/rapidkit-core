@@ -28,6 +28,7 @@ env:
     PIP_DISABLE_PIP_VERSION_CHECK: "1"
     POETRY_VIRTUALENVS_IN_PROJECT: "true"
     COVERAGE_THRESHOLD: ${{ vars.COVERAGE_THRESHOLD || 55 }}
+    RAPIDKIT_NPM_DIR: rapidkit-npm
 
 jobs:
     lint:
@@ -242,6 +243,55 @@ jobs:
               with:
                   name: coverage-final
                   path: coverage.xml
+
+    npm-contracts:
+        name: NPM Contracts (Optional)
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout repository
+              uses: actions/checkout@v4
+
+            - name: Detect npm workspace
+              id: npm_detect
+              run: |
+                  if [ -d "${{ env.RAPIDKIT_NPM_DIR }}" ]; then
+                    echo "found=true" >> "$GITHUB_OUTPUT"
+                  else
+                    echo "found=false" >> "$GITHUB_OUTPUT"
+                  fi
+
+            - name: Setup Node.js
+              if: steps.npm_detect.outputs.found == 'true'
+              uses: actions/setup-node@v4
+              with:
+                  node-version: "20"
+                  cache: npm
+                  cache-dependency-path: ${{ env.RAPIDKIT_NPM_DIR }}/package-lock.json
+
+            - name: Install npm dependencies
+              if: steps.npm_detect.outputs.found == 'true'
+              working-directory: ${{ env.RAPIDKIT_NPM_DIR }}
+              run: npm ci
+
+            - name: Check contracts sync (Core ↔ NPM)
+              if: steps.npm_detect.outputs.found == 'true'
+              working-directory: ${{ env.RAPIDKIT_NPM_DIR }}
+              env:
+                  RAPIDKIT_CORE_SCHEMA_PATH: ${{ github.workspace }}/docs/contracts/rapidkit-cli-contracts.json
+              run: |
+                  if [ -f "${RAPIDKIT_CORE_SCHEMA_PATH}" ]; then
+                    npm run check:contracts
+                  else
+                    echo "Skipping contract sync check (schema missing)"
+                  fi
+
+            - name: Run drift guard (Core ↔ NPM contracts)
+              if: steps.npm_detect.outputs.found == 'true'
+              working-directory: ${{ env.RAPIDKIT_NPM_DIR }}
+              env:
+                  RAPIDKIT_DRIFT_GUARD: "1"
+                  RAPIDKIT_DRIFT_GUARD_MODE: "monorepo"
+              run: npm run test:drift
 
     security:
         name: Security Analysis

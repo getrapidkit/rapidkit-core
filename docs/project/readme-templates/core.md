@@ -60,12 +60,12 @@ docker-compose down -v         # Remove volumes
 
 ## 📚 Documentation
 
-For detailed documentation, visit our [docs](https://github.com/getrapidkit/community).
+For detailed documentation, visit our [docs](https://github.com/getrapidkit/rapidkit-core).
 
 ## 🤝 Contributing
 
 We welcome contributions! Please see our
-[contributing guide](https://github.com/getrapidkit/community/blob/main/CONTRIBUTING.md).
+[contributing guide](https://github.com/getrapidkit/rapidkit-core/blob/main/CONTRIBUTING.md).
 
 ## 📄 License
 
@@ -76,4 +76,5 @@ details.
 
 - Join our [Discord](https://discord.gg/rapidkit) for community support
 - Follow us on [Twitter](https://twitter.com/getrapidkit) for updates
-- Check out our [GitHub Discussions](https://github.com/getrapidkit/community/discussions) for Q&A
+- Check out our [GitHub Discussions](https://github.com/getrapidkit/rapidkit-core/discussions) for
+  Q&A
