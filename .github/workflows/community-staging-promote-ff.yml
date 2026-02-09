@@ -65,7 +65,12 @@ jobs:
                   TARGET_BRANCH: ${{ inputs.target_branch }}
               run: |
                   set -euo pipefail
-                  git fetch community "${TARGET_BRANCH}" --prune
+                  if git ls-remote --exit-code --heads community "${TARGET_BRANCH}" >/dev/null 2>&1; then
+                      git fetch community "${TARGET_BRANCH}" --prune
+                  else
+                      echo "Target branch '${TARGET_BRANCH}' not found in community repo; fetching all refs." >&2
+                      git fetch community --prune
+                  fi
 
             - name: Verify fast-forward
               env:
