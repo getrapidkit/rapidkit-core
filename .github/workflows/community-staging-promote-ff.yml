@@ -107,7 +107,13 @@ jobs:
             - name: Push history to community
               if: ${{ inputs.dry_run != 'true' }}
               env:
+                  COMMUNITY_PUSH_TOKEN: ${{ secrets.COMMUNITY_PUSH_TOKEN }}
+                  TARGET_REPO: ${{ inputs.target_repo }}
                   TARGET_BRANCH: ${{ inputs.target_branch }}
               run: |
                   set -euo pipefail
-                  git push community HEAD:"${TARGET_BRANCH}"
+                  if [[ -z "$COMMUNITY_PUSH_TOKEN" ]]; then
+                      echo "Missing COMMUNITY_PUSH_TOKEN secret" >&2
+                      exit 1
+                  fi
+                  git push "https://x-access-token:${COMMUNITY_PUSH_TOKEN}@github.com/${TARGET_REPO}.git" HEAD:"${TARGET_BRANCH}"
