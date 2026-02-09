@@ -60,6 +60,28 @@ jobs:
                       git remote add community "$remote_url"
                   fi
 
+            - name: Validate token can access target repo
+              env:
+                  COMMUNITY_PUSH_TOKEN: ${{ secrets.COMMUNITY_PUSH_TOKEN }}
+                  TARGET_REPO: ${{ inputs.target_repo }}
+              run: |
+                  set -euo pipefail
+                  if [[ -z "$COMMUNITY_PUSH_TOKEN" ]]; then
+                      echo "Missing COMMUNITY_PUSH_TOKEN secret" >&2
+                      exit 1
+                  fi
+                  # Validate via GitHub API using repo metadata access (does not print token)
+                  code=$(curl -sS -o /dev/null -w "%{http_code}" \
+                    -H "Authorization: Bearer ${COMMUNITY_PUSH_TOKEN}" \
+                    -H "X-GitHub-Api-Version: 2022-11-28" \
+                    "https://api.github.com/repos/${TARGET_REPO}")
+                  echo "Token repo metadata access check for ${TARGET_REPO}: HTTP ${code}"
+                  if [[ "${code}" != "200" ]]; then
+                      echo "Token cannot access target repo via API (expected 200)." >&2
+                      echo "Common causes: wrong owner/repo, fine-grained token not org-scoped/approved, or missing permissions." >&2
+                      exit 1
+                  fi
+
             - name: Fetch community branch
               env:
                   TARGET_BRANCH: ${{ inputs.target_branch }}
@@ -116,4 +138,5 @@ jobs:
                       echo "Missing COMMUNITY_PUSH_TOKEN secret" >&2
                       exit 1
                   fi
-                  git push "https://x-access-token:${COMMUNITY_PUSH_TOKEN}@github.com/${TARGET_REPO}.git" HEAD:"${TARGET_BRANCH}"
+                  # Use the configured remote to avoid any credential ambiguity
+                  git push community HEAD:"${TARGET_BRANCH}"
