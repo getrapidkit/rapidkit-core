@@ -36,6 +36,14 @@ jobs:
               uses: actions/checkout@v4
               with:
                   fetch-depth: 0
+                  persist-credentials: false
+
+            - name: Remove checkout auth header
+              run: |
+                  set -euo pipefail
+                  # actions/checkout may set an auth extraheader for GITHUB_TOKEN (github-actions[bot]).
+                  # Unset it so our PAT remote URL is actually used for fetch/push.
+                  git config --local --unset-all http.https://github.com/.extraheader || true
 
             - name: Configure git
               run: |
