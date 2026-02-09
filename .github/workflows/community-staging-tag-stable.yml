@@ -1,0 +1,243 @@
+name: "🏷️ Create Staging Stable Tag"
+
+on:
+    workflow_dispatch:
+        inputs:
+            version:
+                description: "Stable version X.Y.Z (optional; defaults to pyproject.toml base X.Y.Z)"
+                required: false
+                type: string
+            auto_promote:
+                description: "After tagging, auto-promote to rapidkit-core via PR"
+                required: false
+                default: "false"
+                type: choice
+                options:
+                    - "false"
+                    - "true"
+            dry_run:
+                description: "Only compute and validate; do not commit/tag/push"
+                required: false
+                default: "false"
+                type: choice
+                options:
+                    - "false"
+                    - "true"
+
+concurrency:
+    group: community-staging-tag-stable-${{ github.ref }}
+    cancel-in-progress: true
+
+jobs:
+    tag:
+        runs-on: ubuntu-latest
+        permissions:
+            contents: write
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+                  fetch-tags: true
+
+            - name: Install Poetry
+              uses: snok/install-poetry@v1
+              with:
+                  version: "2.2.1"
+                  virtualenvs-in-project: true
+                  virtualenvs-create: true
+
+            - name: Configure git identity
+              run: |
+                  set -euo pipefail
+                  git config --global user.name "rapidkit-bot"
+                  git config --global user.email "actions@users.noreply.github.com"
+
+            - name: Resolve stable version
+              id: v
+              run: |
+                  set -euo pipefail
+
+                  input="${{ inputs.version }}"
+                  if [[ -n "$input" ]]; then
+                      base="$input"
+                  else
+                      raw=$(awk -F '"' '/^version =/ {print $2; exit}' pyproject.toml)
+                      base=$(echo "$raw" | grep -Eo '^[0-9]+\.[0-9]+\.[0-9]+' || true)
+                      if [[ -z "$base" ]]; then
+                          echo "Unable to resolve base X.Y.Z from pyproject.toml version: $raw" >&2
+                          exit 1
+                      fi
+                  fi
+
+                  if ! [[ "$base" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+                      echo "Invalid stable version (expected X.Y.Z): $base" >&2
+                      exit 1
+                  fi
+
+                  echo "stable_version=$base" >> "$GITHUB_OUTPUT"
+                  echo "stable_tag=v$base" >> "$GITHUB_OUTPUT"
+
+            - name: Validate tag does not already exist
+              run: |
+                  set -euo pipefail
+                  tag="${{ steps.v.outputs.stable_tag }}"
+                  git fetch --tags --force
+                  if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+                      echo "Tag already exists: $tag" >&2
+                      exit 1
+                  fi
+
+            - name: Show stable tag
+              run: |
+                  echo "Stable version: ${{ steps.v.outputs.stable_version }}"
+                  echo "Stable tag: ${{ steps.v.outputs.stable_tag }}"
+
+            - name: Bump pyproject version (stable) and commit
+              if: ${{ inputs.dry_run != 'true' }}
+              run: |
+                  set -euo pipefail
+
+                  stable="${{ steps.v.outputs.stable_version }}"
+                  echo "Bumping project version to: $stable"
+
+                  poetry version "$stable"
+
+                  if poetry lock --help 2>/dev/null | grep -q -- '--no-update'; then
+                      poetry lock --no-update
+                  else
+                      poetry lock
+                  fi
+
+                  git add pyproject.toml poetry.lock
+                  if git diff --cached --quiet; then
+                      echo "No version changes to commit (already at $stable)."
+                  else
+                      git commit -m "chore(release): bump version to $stable"
+                  fi
+
+            - name: Create and push stable tag
+              if: ${{ inputs.dry_run != 'true' }}
+              env:
+                  STAGING_TAG_PUSH_TOKEN: ${{ secrets.STAGING_TAG_PUSH_TOKEN }}
+              run: |
+                  set -euo pipefail
+
+                  tag="${{ steps.v.outputs.stable_tag }}"
+                  stable="${{ steps.v.outputs.stable_version }}"
+
+                  git tag -a "$tag" -m "Stable: $tag"
+
+                  if [[ -n "${STAGING_TAG_PUSH_TOKEN:-}" ]]; then
+                      # Use PAT so the tag push can trigger downstream workflows.
+                      git remote set-url origin "https://x-access-token:${STAGING_TAG_PUSH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+                  else
+                      echo "NOTE: STAGING_TAG_PUSH_TOKEN is not set. Pushing tag with GITHUB_TOKEN may not trigger other workflows." >&2
+                      echo "      If you want tag -> publish to auto-run, add a PAT secret named STAGING_TAG_PUSH_TOKEN (repo+workflow)." >&2
+                  fi
+
+                  # Push version bump commit first (so the tag points at the correct pyproject version)
+                  git push origin "HEAD:${GITHUB_REF_NAME}"
+                  git push origin "$tag"
+
+                  echo "Pushed stable tag: $tag (version $stable)"
+
+            - name: Add core remote (for auto-promote)
+              if: ${{ inputs.dry_run != 'true' && inputs.auto_promote == 'true' }}
+              env:
+                  CORE_PUSH_TOKEN: ${{ secrets.CORE_PUSH_TOKEN }}
+              run: |
+                  set -euo pipefail
+                  if [[ -z "${CORE_PUSH_TOKEN:-}" ]]; then
+                      echo "Missing CORE_PUSH_TOKEN secret" >&2
+                      echo "Create a fine-grained PAT with permissions for getrapidkit/rapidkit-core: Contents=Read/Write, Pull requests=Read/Write." >&2
+                      exit 1
+                  fi
+                  remote_url="https://x-access-token:${CORE_PUSH_TOKEN}@github.com/getrapidkit/rapidkit-core.git"
+                  if git remote get-url core >/dev/null 2>&1; then
+                      git remote set-url core "$remote_url"
+                  else
+                      git remote add core "$remote_url"
+                  fi
+
+            - name: Fetch core main (for workflow restore)
+              if: ${{ inputs.dry_run != 'true' && inputs.auto_promote == 'true' }}
+              run: |
+                  set -euo pipefail
+                  git fetch core main --prune
+
+            - name: Create promote branch from stable tag
+              if: ${{ inputs.dry_run != 'true' && inputs.auto_promote == 'true' }}
+              env:
+                  STABLE_TAG: ${{ steps.v.outputs.stable_tag }}
+              run: |
+                  set -euo pipefail
+                  safe="$STABLE_TAG"
+                  safe="${safe//\//-}"
+                  safe="${safe// /-}"
+                  safe="${safe//:/-}"
+                  safe="${safe//#/}"
+                  promote_branch="promote/${safe}"
+                  echo "PROMOTE_BRANCH=$promote_branch" >> "$GITHUB_ENV"
+                  git checkout -B "$promote_branch" "$STABLE_TAG"
+
+            - name: Keep core workflows authoritative (auto-promote)
+              if: ${{ inputs.dry_run != 'true' && inputs.auto_promote == 'true' }}
+              run: |
+                  set -euo pipefail
+
+                  if git cat-file -e "core/main:.github/workflows" 2>/dev/null; then
+                      git checkout "core/main" -- .github/workflows
+                  else
+                      rm -rf .github/workflows || true
+                  fi
+
+                  if ! git diff --quiet -- .github/workflows 2>/dev/null; then
+                      git add -A .github/workflows
+                      git commit -m "chore: keep core GitHub workflows"
+                  else
+                      echo "Workflows already match core/main."
+                  fi
+
+            - name: Push promote branch to core (auto-promote)
+              if: ${{ inputs.dry_run != 'true' && inputs.auto_promote == 'true' }}
+              run: |
+                  set -euo pipefail
+                  git push core "HEAD:${PROMOTE_BRANCH}"
+
+            - name: Create PR in core (auto-promote)
+              if: ${{ inputs.dry_run != 'true' && inputs.auto_promote == 'true' }}
+              env:
+                  CORE_PUSH_TOKEN: ${{ secrets.CORE_PUSH_TOKEN }}
+                  SOURCE_REF: ${{ steps.v.outputs.stable_tag }}
+              run: |
+                  set -euo pipefail
+
+                  owner="getrapidkit"
+                  repo="rapidkit-core"
+                  head="${owner}:${PROMOTE_BRANCH}"
+
+                  title="Promote ${SOURCE_REF} → main"
+                  body=$'Automated promote from staging stable tag '\''${SOURCE_REF}'\''.'"\n\n"$'- Keeps rapidkit-core workflows authoritative by restoring .github/workflows from '\''main'\''.'
+
+                                    TITLE="$title" HEAD="$head" BASE="main" BODY="$body" \
+                                        python3 -c 'import json, os; print(json.dumps({"title": os.environ["TITLE"], "head": os.environ["HEAD"], "base": os.environ["BASE"], "body": os.environ["BODY"]}))' \
+                                        > /tmp/pr-payload.json
+
+                  code=$(curl -sS -o /tmp/pr.json -w "%{http_code}" \
+                    -H "Authorization: Bearer ${CORE_PUSH_TOKEN}" \
+                    -H "X-GitHub-Api-Version: 2022-11-28" \
+                    -H "Content-Type: application/json" \
+                    -d @/tmp/pr-payload.json \
+                    "https://api.github.com/repos/${owner}/${repo}/pulls")
+
+                  if [[ "$code" = "201" ]]; then
+                      url=$(python3 -c 'import json; print(json.load(open("/tmp/pr.json"))["html_url"])')
+                      echo "Created PR: $url"
+                      exit 0
+                  fi
+
+                  echo "PR create returned HTTP $code" >&2
+                  cat /tmp/pr.json >&2 || true
+                  echo "If a PR already exists for this branch, open it from the rapidkit-core UI." >&2
+                  exit 0
