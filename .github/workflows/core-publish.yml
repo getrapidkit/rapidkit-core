@@ -1,11 +1,14 @@
 name: "🚀 Publish to PyPI (Core)"
 
 on:
+    push:
+        tags:
+            - "v*.*.*"
     workflow_dispatch:
         inputs:
             environment:
                 description: "Target environment"
-                required: true
+                required: false
                 default: test
                 type: choice
                 options:
@@ -21,12 +24,55 @@ permissions:
     id-token: write
 
 jobs:
+    guard:
+        name: Guard (stable tag / env)
+        runs-on: ubuntu-latest
+        outputs:
+            environment: ${{ steps.env.outputs.environment }}
+        steps:
+            - id: env
+              shell: bash
+              run: |
+                  set -euo pipefail
+
+                  # Tag push -> always publish to production (stable tags only)
+                  if [[ "${{ github.event_name }}" == "push" ]]; then
+                      ref_name="${GITHUB_REF_NAME:-}"
+                      if ! [[ "$ref_name" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+                          echo "This workflow only publishes stable tags vX.Y.Z. Got: $ref_name" >&2
+                          exit 1
+                      fi
+                      echo "environment=production" >> "$GITHUB_OUTPUT"
+                      exit 0
+                  fi
+
+                  # workflow_dispatch -> default test, but production requires selecting a stable tag ref
+                  env_input="${{ github.event.inputs.environment || '' }}"
+                  if [[ -z "$env_input" ]]; then
+                      env_input="test"
+                  fi
+
+                  if [[ "$env_input" == "production" ]]; then
+                      if [[ "${{ github.ref_type }}" != "tag" ]]; then
+                          echo "For production publish, run this workflow on a stable tag ref (refs/tags/vX.Y.Z)." >&2
+                          exit 1
+                      fi
+                      ref_name="${GITHUB_REF_NAME:-}"
+                      if ! [[ "$ref_name" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+                          echo "For production publish, tag must be stable vX.Y.Z. Got: $ref_name" >&2
+                          exit 1
+                      fi
+                  fi
+
+                  echo "environment=$env_input" >> "$GITHUB_OUTPUT"
+
     publish:
-        name: Community publish pipeline
+        name: Core publish pipeline
+        needs: guard
         uses: ./.github/workflows/python-publish.yml
         secrets: inherit
         with:
-            environment: ${{ github.event.inputs.environment || 'test' }}
+            environment: ${{ needs.guard.outputs.environment }}
             python-version: ${{ vars.PYTHON_VERSION || '3.10' }}
             distribution-tier: community
             limited-mode: true
