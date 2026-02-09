@@ -1,0 +1,35 @@
+name: "🚀 Publish to PyPI (Community)"
+
+on:
+    workflow_dispatch:
+        inputs:
+            environment:
+                description: "Target environment"
+                required: true
+                default: test
+                type: choice
+                options:
+                    - test
+                    - production
+
+concurrency:
+    group: community-publish-${{ github.ref }}
+    cancel-in-progress: true
+
+permissions:
+    contents: read
+    id-token: write
+
+jobs:
+    publish:
+        name: Community publish pipeline
+        uses: ./.github/workflows/python-publish.yml
+        secrets: inherit
+        with:
+            environment: ${{ github.event.inputs.environment || 'test' }}
+            python-version: ${{ vars.PYTHON_VERSION || '3.10' }}
+            distribution-tier: community
+            limited-mode: true
+            run-tests: true
+            build-docs: true
+            allow-production: true
