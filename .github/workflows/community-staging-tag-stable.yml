@@ -7,6 +7,14 @@ on:
                 description: "Stable version X.Y.Z (optional; defaults to pyproject.toml base X.Y.Z)"
                 required: false
                 type: string
+            skip_bump_commit:
+                description: "Skip bump/commit/push; only create & push the stable tag on current HEAD (requires pyproject.toml already matches the stable version)"
+                required: false
+                default: "false"
+                type: choice
+                options:
+                    - "false"
+                    - "true"
             auto_promote:
                 description: "After tagging, auto-promote to rapidkit-core via PR"
                 required: false
@@ -107,8 +115,25 @@ jobs:
                   echo "Stable version: ${{ steps.v.outputs.stable_version }}"
                   echo "Stable tag: ${{ steps.v.outputs.stable_tag }}"
 
+            - name: Validate pyproject already at stable version (skip bump)
+              if: ${{ inputs.dry_run != 'true' && inputs.skip_bump_commit == 'true' }}
+              run: |
+                  set -euo pipefail
+                  expected="${{ steps.v.outputs.stable_version }}"
+                  raw=$(awk -F '"' '/^version =/ {print $2; exit}' pyproject.toml)
+                  current=$(echo "$raw" | grep -Eo '^[0-9]+\.[0-9]+\.[0-9]+' || true)
+                  if [[ -z "$current" ]]; then
+                      echo "Unable to resolve current X.Y.Z from pyproject.toml version: $raw" >&2
+                      exit 1
+                  fi
+                  if [[ "$current" != "$expected" ]]; then
+                      echo "skip_bump_commit=true but pyproject.toml is $current (expected $expected)." >&2
+                      echo "Either bump version first (or set skip_bump_commit=false), then re-run." >&2
+                      exit 1
+                  fi
+
             - name: Bump pyproject version (stable) and commit
-              if: ${{ inputs.dry_run != 'true' }}
+              if: ${{ inputs.dry_run != 'true' && inputs.skip_bump_commit != 'true' }}
               run: |
                   set -euo pipefail
 
@@ -151,7 +176,12 @@ jobs:
                   fi
 
                   # Push version bump commit first (so the tag points at the correct pyproject version)
-                  git push origin "HEAD:${GITHUB_REF_NAME}"
+                  # unless skip_bump_commit=true.
+                  if [[ "${{ inputs.skip_bump_commit }}" != "true" ]]; then
+                      git push origin "HEAD:${GITHUB_REF_NAME}"
+                  else
+                      echo "skip_bump_commit=true: not pushing a version bump commit."
+                  fi
                   git push origin "$tag"
 
                   echo "Pushed stable tag: $tag (version $stable)"
