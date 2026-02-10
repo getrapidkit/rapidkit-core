@@ -8,6 +8,14 @@ on:
         required: false
         default: "main"
         type: string
+      sign_tag:
+        description: "Create a GPG-signed tag (shows Verified on GitHub if key is trusted)"
+        required: false
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
       dry_run:
         description: "Compute/validate only; do not tag/push"
         required: false
@@ -96,6 +104,32 @@ jobs:
             exit 1
           fi
 
+      - name: "Guard: require GPG secrets when signing"
+        if: ${{ inputs.dry_run != 'true' && inputs.sign_tag == 'true' }}
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.CORE_TAG_GPG_PRIVATE_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.CORE_TAG_GPG_PASSPHRASE }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${GPG_PRIVATE_KEY:-}" ]]; then
+            echo "Missing CORE_TAG_GPG_PRIVATE_KEY secret." >&2
+            exit 1
+          fi
+          if [[ -z "${GPG_PASSPHRASE:-}" ]]; then
+            echo "Missing CORE_TAG_GPG_PASSPHRASE secret." >&2
+            exit 1
+          fi
+
+      - name: Import GPG key (for signed tags)
+        if: ${{ inputs.dry_run != 'true' && inputs.sign_tag == 'true' }}
+        uses: crazy-max/ghaction-import-gpg@v6
+        with:
+          gpg_private_key: ${{ secrets.CORE_TAG_GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.CORE_TAG_GPG_PASSPHRASE }}
+          git_user_signingkey: true
+          git_tag_gpgsign: true
+
       - name: Create and push tag
         if: ${{ inputs.dry_run != 'true' }}
         env:
@@ -107,7 +141,11 @@ jobs:
 
           git config --global user.name "rapidkit-bot"
           git config --global user.email "actions@users.noreply.github.com"
-          git tag -a "$tag" -m "Release $tag"
+          if [[ "${{ inputs.sign_tag }}" == "true" ]]; then
+            git tag -s "$tag" -m "Release $tag"
+          else
+            git tag -a "$tag" -m "Release $tag"
+          fi
 
           git remote set-url origin "https://x-access-token:${CORE_TAG_PUSH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
           git push origin "$tag"
