@@ -71,6 +71,11 @@ jobs:
         run: |
           set -euo pipefail
           tag="${{ steps.v.outputs.tag }}"
+
+          # actions/checkout runs with persist-credentials=false, so origin has no auth.
+          # Ensure fetch works for private repos by using the workflow's GITHUB_TOKEN.
+          token="${{ github.token }}"
+          git remote set-url origin "https://x-access-token:${token}@github.com/${GITHUB_REPOSITORY}.git"
           git fetch --tags --force
           if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
             echo "Tag already exists: $tag" >&2
