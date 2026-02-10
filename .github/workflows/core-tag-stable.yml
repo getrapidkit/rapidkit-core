@@ -1,0 +1,109 @@
+name: "🏷️ Tag Stable Version (Core)"
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref to tag (default: main)"
+        required: false
+        default: "main"
+        type: string
+      dry_run:
+        description: "Compute/validate only; do not tag/push"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+concurrency:
+  group: core-tag-stable-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+
+      - name: Remove checkout auth header
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config --local --unset-all http.https://github.com/.extraheader || true
+
+      - name: Resolve stable version from pyproject.toml
+        id: v
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          version=$(awk -F '"' 'BEGIN{in_poetry=0} /^\[tool\.poetry\]$/{in_poetry=1;next} in_poetry && /^\[/{in_poetry=0} in_poetry && /^version =/{print $2; exit}' pyproject.toml)
+          if [[ -z "${version:-}" ]]; then
+            echo "Unable to read [tool.poetry].version from pyproject.toml" >&2
+            exit 1
+          fi
+
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "This workflow only creates STABLE tags from X.Y.Z versions." >&2
+            echo "pyproject.toml version is: $version" >&2
+            echo "Tip: pre-releases like 1.2.3rc1 should use a separate RC tagging workflow." >&2
+            exit 1
+          fi
+
+          tag="v$version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "Resolved stable tag: $tag"
+
+      - name: Ensure tag does not already exist
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="${{ steps.v.outputs.tag }}"
+          git fetch --tags --force
+          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+            echo "Tag already exists: $tag" >&2
+            exit 1
+          fi
+
+      - name: "Guard: require PAT for tag push"
+        if: ${{ inputs.dry_run != 'true' }}
+        env:
+          CORE_TAG_PUSH_TOKEN: ${{ secrets.CORE_TAG_PUSH_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${CORE_TAG_PUSH_TOKEN:-}" ]]; then
+            echo "Missing CORE_TAG_PUSH_TOKEN secret." >&2
+            echo "Reason: pushing tags with GITHUB_TOKEN may not trigger downstream workflows (core-publish)." >&2
+            echo "Fix: create a fine-grained PAT secret CORE_TAG_PUSH_TOKEN with: Contents=Read/Write and Workflows=Read/Write." >&2
+            exit 1
+          fi
+
+      - name: Create and push tag
+        if: ${{ inputs.dry_run != 'true' }}
+        env:
+          CORE_TAG_PUSH_TOKEN: ${{ secrets.CORE_TAG_PUSH_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="${{ steps.v.outputs.tag }}"
+
+          git config --global user.name "rapidkit-bot"
+          git config --global user.email "actions@users.noreply.github.com"
+          git tag -a "$tag" -m "Release $tag"
+
+          git remote set-url origin "https://x-access-token:${CORE_TAG_PUSH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push origin "$tag"
+          echo "Pushed stable tag: $tag"

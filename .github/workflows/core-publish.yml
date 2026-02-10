@@ -79,3 +79,66 @@ jobs:
             run-tests: true
             build-docs: true
             allow-production: true
+
+    release:
+        name: Create GitHub Release
+        needs: [guard, publish]
+        runs-on: ubuntu-latest
+        if: ${{ needs.guard.outputs.environment == 'production' && github.ref_type == 'tag' && startsWith(github.ref_name, 'v') }}
+        permissions:
+            contents: write
+        steps:
+            - name: Checkout (with tags)
+              uses: actions/checkout@v4
+              with:
+                  fetch-depth: 0
+                  fetch-tags: true
+
+            - name: Download dist artifacts
+              uses: actions/download-artifact@v4
+              with:
+                  name: dist
+                  path: .
+
+            - name: Build release body
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  tag="${GITHUB_REF_NAME}"
+                  version="${tag#v}"
+
+                  prev_tag=$(git tag -l 'v*' --sort=version:refname | grep -v "^${tag}$" | tail -n 1 || true)
+                  compare_url=""
+                  if [[ -n "${prev_tag:-}" ]]; then
+                      compare_url="https://github.com/${GITHUB_REPOSITORY}/compare/${prev_tag}...${tag}"
+                  fi
+
+                  {
+                    echo "## rapidkit-core ${tag}"
+                    echo
+                    echo "- PyPI: https://pypi.org/project/rapidkit-core/${version}/"
+                    if [[ -n "${compare_url}" ]]; then
+                      echo "- Compare: ${compare_url}"
+                    fi
+                    echo "- Commit: https://github.com/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}"
+                    echo
+                    echo "### Changelog"
+                    if [[ -f CHANGELOG.md ]]; then
+                      awk 'BEGIN{p=0} /^## /{if(p) exit; p=1} {if(p) print}' CHANGELOG.md | sed 's/^$/\n/' || true
+                    else
+                      echo "CHANGELOG.md not found."
+                    fi
+                    echo
+                    echo "### Notes"
+                    echo "- This release is published from tag **${tag}** (version matches pyproject.toml)."
+                    echo "- Checksums are available in **SHA256SUMS.txt** inside the attached artifacts."
+                  } > release_body.md
+
+            - name: Create GitHub Release
+              uses: softprops/action-gh-release@v2
+              with:
+                  tag_name: ${{ github.ref_name }}
+                  name: "Release ${{ github.ref_name }}"
+                  body_path: release_body.md
+                  files: |
+                      dist/*

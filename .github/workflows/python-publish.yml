@@ -205,6 +205,22 @@ jobs:
                   poetry run python -m pip install --upgrade twine
                   poetry run twine check dist/*
 
+            - name: Generate checksums
+              shell: bash
+              run: |
+                  set -euo pipefail
+                  cd dist
+                  sha256sum * > SHA256SUMS.txt
+
+            - name: Upload dist artifacts
+              if: ${{ always() }}
+              uses: actions/upload-artifact@v4
+              with:
+                  name: dist
+                  path: |
+                      dist/*
+                  if-no-files-found: error
+
             - name: "Guard: prevent production publish of pre-release tags"
               if: ${{ inputs.allow-production }}
               shell: bash
