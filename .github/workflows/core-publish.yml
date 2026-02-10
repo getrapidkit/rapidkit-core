@@ -131,7 +131,7 @@ jobs:
                     echo
                     echo "### Notes"
                     echo "- This release is published from tag **${tag}** (version matches pyproject.toml)."
-                    echo "- Checksums are available in **SHA256SUMS.txt** inside the attached artifacts."
+                    echo "- Checksums are available in **SHA256SUMS.txt** (attached)."
                   } > release_body.md
 
             - name: Create GitHub Release
@@ -142,3 +142,4 @@ jobs:
                   body_path: release_body.md
                   files: |
                       dist/*
+                                            SHA256SUMS.txt

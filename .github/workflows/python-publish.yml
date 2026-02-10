@@ -209,8 +209,11 @@ jobs:
               shell: bash
               run: |
                   set -euo pipefail
-                  cd dist
-                  sha256sum * > SHA256SUMS.txt
+                  # NOTE: Do not write SHA256SUMS.txt into dist/.
+                  # pypa/gh-action-pypi-publish treats unknown files in packages-dir as errors.
+                  find dist -maxdepth 1 -type f \( -name '*.whl' -o -name '*.tar.gz' \) -print0 \
+                      | sort -z \
+                      | xargs -0 sha256sum > SHA256SUMS.txt
 
             - name: Upload dist artifacts
               if: ${{ always() }}
@@ -219,6 +222,7 @@ jobs:
                   name: dist
                   path: |
                       dist/*
+                      SHA256SUMS.txt
                   if-no-files-found: error
 
             - name: "Guard: prevent production publish of pre-release tags"
