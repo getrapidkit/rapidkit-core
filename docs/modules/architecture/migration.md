@@ -449,7 +449,7 @@ If you have custom modules:
 
 - **Migration Support**: migration@getrapidkit.com
 - **Documentation**: https://docs.getrapidkit.com/migration
-- **Community**: https://github.com/getrapidkit/core/discussions
+- **Community**: https://github.com/getrapidkit/rapidkit-core/discussions
 - **Professional Services**: https://services.getrapidkit.com
 
 ### Useful Commands

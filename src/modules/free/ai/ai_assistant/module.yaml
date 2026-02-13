@@ -1,7 +1,7 @@
 name: ai_assistant
 display_name: Ai Assistant
 description: Provider-agnostic...
-version: 0.1.7
+version: 0.1.10
 access: free
 status: stable
 category: ai
@@ -124,12 +124,12 @@ documentation:
     api_docs: docs/api-reference.md
     examples: []
 support:
-    issues: https://github.com/getrapidkit/core/issues
-    discussions: https://github.com/getrapidkit/core/discussions
+    issues: https://github.com/getrapidkit/rapidkit-core/issues
+    discussions: https://github.com/getrapidkit/rapidkit-core/discussions
     documentation: https://docs.rapidkit.top/modules/ai_assistant
 changelog:
-  - version: "0.1.7"
-    date: "2026-01-04"
+  - version: "0.1.13"
+    date: "2026-02-13"
     notes: "See docs/changelog.md"
 validation:
     pre_install:

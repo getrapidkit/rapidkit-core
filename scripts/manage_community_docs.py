@@ -18,13 +18,16 @@ except ImportError as exc:  # pragma: no cover - dependency guard
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 DOCS_MAP_PATH = REPO_ROOT / "docs" / "docs_map.yml"
-TEMPLATE_PATH = REPO_ROOT / "docs" / "community" / "README.template.md"
+# Single source of truth for the community README template.
+TEMPLATE_PATH = REPO_ROOT / "docs" / "readme-templates" / "community.md"
 ROOT_README_PATH = REPO_ROOT / "README.md"
 DEFAULT_RENDER_PATH = REPO_ROOT / "build" / "community" / "README.md"
 
 COMMUNITY_STAGING_MARKER = "community" + "-staging"
 
 BANNED_TOKENS: Dict[str, str] = {
+    "https://github.com/getrapidkit/"
+    "core": "Use https://github.com/getrapidkit/rapidkit-core for public links.",
     "fastapi.minimal": "Use the fastapi.standard kit in community documentation.",
     "pip install -e .": "Community docs should point to poetry install instead of editable installs.",
     "pip install -r": "Generated projects rely on Poetry; avoid pip install -r instructions.",
@@ -123,10 +126,6 @@ def check_banned_tokens(files: Iterable[Path]) -> Tuple[bool, List[str]]:
 def transform_template_for_root(template: str) -> str:
     content = template.replace("../../docs/", "docs/")
     content = content.replace("# RapidKit Community", "# RapidKit", 1)
-    content = content.replace(
-        "RapidKit Community ships under the [MIT License](LICENSE)",
-        "RapidKit is distributed under the [MIT License](LICENSE)",
-    )
     return content
 
 
@@ -170,7 +169,7 @@ def main(argv: Sequence[str] | None = None) -> int:
 
     if args.sync_root:
         sync_root_readme()
-        print("📝 Regenerated README.md from docs/community/README.template.md")
+        print("📝 Regenerated README.md from docs/readme-templates/community.md")
 
     if args.check_keywords:
         files = gather_community_docs()

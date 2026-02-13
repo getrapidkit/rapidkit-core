@@ -1,7 +1,7 @@
 name: inventory
 display_name: Inventory
 description: Inventory and pricing service backing Cart + Stripe
-version: 0.1.5
+version: 0.1.6
 access: free
 status: stable
 tier: free
@@ -123,12 +123,12 @@ documentation:
     api_docs: docs/api-reference.md
     examples: []
 support:
-    issues: https://github.com/getrapidkit/core/issues
-    discussions: https://github.com/getrapidkit/core/discussions
+    issues: https://github.com/getrapidkit/rapidkit-core/issues
+    discussions: https://github.com/getrapidkit/rapidkit-core/discussions
     documentation: https://docs.rapidkit.top/modules/billing/inventory
 changelog:
-  - version: "0.1.5"
-    date: "2026-02-06"
+  - version: "0.1.6"
+    date: "2026-02-11"
     notes: "See docs/changelog.md"
 validation:
     pre_install:

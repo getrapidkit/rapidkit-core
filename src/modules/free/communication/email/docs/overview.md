@@ -375,4 +375,5 @@ except EmailDeliveryError as e:
 - **Troubleshooting**: Delivery issues and debugging
 - **Migration Guide**: Upgrading from previous versions
 
-For issues and questions, visit our [GitHub repository](https://github.com/getrapidkit/core).
+For issues and questions, visit our
+[GitHub repository](https://github.com/getrapidkit/rapidkit-core).

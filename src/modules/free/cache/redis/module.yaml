@@ -1,7 +1,7 @@
 name: redis
 description: Unified Redis cache integration
 category: cache
-version: 0.1.8
+version: 0.1.9
 access: free
 status: stable
 tags:
@@ -115,13 +115,13 @@ documentation:
   api_docs: null
   examples: []
 support:
-  issues: https://github.com/getrapidkit/core/issues
-  discussions: https://github.com/getrapidkit/core/discussions
+  issues: https://github.com/getrapidkit/rapidkit-core/issues
+  discussions: https://github.com/getrapidkit/rapidkit-core/discussions
   documentation: https://docs.rapidkit.top/modules/redis
 changelog:
-- version: 0.1.8
-  date: '2025-12-14'
-  notes: See docs/changelog.md
+  - version: "0.1.9"
+    date: "2026-02-11"
+    notes: "See docs/changelog.md"
 validation:
   pre_install:
   - check_python_version

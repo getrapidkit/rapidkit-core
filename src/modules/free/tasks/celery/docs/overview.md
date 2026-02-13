@@ -271,4 +271,5 @@ Access at `/celery/status`.
 - **Overview**: This document
 - **Usage Guide**: `docs/usage.md`
 
-For issues and questions, visit our [GitHub repository](https://github.com/getrapidkit/core).
+For issues and questions, visit our
+[GitHub repository](https://github.com/getrapidkit/rapidkit-core).

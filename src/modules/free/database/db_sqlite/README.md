@@ -151,5 +151,5 @@ ______________________________________________________________________
 - API reference: `docs/api-reference.md`
 - Override contracts: `overrides.py`
 
-For additional help, open an issue at <https://github.com/getrapidkit/core/issues> or consult the
-full product documentation at <https://docs.rapidkit.top>.
+For additional help, open an issue at <https://github.com/getrapidkit/rapidkit-core/issues> or
+consult the full product documentation at <https://docs.rapidkit.top>.

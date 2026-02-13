@@ -57,9 +57,9 @@ licensing section. Until then, everything here is supported by the community pro
 
 ## 🚧 What to Expect Next
 
-Roadmap milestones and internal planning notes live in `docs/internal/`. Community releases will
-call out upcoming kits or module drops in the main [CHANGELOG](../CHANGELOG.md) and the
-distributions published through PyPI.
+Roadmap milestones are tracked via GitHub releases and Discussions. Community releases call out
+upcoming kits or module drops in the main [CHANGELOG](../CHANGELOG.md) and the distributions
+published through PyPI.
 
 ______________________________________________________________________
 

@@ -3,7 +3,7 @@ display_name: PostgreSQL
 description: Production-ready PostgreSQL integration with async/sync engines, connection
   pooling, transactions, health checks, and configuration scaffolding for FastAPI
   and NestJS applications
-version: 0.1.24
+version: 0.1.25
 access: free
 status: stable
 category: database
@@ -154,12 +154,12 @@ documentation:
   - docs/examples/connection_pooling.md
   - docs/examples/transactions.md
 support:
-  issues: https://github.com/getrapidkit/core/issues
-  discussions: https://github.com/getrapidkit/core/discussions
+  issues: https://github.com/getrapidkit/rapidkit-core/issues
+  discussions: https://github.com/getrapidkit/rapidkit-core/discussions
   documentation: https://docs.rapidkit.top/modules/db_postgres
 changelog:
-  - version: "0.1.24"
-    date: "2026-01-04"
+  - version: "0.1.25"
+    date: "2026-02-11"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

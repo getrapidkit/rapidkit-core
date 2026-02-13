@@ -1,5 +1,5 @@
 name: settings
-version: 0.1.32
+version: 0.1.35
 access: free
 status: stable
 category: essentials
@@ -127,12 +127,12 @@ documentation:
   api_docs: docs/api-reference.md
   examples: []
 support:
-  issues: https://github.com/getrapidkit/core/issues
-  discussions: https://github.com/getrapidkit/core/discussions
+  issues: https://github.com/getrapidkit/rapidkit-core/issues
+  discussions: https://github.com/getrapidkit/rapidkit-core/discussions
   documentation: https://docs.rapidkit.top/modules/settings
 changelog:
-  - version: "0.1.32"
-    date: "2026-01-04"
+  - version: "0.1.35"
+    date: "2026-02-12"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

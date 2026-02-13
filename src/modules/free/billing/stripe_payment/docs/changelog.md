@@ -1,5 +1,9 @@
 # Changelog — free/billing/stripe_payment
 
+## 0.1.2 — Automated patch release triggered by content hash change (2026-02-11)
+
+- chore: Automated patch release triggered by content hash change
+
 ## 0.1.1 — Automated patch release triggered by content hash change (2026-01-03)
 
 - chore: Automated patch release triggered by content hash change

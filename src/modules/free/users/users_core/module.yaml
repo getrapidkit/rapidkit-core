@@ -1,7 +1,7 @@
 name: users_core
 display_name: Users Core
 description: Opinionated domain services and HTTP adapters for managing RapidKit users
-version: 0.1.0
+version: 0.1.1
 access: free
 status: stable
 category: users
@@ -169,13 +169,13 @@ documentation:
   api_docs: null
   examples: []
 support:
-  issues: https://github.com/getrapidkit/core/issues
-  discussions: https://github.com/getrapidkit/core/discussions
+  issues: https://github.com/getrapidkit/rapidkit-core/issues
+  discussions: https://github.com/getrapidkit/rapidkit-core/discussions
   documentation: https://docs.rapidkit.top/modules/users-core
 changelog:
-- version: 0.1.0
-  date: '2025-12-14'
-  notes: See docs/changelog.md
+  - version: "0.1.1"
+    date: "2026-02-11"
+    notes: "See docs/changelog.md"
 validation:
   pre_install:
   - check_python_version

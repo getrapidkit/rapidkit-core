@@ -1,5 +1,17 @@
 # Changelog — free/core/settings
 
+## 0.1.35 — Automated patch release triggered by content hash change (2026-02-12)
+
+- chore: Automated patch release triggered by content hash change
+
+## 0.1.34 — Automated patch release triggered by content hash change (2026-02-12)
+
+- chore: Automated patch release triggered by content hash change
+
+## 0.1.33 — Automated patch release triggered by content hash change (2026-02-11)
+
+- chore: Automated patch release triggered by content hash change
+
 ## 0.1.32 — Automated patch release triggered by content hash change (2026-01-04)
 
 - chore: Automated patch release triggered by content hash change

@@ -137,4 +137,5 @@ See the migration guide for detailed migration instructions.
 - **Advanced Guide**: Complex patterns and optimization
 - **Migration Guide**: Migrating from other database solutions
 
-For issues and questions, visit our [GitHub repository](https://github.com/getrapidkit/core).
+For issues and questions, visit our
+[GitHub repository](https://github.com/getrapidkit/rapidkit-core).

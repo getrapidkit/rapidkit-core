@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 from datetime import date
 from hashlib import sha256
@@ -18,6 +19,14 @@ DEFAULT_EXCLUDED_DIRS = {".rapidkit", "__pycache__", ".pytest_cache", "tests", "
 # avoid content hash churn.
 DEFAULT_EXCLUDED_FILES = {DEFAULT_STATE_FILENAME, "module.verify.json"}
 _MIN_VERSION_COMPONENTS = 3
+_AUTO_BUMP_ENV = "RAPIDKIT_DISABLE_AUTO_BUMP"
+_READONLY_ENV = "RAPIDKIT_READONLY_GENERATION"
+
+
+def _is_truthy(value: str | None) -> bool:
+    if value is None:
+        return False
+    return value.strip().lower() in {"1", "true", "yes", "on"}
 
 
 def ensure_version_consistency(
@@ -31,6 +40,7 @@ def ensure_version_consistency(
     changelog_metadata: Optional[Mapping[str, Any]] = None,
     pending_changelog_filename: Optional[str] = DEFAULT_PENDING_CHANGELOG_FILENAME,
     clear_pending_changelog: bool = True,
+    auto_bump: bool = True,
 ) -> Tuple[Dict[str, Any], bool]:
     """Ensure ``module.yaml`` version reflects the current template hash.
 
@@ -52,6 +62,15 @@ def ensure_version_consistency(
     state = _load_state(root, state_filename)
 
     current_version = _coerce_version(config_payload.get("version", "0.0.0"))
+
+    # Validation/smoke flows may execute generators against source modules; in
+    # that mode we must never mutate tracked files.
+    if _is_truthy(os.getenv(_READONLY_ENV)):
+        return config_payload, False
+
+    if (not auto_bump) or _is_truthy(os.getenv(_AUTO_BUMP_ENV)):
+        _save_state(root, current_hash, str(current_version), state_filename)
+        return config_payload, False
 
     if state is None:
         _save_state(root, current_hash, str(current_version), state_filename)

@@ -1,5 +1,20 @@
 # Changelog — free/ai/ai_assistant
 
+## 0.1.10 — Automated patch release triggered by content hash change (2026-02-12)
+
+- chore: Automated patch release triggered by content hash change
+
+## 0.1.9 — NestJS stability and provider extensibility (2026-02-12)
+
+- fix: auto-register `AiAssistantModule` in NestJS `src/modules/index.ts` via snippet injection
+- feat: expose `hasProvider()` and public `registerProvider()` in NestJS service template
+- feat: add built-in `openai` provider type support in NestJS service template (`api_key` option or
+  `OPENAI_API_KEY`)
+
+## 0.1.8 — Automated patch release triggered by content hash change (2026-02-11)
+
+- chore: Automated patch release triggered by content hash change
+
 ## 0.1.7 — Automated patch release triggered by content hash change (2026-01-04)
 
 - chore: Automated patch release triggered by content hash change

@@ -1,7 +1,7 @@
 name: db_sqlite
 display_name: Db Sqlite
 description: SQLite database integration for development
-version: 0.1.3
+version: 0.1.4
 access: free
 status: stable
 tier: free
@@ -124,13 +124,13 @@ documentation:
     api_docs: docs/api-reference.md
     examples: []
 support:
-    issues: https://github.com/getrapidkit/core/issues
-    discussions: https://github.com/getrapidkit/core/discussions
+    issues: https://github.com/getrapidkit/rapidkit-core/issues
+    discussions: https://github.com/getrapidkit/rapidkit-core/discussions
     documentation: https://docs.rapidkit.top/modules/database/db_sqlite
 changelog:
-    - version: 0.1.3
-      date: "2026-01-04"
-      notes: See docs/changelog.md
+  - version: "0.1.4"
+    date: "2026-02-11"
+    notes: "See docs/changelog.md"
 validation:
     pre_install:
         - check_python_version

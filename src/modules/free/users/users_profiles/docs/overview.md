@@ -262,4 +262,5 @@ if user:
 - **Overview**: This document
 - **Module README**: `src/modules/free/users/users_profiles/README.md`
 
-For issues and questions, visit our [GitHub repository](https://github.com/getrapidkit/core).
+For issues and questions, visit our
+[GitHub repository](https://github.com/getrapidkit/rapidkit-core).

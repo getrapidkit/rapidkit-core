@@ -128,6 +128,9 @@ def run_generator_smoke(
 
         # Ensure src directory is in Python path
         env = os.environ.copy()
+        env.setdefault("RAPIDKIT_DISABLE_AUTO_BUMP", "1")
+        env.setdefault("RAPIDKIT_SKIP_VERIFICATION_WRITE", "1")
+        env.setdefault("RAPIDKIT_READONLY_GENERATION", "1")
         python_path = ensure_python_path(env)
 
         print(f"Using PYTHONPATH: {python_path}")
@@ -166,6 +169,13 @@ def run_generator_smoke(
                 if str(PROJECT_ROOT) not in sys.path:
                     sys.path.insert(0, str(PROJECT_ROOT))
 
+                original_auto_bump = os.environ.get("RAPIDKIT_DISABLE_AUTO_BUMP")
+                original_skip_write = os.environ.get("RAPIDKIT_SKIP_VERIFICATION_WRITE")
+                original_readonly = os.environ.get("RAPIDKIT_READONLY_GENERATION")
+                os.environ["RAPIDKIT_DISABLE_AUTO_BUMP"] = "1"
+                os.environ["RAPIDKIT_SKIP_VERIFICATION_WRITE"] = "1"
+                os.environ["RAPIDKIT_READONLY_GENERATION"] = "1"
+
                 # Import and run the module directly
                 import modules.free.essentials.settings.generate as gen_module
 
@@ -177,6 +187,18 @@ def run_generator_smoke(
                     print(f"OK {variant} variant succeeded via direct import")
                 finally:
                     sys.argv = original_argv
+                    if original_auto_bump is None:
+                        os.environ.pop("RAPIDKIT_DISABLE_AUTO_BUMP", None)
+                    else:
+                        os.environ["RAPIDKIT_DISABLE_AUTO_BUMP"] = original_auto_bump
+                    if original_skip_write is None:
+                        os.environ.pop("RAPIDKIT_SKIP_VERIFICATION_WRITE", None)
+                    else:
+                        os.environ["RAPIDKIT_SKIP_VERIFICATION_WRITE"] = original_skip_write
+                    if original_readonly is None:
+                        os.environ.pop("RAPIDKIT_READONLY_GENERATION", None)
+                    else:
+                        os.environ["RAPIDKIT_READONLY_GENERATION"] = original_readonly
 
             except (ImportError, RuntimeError, OSError) as direct_e:
                 print(f"ERROR Both subprocess and direct import failed for {variant}")

@@ -30,7 +30,7 @@ Clone the community repository and install dependencies:
 
 ```bash
 git clone https://github.com/getrapidkit/rapidkit-core.git rapidkit-core
-cd rapidkit-community
+cd rapidkit-core
 
 # Create and activate a virtual environment if you prefer
 python -m venv .venv

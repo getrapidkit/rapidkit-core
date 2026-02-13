@@ -348,4 +348,5 @@ register_cors(app, allowed_headers=["Content-Type", "Authorization", "X-Custom-H
 - **Troubleshooting**: Common CORS errors and solutions
 - **Migration Guide**: Upgrading from previous versions
 
-For issues and questions, visit our [GitHub repository](https://github.com/getrapidkit/core).
+For issues and questions, visit our
+[GitHub repository](https://github.com/getrapidkit/rapidkit-core).

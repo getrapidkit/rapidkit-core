@@ -71,7 +71,7 @@ ______________________________________________________________________
 
 ### `scripts/manage_community_docs.py`
 
-- Regenerates `README.md` from `docs/community/README.template.md`
+- Regenerates `README.md` from `docs/readme-templates/community.md`
 - Renders a community README for packaging (`build/community/README.md`)
 - Scans every community-tier doc for forbidden keywords (deprecated kit names and pip-based install
   snippets)

@@ -6,7 +6,7 @@ from typing import Iterable, Optional
 
 from packaging import version as packaging_version
 
-CURRENT_VERSION = "0.1.0"
+CURRENT_VERSION = "0.3.1"
 
 
 def check_min_version(min_version: str, current_version: str) -> None:
