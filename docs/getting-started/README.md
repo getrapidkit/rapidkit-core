@@ -19,8 +19,8 @@ pip install rapidkit-core
 rapidkit --version
 ```
 
-> Prefer a local checkout? Clone `https://github.com/getrapidkit/core` and run `poetry install` from
-> the repository root.
+> Prefer a local checkout? Clone `https://github.com/getrapidkit/rapidkit-core` and run
+> `poetry install` from the repository root.
 
 ## 🛠️ Create Your First Project
 
@@ -158,8 +158,10 @@ you prefer a Makefile-driven workflow.
 
 ## 🤝 Need Help?
 
-- Join the conversation in [GitHub Discussions](https://github.com/getrapidkit/core/discussions)
-- Report bugs or request features via [GitHub Issues](https://github.com/getrapidkit/core/issues)
+- Join the conversation in
+  [GitHub Discussions](https://github.com/getrapidkit/rapidkit-core/discussions)
+- Report bugs or request features via
+  [GitHub Issues](https://github.com/getrapidkit/rapidkit-core/issues)
 - Improve the docs by opening a pull request in this repository
 
 ______________________________________________________________________

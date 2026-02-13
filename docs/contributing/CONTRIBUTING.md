@@ -10,8 +10,8 @@ platform. This guide will help you get started with contributing effectively.
 1. **📚 Read the docs**: Start with the [Developer Guide](../developer-guide/) and
    [Getting Started](../getting-started/).
 1. **🔧 Set up your environment**: Follow the [Getting Started guide](../getting-started/).
-1. **💡 Find an issue**: Check [GitHub Issues](https://github.com/getrapidkit/core/issues) for “good
-   first issue”.
+1. **💡 Find an issue**: Check [GitHub Issues](https://github.com/getrapidkit/rapidkit-core/issues)
+   for “good first issue”.
 1. **🚀 Make changes**: Follow the development workflow below.
 
 ______________________________________________________________________
@@ -37,8 +37,8 @@ graph TD
 ```bash
 # Fork the repository on GitHub
 # Then clone your fork
-git clone https://github.com/YOUR_USERNAME/core.git
-cd core
+git clone https://github.com/YOUR_USERNAME/rapidkit-core.git
+cd rapidkit-core
 ```
 
 #### 2. Create Feature Branch
@@ -191,12 +191,10 @@ git checkout -b feature/commercial-feature
 #### Engine-First Contribution
 
 ```bash
-# Start with core engine
-git clone https://github.com/getrapidkit/core.git
-cd core
+# RapidKit ships from the rapidkit-core repository.
+git clone https://github.com/getrapidkit/rapidkit-core.git
+cd rapidkit-core
 git checkout -b feature/engine-enhancement
-
-# After merge, changes sync to commercial repos automatically
 ```
 
 ______________________________________________________________________
@@ -317,8 +315,9 @@ ______________________________________________________________________
 
 ### Communication Channels
 
-- **🐛 Bug Reports**: [GitHub Issues](https://github.com/getrapidkit/core/issues)
-- **💡 Feature Requests**: [GitHub Discussions](https://github.com/getrapidkit/core/discussions)
+- **🐛 Bug Reports**: [GitHub Issues](https://github.com/getrapidkit/rapidkit-core/issues)
+- **💡 Feature Requests**:
+  [GitHub Discussions](https://github.com/getrapidkit/rapidkit-core/discussions)
 - **💬 General Discussion**: [Discord Community](https://discord.gg/rapidkit)
 - **📧 Enterprise Support**: [enterprise@rapidkit.com](mailto:enterprise@rapidkit.com)
 

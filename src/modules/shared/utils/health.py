@@ -219,43 +219,15 @@ _VENDOR_HEALTH_WRAPPER_TEMPLATE = Template(
                     return factory()
 
             try:
-                from fastapi import APIRouter, Request  # type: ignore
+                from fastapi import APIRouter  # type: ignore
             except ImportError:  # pragma: no cover - FastAPI optional for template rendering
                 APIRouter = None  # type: ignore[assignment]
-                Request = None  # type: ignore[assignment]
 
-            if APIRouter is not None and Request is not None:
+            if APIRouter is not None:
                 router = APIRouter(prefix=prefix, tags=["Health", _VENDOR_MODULE])
 
                 @router.get("/health", summary=f"{_VENDOR_MODULE} health check")
-                async def read_health(request: Request) -> dict[str, Any]:
-                    runtime = getattr(getattr(request.app, "state", object()), f"{_VENDOR_MODULE}_runtime", None)
-                    if runtime is not None and hasattr(runtime, "health_check"):
-                        try:
-                            report = runtime.health_check()
-                            status = getattr(report, "status", "unknown")
-                            detail = getattr(report, "detail", None)
-                            warnings = list(getattr(report, "warnings", ()) or ())
-                            extra = {
-                                key: getattr(report, key)
-                                for key in ("pragmas", "checks")
-                                if hasattr(report, key)
-                            }
-                            return {
-                                "module": _VENDOR_MODULE,
-                                "status": status,
-                                "detail": detail,
-                                "warnings": warnings,
-                                **extra,
-                            }
-                        except Exception as exc:  # pragma: no cover - surfaced via HTTP response
-                            return {
-                                "module": _VENDOR_MODULE,
-                                "status": "error",
-                                "detail": str(exc),
-                                "warnings": [],
-                            }
-
+                async def read_health() -> dict[str, Any]:
                     return {
                         "module": _VENDOR_MODULE,
                         "status": "unknown",

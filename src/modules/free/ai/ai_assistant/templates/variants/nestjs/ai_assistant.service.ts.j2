@@ -153,6 +153,10 @@ export class {{ module_class_name }}Service {
         return Array.from(this.providers.keys());
     }
 
+    hasProvider(name: string): boolean {
+        return this.providers.has(name);
+    }
+
     clearCache(): void {
         this.cache.clear();
     }
@@ -192,13 +196,54 @@ export class {{ module_class_name }}Service {
                     const summary = context.slice(-3).map((msg) => msg.content).join(" | ");
                     return template.replace("{prompt}", prompt).replace("{context}", summary ?? "");
                 });
+            } else if (provider.providerType === "openai") {
+                const apiKey = this.getStringOption(provider.options, "api_key", process.env.OPENAI_API_KEY ?? "");
+                if (!apiKey) {
+                    this.logger.warn(`OpenAI provider '${provider.name}' requires api_key or OPENAI_API_KEY`);
+                    return;
+                }
+
+                const model = this.getStringOption(provider.options, "model", "gpt-4o-mini");
+                const defaultTemperature = this.getNumberOption(provider.options, "temperature", 0.7);
+                this.registerProvider(provider.name, async (prompt, context, settings) => {
+                    const body = {
+                        model: typeof settings?.model === "string" ? settings.model : model,
+                        messages: [
+                            ...context.map((message) => ({ role: message.role, content: message.content })),
+                            { role: "user", content: prompt },
+                        ],
+                        temperature:
+                            typeof settings?.temperature === "number"
+                                ? settings.temperature
+                                : defaultTemperature,
+                    };
+
+                    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            Authorization: `Bearer ${apiKey}`,
+                        },
+                        body: JSON.stringify(body),
+                    });
+
+                    if (!response.ok) {
+                        const reason = await response.text();
+                        throw new Error(`OpenAI request failed (${response.status}): ${reason}`);
+                    }
+
+                    const payload = (await response.json()) as {
+                        choices?: Array<{ message?: { content?: string | null } }>;
+                    };
+                    return payload.choices?.[0]?.message?.content ?? "";
+                });
             } else {
                 this.logger.warn(`Provider type '${provider.providerType}' is not supported`);
             }
         });
     }
 
-    private registerProvider(name: string, handler: ProviderHandler): void {
+    registerProvider(name: string, handler: ProviderHandler): void {
         this.providers.set(name, handler);
         this.providerMetadata.set(name, { name, status: "ok" });
     }
@@ -255,6 +300,11 @@ export class {{ module_class_name }}Service {
     private getBooleanOption(options: Record<string, unknown> | undefined, key: string, fallback = false): boolean {
         const value = options?.[key];
         return typeof value === "boolean" ? value : fallback;
+    }
+
+    private getNumberOption(options: Record<string, unknown> | undefined, key: string, fallback = 0): number {
+        const value = options?.[key];
+        return typeof value === "number" && Number.isFinite(value) ? value : fallback;
     }
 
     private getStringArrayOption(options: Record<string, unknown> | undefined, key: string): string[] | null {

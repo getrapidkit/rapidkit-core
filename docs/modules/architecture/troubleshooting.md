@@ -355,7 +355,7 @@ If a project environment is badly corrupted, the most reliable recovery is:
 
 ### Community Support
 
-- [GitHub Discussions](https://github.com/getrapidkit/core/discussions)
+- [GitHub Discussions](https://github.com/getrapidkit/rapidkit-core/discussions)
 - [Stack Overflow](https://stackoverflow.com/questions/tagged/rapidkit)
 - [Discord Community](https://discord.gg/getrapidkit)
 

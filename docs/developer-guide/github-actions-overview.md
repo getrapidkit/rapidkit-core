@@ -33,7 +33,7 @@ ______________________________________________________________________
   workflow files via `sync-distribution.yml` + `deploy-workflows.yml`.
 - The two composite actions are the foundation for distro publishing; reusable workflows now live at
   the top level of `.github/workflows/` so downstream repos can call them via
-  `Baziar/core/.github/workflows/<file>@ref` without copying extra files.
+  `getrapidkit/rapidkit-core/.github/workflows/<file>@ref` without copying extra files.
 
 ______________________________________________________________________
 
@@ -65,11 +65,11 @@ ______________________________________________________________________
 
 Key reusable foundations inside `workflows/distribution/`:
 
-| File                 | Used by (via `Baziar/core/.github/workflows/<file>@ref`)              | Description                                                              |
-| -------------------- | --------------------------------------------------------------------- | ------------------------------------------------------------------------ |
-| `docker-build.yml`   | `community-docker.yml`, staging docker workflow, `docker-publish.yml` | Multi-arch Docker build/push with provenance attestations                |
-| `python-publish.yml` | `community-publish.yml`, `publish.yml`                                | Standard PyPI/TestPyPI publishing routine                                |
-| `python-release.yml` | `community-release.yml`, `release.yml`                                | Builds release bundles, uploads artifacts, and hands off to PyPI publish |
+| File                 | Used by (via `getrapidkit/rapidkit-core/.github/workflows/<file>@ref`) | Description                                                              |
+| -------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `docker-build.yml`   | `community-docker.yml`, staging docker workflow, `docker-publish.yml`  | Multi-arch Docker build/push with provenance attestations                |
+| `python-publish.yml` | `community-publish.yml`, `publish.yml`                                 | Standard PyPI/TestPyPI publishing routine                                |
+| `python-release.yml` | `community-release.yml`, `release.yml`                                 | Builds release bundles, uploads artifacts, and hands off to PyPI publish |
 
 ### 3. Release Automation
 
@@ -104,7 +104,8 @@ ______________________________________________________________________
 
 ### `push-distribution`
 
-- Clones (or auto-creates) `baziar/community*` repositories with the provided token.
+- Clones (or auto-creates) the stable distribution repo (`getrapidkit/rapidkit-core`) and the
+  staging distribution repo with the provided token.
 - Preserves the target repo's `.github` (excluding workflows) to keep CODEOWNERS/templates intact.
 - Injects tier-specific workflow templates from `.github/workflows/distribution/`.
 - Writes provenance metadata so downstream repos know which core commit produced the sync.
@@ -137,7 +138,7 @@ ______________________________________________________________________
 ```bash
 # Trigger sync-distribution for both community and staging tiers
 gh workflow run sync-distribution.yml \
-  -R getrapidkit/core \
+  -R getrapidkit/rapidkit-core \
   -f tiers="community,<staging>"
 ```
 

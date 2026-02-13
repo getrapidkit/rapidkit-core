@@ -39,11 +39,11 @@ The `pyproject.toml` is already configured for PyPI publishing:
 name = "rapidkit-core"
 version = "0.1.0"
 description = "Rapidkit CLI for generating boilerplates"
-authors = ["Baziar <baziar@live.com>"]
+authors = ["RapidKit Maintainers <maintainers@example.com>"]
 readme = "README.md"
 license = "MIT"
-homepage = "https://github.com/getrapidkit/core"
-repository = "https://github.com/getrapidkit/core"
+homepage = "https://github.com/getrapidkit/rapidkit-core"
+repository = "https://github.com/getrapidkit/rapidkit-core"
 keywords = ["scaffolding", "boilerplate", "fastapi", "codegen", "devtools"]
 classifiers = [
     "Programming Language :: Python :: 3 :: Only",

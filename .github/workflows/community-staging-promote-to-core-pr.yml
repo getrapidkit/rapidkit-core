@@ -54,6 +54,7 @@ jobs:
               with:
                   fetch-depth: 0
                   fetch-tags: true
+                  ref: ${{ inputs.source_ref }}
                   persist-credentials: false
 
             - name: Remove checkout auth header

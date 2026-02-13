@@ -8,6 +8,7 @@ codebase.
 
 from __future__ import annotations
 
+import inspect
 from pathlib import Path
 from typing import Any, Dict, Iterable, Mapping, Optional, Tuple
 
@@ -44,6 +45,7 @@ def ensure_version_consistency(
     changelog_metadata: Optional[Mapping[str, Any]] = None,
     pending_changelog_filename: Optional[str] = DEFAULT_PENDING_CHANGELOG_FILENAME,
     clear_pending_changelog: bool = True,
+    auto_bump: bool = True,
 ) -> Tuple[Dict[str, Any], bool]:
     """Ensure version consistency for a module.
 
@@ -61,16 +63,26 @@ def ensure_version_consistency(
     Returns:
         Tuple of (updated_config, version_was_bumped)
     """
+    kwargs: Dict[str, Any] = {
+        "change_description": change_description,
+        "state_filename": state_filename,
+        "excluded_dirs": excluded_dirs or DEFAULT_EXCLUDED_DIRS,
+        "excluded_files": excluded_files or DEFAULT_EXCLUDED_FILES,
+        "changelog_metadata": changelog_metadata,
+        "pending_changelog_filename": pending_changelog_filename,
+        "clear_pending_changelog": clear_pending_changelog,
+    }
+    try:
+        if "auto_bump" in inspect.signature(_ensure_version_consistency).parameters:
+            kwargs["auto_bump"] = auto_bump
+    except (TypeError, ValueError):
+        # Fallback for callables without introspectable signatures.
+        pass
+
     updated, bumped = _ensure_version_consistency(
         module_root,
         config,
-        change_description=change_description,
-        state_filename=state_filename,
-        excluded_dirs=excluded_dirs or DEFAULT_EXCLUDED_DIRS,
-        excluded_files=excluded_files or DEFAULT_EXCLUDED_FILES,
-        changelog_metadata=changelog_metadata,
-        pending_changelog_filename=pending_changelog_filename,
-        clear_pending_changelog=clear_pending_changelog,
+        **kwargs,
     )
     return updated, bumped
 

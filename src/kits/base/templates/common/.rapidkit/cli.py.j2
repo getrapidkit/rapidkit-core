@@ -86,7 +86,24 @@ def dev(port: int = 8000, host: str = "0.0.0.0", allow_global_runtime: bool = Fa
         except OSError:
             return True
 
+    def _find_available_port(start_port: int, host: str = "0.0.0.0", max_attempts: int = 50) -> int | None:
+        candidate = max(1, start_port)
+        for _ in range(max_attempts):
+            if not _port_in_use(candidate, host):
+                return candidate
+            candidate += 1
+        return None
+
     if ptype == "python":
+        selected_port = port
+        if _port_in_use(selected_port, host):
+            fallback = _find_available_port(selected_port + 1, host)
+            if fallback is None:
+                print(f"❌ Port {selected_port} is busy and no free port was found nearby.")
+                sys.exit(1)
+            print(f"⚠️  Port {selected_port} is in use. Switching to {fallback} automatically.")
+            selected_port = fallback
+
         # Quick non-executing bootstrap checks to ensure the dev environment
         # is prepared. We avoid importing project code - instead check for a
         # project-local venv and presence of common runtime binaries / packages
@@ -141,10 +158,63 @@ def dev(port: int = 8000, host: str = "0.0.0.0", allow_global_runtime: bool = Fa
             print("⚠️  You are running with the system/global Python/runtime which may differ from what this project expects.")
             print("💡 Consider running `rapidkit init` to create an isolated .venv for reproducible builds.")
 
-        rc = _run(sys.executable, "-m", "uvicorn", "src.main:app", "--reload", "--host", host, "--port", str(port))
+        import os as _os
+
+        reload_args: list[str] = [
+            "--reload",
+            "--reload-dir",
+            "src",
+            "--reload-exclude",
+            ".venv/*",
+            "--reload-exclude",
+            "node_modules/*",
+            "--reload-exclude",
+            ".git/*",
+            "--reload-exclude",
+            "dist/*",
+            "--reload-exclude",
+            "build/*",
+            "--reload-exclude",
+            ".mypy_cache/*",
+            "--reload-exclude",
+            "__pycache__/*",
+        ]
+
+        include_tests = _os.getenv("RAPIDKIT_DEV_INCLUDE_TESTS", "").strip().lower() in {
+            "1",
+            "true",
+            "yes",
+            "on",
+        }
+        if include_tests and (root / "tests").exists():
+            reload_args.extend(["--reload-dir", "tests"])
+
+        force_polling = _os.getenv("RAPIDKIT_DEV_FORCE_POLLING", "").strip().lower() in {
+            "1",
+            "true",
+            "yes",
+            "on",
+        }
+        dev_env = {"WATCHFILES_FORCE_POLLING": "true"} if force_polling else None
+        if force_polling:
+            print("⚠️  RAPIDKIT_DEV_FORCE_POLLING is enabled (reload uses polling mode).")
+
+        rc = _run(
+            sys.executable,
+            "-m",
+            "uvicorn",
+            "src.main:app",
+            *reload_args,
+            "--host",
+            host,
+            "--port",
+            str(selected_port),
+            env=dev_env,
+        )
         if rc != 0:
             sys.exit(rc)
     elif ptype == "node":
+        selected_port = port
         # Ensure project dependencies are installed before starting dev.
         if not (root / "node_modules").exists():
             print("❌ Project dependencies appear to be missing (node_modules not found).")
@@ -158,26 +228,20 @@ def dev(port: int = 8000, host: str = "0.0.0.0", allow_global_runtime: bool = Fa
             print("  rapidkit dev")
             sys.exit(1)
 
-        if _port_in_use(port, host):
-            print(f"❌ Port {port} is already in use on {host}.")
-            print("")
-            print("What you can do:")
-            print("")
-            # Suggest a nearby free port as a quick hint (best-effort)
-            alt = port + 1
-            print(f"  • Try a different port: rapidkit dev -p {alt}")
-            print(f"  • Or set the PORT env and run again: PORT={alt} rapidkit dev")
-            print("  • Stop the process currently using that port and retry")
-            print("")
-            print("If the project hasn't been bootstrapped yet, run:")
-            print("")
-            print("  rapidkit init")
-            sys.exit(1)
+        if _port_in_use(selected_port, host):
+            fallback = _find_available_port(selected_port + 1, host)
+            if fallback is None:
+                print(f"❌ Port {selected_port} is busy and no free port was found nearby.")
+                print("")
+                print("💡 Run 'rapidkit init' if the project is not bootstrapped yet.")
+                sys.exit(1)
+            print(f"⚠️  Port {selected_port} is in use. Switching to {fallback} automatically.")
+            selected_port = fallback
         # Set common environment variables many Node apps honour (PORT/HOST)
         env = dict()
         env.update({
             k: v for k, v in {
-                "PORT": str(port),
+                "PORT": str(selected_port),
                 "HOST": host,
             }.items()
             if v is not None

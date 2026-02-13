@@ -38,6 +38,14 @@ except Exception:  # pragma: no cover
 SECRET_PLACEHOLDER = "{{ '' | generate_secret(48) }}"
 
 
+def _resolve_secrets_dir() -> str | None:
+    configured = os.getenv("RAPIDKIT_SECRETS_DIR", "/run/secrets")
+    configured = configured.strip() if isinstance(configured, str) else ""
+    if not configured:
+        return None
+    return configured if Path(configured).exists() else None
+
+
 class CustomConfigSource(PydanticBaseSettingsSource):
     """
     Custom source to load settings from YAML, Vault, or AWS Secrets Manager.
@@ -145,7 +153,7 @@ class Settings(BaseSettings):
         extra="allow",  # Allow dynamic fields from other modules
         case_sensitive=True,
         validate_assignment=True,
-        secrets_dir="/run/secrets",  # For Docker/Kubernetes secrets
+        secrets_dir=_resolve_secrets_dir(),  # Enable only when present
         config_files=[".env", ".env.local", "config.yaml"],
     )
 

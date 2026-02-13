@@ -9,6 +9,7 @@ environment.
 
 import importlib.util
 import sys
+import argparse
 from pathlib import Path
 from typing import Optional
 
@@ -81,6 +82,43 @@ if _mod is not None:
     help_cmd = getattr(_mod, "help_cmd", help_cmd)
 
 
+_dev_impl = dev
+_start_impl = start
+
+
+def _runtime_kwargs_from_argv(argv: list[str]) -> dict:
+    parser = argparse.ArgumentParser(add_help=False)
+    parser.add_argument("-p", "--port", type=int, dest="port")
+    parser.add_argument("--host", dest="host")
+    parser.add_argument("--allow-global-runtime", action="store_true", dest="allow_global_runtime")
+    ns, _ = parser.parse_known_args(argv)
+
+    kwargs = {}
+    if ns.port is not None:
+        kwargs["port"] = ns.port
+    if ns.host is not None:
+        kwargs["host"] = ns.host
+    if ns.allow_global_runtime:
+        kwargs["allow_global_runtime"] = True
+    return kwargs
+
+
+def dev() -> None:  # type: ignore[no-redef]
+    kwargs = _runtime_kwargs_from_argv(sys.argv[1:])
+    try:
+        _dev_impl(**kwargs)
+    except TypeError:
+        _dev_impl()
+
+
+def start() -> None:  # type: ignore[no-redef]
+    kwargs = _runtime_kwargs_from_argv(sys.argv[1:])
+    try:
+        _start_impl(**kwargs)
+    except TypeError:
+        _start_impl()
+
+
 def main() -> None:
     if len(sys.argv) < 2:
         help_cmd()
@@ -99,7 +137,27 @@ def main() -> None:
     }
 
     if command in commands:
-        commands[command]()
+        if command in ("dev", "start"):
+            parser = argparse.ArgumentParser(prog=f"poetry run {command}", add_help=False)
+            parser.add_argument("-p", "--port", type=int, dest="port")
+            parser.add_argument("--host", dest="host")
+            parser.add_argument("--allow-global-runtime", action="store_true", dest="allow_global_runtime")
+            ns, _ = parser.parse_known_args(sys.argv[2:])
+
+            kwargs = {}
+            if ns.port is not None:
+                kwargs["port"] = ns.port
+            if ns.host is not None:
+                kwargs["host"] = ns.host
+            if ns.allow_global_runtime:
+                kwargs["allow_global_runtime"] = True
+
+            try:
+                commands[command](**kwargs)
+            except TypeError:
+                commands[command]()
+        else:
+            commands[command]()
     else:
         print(f"Unknown command: {command}")
         print("Run 'poetry run help' to see available commands.")

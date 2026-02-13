@@ -1,5 +1,9 @@
 # Changelog — free/observability/core
 
+## 0.1.11 — Automated patch release triggered by content hash change (2026-02-11)
+
+- chore: Automated patch release triggered by content hash change
+
 ## 0.1.10 — Automated patch release triggered by content hash change (2025-12-25)
 
 - chore: Automated patch release triggered by content hash change

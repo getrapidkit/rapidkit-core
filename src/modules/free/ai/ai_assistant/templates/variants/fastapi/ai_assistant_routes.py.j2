@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import AsyncIterator
 from typing import Any, Mapping, MutableMapping, Sequence
 
-from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, Response, status
+from fastapi import APIRouter, Depends, FastAPI, HTTPException, Response, status
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
@@ -100,19 +100,25 @@ def register_ai_assistant(
 ) -> AiAssistant:
     """Attach the assistant runtime and routers to the FastAPI app."""
 
+    global _assistant_instance
     assistant = instance or create_assistant(config)
+    _assistant_instance = assistant
     app.state.ai_assistant = assistant
     app.include_router(build_router())
     app.include_router(build_health_router())
     return assistant
 
 
-def _get_assistant(request: Request) -> AiAssistant:
-    assistant = getattr(request.app.state, "ai_assistant", None)
-    if assistant is None:
-        assistant = AiAssistant()
-        request.app.state.ai_assistant = assistant
-    return assistant
+# Store global instance for dependencies
+_assistant_instance: AiAssistant | None = None
+
+
+def _get_assistant() -> AiAssistant:
+    """Dependency to retrieve the assistant instance."""
+    global _assistant_instance
+    if _assistant_instance is None:
+        _assistant_instance = AiAssistant()
+    return _assistant_instance
 
 
 def _convert_context(messages: Sequence[MessagePayload]) -> tuple[AssistantMessage, ...]:
@@ -202,10 +208,12 @@ def build_health_router() -> APIRouter:
     router = APIRouter(prefix="/ai/assistant", tags=["{{ module_title }} Health"])
 
     @router.get("/health", response_model=Mapping[str, Any])
-    async def healthcheck(request: Request) -> Mapping[str, Any]:
-        context = {"request_id": request.headers.get("x-request-id")}
+    async def healthcheck(
+        assistant: AiAssistant = Depends(_get_assistant),
+    ) -> Mapping[str, Any]:
+        context: dict[str, Any] = {}
         vendor_payload = check_health(context=context)
-        runtime_snapshot = _get_assistant(request).health_report()
+        runtime_snapshot = assistant.health_report()
         return {
             "vendor": vendor_payload,
             "runtime": runtime_snapshot,

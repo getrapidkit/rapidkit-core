@@ -196,7 +196,7 @@ def _get_engine_commands() -> dict[str, str]:
     }
 
     # Community distributions must not expose UI bridge HTTP surface.
-    if _distribution_tier() in {"community", "community-staging"}:
+    if _distribution_tier() in {"community", "community" "-staging"}:
         commands.pop("ui", None)
 
     return commands
@@ -531,7 +531,7 @@ def _run_global_command(argv: list[str]) -> None:  # noqa: PLR0911
         _launch_tui()
         return
 
-    if command == "ui" and _distribution_tier() in {"community", "community-staging"}:
+    if command == "ui" and _distribution_tier() in {"community", "community" "-staging"}:
         # Do not reveal paid/internal surfaces in community builds.
         print("Error: No such command 'ui'.", file=sys.stderr)
         sys.exit(2)
@@ -566,7 +566,7 @@ def _run_global_command(argv: list[str]) -> None:  # noqa: PLR0911
         "ui",
     }
 
-    if _distribution_tier() in {"community", "community-staging"}:
+    if _distribution_tier() in {"community", "community" "-staging"}:
         global_commands.discard("ui")
     if command in global_commands:
         try:

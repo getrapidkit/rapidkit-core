@@ -52,8 +52,8 @@ modules:
       examples: []
 
     support:
-      issues: "https://github.com/getrapidkit/core/issues"
-      discussions: "https://github.com/getrapidkit/core/discussions"
+      issues: "https://github.com/getrapidkit/rapidkit-core/issues"
+      discussions: "https://github.com/getrapidkit/rapidkit-core/discussions"
 
     changelog:
       - version: "1.0.2"
@@ -148,8 +148,8 @@ modules:
       examples: []
 
     support:
-      issues: "https://github.com/getrapidkit/core/issues"
-      discussions: "https://github.com/getrapidkit/core/discussions"
+      issues: "https://github.com/getrapidkit/rapidkit-core/issues"
+      discussions: "https://github.com/getrapidkit/rapidkit-core/discussions"
 
   logging:
     name: logging
@@ -457,8 +457,8 @@ modules:
         - "observability/core/templates/snippets/observability_core.snippet.j2"
 
     support:
-      issues: "https://github.com/getrapidkit/core/issues"
-      discussions: "https://github.com/getrapidkit/core/discussions"
+      issues: "https://github.com/getrapidkit/rapidkit-core/issues"
+      discussions: "https://github.com/getrapidkit/rapidkit-core/discussions"
 
     changelog:
       - version: "1.0.0"
@@ -525,8 +525,8 @@ modules:
       examples: []
 
     support:
-      issues: "https://github.com/getrapidkit/core/issues"
-      discussions: "https://github.com/getrapidkit/core/discussions"
+      issues: "https://github.com/getrapidkit/rapidkit-core/issues"
+      discussions: "https://github.com/getrapidkit/rapidkit-core/discussions"
 
     changelog:
       - version: "0.1.0"
@@ -603,8 +603,8 @@ modules:
       examples: []
 
     support:
-      issues: "https://github.com/getrapidkit/core/issues"
-      discussions: "https://github.com/getrapidkit/core/discussions"
+      issues: "https://github.com/getrapidkit/rapidkit-core/issues"
+      discussions: "https://github.com/getrapidkit/rapidkit-core/discussions"
       documentation: "https://docs.rapidkit.top/modules/security/security_headers"
 
     changelog:
@@ -683,8 +683,8 @@ modules:
       examples: []
 
     support:
-      issues: "https://github.com/getrapidkit/core/issues"
-      discussions: "https://github.com/getrapidkit/core/discussions"
+      issues: "https://github.com/getrapidkit/rapidkit-core/issues"
+      discussions: "https://github.com/getrapidkit/rapidkit-core/discussions"
       documentation: "https://docs.rapidkit.top/modules/business/storage"
 
   users:
@@ -779,8 +779,8 @@ modules:
       examples: []
 
     support:
-      issues: "https://github.com/getrapidkit/core/issues"
-      discussions: "https://github.com/getrapidkit/core/discussions"
+      issues: "https://github.com/getrapidkit/rapidkit-core/issues"
+      discussions: "https://github.com/getrapidkit/rapidkit-core/discussions"
       documentation: "https://docs.rapidkit.top/modules/users_profiles"
 
     changelog:
@@ -1075,7 +1075,7 @@ global_config:
   version: "1.0.0"
   last_updated: "2025-10-29"
   maintainer: "RapidKit Team"
-  repository: "https://github.com/getrapidkit/core"
+  repository: "https://github.com/getrapidkit/rapidkit-core"
   documentation: "https://docs.rapidkit.top"
 
   # Compatibility matrix

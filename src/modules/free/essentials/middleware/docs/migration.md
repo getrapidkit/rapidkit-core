@@ -186,4 +186,4 @@ rapidkit add module middleware --version 0.1.0
 - [Usage Guide](usage.md)
 - [Advanced Guide](advanced.md)
 - [Troubleshooting](troubleshooting.md)
-- GitHub Issues: https://github.com/getrapidkit/core/issues
+- GitHub Issues: https://github.com/getrapidkit/rapidkit-core/issues

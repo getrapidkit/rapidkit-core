@@ -1,5 +1,9 @@
 # Changelog — free/database/db_mongo
 
+## 0.1.3 — Automated patch release triggered by content hash change (2026-02-11)
+
+- chore: Automated patch release triggered by content hash change
+
 ## 0.1.2 — Automated patch release (2025-12-06)
 
 - Version bumped automatically after refreshing `.module_state.json` to capture the

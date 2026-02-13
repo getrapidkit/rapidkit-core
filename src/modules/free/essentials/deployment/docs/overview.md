@@ -247,4 +247,5 @@ RAPIDKIT_DEPLOYMENT_INCLUDE_REDIS=1
 - **Troubleshooting**: Common deployment issues
 - **Migration Guide**: Upgrading deployment assets
 
-For issues and questions, visit our [GitHub repository](https://github.com/getrapidkit/core).
+For issues and questions, visit our
+[GitHub repository](https://github.com/getrapidkit/rapidkit-core).

@@ -5,7 +5,7 @@ description: Opinionated FastAPI starter aligned with domain-driven design pract
 version: 0.1.0
 min_rapidkit_version: 0.1.0
 tier: standard
-repo_url: https://github.com/getrapidkit/core.git
+repo_url: https://github.com/getrapidkit/rapidkit-core.git
 repo_branch: main
 tags: [fastapi, modular, ddd, clean-architecture]
 support: standard

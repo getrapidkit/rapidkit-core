@@ -1,5 +1,5 @@
 name: notifications
-version: 0.1.17
+version: 0.1.18
 tier: free
 access: free
 status: stable
@@ -140,12 +140,12 @@ documentation:
     api_docs: null
     examples: []
 support:
-    issues: https://github.com/getrapidkit/core/issues
-    discussions: https://github.com/getrapidkit/core/discussions
+    issues: https://github.com/getrapidkit/rapidkit-core/issues
+    discussions: https://github.com/getrapidkit/rapidkit-core/discussions
     documentation: https://docs.rapidkit.top/modules/notifications
 changelog:
-  - version: "0.1.17"
-    date: "2026-01-04"
+  - version: "0.1.18"
+    date: "2026-02-11"
     notes: "See docs/changelog.md"
 validation:
     pre_install:
