@@ -1,5 +1,29 @@
 # Changelog — free/core/middleware
 
+## 0.1.20 — Automated patch release triggered by content hash change (2026-02-14)
+
+- chore: Automated patch release triggered by content hash change
+
+## 0.1.19 — Automated patch release triggered by content hash change (2026-02-14)
+
+- chore: Automated patch release triggered by content hash change
+
+## 0.1.18 — Automated patch release triggered by content hash change (2026-02-14)
+
+- chore: Automated patch release triggered by content hash change
+
+## 0.1.17 — Automated patch release triggered by content hash change (2026-02-14)
+
+- chore: Automated patch release triggered by content hash change
+
+## 0.1.16 — Automated patch release triggered by content hash change (2026-02-14)
+
+- chore: Automated patch release triggered by content hash change
+
+## 0.1.15 — Automated patch release triggered by content hash change (2026-02-14)
+
+- chore: Automated patch release triggered by content hash change
+
 ## 0.1.14 — Automated patch release triggered by content hash change (2026-02-11)
 
 - chore: Automated patch release triggered by content hash change

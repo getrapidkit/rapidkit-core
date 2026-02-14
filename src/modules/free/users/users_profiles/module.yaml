@@ -1,7 +1,7 @@
 name: users_profiles
 display_name: Users Profiles
 description: Profile management services and HTTP adapters for RapidKit users
-version: 0.1.1
+version: 0.1.7
 access: free
 status: stable
 tier: free
@@ -170,15 +170,15 @@ documentation:
     advanced: docs/advanced.md
     migration: docs/migration.md
     troubleshooting: docs/troubleshooting.md
-    api_docs: null
+    api_docs: docs/api-reference.md
     examples: []
 support:
     issues: https://github.com/getrapidkit/rapidkit-core/issues
     discussions: https://github.com/getrapidkit/rapidkit-core/discussions
     documentation: https://docs.rapidkit.top/modules/users_profiles
 changelog:
-  - version: "0.1.1"
-    date: "2026-02-11"
+  - version: "0.1.7"
+    date: "2026-02-14"
     notes: "See docs/changelog.md"
 validation:
     pre_install:
@@ -225,7 +225,7 @@ file_hashes:
     frameworks/fastapi.py: sha256:7597cd6bf7cbacd6da2a3977f6412cc38b7469990b5bc8e1088e98561d96072a
     frameworks/nestjs.py: sha256:123cff128d9db0c384454680e2e580b57ed6ecb080407b6e7e14da443ad6f0bb
     generate.py: sha256:dfeb494fabe0a2bfaa46c9de3a126d7259691ecec4726650f7cc6aac7d04fe16
-    module.verify.json: sha256:26cc72999cb0b24eee61b993221919d3b44955eaf0cdee7ba5a3975129c82b3d
+    module.verify.json: sha256:0fec7611b33cac8d957f9d576bb0e25b953721aad3d3dae3dde4d18d1b71dd94
     overrides.py: sha256:94489e278a77786e52f6326a85c47c46bf95ce1a79a45293f31d2a13d95fc770
     templates/base/users_profiles.py.j2: sha256:e9bc80622f2036a6a891555df121e5f2e75996bcd887a906dcc04f2e88d9c4b9
     templates/base/users_profiles_dto.py.j2: sha256:e496db715c86fc1501c3bf9b06a0a3c86b1f16caec233ac07b12cc553612cd84

@@ -58,7 +58,7 @@ export class AppService {
 
 - [Usage Guide](./usage.md) - Detailed usage examples
 - [API Reference](./api-reference.md) - Complete API documentation
-- [Configuration](../configuration/storage.md) - Configuration options
+- [Configuration](./usage.md#configuration) - Configuration options
 - [Advanced Guide](./advanced.md) - Advanced topics
 
 ## Security considerations

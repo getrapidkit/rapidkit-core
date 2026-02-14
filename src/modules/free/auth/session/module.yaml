@@ -1,7 +1,7 @@
 name: session
 description: Session management utilities (cookies/tokens, persistence hooks) for
   RapidKit
-version: 0.1.1
+version: 0.1.7
 access: free
 status: stable
 category: auth
@@ -110,15 +110,15 @@ documentation:
   advanced: docs/advanced.md
   migration: docs/migration.md
   troubleshooting: docs/troubleshooting.md
-  api_docs: null
+  api_docs: docs/api-reference.md
   examples: []
 support:
   issues: https://github.com/getrapidkit/rapidkit-core/issues
   discussions: https://github.com/getrapidkit/rapidkit-core/discussions
   documentation: https://docs.rapidkit.top/modules/session
 changelog:
-  - version: "0.1.1"
-    date: "2026-02-11"
+  - version: "0.1.7"
+    date: "2026-02-14"
     notes: "See docs/changelog.md"
 validation:
   pre_install:
@@ -164,7 +164,7 @@ file_hashes:
   frameworks/fastapi.py: sha256:91ebd7dbbb6d1717f00302a9f345def354e5fc53645d66ab58214a0fb819b3e9
   frameworks/nestjs.py: sha256:2e3785705a28ffaaaa834f0970fe18b41056090de9f14b38b69cf44648da5ff2
   generate.py: sha256:1ece81e8f85e084627ff1d8193581bde645b1835f9556196b58469952b138616
-  module.verify.json: sha256:820e35adf5c11ef36d36f66e2a7e9a240b25af3817ae3719b51f2a68dcc7f627
+  module.verify.json: sha256:aeb677c7a6307f52b3394fe6df3cc035e66d2d9a77f6bc1c2e6c9337d16000c2
   overrides.py: sha256:3bd160eeeb1e2ad0bf3e01d50e737f9795215119943f054685d457a4caed653e
   templates/base/session.py.j2: sha256:53988369b3f154d03ad447c5c99ac8548d47d46748075df088f586cdbe493d45
   templates/base/session_health.py.j2: sha256:2fd8404e28a2ece05dd58bc40bb79b8df8d35ccac5443d4224830c7eeb325bf7

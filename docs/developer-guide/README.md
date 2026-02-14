@@ -21,7 +21,7 @@ ______________________________________________________________________
 
 | Requirement | Recommended Version | Notes                                           |
 | ----------- | ------------------- | ----------------------------------------------- |
-| Python      | 3.10.14             | Use `pyenv`, `asdf`, or your OS package manager |
+| Python      | 3.10                | Use `pyenv`, `asdf`, or your OS package manager |
 | Poetry      | Latest stable       | Handles dependency management                   |
 | Git         | 2.40+               | Required for contributions                      |
 | Docker      | Latest stable       | Optional, but useful for smoke tests            |

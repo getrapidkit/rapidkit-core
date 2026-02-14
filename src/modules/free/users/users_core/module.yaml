@@ -1,7 +1,7 @@
 name: users_core
 display_name: Users Core
 description: Opinionated domain services and HTTP adapters for managing RapidKit users
-version: 0.1.1
+version: 0.1.7
 access: free
 status: stable
 category: users
@@ -166,15 +166,15 @@ documentation:
   advanced: docs/advanced.md
   migration: docs/migration.md
   troubleshooting: docs/troubleshooting.md
-  api_docs: null
+  api_docs: docs/api-reference.md
   examples: []
 support:
   issues: https://github.com/getrapidkit/rapidkit-core/issues
   discussions: https://github.com/getrapidkit/rapidkit-core/discussions
   documentation: https://docs.rapidkit.top/modules/users-core
 changelog:
-  - version: "0.1.1"
-    date: "2026-02-11"
+  - version: "0.1.7"
+    date: "2026-02-14"
     notes: "See docs/changelog.md"
 validation:
   pre_install:
@@ -219,4 +219,4 @@ file_hashes:
   docs/overview.md: sha256:9a5151353948ba7b37bdfc19e355e5d81da91002a4f17c8f983fb81eb68ce13c
   docs/troubleshooting.md: sha256:6984c55b5d5201e636c7b23458f5c137cb6414a24c26902411bb5274e1901c96
   docs/usage.md: sha256:77098bd22c9fa2dbf7942e88b6f1dd21f9f399030fd45cf20daeb1547432b599
-  module.verify.json: sha256:cde1510b70dcd1250245c81bf0f886a8d8ce387d4d9f0f6e62ad412ea17ae4cd
+  module.verify.json: sha256:3b7e62285e53c6201b8f3045bbbc0f662acaca05918f1d289d077f9e00857b13

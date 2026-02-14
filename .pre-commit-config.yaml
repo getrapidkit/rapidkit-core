@@ -16,6 +16,18 @@ repos:
             stages: [post-commit]
             pass_filenames: false
 
+          # 0.245 Sync module metadata after commit (amend)
+          #
+          # Applies safe metadata sync (api_docs, verify hash, version/state) for
+          # modules touched by HEAD and amends the commit without re-running hooks.
+          - id: sync-module-metadata
+            name: sync module metadata (safe sync, amend)
+            entry: poetry run python
+            language: system
+            args: [scripts/sync_module_metadata.py, --post-commit-amend]
+            stages: [post-commit]
+            pass_filenames: false
+
           # 0.25 Auto-bump base version from commit message
           #
           # This runs post-commit and amends the just-created commit (no-edit, no-verify)

@@ -1,5 +1,5 @@
 name: middleware
-version: 0.1.14
+version: 0.1.20
 tier: free
 access: free
 status: stable
@@ -130,15 +130,15 @@ documentation:
   advanced: docs/advanced.md
   migration: docs/migration.md
   troubleshooting: docs/troubleshooting.md
-  api_docs: null
+  api_docs: docs/api-reference.md
   examples: []
 support:
   issues: https://github.com/getrapidkit/rapidkit-core/issues
   discussions: https://github.com/getrapidkit/rapidkit-core/discussions
   documentation: https://docs.rapidkit.top/modules/middleware
 changelog:
-  - version: "0.1.14"
-    date: "2026-02-11"
+  - version: "0.1.20"
+    date: "2026-02-14"
     notes: "See docs/changelog.md"
 validation:
   pre_install:
@@ -175,7 +175,7 @@ file_hashes:
   frameworks/fastapi.py: sha256:1e5a0b19ba20ad9806310d1df56d76250664befc38870a437ac9415e498edcf3
   frameworks/nestjs.py: sha256:846b88668b0c9701fceada0da60f404e4b0b1f19fd0ccb27086f0eb4739fae58
   generate.py: sha256:997c6a5e7097f9e85c46969e7d401a5b5a696f38d4e765282ee0f9659a449628
-  module.verify.json: sha256:aa3436dd5bdeedb88d8f72da8aeab56e1e567979f86d36403bd1e0d40f9ae3f3
+  module.verify.json: sha256:a94c2c57f0eeb20cacde100e5d2f57abaa9192f8d6f63766b05eebf800078149
   overrides.py: sha256:f2e33991beff3b32569cacb8a6ef9806dcea4eda1b5598ac3a3a29168475d293
   templates/base/middleware.py.j2: sha256:a179c2f4797b20084077b1d1ec37edc870a89b3b717971e162e6866ef7de1b01
   templates/base/middleware_health.py.j2: sha256:9b633458d7ec63e46215542938fd4b68b04b1dfa5e91f4388a0e7c70a8b85a69

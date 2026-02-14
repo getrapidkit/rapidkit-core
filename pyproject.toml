@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "rapidkit-core"
-version = "0.3.2"
+version = "0.3.3"
 description = "Community-built rapid automation toolkit for makers who ship with heart"
 authors = ["RapidKit Team <team@getrapidkit.com>"]
 readme = "README.md"
@@ -137,15 +137,20 @@ module = [
     "core.tui",
     "requests.*",
     "jsonschema.*",
-    "yaml.*"
+    "yaml.*",
+    "pydantic_settings.*",
+    "sqlalchemy.*"
 ]
 ignore_missing_imports = true
 
 [[tool.mypy.overrides]]
 module = [
-  "psutil.*",
-  "nacl.*"
+    "psutil",
+    "psutil.*",
+    "nacl",
+    "nacl.*"
 ]
+ignore_missing_imports = true
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

@@ -108,7 +108,7 @@ class DeploymentModuleGenerator(BaseModuleGenerator):
 
         include_ci = bool(options.get("include_ci", True))
         include_postgres = bool(options.get("include_postgres", True))
-        python_version = str(options.get("python_version", "3.10.14"))
+        python_version = str(options.get("python_version", "3.10"))
         node_version = str(options.get("node_version", "20.19.6"))
 
         package_manager = str(options.get("package_manager", "npm"))

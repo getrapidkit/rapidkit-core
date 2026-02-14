@@ -3,27 +3,30 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
 
-RapidKit Core is the open-source RapidKit engine + CLI.
+RapidKit Core is the open-source RapidKit engine and CLI for scaffolding, operating, and evolving
+production-ready backend projects.
 
-- Install package: `rapidkit-core`
-
-- CLI command: `rapidkit`
-
+- Package: `rapidkit-core`
+- CLI: `rapidkit`
 - Website: https://www.getrapidkit.com/
-
 - Docs: https://www.getrapidkit.com/docs
-
 - Repository: https://github.com/getrapidkit/rapidkit-core
-
 - Issues: https://github.com/getrapidkit/rapidkit-core/issues
-
 - Discussions: https://github.com/getrapidkit/rapidkit-core/discussions
+
+## Useful tools
+
+- RapidKit npm CLI: https://github.com/getrapidkit/rapidkit-npm
+- npm package: https://www.npmjs.com/package/rapidkit
+- RapidKit VS Code Extension: https://github.com/getrapidkit/rapidkit-vscode
+- VS Code Marketplace: https://marketplace.visualstudio.com/items?itemName=rapidkit.rapidkit-vscode
 
 ## What you get
 
 - Production-grade scaffolding for FastAPI and NestJS
-- A consistent module system (add, remove, upgrade, diff)
-- Project-aware commands: `init`, `dev`, `build`, `test`, `lint`, `format`
+- Consistent module lifecycle: add, remove, upgrade, diff, reconcile, rollback
+- Project-aware commands for local development and CI workflows
+- Standardized project structure with `.rapidkit/` metadata
 
 ## Install
 
@@ -50,6 +53,44 @@ rapidkit create project fastapi.standard my-api
 cd my-api
 rapidkit init
 rapidkit dev
+```
+
+## CLI surface
+
+### Global commands
+
+- `rapidkit version`, `rapidkit project`, `rapidkit list`, `rapidkit info`, `rapidkit commands`
+- `rapidkit create`, `rapidkit add`, `rapidkit modules`, `rapidkit frameworks`
+- `rapidkit upgrade`, `rapidkit diff`, `rapidkit merge`, `rapidkit optimize`
+- `rapidkit doctor`, `rapidkit license`, `rapidkit checkpoint`, `rapidkit snapshot`
+- `rapidkit reconcile`, `rapidkit rollback`, `rapidkit uninstall`
+- `rapidkit --tui`, `rapidkit --version`, `rapidkit -v`
+
+### Project commands
+
+Inside a generated RapidKit project:
+
+- `rapidkit init`
+- `rapidkit dev`
+- `rapidkit start`
+- `rapidkit build`
+- `rapidkit test`
+- `rapidkit lint`
+- `rapidkit format`
+- `rapidkit help`
+
+### Common examples
+
+```bash
+rapidkit create project
+rapidkit create project fastapi.standard my-api
+rapidkit create project nestjs.standard my-api
+rapidkit create project fastapi.standard my-api --output /path/to/workspace
+
+cd my-api && rapidkit init
+rapidkit dev
+rapidkit add module auth
+rapidkit modules list
 ```
 
 ## Pre-releases (RC)

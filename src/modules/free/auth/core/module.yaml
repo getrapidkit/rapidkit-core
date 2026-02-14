@@ -1,6 +1,6 @@
 name: auth_core
 description: Authentication core primitives (JWT, RBAC, dependencies) for RapidKit
-version: 0.1.1
+version: 0.1.7
 access: free
 status: stable
 tier: free
@@ -133,15 +133,15 @@ documentation:
   advanced: docs/advanced.md
   migration: docs/migration.md
   troubleshooting: docs/troubleshooting.md
-  api_docs: null
+  api_docs: docs/api-reference.md
   examples: []
 support:
   issues: https://github.com/getrapidkit/rapidkit-core/issues
   discussions: https://github.com/getrapidkit/rapidkit-core/discussions
   documentation: https://docs.rapidkit.top/modules/auth-core
 changelog:
-  - version: "0.1.1"
-    date: "2026-02-11"
+  - version: "0.1.7"
+    date: "2026-02-14"
     notes: "See docs/changelog.md"
 validation:
   pre_install:
@@ -188,7 +188,7 @@ file_hashes:
   frameworks/fastapi.py: sha256:b03666abe887920ba3b012bc013b9dbc35d81000796e15dcbbb4d7f03fd18759
   frameworks/nestjs.py: sha256:ac25f7284a0a5f456420365afa0f152e742a5fef84c4a09afbf01c4f6d08dbea
   generate.py: sha256:d4a3ca6fb3a894832b15876bdf15b6ed7ef14cfa3d676475ea4286cf19ea7106
-  module.verify.json: sha256:b059c86b0e1790a2e16c5f8b182da091d051c9f683034a45ad190fe5157d27a1
+  module.verify.json: sha256:a5e0407cf1fe264aac037872d462057fb471412bdfbbaa35e06447e401a9f3ca
   overrides.py: sha256:748e589cbf4ef7ee79ec97213f6940619b5c5888bca07e7d8dac0c4fa8fcd513
   templates/base/core.py.j2: sha256:8dc1737355b81bbd20a8b79940eaae606bec275ba8c0054157df364c8938cbdf
   templates/base/core_health.py.j2: sha256:cc75882b3bf65b06f28535554516fb9e2c7a3681ea42ec149288f3215f390fe8

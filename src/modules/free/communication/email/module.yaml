@@ -1,5 +1,5 @@
 name: email
-version: 0.1.11
+version: 0.1.17
 tier: free
 access: free
 status: stable
@@ -133,15 +133,15 @@ documentation:
     advanced: docs/advanced.md
     migration: docs/migration.md
     troubleshooting: docs/troubleshooting.md
-    api_docs: null
+    api_docs: docs/api-reference.md
     examples: []
 support:
     issues: https://github.com/getrapidkit/rapidkit-core/issues
     discussions: https://github.com/getrapidkit/rapidkit-core/discussions
     documentation: https://docs.rapidkit.top/modules/email
 changelog:
-  - version: "0.1.11"
-    date: "2026-02-11"
+  - version: "0.1.17"
+    date: "2026-02-14"
     notes: "See docs/changelog.md"
 validation:
     pre_install:
@@ -190,7 +190,7 @@ file_hashes:
     frameworks/fastapi.py: sha256:09c8be8b577e0b5ec22f3e8f48ea9ecb3338ad94aa4eb78c325434aa0d04a8e8
     frameworks/nestjs.py: sha256:23eba7eae8b6fbd7a66c2874045b7c1a67289a84f36bda8d4a2a51338c715dc3
     generate.py: sha256:25d0c72d510eb31d91b042805fb92017821efb49d4a7195127b59b90bc1b4d47
-    module.verify.json: sha256:4899b0417d49831fec5ac75d6c981d8c825731104db62df2da90a9cb8d8155b9
+    module.verify.json: sha256:d79d60ac1a40d5dc92f35c87d79b19d1db5dc105b1ea1bcfc0703078809e4c2b
     overrides.py: sha256:6890ac107509ed2a0c3c681e7a44ccd2c19eb742e79de8a44c4a00a2ad33d178
     templates/base/email.py.j2: sha256:c2f31de8bbab7339e65e180c4849d5ab47193213a20c2e3b7f2b5320954fdff4
     templates/base/email_health.py.j2: sha256:3200081522cbc2a5393f48f769cf2ec2f410491f18c0a41b628b3987cf4c7c73

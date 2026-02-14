@@ -107,10 +107,11 @@ When bumping a module version:
 
 ## Distribution bundles
 
-Community distributions bundle a subset of scripts, docs, and templates declared in
-`scripts/scripts_map.yml` and `docs/docs_map.yml`. Because modules reference vendor payloads and
-verification manifests directly, keeping the source tree accurate guarantees downstream bundles
-inherit the right behaviour without patching generated artefacts.
+Community distributions bundle a subset of scripts, docs, and templates declared in engine-source
+mapping files such as `scripts/scripts_map.yml` and `docs/docs_map.yml`. Those map files are
+maintainer assets and may not be present in every published mirror repository. Because modules
+reference vendor payloads and verification manifests directly, keeping the source tree accurate
+guarantees downstream bundles inherit the right behaviour without patching generated artefacts.
 
 ## Recommended workflow for new modules
 

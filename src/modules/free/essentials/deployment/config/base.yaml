@@ -23,7 +23,7 @@ variables:
         description: Include a Postgres service in docker-compose templates.
     python_version:
         type: string
-        default: "3.10.14"
+        default: "3.10"
         description: Python version used for FastAPI Docker images.
     node_version:
         type: string

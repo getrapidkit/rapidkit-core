@@ -25,7 +25,7 @@ def test_fastapi_context_enrichments_include_defaults() -> None:
     assert context["runtime"] == "python"
     assert context["include_ci"] is True
     assert context["include_postgres"] is True
-    assert context["python_version"] == "3.10.14"
+    assert context["python_version"] == "3.10"
 
 
 def test_fastapi_dependencies_lists_expected_packages() -> None:

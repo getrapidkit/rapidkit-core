@@ -158,7 +158,7 @@ From now on, every time you change modules, the lock file updates automatically.
 ## Requirements
 
 - **RapidKit CLI** must be installed in your repository
-- **Python 3.10.14** for running the CLI
+- **Python 3.10** for running the CLI
 - **Pre-commit** (if using the pre-commit template)
 - **GitHub Actions** (if using the GitHub Actions template)
 

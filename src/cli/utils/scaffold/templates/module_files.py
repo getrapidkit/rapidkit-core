@@ -1134,11 +1134,8 @@ def _module_state_template() -> str:
     return textwrap.dedent(
         """
         {
-          "status": "draft",
-          "owner": "",
-          "notes": [
-            "Initial scaffold generated via rapidkit cli"
-          ]
+                    "hash": "",
+                    "version": "0.1.0"
         }
         """
     ).strip()

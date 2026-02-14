@@ -1,5 +1,5 @@
 name: logging
-version: 0.1.3
+version: 0.1.9
 access: free
 status: stable
 category: essentials
@@ -128,15 +128,15 @@ documentation:
   advanced: docs/advanced.md
   migration: docs/migration.md
   troubleshooting: docs/troubleshooting.md
-  api_docs: null
+  api_docs: docs/api-reference.md
   examples: []
 support:
   issues: https://github.com/getrapidkit/rapidkit-core/issues
   discussions: https://github.com/getrapidkit/rapidkit-core/discussions
   documentation: https://docs.rapidkit.top/modules/logging
 changelog:
-  - version: "0.1.3"
-    date: "2026-02-11"
+  - version: "0.1.9"
+    date: "2026-02-14"
     notes: "See docs/changelog.md"
 validation:
   pre_install:
@@ -181,7 +181,7 @@ file_hashes:
   frameworks/fastapi.py: sha256:77b2d76a000b76c645cfd6dcd6e58c01ffcbd391dd08cc650d13895f24f7eeb5
   frameworks/nestjs.py: sha256:236ac8570dc437e87f9939eb4e399e8fbb3ad44df49ee1fe01ea541156ae02e6
   generate.py: sha256:45bbbdaafdb62941df842ab03a56e87f474cc43f6bdef253672bac4cc49528a6
-  module.verify.json: sha256:1cc4ca355edaac687c99c917dd59c2e45f5fbe62eba2662c6e2d168a9bf377b0
+  module.verify.json: sha256:63021c2e5a138870fba9dbe9bddacae4bf028f15ff9e5b9fd0ca7da52c72d9b6
   overrides.py: sha256:9fc44bf8c4252fa11da66c37fd3c00542c89930813a2a3b1167332ca917aee0d
   templates/base/logging.py.j2: sha256:ed37ddb841460d3dce07f670174384e02ef55be628f0de722328dd4ea0277f78
   templates/base/logging_health.py.j2: sha256:f0071035a38831814fdfca82d54b8537567089081e1981adfa09e4b61e280ac5

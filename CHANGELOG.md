@@ -1,5 +1,22 @@
 # Changelog
 
+<!-- auto:promote-changelog start -->
+
+## [Snapshot ${STABLE_VERSION}]
+
+> Auto-generated from commits being promoted (`core/main..HEAD`).
+
+### Bug Fixes
+
+- **modules:** make metadata sync idempotent with mdformat ([d4dd74c](https://github.com/getrapidkit/rapidkit-core/commit/d4dd74c26ee84f1b7eb34cb44cdc82d2dba4dfa8))
+
+### Chores
+
+- **release:** finalize version to 0.3.3 ([34de65b](https://github.com/getrapidkit/rapidkit-core/commit/34de65b715cf74965ac8b100466825d9b5bba115))
+- **release:** bump version to 0.3.3rc1 ([99103b9](https://github.com/getrapidkit/rapidkit-core/commit/99103b97a4812c04d5f946418e72a978f030f92c))
+
+<!-- auto:promote-changelog end -->
+
 ## [Snapshot 0.3.2](https://github.com/getrapidkit/rapidkit-core/compare/v0.3.1...HEAD)
 
 > This distribution is built from commit `9a2a3801` and is not a tagged release.
