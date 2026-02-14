@@ -344,7 +344,7 @@ class TestTelemetryInsightsEndUser:
             "collected_at": datetime.now().isoformat(),
             "system_info": {
                 "platform": "Linux",
-                "python_version": "3.10.14",
+                "python_version": "3.10",
                 "rapidkit_version": "0.1.0",
             },
             "events": events,

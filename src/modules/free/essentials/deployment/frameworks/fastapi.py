@@ -82,7 +82,7 @@ class FastAPIPlugin(FrameworkPlugin):
         )
         context.setdefault("include_ci", True)
         context.setdefault("include_postgres", True)
-        context.setdefault("python_version", "3.10.14")
+        context.setdefault("python_version", "3.10")
         slug_value = str(context.get("module_slug") or context.get("module_name") or "deployment")
         module_segment = slug_value.split("/")[-1]
         context.setdefault("module_kebab", module_segment.replace("_", "-"))

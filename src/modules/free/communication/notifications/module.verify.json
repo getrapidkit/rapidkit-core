@@ -1,5 +1,5 @@
 {
-  "checked_at": "2025-12-24T15:24:19.913190+00:00",
+  "checked_at": "2026-02-14T17:31:21.871838+00:00",
   "description": "Lean module layout blueprint (v3)",
   "extra_directories": [
     "scripts"
@@ -38,8 +38,8 @@
   "parity_checked_at": "2025-12-06T23:18:14.332716+00:00",
   "parity_valid": true,
   "spec_version": 4,
-  "structure_tree_hash": "23192031c3bebda5847e3fc74845120672b3556b33d45de9819d4c06fa954aba",
+  "structure_tree_hash": "27a74ba4db6b916a89923bd599e2bfdf2498c34711f47d833ebd34979cd18529",
   "structure_valid": true,
-  "tree_hash": "23192031c3bebda5847e3fc74845120672b3556b33d45de9819d4c06fa954aba",
+  "tree_hash": "27a74ba4db6b916a89923bd599e2bfdf2498c34711f47d833ebd34979cd18529",
   "valid": true
 }

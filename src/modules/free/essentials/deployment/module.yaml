@@ -1,5 +1,5 @@
 name: deployment
-version: 0.1.4
+version: 0.1.10
 tier: free
 access: free
 status: stable
@@ -26,7 +26,7 @@ metadata:
 options:
     include_ci: true
     include_postgres: true
-    python_version: "3.10.14"
+    python_version: "3.10"
     node_version: "20.19.6"
     package_manager: npm
 generation:
@@ -48,7 +48,7 @@ generation:
               relative: deployment/fastapi/Dockerfile
               context:
                   runtime: python
-                  python_version: "3.10.14"
+                  python_version: "3.10"
             - template: templates/base/docker-compose.yml.j2
               relative: deployment/fastapi/docker-compose.yml
               context:
@@ -103,7 +103,7 @@ generation:
                 runtime: python
                 include_ci: true
                 include_postgres: true
-                python_version: "3.10.14"
+                python_version: "3.10"
             files:
                 - template: templates/variants/fastapi/Makefile.j2
                   output: Makefile
@@ -211,15 +211,15 @@ documentation:
     advanced: docs/advanced.md
     migration: docs/migration.md
     troubleshooting: docs/troubleshooting.md
-    api_docs: null
+    api_docs: docs/api-reference.md
     examples: []
 support:
     issues: https://github.com/getrapidkit/rapidkit-core/issues
     discussions: https://github.com/getrapidkit/rapidkit-core/discussions
     documentation: https://docs.rapidkit.top/modules/deployment
 changelog:
-  - version: "0.1.4"
-    date: "2026-02-11"
+  - version: "0.1.10"
+    date: "2026-02-14"
     notes: "See docs/changelog.md"
 validation:
     pre_install:
@@ -257,7 +257,7 @@ file_hashes:
     frameworks/fastapi.py: sha256:9174361c3aab02786995786bcffeeb204fdf125fb3f5872480573e16d952ed8c
     frameworks/nestjs.py: sha256:2170f24910aa34ca8bb6091b0130516e71786fe1e0163d03009ac8fece26f744
     generate.py: sha256:cefb83bd2ad23044162df7bdc6bac4deec0584e7e039002b76e0fbc90b48fe81
-    module.verify.json: sha256:7a1553e3486effc3aa50f233bfc8af9a551ebb025ca39ae10a2f4badc40f31be
+    module.verify.json: sha256:610517094ed6fd2860939483a9c987725ec670e0810a79f7e550ca2d1b1f5797
     overrides.py: sha256:71aa2edd74d1fe3de1dbbeeb7fbb965756ceba6e9ef808acb762e2d4687f073c
     templates/base/Dockerfile.j2: sha256:a25a17df57cc8fd9afd1db8e29dfc48f32904f46b8edcefd4191bd26370e55b5
     templates/base/Makefile.j2: sha256:741f7066d3be0f89df8e13c605d00e169b43ab5413263217d880483de7e8a00e

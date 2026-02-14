@@ -124,7 +124,7 @@ class FastAPIStandardGenerator(BaseKitGenerator):
             "auth_oauth2": auth_strategy == "oauth2",
             "auth_basic": auth_strategy == "basic",
             "selected_modules": self.selected_modules,
-            "python_version": str(self._context_variables.get("python_version", "3.10.14")),
+            "python_version": str(self._context_variables.get("python_version", "3.10")),
             "runtime": "python",
         }
 

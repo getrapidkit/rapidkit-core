@@ -1,5 +1,5 @@
 name: settings
-version: 0.1.35
+version: 0.1.41
 access: free
 status: stable
 category: essentials
@@ -131,8 +131,8 @@ support:
   discussions: https://github.com/getrapidkit/rapidkit-core/discussions
   documentation: https://docs.rapidkit.top/modules/settings
 changelog:
-  - version: "0.1.35"
-    date: "2026-02-12"
+  - version: "0.1.41"
+    date: "2026-02-14"
     notes: "See docs/changelog.md"
 validation:
   pre_install:
@@ -178,7 +178,7 @@ file_hashes:
   frameworks/fastapi.py: sha256:f2a3d075ff4c87a1cccc77d4c33f2e91919e12fb966949a9722a823a2f1677a5
   frameworks/nestjs.py: sha256:65eff660f7d98577c43b5571cefb88f5ceaea706095be4be2a604a30da3cfe55
   generate.py: sha256:920227ec5ca4c3c338f2c6af69587665c8ade143db6aa17ade356602c7492386
-  module.verify.json: sha256:b02dc049629191da4b7633b1da8aae2784622e1b4201f839bd2343fec48889e5
+  module.verify.json: sha256:2e2085ded1091310d0cb9aefa6f339ea7f6006068a68f7d190cbd97bee2498b1
   overrides.py: sha256:9509673c548b4c77e1c14fe8b3350b2dddc7d95f030965e76361c74f35d25e4d
   templates/base/custom_sources.py.j2: sha256:41f1af70e6dccd4b7d4a51049f113f7e5035600c8fc0019f5d46005ab5ef99ea
   templates/base/hot_reload.py.j2: sha256:270dafb7aa8fac16d2ec3066815c7e00e5bf551df3f86edb995abb36aa3b0a05

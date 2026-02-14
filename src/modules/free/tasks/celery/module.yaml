@@ -1,7 +1,7 @@
 name: celery
 display_name: Celery
 description: Production-ready Celery task orchestration for asynchronous workloads
-version: 0.1.2
+version: 0.1.8
 tier: free
 access: free
 status: stable
@@ -125,15 +125,15 @@ documentation:
     advanced: docs/advanced.md
     migration: docs/migration.md
     troubleshooting: docs/troubleshooting.md
-    api_docs: null
+    api_docs: docs/api-reference.md
     examples: []
 support:
     issues: https://github.com/getrapidkit/rapidkit-core/issues
     discussions: https://github.com/getrapidkit/rapidkit-core/discussions
     documentation: https://docs.rapidkit.top/modules/celery
 changelog:
-  - version: "0.1.2"
-    date: "2026-02-11"
+  - version: "0.1.8"
+    date: "2026-02-14"
     notes: "See docs/changelog.md"
 validation:
     pre_install:
@@ -180,7 +180,7 @@ file_hashes:
     frameworks/fastapi.py: sha256:aa288f14f8e142360b28780319c14d1f48ba1cc57f56dcbaf2009d81da9fe035
     frameworks/nestjs.py: sha256:ca2afc695d59182bb04514d51afc63c35864216837cc2edcc2f7af375e5eb807
     generate.py: sha256:15cce37361d4c16ea886c41822abdb641f98dd9522cc5dca6dcc4ad5529952b8
-    module.verify.json: sha256:73a63a0caa3f594105bba95e6b8eaacf651232ef9905d17172326484cc0e8b6a
+    module.verify.json: sha256:aba40fee835b6104b223b2a376b51a46daea7b03bde58e41c48647670cdd5271
     overrides.py: sha256:1d2de9b9ad92227a62ccefc8e1304803c18f814d2d407b20be0317acf39a35f0
     templates/base/celery.py.j2: sha256:fe797b97041858ad3cf5fd87d135f3b5f4d6620c3f2a0da4c545fafa7384d706
     templates/base/celery_health.py.j2: sha256:4f40956cd8ea62ad85b84ab39750a2292eacaefc697dc6a6816f4bab6d00670d

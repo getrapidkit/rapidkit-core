@@ -199,13 +199,11 @@ from src.modules.free.communication.notifications.core.notifications import Emai
 
 class NotificationQueue(EmailQueue):
     async def process_pending(self):
-        pending = await self.db.fetch(
-            """
+        pending = await self.db.fetch("""
             SELECT * FROM email_queue
             WHERE status = 'pending'
             LIMIT 100
-        """
-        )
+        """)
 
         for row in pending:
             # send email

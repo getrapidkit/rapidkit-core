@@ -301,6 +301,134 @@ jobs:
                       echo "Workflows already match core/main."
                   fi
 
+            - name: Refresh promote changelog from core baseline (auto-promote)
+              if: ${{ inputs.dry_run != 'true' && inputs.auto_promote == 'true' }}
+              env:
+                  STABLE_VERSION: ${{ steps.v.outputs.stable_version }}
+              run: |
+                  set -euo pipefail
+
+                  # Start from rapidkit-core main changelog so direct core commits are preserved.
+                  if git cat-file -e "core/main:CHANGELOG.md" 2>/dev/null; then
+                      git checkout "core/main" -- CHANGELOG.md
+                  fi
+
+                  # Build a deterministic promote block from commits that are actually being promoted.
+                  python3 - <<'PY'
+                  import re
+                  import subprocess
+                  from pathlib import Path
+
+                  changelog = Path("CHANGELOG.md")
+                  if not changelog.exists():
+                      raise SystemExit(0)
+
+                  log = subprocess.run(
+                      ["git", "log", "--no-merges", "--pretty=format:%H\t%h\t%s", "core/main..HEAD"],
+                      check=False,
+                      capture_output=True,
+                      text=True,
+                  )
+                  if log.returncode != 0:
+                      raise SystemExit(log.stderr or "git log failed")
+
+                  rows = [line for line in log.stdout.splitlines() if line.strip()]
+                  if not rows:
+                      text = changelog.read_text(encoding="utf-8")
+                      text = re.sub(
+                          r"\n?<!-- auto:promote-changelog start -->.*?<!-- auto:promote-changelog end -->\n?",
+                          "\n",
+                          text,
+                          flags=re.DOTALL,
+                      )
+                      changelog.write_text(text, encoding="utf-8")
+                      raise SystemExit(0)
+
+                  type_map = {
+                      "feat": "Features",
+                      "fix": "Bug Fixes",
+                      "docs": "Documentation",
+                      "refactor": "Refactors",
+                      "perf": "Performance",
+                      "test": "Tests",
+                      "ci": "Chores",
+                      "build": "Chores",
+                      "chore": "Chores",
+                      "style": "Chores",
+                      "revert": "Reverts",
+                      "debug": "Chores",
+                  }
+                  cc_re = re.compile(r"^(?P<t>[a-zA-Z]+)(?:\((?P<s>[^)]+)\))?(?:!)?:\s+(?P<d>.+)$")
+                  sections = {}
+                  order = [
+                      "Features",
+                      "Bug Fixes",
+                      "Documentation",
+                      "Refactors",
+                      "Performance",
+                      "Tests",
+                      "Chores",
+                      "Reverts",
+                      "Other",
+                  ]
+
+                  for row in rows:
+                      sha, short, subject = (row.split("\t", 2) + ["", "", ""])[:3]
+                      m = cc_re.match(subject.strip())
+                      if m:
+                          section = type_map.get(m.group("t").lower(), "Other")
+                          scope = (m.group("s") or "").strip()
+                          desc = (m.group("d") or "").strip()
+                          prefix = f"**{scope}:** " if scope else ""
+                          line = f"- {prefix}{desc} ([{short}](https://github.com/getrapidkit/rapidkit-core/commit/{sha}))"
+                      else:
+                          section = "Other"
+                          line = f"- {subject.strip()} ([{short}](https://github.com/getrapidkit/rapidkit-core/commit/{sha}))"
+                      sections.setdefault(section, []).append(line)
+
+                  stable_version = "${STABLE_VERSION}"
+                  block_lines = [
+                      "<!-- auto:promote-changelog start -->",
+                      "",
+                      f"## [Snapshot {stable_version}]",
+                      "",
+                      "> Auto-generated from commits being promoted (`core/main..HEAD`).",
+                      "",
+                  ]
+                  for section in order:
+                      items = sections.get(section, [])
+                      if not items:
+                          continue
+                      block_lines.append(f"### {section}")
+                      block_lines.append("")
+                      block_lines.extend(items)
+                      block_lines.append("")
+                  block_lines.append("<!-- auto:promote-changelog end -->")
+                  block = "\n".join(block_lines).rstrip() + "\n"
+
+                  text = changelog.read_text(encoding="utf-8")
+                  text = re.sub(
+                      r"\n?<!-- auto:promote-changelog start -->.*?<!-- auto:promote-changelog end -->\n?",
+                      "\n",
+                      text,
+                      flags=re.DOTALL,
+                  )
+
+                  if text.startswith("# Changelog\n"):
+                      text = "# Changelog\n\n" + block + "\n" + text[len("# Changelog\n"):].lstrip("\n")
+                  else:
+                      text = block + "\n" + text
+
+                  changelog.write_text(text, encoding="utf-8")
+                  PY
+
+                  if ! git diff --quiet -- CHANGELOG.md 2>/dev/null; then
+                      git add CHANGELOG.md
+                      git commit -m "chore(changelog): refresh promote snapshot from core/main..HEAD"
+                  else
+                      echo "CHANGELOG already up-to-date for promote snapshot."
+                  fi
+
             - name: Push promote branch to core (auto-promote)
               if: ${{ inputs.dry_run != 'true' && inputs.auto_promote == 'true' }}
               run: |

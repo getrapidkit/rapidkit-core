@@ -162,9 +162,9 @@ ______________________________________________________________________
   template updates before rolling them into downstream projects.
 - **Quality gates**: Use generated Make targets (`make test`, `make lint`, `make dev`) or invoke
   `rapidkit test` / `rapidkit lint` directly for consistent tooling across teams.
-- **Distribution builds**: The publishing workflow runs `make community-docs` so README artifacts
-  are always up to date. Run it locally before cutting a release to catch forbidden keywords or
-  missing docs.
+- **Distribution builds**: Engine release pipelines can run docs rendering/keyword guards before
+  syncing distribution repositories. Published mirrors may intentionally skip that target when the
+  maintainer-only docs tooling is not shipped.
 
 ______________________________________________________________________
 

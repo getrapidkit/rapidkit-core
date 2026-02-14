@@ -14,7 +14,7 @@ type DeploymentConfig = {
 export default registerAs('deployment', (): DeploymentConfig => ({
   includeCi: {{ deployment_defaults.get('include_ci', True) | tojson }},
   includePostgres: {{ deployment_defaults.get('include_postgres', True) | tojson }},
-  pythonVersion: {{ deployment_defaults.get('python_version', '3.10.14') | tojson }},
+  pythonVersion: {{ deployment_defaults.get('python_version', '3.10') | tojson }},
   nodeVersion: {{ deployment_defaults.get('node_version', '20.19.6') | tojson }},
   packageManager: {{ deployment_defaults.get('package_manager', 'npm') | tojson }},
   packageManagerCommand: {{ deployment_defaults.get('package_manager_command', 'npm') | tojson }},

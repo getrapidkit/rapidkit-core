@@ -120,7 +120,7 @@ jobs:
             - name: Set up Python
               uses: actions/setup-python@v4
               with:
-                  python-version: "3.10.14"
+                  python-version: "3.10"
 
             - name: Install dependencies
               run: |
@@ -685,7 +685,7 @@ jobs:
             - name: Set up Python
               uses: actions/setup-python@v4
               with:
-                  python-version: "3.10.14"
+                  python-version: "3.10"
 
             - name: Install dependencies
               run: |

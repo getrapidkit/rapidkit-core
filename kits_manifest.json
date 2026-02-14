@@ -5,7 +5,7 @@
     "tier": "standard",
     "version": "0.1.0",
     "path": "src/kits/fastapi/ddd",
-    "hash": "92e66adb2faf74a6fd0fa65c4dc237a598e9785aa0badf217fc67b43cf278adf"
+    "hash": "8948c7ba219de570887bbefe384041c016ce696af0b35d4929b7ebbb01be0399"
   },
   {
     "name": "standard",
@@ -13,7 +13,7 @@
     "tier": "standard",
     "version": "0.1.0",
     "path": "src/kits/fastapi/standard",
-    "hash": "21e8d65cb078d3f3d222a29b75eae74bde08c06d4303d34f7b5a2aeeacc4ac34"
+    "hash": "90df232e8f26a2b2a7240f65bff93c23c9416b6d5bc19b8aae93352873501c0d"
   },
   {
     "name": "standard",

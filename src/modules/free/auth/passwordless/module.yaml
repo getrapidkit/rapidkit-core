@@ -1,6 +1,6 @@
 name: passwordless
 description: Passwordless authentication flows (magic links, OTP) for RapidKit
-version: 0.1.1
+version: 0.1.7
 access: free
 status: stable
 category: auth
@@ -111,15 +111,15 @@ documentation:
   advanced: docs/advanced.md
   migration: docs/migration.md
   troubleshooting: docs/troubleshooting.md
-  api_docs: null
+  api_docs: docs/api-reference.md
   examples: []
 support:
   issues: https://github.com/getrapidkit/rapidkit-core/issues
   discussions: https://github.com/getrapidkit/rapidkit-core/discussions
   documentation: https://docs.rapidkit.top/modules/passwordless
 changelog:
-  - version: "0.1.1"
-    date: "2026-02-11"
+  - version: "0.1.7"
+    date: "2026-02-14"
     notes: "See docs/changelog.md"
 validation:
   pre_install:
@@ -165,7 +165,7 @@ file_hashes:
   frameworks/fastapi.py: sha256:a56d8e32a48f9118bc1e7a9fe4e54413deed0388e8f91fabd64d5dd61d1e16ea
   frameworks/nestjs.py: sha256:bf7ef122cd8046e265620ac417e4c78fe89d3824d8afb057e222faa584dca695
   generate.py: sha256:377f8dd87d3fcf3fa5d4c000f3059afa2f4777cce6fba48a799dcf0d6ab49f5b
-  module.verify.json: sha256:cb5a603abe9b404b66d45af08f5550557e7c932c10b4f8cf7f2347596cc3ab3c
+  module.verify.json: sha256:def99c1e53f9eed42e9e8a7d31186ce204881de4568499c83d234ef4b1fcd173
   overrides.py: sha256:58b32d998740c8da4ef6551fd9cd2d530266195a6663282bc13873f91f73208c
   templates/base/passwordless.py.j2: sha256:f27390d3b47d7c8d415fd21876d3c79f1babc7441d23ec9cce60cc200e4bff02
   templates/base/passwordless_health.py.j2: sha256:eda8fe3dd385569e2ad486e035a7631cc2d24e10842786264390ad52a2c730dc

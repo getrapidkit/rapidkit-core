@@ -43,6 +43,7 @@ blueprint:
     - docs/overview.md
     - docs/usage.md
     - docs/advanced.md
+    - docs/api-reference.md
     - docs/changelog.md
     - docs/migration.md
     - docs/troubleshooting.md

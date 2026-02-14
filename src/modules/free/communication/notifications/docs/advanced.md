@@ -231,15 +231,13 @@ class EmailQueue:
 
     async def process_queue(self, email_service):
         """Process queued emails with retry logic."""
-        rows = await self.db.fetch(
-            """
+        rows = await self.db.fetch("""
             SELECT id, message, retry_count
             FROM email_queue
             WHERE retry_count < 5
             ORDER BY priority DESC, created_at ASC
             LIMIT 100
-        """
-        )
+        """)
 
         for row in rows:
             message_data = json.loads(row["message"])

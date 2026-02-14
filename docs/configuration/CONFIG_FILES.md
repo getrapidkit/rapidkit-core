@@ -62,24 +62,19 @@ ______________________________________________________________________
 
 ## Documentation & Distribution Files
 
-### `docs/docs_map.yml`
+Community distributions consume pre-rendered docs artifacts and workflow templates generated in the
+engine source repository.
 
-- Controls which documentation files ship with each distribution tier
-- Ensure new community-facing docs are added here; internal files belong under `docs/internal/`
-- The `make community-docs` target reads this map to render README artifacts and enforce keyword
-  guards
+- Maintainer-only mapping files (for example `docs/docs_map.yml` and `scripts/scripts_map.yml`) are
+  part of the engine build pipeline and may not be present in every published mirror.
+- The docs utility `scripts/manage_community_docs.py` is an engine release helper used before
+  distribution sync; it is not required for day-to-day usage of the published `rapidkit-core`
+  repository.
 
-### `scripts/manage_community_docs.py`
-
-- Regenerates `README.md` from `docs/readme-templates/community.md`
-- Renders a community README for packaging (`build/community/README.md`)
-- Scans every community-tier doc for forbidden keywords (deprecated kit names and pip-based install
-  snippets)
+If you maintain the engine source itself, run the docs guard there:
 
 ```bash
 make community-docs
-# or
-poetry run python scripts/manage_community_docs.py --check-keywords
 ```
 
 ______________________________________________________________________

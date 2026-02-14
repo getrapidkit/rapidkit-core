@@ -11,7 +11,7 @@ hygiene notes.
 
 Quick checklist (what to do first)
 
-- Ensure you have Python 3.10.14 installed (project uses a workspace `.venv`).
+- Ensure you have Python 3.10 installed (project uses a workspace `.venv`).
 - Install or allow `direnv` (recommended) to auto-activate the workspace venv.
 - Read `docs/getting-started/README.dev.md` for onboarding details and dev workflows.
 

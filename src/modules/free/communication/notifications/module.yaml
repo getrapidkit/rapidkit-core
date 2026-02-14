@@ -1,5 +1,5 @@
 name: notifications
-version: 0.1.18
+version: 0.1.25
 tier: free
 access: free
 status: stable
@@ -137,15 +137,15 @@ documentation:
     advanced: docs/advanced.md
     migration: docs/migration.md
     troubleshooting: docs/troubleshooting.md
-    api_docs: null
+    api_docs: docs/api-reference.md
     examples: []
 support:
     issues: https://github.com/getrapidkit/rapidkit-core/issues
     discussions: https://github.com/getrapidkit/rapidkit-core/discussions
     documentation: https://docs.rapidkit.top/modules/notifications
 changelog:
-  - version: "0.1.18"
-    date: "2026-02-11"
+  - version: "0.1.25"
+    date: "2026-02-14"
     notes: "See docs/changelog.md"
 validation:
     pre_install:
@@ -183,7 +183,7 @@ file_hashes:
     frameworks/fastapi.py: sha256:706cad34ef2cc600c2e7d71e109447cae106c7344ea39c3892aadffa0462d0df
     frameworks/nestjs.py: sha256:28424e92ef6be431b8ff6380b248bb3feae306546830d72b160eb7c6400df24b
     generate.py: sha256:f9e53811ff921a41b9db7b144c7b8b6ded39a6777f551b2a614a991b97911b16
-    module.verify.json: sha256:1959eece05245fc2e71c7637f2b79767f818ee09fd2b496aef7be7de9dcfe368
+    module.verify.json: sha256:542edc0f2dc3ec2e306ef8612cab3b66a7aa8dbcd9c7d34386f30f99ec168f35
     overrides.py: sha256:433388a9d218e1159cc25aa132b748a9a490768709e2382f14f1c793f1242535
     templates/__init__.py: sha256:829c91a7b342975972d0c4b5f22096f215871f18931f0897ac10d7a830877d14
     templates/base/__init__.py: sha256:09656ba66e544f144fa7f45b1c084c52d6ea318e4af47a4f01114900a12a2f2b

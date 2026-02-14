@@ -147,7 +147,7 @@ services:
 
 ```dockerfile
 # Development stage
-FROM python:3.10.14-slim as development
+FROM python:3.10-slim as development
 WORKDIR /app
 COPY requirements.txt .
 RUN pip install -r requirements.txt
@@ -155,7 +155,7 @@ COPY . .
 CMD ["uvicorn", "main:app", "--reload", "--host", "0.0.0.0"]
 
 # Production stage
-FROM python:3.10.14-slim as production
+FROM python:3.10-slim as production
 WORKDIR /app
 COPY --from=development /app .
 RUN pip install --no-cache-dir -r requirements.txt
