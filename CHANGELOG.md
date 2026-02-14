@@ -1,8 +1,8 @@
 # Changelog
 
-## [Snapshot 0.3.1](https://github.com/getrapidkit/rapidkit-core/compare/v0.3.0-rc.4...HEAD)
+## [Snapshot 0.3.2](https://github.com/getrapidkit/rapidkit-core/compare/v0.3.1...HEAD)
 
-> This distribution is built from commit `abbff9ef` and is not a tagged release.
+> This distribution is built from commit `c80eaf88` and is not a tagged release.
 
 ### Features
 
@@ -149,6 +149,8 @@
 
 ### Bug Fixes
 
+- **ai-assistant:** standardize health contract and shared shim fallback
+  ([a76b8921](https://github.com/getrapidkit/rapidkit-core/commit/a76b8921da7b9412892ef827d307de401e2e731f))
 - **release:** snapshot heading version + stabilize pre-push pytest env
   ([4d814106](https://github.com/getrapidkit/rapidkit-core/commit/4d8141064417cd8987a038044810b0d632aa8479))
 - **ai_assistant:** sync state hash after manual version rollback
@@ -625,6 +627,12 @@
 ### Chores
 
 - **release:** update changelog
+  ([c80eaf88](https://github.com/getrapidkit/rapidkit-core/commit/c80eaf888c8f49ceffa5880bed663173fe15cbf9))
+- **ai_assistant:** sync module hashes without version bump
+  ([21635069](https://github.com/getrapidkit/rapidkit-core/commit/2163506973f373c01a02120cd3e522b3ecf541ed))
+- **release:** update changelog
+  ([089ff421](https://github.com/getrapidkit/rapidkit-core/commit/089ff4211bdbb43f2fd4cab490c192b8bfa71a8e))
+- **release:** update changelog
   ([abbff9ef](https://github.com/getrapidkit/rapidkit-core/commit/abbff9ef7a8a14cc310493e663591b88b3227487))
 - **release:** update changelog
   ([5fa3977b](https://github.com/getrapidkit/rapidkit-core/commit/5fa3977b4d26f0eb7857eed2546b5e8f2db1a908))
@@ -1039,6 +1047,33 @@
   ([5036da79](https://github.com/getrapidkit/rapidkit-core/commit/5036da792916fb56fcbe825a6e2d63529732ff81))
 - first commit
   ([1a49a604](https://github.com/getrapidkit/rapidkit-core/commit/1a49a6049d00493d695ab8ff7626923dffd09d1b))
+
+## [0.3.1](https://github.com/getrapidkit/rapidkit-core/compare/v0.3.0-rc.4...v0.3.1) (2026-02-13)
+
+### Chores
+
+- **release:** set stable version 0.3.1
+  ([c4021e91](https://github.com/getrapidkit/rapidkit-core/commit/c4021e914e61f00a0136013e19b4b5fb412e7bb1))
+- **release:** bump version to 0.3.1rc1
+  ([ae002bfe](https://github.com/getrapidkit/rapidkit-core/commit/ae002bfec9fca624ce9daebcf2a4711434de6fe4))
+- **release:** update changelog
+  ([b0406476](https://github.com/getrapidkit/rapidkit-core/commit/b04064767ef63c4d37cc00fd191f2251c4f3807f))
+- decouple release from publish
+  ([6e558105](https://github.com/getrapidkit/rapidkit-core/commit/6e558105d59b85c67dcf6c891bad5e01f0b887d5))
+- **publish:** avoid non-distribution files in dist and tidy release
+  ([411b5b07](https://github.com/getrapidkit/rapidkit-core/commit/411b5b079df3deb3a5cc1280a4c5dbac377def0b))
+- **release:** tag stable from pyproject and auto-release on publish
+  ([67a0d89d](https://github.com/getrapidkit/rapidkit-core/commit/67a0d89d44ea05d60c8b4a99b569225fffa63a4b))
+- **workflows:** allow stable tag without bump commit
+  ([fa4afa92](https://github.com/getrapidkit/rapidkit-core/commit/fa4afa920808be49067b10434bed94bd9cbc2b7e))
+- **release:** bump version to 0.3.0
+  ([ddc8ca0a](https://github.com/getrapidkit/rapidkit-core/commit/ddc8ca0aabbbe3525c73ff78c98ad2340716dfa6))
+- **workflows:** harden stable tag auto-promote auth
+  ([2266c898](https://github.com/getrapidkit/rapidkit-core/commit/2266c8982d0bb67682125d0d5f9309abbc433c8b))
+- **release:** bump version to 0.3.0
+  ([20c21ac6](https://github.com/getrapidkit/rapidkit-core/commit/20c21ac62003a4de1c1d7576d8d4089b78582d2a))
+- add PR-based promotion workflows
+  ([fd99f542](https://github.com/getrapidkit/rapidkit-core/commit/fd99f54200385169b469c2c34c814bd7b07c569d))
 
 ## [0.3.0-rc.4](https://github.com/getrapidkit/rapidkit-core/compare/v0.3.0-rc.3...v0.3.0-rc.4) (2026-02-09)
 

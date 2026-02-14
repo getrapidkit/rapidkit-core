@@ -7,12 +7,21 @@ from types import ModuleType
 from typing import Any, Mapping
 
 try:
-    from ..ai_assistant import {{ module_class_name }}, {{ module_class_name }}Config  # type: ignore[import]
-except ImportError:  # pragma: no cover - fallback for isolated execution
-    # Pick the *most recently loaded* module that provides the expected symbols.
-    # This avoids nondeterminism when multiple modules in sys.modules expose the
-    # same attribute names (common in test environments).
-    _runtime_module: ModuleType | None = next(
+    from fastapi import APIRouter, FastAPI
+except ImportError:  # pragma: no cover - FastAPI optional during template checks
+    APIRouter = None  # type: ignore[assignment]
+    FastAPI = None  # type: ignore[assignment]
+
+
+def _resolve_runtime() -> tuple[type[Any], type[Any]]:
+    try:
+        from src.modules.free.ai.ai_assistant.ai_assistant import {{ module_class_name }}, {{ module_class_name }}Config
+
+        return {{ module_class_name }}, {{ module_class_name }}Config
+    except Exception:
+        pass
+
+    runtime_module: ModuleType | None = next(
         (
             module
             for module in reversed(list(sys.modules.values()))
@@ -22,21 +31,23 @@ except ImportError:  # pragma: no cover - fallback for isolated execution
         ),
         None,
     )
-    if _runtime_module is None:  # pragma: no cover - defensive guard
-        raise
+    if runtime_module is None:  # pragma: no cover - defensive guard
+        raise RuntimeError("{{ module_class_name }} runtime is unavailable")
 
-    {{ module_class_name }} = getattr(_runtime_module, "{{ module_class_name }}")  # type: ignore[assignment]
-    {{ module_class_name }}Config = getattr(_runtime_module, "{{ module_class_name }}Config")  # type: ignore[assignment]
+    assistant_cls = getattr(runtime_module, "{{ module_class_name }}")
+    config_cls = getattr(runtime_module, "{{ module_class_name }}Config")
+    return assistant_cls, config_cls
 
 
 def check_health(
-    config: {{ module_class_name }}Config | None = None,
+    config: Any | None = None,
     *,
     context: Mapping[str, Any] | None = None,
 ) -> Mapping[str, Any]:
     """Return a detailed health payload for the assistant runtime."""
 
-    assistant = {{ module_class_name }}(config or {{ module_class_name }}Config())
+    assistant_cls, config_cls = _resolve_runtime()
+    assistant = assistant_cls(config or config_cls())
     report = assistant.health_report()
 
     if context:
@@ -46,4 +57,23 @@ def check_health(
     return report
 
 
-__all__ = ["check_health"]
+if APIRouter is not None:
+    router = APIRouter(prefix="/api/health/module", tags=["health"])
+
+    @router.get("/ai-assistant", summary="Ai Assistant module health check")
+    async def ai_assistant_health_check() -> Mapping[str, Any]:
+        return check_health()
+
+else:  # pragma: no cover - FastAPI optional during linting-only flows
+    router = None
+
+
+def register_ai_assistant_health(app: Any) -> None:
+    if FastAPI is not None and not isinstance(app, FastAPI):
+        raise TypeError("register_ai_assistant_health expects a FastAPI application instance")
+    if router is None:
+        raise RuntimeError("FastAPI must be installed to register ai_assistant health routes")
+    app.include_router(router)
+
+
+__all__ = ["check_health", "register_ai_assistant_health", "router"]

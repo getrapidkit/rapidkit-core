@@ -14,6 +14,7 @@ _DEFAULT_HEALTH_IMPORTS: Tuple[Tuple[str, str], ...] = (
     ("src.health.deployment", "register_deployment_health"),
     ("src.health.middleware", "register_middleware_health"),
     ("src.health.settings", "register_settings_health"),
+    ("src.health.ai_assistant", "register_ai_assistant_health"),
     ("src.health.redis", "register_redis_health"),
 )
 
@@ -187,36 +188,13 @@ _VENDOR_HEALTH_WRAPPER_TEMPLATE = Template(
 
 
         def build_health_router(prefix: str = DEFAULT_HEALTH_PREFIX) -> Any:
-            """Return a FastAPI router sourced from the vendor health runtime."""
+            """Return a standardized FastAPI router for module health.
 
-            try:
-                factory = _resolve_export("build_health_router")
-            except RuntimeError:
-                factory = None
-
-            if callable(factory):
-                try:
-                    return factory(prefix=prefix)
-                except TypeError:  # pragma: no cover - factory without prefix support
-                    return factory()
-
-            try:
-                router = _resolve_export("router")
-                if router is not None:
-                    return router
-            except RuntimeError:
-                router = None
-
-            try:
-                factory = _resolve_export("create_health_router")
-            except RuntimeError:
-                factory = None
-
-            if callable(factory):
-                try:
-                    return factory(prefix=prefix)
-                except TypeError:  # pragma: no cover - factory without prefix support
-                    return factory()
+            The route shape stays canonical for every module:
+            - prefix: /api/health/module/<slug>
+            - method/path: GET ""
+            - tag: ["health"]
+            """
 
             try:
                 from fastapi import APIRouter  # type: ignore
@@ -224,16 +202,65 @@ _VENDOR_HEALTH_WRAPPER_TEMPLATE = Template(
                 APIRouter = None  # type: ignore[assignment]
 
             if APIRouter is not None:
-                router = APIRouter(prefix=prefix, tags=["Health", _VENDOR_MODULE])
+                router = APIRouter(prefix=prefix, tags=["health"])
 
-                @router.get("/health", summary=f"{_VENDOR_MODULE} health check")
-                async def read_health() -> dict[str, Any]:
+                async def _build_health_payload() -> dict[str, Any]:
+                    probe_names = (
+                        "check_health",
+                        "health_check",
+                        "module_health_status",
+                        f"{_VENDOR_MODULE}_health_check",
+                    )
+
+                    for probe_name in probe_names:
+                        try:
+                            probe = _resolve_export(probe_name)
+                        except Exception:
+                            probe = None
+
+                        if not callable(probe):
+                            continue
+
+                        try:
+                            result = probe()
+                            if hasattr(result, "__await__"):
+                                result = await result
+                        except Exception as exc:
+                            return {
+                                "module": _VENDOR_MODULE,
+                                "status": "error",
+                                "detail": str(exc),
+                                "warnings": [],
+                            }
+
+                        if isinstance(result, dict):
+                            payload = dict(result)
+                            payload.setdefault("module", _VENDOR_MODULE)
+                            payload.setdefault("status", "ok")
+                            payload.setdefault("warnings", [])
+                            return payload
+
+                        return {
+                            "module": _VENDOR_MODULE,
+                            "status": "ok",
+                            "detail": str(result),
+                            "warnings": [],
+                        }
+
                     return {
                         "module": _VENDOR_MODULE,
                         "status": "unknown",
                         "detail": "runtime not initialized",
                         "warnings": [],
                     }
+
+                @router.get("", summary=f"{_VENDOR_MODULE} health check")
+                async def read_health() -> dict[str, Any]:
+                    return await _build_health_payload()
+
+                @router.get("/health", include_in_schema=False)
+                async def read_health_legacy() -> dict[str, Any]:
+                    return await _build_health_payload()
 
                 return router
 
@@ -267,7 +294,7 @@ _VENDOR_HEALTH_WRAPPER_TEMPLATE = Template(
 
         try:
             $register_symbol = _resolve_export("$register_symbol")
-        except RuntimeError:
+        except Exception:
             $register_symbol = _fallback_register
 
 
@@ -285,8 +312,13 @@ _VENDOR_HEALTH_WRAPPER_TEMPLATE = Template(
                 raise AttributeError(item) from exc
 
 
+        try:
+            _vendor_exports = set(getattr(_load_vendor_module(), "__all__", []))
+        except Exception:
+            _vendor_exports = set()
+
         __all__ = sorted(
-            set(getattr(_load_vendor_module(), "__all__", []))
+            _vendor_exports
             | {
                 "build_health_router",
                 "create_health_router",
@@ -333,6 +365,7 @@ _BUILTIN_HEALTH_MODULES: Tuple[str, ...] = (
     "deployment",
     "middleware",
     "settings",
+    "ai_assistant",
     "redis",
 )
 
