@@ -23,6 +23,14 @@ on:
                 options:
                     - "false"
                     - "true"
+            allow_finalize_from_rc:
+                description: "Allow finalizing pyproject from X.Y.ZrcN to X.Y.Z before stable tagging"
+                required: false
+                default: "false"
+                type: choice
+                options:
+                    - "false"
+                    - "true"
 
 concurrency:
     group: community-staging-tag-stable-${{ github.ref }}
@@ -107,22 +115,81 @@ jobs:
                   echo "Stable version: ${{ steps.v.outputs.stable_version }}"
                   echo "Stable tag: ${{ steps.v.outputs.stable_tag }}"
 
-            - name: Validate pyproject at exact stable version (no auto-bump)
+            - name: Validate pyproject version for stable tagging
               if: ${{ inputs.dry_run != 'true' }}
+              id: validate_pyproject
+              run: |
+                  set -euo pipefail
+                  expected="${{ steps.v.outputs.stable_version }}"
+                  allow_finalize="${{ inputs.allow_finalize_from_rc }}"
+                  raw=$(awk -F '"' '/^version =/ {print $2; exit}' pyproject.toml)
+
+                  stable_re='^[0-9]+\.[0-9]+\.[0-9]+$'
+                  expected_escaped="${expected//./\\.}"
+                  expected_rc_re="^${expected_escaped}rc[0-9]+$"
+
+                  if [[ "$raw" =~ $stable_re ]]; then
+                      if [[ "$raw" != "$expected" ]]; then
+                          echo "pyproject.toml version ($raw) does not match requested stable version ($expected)." >&2
+                          echo "No auto-bump is performed in this workflow. Please set version manually first." >&2
+                          exit 1
+                      fi
+                      echo "finalize_from_rc=false" >> "$GITHUB_OUTPUT"
+                      echo "raw_version=$raw" >> "$GITHUB_OUTPUT"
+                      exit 0
+                  fi
+
+                  if [[ "$allow_finalize" == "true" && "$raw" =~ $expected_rc_re ]]; then
+                      echo "Detected RC version in pyproject.toml: $raw"
+                      echo "Will finalize to stable: $expected"
+                      echo "finalize_from_rc=true" >> "$GITHUB_OUTPUT"
+                      echo "raw_version=$raw" >> "$GITHUB_OUTPUT"
+                      exit 0
+                  fi
+
+                  echo "This workflow expects pyproject.toml to be either:"
+                  echo "- exact stable version: $expected" >&2
+                  echo "- or matching RC ${expected}rcN when allow_finalize_from_rc=true" >&2
+                  echo "Current pyproject.toml version: $raw" >&2
+                  if [[ "$allow_finalize" != "true" ]]; then
+                      echo "Tip: set allow_finalize_from_rc=true to auto-finalize matching RC versions." >&2
+                  fi
+                  if [[ "$raw" =~ ^[0-9]+\.[0-9]+\.[0-9]+rc[0-9]+$ && ! "$raw" =~ $expected_rc_re ]]; then
+                      echo "RC base mismatch: expected base $expected, got $raw" >&2
+                  fi
+                  exit 1
+
+            - name: Finalize pyproject from RC to stable
+              if: ${{ inputs.dry_run != 'true' && steps.validate_pyproject.outputs.finalize_from_rc == 'true' }}
+              run: |
+                  set -euo pipefail
+                  stable="${{ steps.v.outputs.stable_version }}"
+                  raw="${{ steps.validate_pyproject.outputs.raw_version }}"
+
+                  echo "Finalizing version: $raw -> $stable"
+                  poetry version "$stable"
+
+                  if poetry lock --help 2>/dev/null | grep -q -- '--no-update'; then
+                      poetry lock --no-update
+                  else
+                      poetry lock
+                  fi
+
+                  git add pyproject.toml poetry.lock
+                  if git diff --cached --quiet; then
+                      echo "No version/lock changes detected to commit."
+                  else
+                      git commit -m "chore(release): finalize version to $stable"
+                  fi
+
+            - name: Re-validate finalized pyproject version
+              if: ${{ inputs.dry_run != 'true' && steps.validate_pyproject.outputs.finalize_from_rc == 'true' }}
               run: |
                   set -euo pipefail
                   expected="${{ steps.v.outputs.stable_version }}"
                   raw=$(awk -F '"' '/^version =/ {print $2; exit}' pyproject.toml)
-                  if ! [[ "$raw" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-                      echo "This workflow only supports exact stable versions in pyproject.toml (X.Y.Z)." >&2
-                      echo "Current pyproject.toml version: $raw" >&2
-                      echo "Tip: RC versions must be finalized before running stable tag workflow." >&2
-                      exit 1
-                  fi
-
                   if [[ "$raw" != "$expected" ]]; then
-                      echo "pyproject.toml version ($raw) does not match requested stable version ($expected)." >&2
-                      echo "No auto-bump is performed in this workflow. Please set version manually first." >&2
+                      echo "Post-finalize validation failed: expected $expected, got $raw" >&2
                       exit 1
                   fi
 
@@ -146,6 +213,8 @@ jobs:
                       echo "      If you want tag -> publish to auto-run, add a PAT secret named STAGING_TAG_PUSH_TOKEN (repo+workflow)." >&2
                   fi
 
+                  # Push possible finalize commit first, then push stable tag.
+                  git push origin "HEAD:${GITHUB_REF_NAME}"
                   git push origin "$tag"
 
                   echo "Pushed stable tag: $tag (version $stable)"

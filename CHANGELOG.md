@@ -2,7 +2,7 @@
 
 ## [Snapshot 0.3.2](https://github.com/getrapidkit/rapidkit-core/compare/v0.3.1...HEAD)
 
-> This distribution is built from commit `c80eaf88` and is not a tagged release.
+> This distribution is built from commit `9a2a3801` and is not a tagged release.
 
 ### Features
 
@@ -626,6 +626,8 @@
 
 ### Chores
 
+- **release:** update changelog
+  ([9a2a3801](https://github.com/getrapidkit/rapidkit-core/commit/9a2a380168d1c3b883b9ec076ab766ce19e51324))
 - **release:** update changelog
   ([c80eaf88](https://github.com/getrapidkit/rapidkit-core/commit/c80eaf888c8f49ceffa5880bed663173fe15cbf9))
 - **ai_assistant:** sync module hashes without version bump
