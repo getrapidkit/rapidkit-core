@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "rapidkit-core"
-version = "0.3.3"
+version = "0.3.3rc1"
 description = "Community-built rapid automation toolkit for makers who ship with heart"
 authors = ["RapidKit Team <team@getrapidkit.com>"]
 readme = "README.md"
