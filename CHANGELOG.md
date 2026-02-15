@@ -1,8 +1,8 @@
 # Changelog
 
-## [Snapshot 0.3.4](https://github.com/getrapidkit/rapidkit-core/compare/v0.3.1...HEAD)
+## [Snapshot 0.3.5](https://github.com/getrapidkit/rapidkit-core/compare/v0.3.1...HEAD)
 
-> This distribution is built from commit `e19ede45` and is not a tagged release.
+> This distribution is built from commit `03cba391` and is not a tagged release.
 
 ### Features
 
@@ -149,6 +149,8 @@
 
 ### Bug Fixes
 
+- **release:** align community gates and pyproject
+  ([a2884ea9](https://github.com/getrapidkit/rapidkit-core/commit/a2884ea9122b1abb773f51f4c236856cdf5de287))
 - **distribution:** harden public docs/workflow and license mappings
   ([e19ede45](https://github.com/getrapidkit/rapidkit-core/commit/e19ede454f711fa2ec0e3f7988f28d1a4f5c414a))
 - **modules:** make metadata sync idempotent with mdformat

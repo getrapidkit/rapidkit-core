@@ -56,7 +56,7 @@ def _read_pyproject_version() -> Optional[str]:
     except OSError:  # pragma: no cover - I/O failure fallback
         return None
 
-    inside_poetry = False
+    active_section: Optional[str] = None
     for raw_line in text.splitlines():
         line = raw_line.strip()
 
@@ -64,10 +64,11 @@ def _read_pyproject_version() -> Optional[str]:
             continue
 
         if line.startswith("[") and line.endswith("]"):
-            inside_poetry = line == "[tool.poetry]"
+            section_name = line.strip("[]").strip().lower()
+            active_section = section_name if section_name in {"tool.poetry", "project"} else None
             continue
 
-        if inside_poetry and line.startswith("version"):
+        if active_section in {"tool.poetry", "project"} and line.startswith("version"):
             _, _, remainder = line.partition("=")
             candidate = remainder.strip().strip("\"'")
             if candidate:

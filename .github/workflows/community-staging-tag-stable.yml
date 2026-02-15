@@ -26,11 +26,27 @@ on:
             allow_finalize_from_rc:
                 description: "Allow finalizing pyproject from X.Y.ZrcN to X.Y.Z before stable tagging"
                 required: false
-                default: "false"
+                default: "true"
                 type: choice
                 options:
                     - "false"
                     - "true"
+            run_quality_gates:
+                description: "Run final quality gates before creating/pushing stable tag"
+                required: false
+                default: "true"
+                type: choice
+                options:
+                    - "true"
+                    - "false"
+            quality_profile:
+                description: "Quality gate profile"
+                required: false
+                default: "strict"
+                type: choice
+                options:
+                    - "strict"
+                    - "smoke"
 
 concurrency:
     group: community-staging-tag-stable-${{ github.ref }}
@@ -64,6 +80,33 @@ jobs:
                   version: "2.2.1"
                   virtualenvs-in-project: true
                   virtualenvs-create: true
+
+            - name: Run preflight quality gates
+              if: ${{ inputs.dry_run != 'true' && inputs.run_quality_gates == 'true' }}
+              env:
+                  QUALITY_PROFILE: ${{ inputs.quality_profile }}
+              run: |
+                  set -euo pipefail
+
+                  profile="${QUALITY_PROFILE:-strict}"
+                  echo "Running preflight quality gates (profile: $profile)"
+
+                  poetry check
+                  poetry install --with dev --no-interaction
+                  python -m compileall -q src
+
+                  if [[ "$profile" == "smoke" ]]; then
+                      poetry run pytest -q --maxfail=1 --disable-warnings
+                      exit 0
+                  fi
+
+                  poetry run ruff check src tests
+                  poetry run mypy src
+                  poetry run pytest -q --maxfail=1 --disable-warnings
+
+                  if [[ -f scripts/run_distribution_tests.py ]]; then
+                      poetry run python scripts/run_distribution_tests.py --tier community --no-cov
+                  fi
 
             - name: Configure git identity
               run: |
@@ -324,17 +367,23 @@ jobs:
                   if not changelog.exists():
                       raise SystemExit(0)
 
-                  log = subprocess.run(
-                      ["git", "log", "--no-merges", "--pretty=format:%H\t%h\t%s", "core/main..HEAD"],
-                      check=False,
-                      capture_output=True,
-                      text=True,
-                  )
-                  if log.returncode != 0:
-                      raise SystemExit(log.stderr or "git log failed")
+                  def collect_rows(commit_range: str):
+                      log = subprocess.run(
+                          ["git", "log", "--no-merges", "--pretty=format:%H\t%h\t%s", commit_range],
+                          check=False,
+                          capture_output=True,
+                          text=True,
+                      )
+                      if log.returncode != 0:
+                          raise SystemExit(log.stderr or f"git log failed for range: {commit_range}")
+                      return [line for line in log.stdout.splitlines() if line.strip()]
 
-                  rows = [line for line in log.stdout.splitlines() if line.strip()]
-                  if not rows:
+                  # Commits present in core/main but not in promote branch (direct main updates).
+                  main_only_rows = collect_rows("HEAD..core/main")
+                  # Commits present in promote branch but not in core/main (staging promote delta).
+                  promote_rows = collect_rows("core/main..HEAD")
+
+                  if not main_only_rows and not promote_rows:
                       text = changelog.read_text(encoding="utf-8")
                       text = re.sub(
                           r"\n?<!-- auto:promote-changelog start -->.*?<!-- auto:promote-changelog end -->\n?",
@@ -360,7 +409,23 @@ jobs:
                       "debug": "Chores",
                   }
                   cc_re = re.compile(r"^(?P<t>[a-zA-Z]+)(?:\((?P<s>[^)]+)\))?(?:!)?:\s+(?P<d>.+)$")
-                  sections = {}
+                  def classify_rows(rows):
+                      sections = {}
+                      for row in rows:
+                          sha, short, subject = (row.split("\t", 2) + ["", "", ""])[:3]
+                          m = cc_re.match(subject.strip())
+                          if m:
+                              section = type_map.get(m.group("t").lower(), "Other")
+                              scope = (m.group("s") or "").strip()
+                              desc = (m.group("d") or "").strip()
+                              prefix = f"**{scope}:** " if scope else ""
+                              line = f"- {prefix}{desc} ([{short}](https://github.com/getrapidkit/rapidkit-core/commit/{sha}))"
+                          else:
+                              section = "Other"
+                              line = f"- {subject.strip()} ([{short}](https://github.com/getrapidkit/rapidkit-core/commit/{sha}))"
+                          sections.setdefault(section, []).append(line)
+                      return sections
+
                   order = [
                       "Features",
                       "Bug Fixes",
@@ -373,19 +438,20 @@ jobs:
                       "Other",
                   ]
 
-                  for row in rows:
-                      sha, short, subject = (row.split("\t", 2) + ["", "", ""])[:3]
-                      m = cc_re.match(subject.strip())
-                      if m:
-                          section = type_map.get(m.group("t").lower(), "Other")
-                          scope = (m.group("s") or "").strip()
-                          desc = (m.group("d") or "").strip()
-                          prefix = f"**{scope}:** " if scope else ""
-                          line = f"- {prefix}{desc} ([{short}](https://github.com/getrapidkit/rapidkit-core/commit/{sha}))"
-                      else:
-                          section = "Other"
-                          line = f"- {subject.strip()} ([{short}](https://github.com/getrapidkit/rapidkit-core/commit/{sha}))"
-                      sections.setdefault(section, []).append(line)
+                  def append_group(block_lines, title, rows):
+                      if not rows:
+                          return
+                      sections = classify_rows(rows)
+                      block_lines.append(f"### {title}")
+                      block_lines.append("")
+                      for section in order:
+                          items = sections.get(section, [])
+                          if not items:
+                              continue
+                          block_lines.append(f"#### {section}")
+                          block_lines.append("")
+                          block_lines.extend(items)
+                          block_lines.append("")
 
                   stable_version = os.environ.get("STABLE_VERSION", "").strip()
                   if not stable_version:
@@ -395,17 +461,22 @@ jobs:
                       "",
                       f"## [Snapshot {stable_version}]",
                       "",
-                      "> Auto-generated from commits being promoted (`core/main..HEAD`).",
+                      "> Auto-generated promote snapshot for this version.",
+                      "> Includes both direct `main` updates and staging promote delta.",
                       "",
                   ]
-                  for section in order:
-                      items = sections.get(section, [])
-                      if not items:
-                          continue
-                      block_lines.append(f"### {section}")
-                      block_lines.append("")
-                      block_lines.extend(items)
-                      block_lines.append("")
+
+                  append_group(
+                      block_lines,
+                      "Main branch updates (already on `core/main`, absent in promote branch)",
+                      main_only_rows,
+                  )
+                  append_group(
+                      block_lines,
+                      "Staging promote updates (present in promote branch, absent in `core/main`)",
+                      promote_rows,
+                  )
+
                   block_lines.append("<!-- auto:promote-changelog end -->")
                   block = "\n".join(block_lines).rstrip() + "\n"
 
