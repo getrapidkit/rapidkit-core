@@ -1,8 +1,8 @@
 # Changelog
 
-## [Snapshot 0.3.3](https://github.com/getrapidkit/rapidkit-core/compare/v0.3.1...HEAD)
+## [Snapshot 0.3.4](https://github.com/getrapidkit/rapidkit-core/compare/v0.3.1...HEAD)
 
-> This distribution is built from commit `1dd8069c` and is not a tagged release.
+> This distribution is built from commit `e19ede45` and is not a tagged release.
 
 ### Features
 
@@ -149,6 +149,8 @@
 
 ### Bug Fixes
 
+- **distribution:** harden public docs/workflow and license mappings
+  ([e19ede45](https://github.com/getrapidkit/rapidkit-core/commit/e19ede454f711fa2ec0e3f7988f28d1a4f5c414a))
 - **modules:** make metadata sync idempotent with mdformat
   ([1dd8069c](https://github.com/getrapidkit/rapidkit-core/commit/1dd8069c7e2ba1b065ce8be7d6b44887f018d715))
 - **modules:** stabilize drift check hashing order

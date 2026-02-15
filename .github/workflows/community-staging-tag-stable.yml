@@ -315,6 +315,7 @@ jobs:
 
                   # Build a deterministic promote block from commits that are actually being promoted.
                   python3 - <<'PY'
+                  import os
                   import re
                   import subprocess
                   from pathlib import Path
@@ -386,7 +387,9 @@ jobs:
                           line = f"- {subject.strip()} ([{short}](https://github.com/getrapidkit/rapidkit-core/commit/{sha}))"
                       sections.setdefault(section, []).append(line)
 
-                  stable_version = "${STABLE_VERSION}"
+                  stable_version = os.environ.get("STABLE_VERSION", "").strip()
+                  if not stable_version:
+                      raise SystemExit("STABLE_VERSION is empty")
                   block_lines = [
                       "<!-- auto:promote-changelog start -->",
                       "",

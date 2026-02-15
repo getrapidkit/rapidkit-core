@@ -179,7 +179,7 @@ ______________________________________________________________________
 | Issue                           | Resolution                                                                                                        |
 | ------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | `rapidkit` command not found    | Ensure `pipx ensurepath` (or your Python scripts directory) is on `PATH`.                                         |
-| Poetry not installed            | \`curl -sSL https://install.python-poetry.org                                                                     |
+| Poetry not installed            | Install Poetry with `curl -sSL https://install.python-poetry.org \| python3 -`, then restart your shell.          |
 | Module install fails            | Run `rapidkit modules validate` to confirm manifests are healthy.                                                 |
 | Lock file drift detected        | Re-run `rapidkit modules lock --overwrite` and commit the result.                                                 |
 | Missing dependencies at runtime | Run `rapidkit init` to re-bootstrap the project (or run `poetry install` manually inside the project virtualenv). |
