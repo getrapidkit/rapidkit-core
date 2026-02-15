@@ -2,7 +2,7 @@
 
 <!-- auto:promote-changelog start -->
 
-## [Snapshot ${STABLE_VERSION}]
+## [Snapshot 0.3.3]
 
 > Auto-generated from commits being promoted (`core/main..HEAD`).
 
