@@ -59,8 +59,9 @@ def test_nestjs_variant_generates_expected_routes(tmp_path: Path) -> None:
     service_file = (
         tmp_path / "src/modules/free/security/security_headers/security-headers.service.ts"
     )
+    health_controller_file = tmp_path / "src/health/security-headers-health.controller.ts"
 
-    for artefact in (controller_file, module_file, service_file):
+    for artefact in (controller_file, module_file, service_file, health_controller_file):
         assert artefact.exists(), f"Expected NestJS artefact {artefact} to be generated"
         assert artefact.read_text().strip(), f"Generated file {artefact} is empty"
 
@@ -74,8 +75,19 @@ def test_nestjs_variant_generates_expected_routes(tmp_path: Path) -> None:
             '@Controller("security_headers")',
         )
     ), "Security headers controller should mount security headers routes"
-    assert "@Get('health')" in controller_src or '@Get("health")' in controller_src
+    assert "@Get('health')" not in controller_src
+    assert '@Get("health")' not in controller_src
     assert "@Get('headers')" in controller_src or '@Get("headers")' in controller_src
+
+    health_controller_src = health_controller_file.read_text()
+    assert (
+        "@Controller('api/health/module')" in health_controller_src
+        or '@Controller("api/health/module")' in health_controller_src
+    )
+    assert (
+        "@Get('security-headers')" in health_controller_src
+        or '@Get("security-headers")' in health_controller_src
+    )
 
     module_src = module_file.read_text()
     assert "@Module" in module_src

@@ -82,18 +82,14 @@ async def log_pool_stats():
 
     # Log PostgreSQL connection count
     async with async_engine.connect() as conn:
-        result = await conn.execute(
-            text(
-                """
+        result = await conn.execute(text("""
             SELECT
                 count(*) as total_connections,
                 count(*) filter (where state = 'active') as active_connections,
                 count(*) filter (where state = 'idle') as idle_connections
             FROM pg_stat_activity
             WHERE datname = current_database()
-        """
-            )
-        )
+        """))
 
         pg_stats = result.first()
         logger.info(f"PostgreSQL connections: {dict(pg_stats)}")
@@ -531,15 +527,11 @@ async def pool_health_check():
 
     # Check PostgreSQL connection count
     async with async_engine.connect() as conn:
-        result = await conn.execute(
-            text(
-                """
+        result = await conn.execute(text("""
             SELECT count(*) as connection_count
             FROM pg_stat_activity
             WHERE datname = current_database()
-        """
-            )
-        )
+        """))
 
         pg_connections = result.scalar()
         if pg_connections > pool.size() * 2:

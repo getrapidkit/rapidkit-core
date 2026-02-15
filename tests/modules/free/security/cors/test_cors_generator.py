@@ -309,8 +309,9 @@ def test_generator_emits_framework_parity(
         module_path = (
             target_dir / "src" / "modules" / "free" / "security" / "cors" / "cors.module.ts"
         )
+        health_controller_path = target_dir / "src" / "health" / "cors.health.ts"
 
-        for artefact in (service_path, controller_path, module_path):
+        for artefact in (service_path, controller_path, module_path, health_controller_path):
             assert artefact.exists(), f"Expected NestJS artefact {artefact}"
             contents = artefact.read_text(encoding="utf-8").strip()
             assert contents, f"NestJS artefact {artefact} is empty"
@@ -322,8 +323,16 @@ def test_generator_emits_framework_parity(
         )
         assert "@Get('metadata')" in controller_src or '@Get("metadata")' in controller_src
         assert "@Get('features')" in controller_src or '@Get("features")' in controller_src
-        assert "@Get('health')" in controller_src or '@Get("health")' in controller_src
+        assert "@Get('health')" not in controller_src
+        assert '@Get("health")' not in controller_src
         assert "CORS_FEATURES" in controller_src
+
+        health_controller_src = health_controller_path.read_text(encoding="utf-8")
+        assert (
+            "@Controller('api/health/module')" in health_controller_src
+            or '@Controller("api/health/module")' in health_controller_src
+        )
+        assert "@Get('cors')" in health_controller_src or '@Get("cors")' in health_controller_src
 
         service_src = service_path.read_text(encoding="utf-8")
         assert "class CorsService" in service_src

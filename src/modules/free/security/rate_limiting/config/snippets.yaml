@@ -115,3 +115,45 @@ snippets:
       created_at: "2025-11-01"
       last_modified: "2025-11-01"
     conflict_resolution: merge
+
+  - id: rate_limiting_nestjs_module_registry
+    target: src/modules/index.ts
+    anchor: "// <<<inject:module-exports>>>"
+    template: rate_limiting.nestjs.module_registry.snippet.j2
+    features: [rate-limiting]
+    profiles: [nestjs/standard]
+    description: Register RateLimitingModule in NestJS optional module registry
+    version: "1.0.0"
+    priority: 30
+    dependencies: []
+    schema:
+      type: object
+      properties: {}
+      additionalProperties: true
+      required: []
+    metadata:
+      author: "RapidKit Team"
+      created_at: "2026-02-15"
+      last_modified: "2026-02-15"
+    conflict_resolution: merge
+
+  - id: rate_limiting_nestjs_health_registry
+    target: src/modules/index.ts
+    anchor: "// <<<inject:module-exports>>>"
+    template: rate_limiting.nestjs.health_registry.snippet.j2
+    features: [rate-limiting]
+    profiles: [nestjs/standard]
+    description: Register RateLimitingHealthModule in NestJS optional module registry
+    version: "1.0.0"
+    priority: 31
+    dependencies: []
+    schema:
+      type: object
+      properties: {}
+      additionalProperties: true
+      required: []
+    metadata:
+      author: "RapidKit Team"
+      created_at: "2026-02-15"
+      last_modified: "2026-02-15"
+    conflict_resolution: merge

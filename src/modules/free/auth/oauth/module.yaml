@@ -1,6 +1,6 @@
 name: oauth
 description: OAuth flows and adapters for RapidKit authentication
-version: 0.1.7
+version: 0.1.10
 access: free
 status: stable
 category: auth
@@ -119,8 +119,8 @@ support:
   discussions: https://github.com/getrapidkit/rapidkit-core/discussions
   documentation: https://docs.rapidkit.top/modules/oauth
 changelog:
-  - version: "0.1.7"
-    date: "2026-02-14"
+  - version: "0.1.10"
+    date: "2026-02-15"
     notes: "See docs/changelog.md"
 validation:
   pre_install:
@@ -166,7 +166,7 @@ file_hashes:
   frameworks/fastapi.py: sha256:12cbd7038cb7bf6869fd8c3e6836da68c036ea020bf1c48fe6102831bfecdd2b
   frameworks/nestjs.py: sha256:c11bfd4c6ee135e9e0050f8adbfd2a853faf58f6ce0581ec1a2225ed29e65941
   generate.py: sha256:78f908fbe0c4387e993db253455ecc634d2c9c94434147bc2a78619793c68274
-  module.verify.json: sha256:1c5fa83b739d0cc351065bbb4ec360a79c19e40e74dab54c922cec664b01c302
+  module.verify.json: sha256:32ae2f54fa964d806abe79ffa8456704a83829eab675b2b2f64f2ec46eb42eab
   overrides.py: sha256:d9c6be005253d017454441594415937ac57615568f33b9fad12a689b3b236244
   templates/base/oauth.py.j2: sha256:0fb64c70e4d5d03d9e96f4fefc368a0136e7f7c615cb59b37762cc88181291a7
   templates/base/oauth_health.py.j2: sha256:044598217142e8fb09a17b39c9459743e21c94f850fc3583890e77c823e5ee4f

@@ -1,11 +1,13 @@
 # Changelog
 
-## [Snapshot 0.3.6](https://github.com/getrapidkit/rapidkit-core/compare/v0.3.1...HEAD)
+## [Snapshot 0.3.8](https://github.com/getrapidkit/rapidkit-core/compare/v0.3.1...HEAD)
 
-> This distribution is built from commit `87a54459` and is not a tagged release.
+> This distribution is built from commit `c5de871f` and is not a tagged release.
 
 ### Features
 
+- **modules:** add nestjs module registries and centralize health routes
+  ([dac36f7c](https://github.com/getrapidkit/rapidkit-core/commit/dac36f7cd74bced84680793bf80774267a072a8c))
 - **core:** stabilize ai_assistant generation and auto-bump control
   ([a9eaacc5](https://github.com/getrapidkit/rapidkit-core/commit/a9eaacc57bcc86bae3d5f8cdbce2b7b052d3d53d))
 - **core:** ship distribution system updates and CLI enhancements
@@ -149,6 +151,8 @@
 
 ### Bug Fixes
 
+- **auth:** add ddd snippet profiles and correct pepper log format
+  ([9a11ba0c](https://github.com/getrapidkit/rapidkit-core/commit/9a11ba0c6f08dcecf0fb0da31c9b6b51b27e2c2e))
 - **modules:** prefer manifest fields in modules info
   ([87a54459](https://github.com/getrapidkit/rapidkit-core/commit/87a54459b809ee57a3a5c1cc2f3941a263d87deb))
 - **release:** align community gates and pyproject
@@ -648,6 +652,14 @@
 
 ### Chores
 
+- **modules:** sync metadata for staging push range
+  ([c5de871f](https://github.com/getrapidkit/rapidkit-core/commit/c5de871fea1e4a74935824ecc094619805144281))
+- **modules:** sync metadata for staging publish range
+  ([1f80922f](https://github.com/getrapidkit/rapidkit-core/commit/1f80922fa4f74b8778bb29bb0a4d53b0445eb554))
+- **release:** bump version to 0.3.7
+  ([62fe85c4](https://github.com/getrapidkit/rapidkit-core/commit/62fe85c45b65505a419aaceceb044fa4b1ba4315))
+- **modules:** sync auth metadata state and changelogs
+  ([30d63de9](https://github.com/getrapidkit/rapidkit-core/commit/30d63de97f0b1d6fdafdef736ec9935b7aab2a59))
 - **hooks:** auto-amend module metadata on post-commit
   ([3fe6c9c8](https://github.com/getrapidkit/rapidkit-core/commit/3fe6c9c8fb8476569afee876aff8979f8d1cc485))
 - **gate:** enforce module metadata drift checks

@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, ConfigDict, EmailStr, Field
 
 
 def utc_now() -> datetime:
@@ -36,10 +36,11 @@ class User(BaseModel):
     created_at: datetime = Field(default_factory=utc_now, description="Creation timestamp (UTC)")
     updated_at: datetime = Field(default_factory=utc_now, description="Last modification timestamp (UTC)")
 
-    class Config:
-        frozen = True
-        json_encoders = {datetime: lambda value: value.isoformat()}  # noqa: E731
-        orm_mode = True
+    model_config = ConfigDict(
+        frozen=True,
+        json_encoders={datetime: lambda value: value.isoformat()},
+        from_attributes=True,
+    )
 
 
 __all__ = ["User", "UserStatus", "utc_now"]

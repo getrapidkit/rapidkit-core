@@ -97,9 +97,4 @@ export class {{ module_class_name }}Controller {
   listFeatures(): { features: string[] } {
     return { features: [...RATE_LIMITING_FEATURES] };
   }
-
-  @Get("health")
-  getHealth(): RateLimiterMetadata {
-    return this.buildMetadata();
-  }
 }

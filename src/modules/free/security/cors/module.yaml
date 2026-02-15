@@ -1,7 +1,7 @@
 name: cors
 description: Cross-Origin Resource Sharing security module
 category: security
-version: 0.1.7
+version: 0.1.9
 access: free
 status: stable
 tags:
@@ -122,8 +122,8 @@ support:
   discussions: https://github.com/getrapidkit/rapidkit-core/discussions
   documentation: https://docs.rapidkit.top/modules/cors
 changelog:
-  - version: "0.1.7"
-    date: "2026-02-14"
+  - version: "0.1.9"
+    date: "2026-02-15"
     notes: "See docs/changelog.md"
 validation:
   pre_install:
@@ -166,7 +166,7 @@ file_hashes:
   frameworks/fastapi.py: sha256:63e0bf200cd5a8edbf54c04c57777c7c3136eb71d7f61abb0efd1a4d2fe39cf0
   frameworks/nestjs.py: sha256:845d07911b194ac0a44353b416b591d805e22ddf0dec4df1237731472b844847
   generate.py: sha256:70de66f462efbec00854dae08847321a62b69994fc88ce9623728addd7e95491
-  module.verify.json: sha256:5157b2b656e413e5734c951d8c4c19f0d6ac46dc4bc6b1357998ae3948aada3e
+  module.verify.json: sha256:b1832b548946aa2cb3b46518e94b6740d81b2abb43a166b3d92a3617c46b13c0
   overrides.py: sha256:9d08e42d33579ed1aed08227c213ff1ab680b6ee2e7f74be0b519da290ef5d1c
   templates/base/cors.py.j2: sha256:e1a209dc44e6df93ef4dd9be89978f85aefc0e9d56a124fc1f30eae75510d8c6
   templates/base/cors_health.py.j2: sha256:6923d3641a0a87c6cd1a28e54b8f58d687baf63d5feae828338588ee0941b69c

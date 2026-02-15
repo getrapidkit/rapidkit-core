@@ -221,17 +221,13 @@ from sqlalchemy import text
 @router.get("/stats")
 async def get_user_stats(db: AsyncSession = Depends(get_postgres_db)):
     # Raw SQL query
-    result = await db.execute(
-        text(
-            """
+    result = await db.execute(text("""
         SELECT
             COUNT(*) as total_users,
             COUNT(CASE WHEN created_at >= CURRENT_DATE - INTERVAL '30 days' THEN 1 END) as new_users_30d,
             AVG(EXTRACT(EPOCH FROM (CURRENT_TIMESTAMP - created_at))/86400) as avg_account_age_days
         FROM users
-    """
-        )
-    )
+    """))
 
     row = result.first()
     return {

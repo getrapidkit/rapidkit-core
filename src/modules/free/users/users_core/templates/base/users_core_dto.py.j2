@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, EmailStr, Field, validator
+from pydantic import BaseModel, EmailStr, Field, field_validator
 
 from .models import User, UserStatus
 
@@ -47,7 +47,8 @@ class UserUpdateDTO(BaseModel):
 	is_verified: Optional[bool] = None
 	metadata: Optional[dict[str, str]] = None
 
-	@validator("metadata")
+	@field_validator("metadata")
+	@classmethod
 	def _sanitize_metadata(cls, value: Optional[dict[str, str]]) -> Optional[dict[str, str]]:  # noqa: D401
 		if value is None:
 			return value

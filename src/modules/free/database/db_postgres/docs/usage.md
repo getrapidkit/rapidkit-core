@@ -151,16 +151,12 @@ def generate_report(db: Session = Depends(get_sync_db)):
     """Generate report using sync database access."""
 
     # Raw SQL queries
-    result = db.execute(
-        text(
-            """
+    result = db.execute(text("""
         SELECT COUNT(*) as user_count,
                AVG(created_at) as avg_age
         FROM users
         WHERE active = true
-    """
-        )
-    )
+    """))
 
     data = result.fetchone()
     return {"user_count": data.user_count, "average_age_days": data.avg_age}

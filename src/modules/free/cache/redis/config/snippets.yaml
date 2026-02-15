@@ -140,3 +140,24 @@ snippets:
       author: "RapidKit Core Team"
       created_at: "2025-11-02"
       last_modified: "2025-11-02"
+
+  - id: redis_nestjs_module_registry
+    target: src/modules/index.ts
+    anchor: "// <<<inject:module-exports>>>"
+    template: redis.nestjs.module_registry.snippet.j2
+    features: [redis]
+    profiles: [nestjs/standard]
+    description: Register RedisModule in NestJS optional module registry
+    version: "1.0.0"
+    priority: 30
+    dependencies: []
+    schema:
+      type: object
+      properties: {}
+      additionalProperties: true
+      required: []
+    metadata:
+      author: "RapidKit Core Team"
+      created_at: "2026-02-15"
+      last_modified: "2026-02-15"
+    conflict_resolution: merge

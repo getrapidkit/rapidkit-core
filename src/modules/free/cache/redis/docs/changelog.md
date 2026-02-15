@@ -1,5 +1,13 @@
 # Changelog — free/cache/redis
 
+## 0.1.17 — Automated patch release triggered by content hash change (2026-02-15)
+
+- chore: Automated patch release triggered by content hash change
+
+## 0.1.16 — Automated patch release triggered by content hash change (2026-02-15)
+
+- chore: Automated patch release triggered by content hash change
+
 ## 0.1.15 — Automated patch release triggered by content hash change (2026-02-14)
 
 - chore: Automated patch release triggered by content hash change

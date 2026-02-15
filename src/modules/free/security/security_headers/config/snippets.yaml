@@ -105,3 +105,45 @@ snippets:
       created_at: "2025-11-17"
       last_modified: "2025-11-17"
     conflict_resolution: merge
+
+  - id: security_headers_nestjs_module_registry
+    target: src/modules/index.ts
+    anchor: "// <<<inject:module-exports>>>"
+    template: security_headers.nestjs.module_registry.snippet.j2
+    features: [security_headers]
+    profiles: [nestjs/standard]
+    description: Register SecurityHeadersModule in NestJS optional module registry
+    version: "1.0.0"
+    priority: 30
+    dependencies: []
+    schema:
+      type: object
+      properties: {}
+      additionalProperties: true
+      required: []
+    metadata:
+      author: "RapidKit Team"
+      created_at: "2026-02-15"
+      last_modified: "2026-02-15"
+    conflict_resolution: merge
+
+  - id: security_headers_nestjs_health_registry
+    target: src/modules/index.ts
+    anchor: "// <<<inject:module-exports>>>"
+    template: security_headers.nestjs.health_registry.snippet.j2
+    features: [security_headers]
+    profiles: [nestjs/standard]
+    description: Register SecurityHeadersHealthModule in NestJS optional module registry
+    version: "1.0.0"
+    priority: 31
+    dependencies: []
+    schema:
+      type: object
+      properties: {}
+      additionalProperties: true
+      required: []
+    metadata:
+      author: "RapidKit Team"
+      created_at: "2026-02-15"
+      last_modified: "2026-02-15"
+    conflict_resolution: merge

@@ -478,27 +478,19 @@ async def comprehensive_health_check() -> Dict:
             }
 
             # Database size check
-            db_size_result = await conn.execute(
-                text(
-                    """
+            db_size_result = await conn.execute(text("""
                 SELECT pg_size_pretty(pg_database_size(current_database())) as size
-            """
-                )
-            )
+            """))
             db_size = db_size_result.scalar()
             results["checks"]["database_size"] = {"status": "info", "size": db_size}
 
             # Long-running queries check
-            long_queries_result = await conn.execute(
-                text(
-                    """
+            long_queries_result = await conn.execute(text("""
                 SELECT count(*) as long_queries
                 FROM pg_stat_activity
                 WHERE state = 'active'
                 AND now() - query_start > interval '30 seconds'
-            """
-                )
-            )
+            """))
             long_queries = long_queries_result.scalar()
 
             results["checks"]["long_queries"] = {
@@ -508,13 +500,9 @@ async def comprehensive_health_check() -> Dict:
 
             # Replication lag check (if replica)
             try:
-                lag_result = await conn.execute(
-                    text(
-                        """
+                lag_result = await conn.execute(text("""
                     SELECT extract(epoch from now() - pg_last_xact_replay_timestamp()) as lag_seconds
-                """
-                    )
-                )
+                """))
                 lag_seconds = lag_result.scalar()
 
                 results["checks"]["replication_lag"] = {

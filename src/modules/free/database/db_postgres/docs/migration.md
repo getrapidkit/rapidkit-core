@@ -446,26 +446,18 @@ async def test_data_migration():
 
     # Setup old schema
     async with async_engine.connect() as conn:
-        await conn.execute(
-            text(
-                """
+        await conn.execute(text("""
             CREATE TABLE old_users (
                 id SERIAL PRIMARY KEY,
                 fullname VARCHAR(200)
             )
-        """
-            )
-        )
+        """))
         await conn.commit()
 
     # Insert test data
-    await conn.execute(
-        text(
-            """
+    await conn.execute(text("""
         INSERT INTO old_users (fullname) VALUES ('John Doe'), ('Jane Smith')
-    """
-        )
-    )
+    """))
 
     # Run migration
     await run_migration_script("migrate_users.sql")
