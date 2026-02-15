@@ -1,8 +1,8 @@
 # Changelog
 
-## [Snapshot 0.3.5](https://github.com/getrapidkit/rapidkit-core/compare/v0.3.1...HEAD)
+## [Snapshot 0.3.6](https://github.com/getrapidkit/rapidkit-core/compare/v0.3.1...HEAD)
 
-> This distribution is built from commit `03cba391` and is not a tagged release.
+> This distribution is built from commit `87a54459` and is not a tagged release.
 
 ### Features
 
@@ -149,6 +149,8 @@
 
 ### Bug Fixes
 
+- **modules:** prefer manifest fields in modules info
+  ([87a54459](https://github.com/getrapidkit/rapidkit-core/commit/87a54459b809ee57a3a5c1cc2f3941a263d87deb))
 - **release:** align community gates and pyproject
   ([a2884ea9](https://github.com/getrapidkit/rapidkit-core/commit/a2884ea9122b1abb773f51f4c236856cdf5de287))
 - **distribution:** harden public docs/workflow and license mappings

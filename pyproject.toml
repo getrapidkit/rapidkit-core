@@ -1,6 +1,6 @@
 [project]
 name = "rapidkit-core"
-version = "0.3.5"
+version = "0.3.6"
 description = "Community-built rapid automation toolkit for makers who ship with heart"
 readme = "README.md"
 requires-python = ">=3.10,<4.0"
