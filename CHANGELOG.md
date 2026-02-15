@@ -2,18 +2,18 @@
 
 <!-- auto:promote-changelog start -->
 
-## [Snapshot 0.3.3]
+## [Snapshot 0.3.4]
 
 > Auto-generated from commits being promoted (`core/main..HEAD`).
 
 ### Bug Fixes
 
-- **modules:** make metadata sync idempotent with mdformat ([d4dd74c](https://github.com/getrapidkit/rapidkit-core/commit/d4dd74c26ee84f1b7eb34cb44cdc82d2dba4dfa8))
+- **distribution:** harden public docs/workflow and license mappings ([d3dad1e](https://github.com/getrapidkit/rapidkit-core/commit/d3dad1e587706b96e4b933b108c6e633bcf5292a))
 
 ### Chores
 
-- **release:** finalize version to 0.3.3 ([34de65b](https://github.com/getrapidkit/rapidkit-core/commit/34de65b715cf74965ac8b100466825d9b5bba115))
-- **release:** bump version to 0.3.3rc1 ([99103b9](https://github.com/getrapidkit/rapidkit-core/commit/99103b97a4812c04d5f946418e72a978f030f92c))
+- **release:** finalize version to 0.3.4 ([076a8c7](https://github.com/getrapidkit/rapidkit-core/commit/076a8c7678fdbf7d11a159b5de21919b67932c2c))
+- **release:** bump version to 0.3.4rc1 ([68f978c](https://github.com/getrapidkit/rapidkit-core/commit/68f978c4f0c66e71b3fe23d7e391a920a6433b7f))
 
 <!-- auto:promote-changelog end -->
 
