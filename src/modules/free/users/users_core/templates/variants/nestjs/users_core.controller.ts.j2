@@ -1,7 +1,6 @@
 import { Controller, Get } from "@nestjs/common";
 
 import {
-  UsersCoreHealthPayload,
   UsersCoreFeature,
   UsersCoreMetadata,
   {{ module_class_name }}Service,
@@ -21,8 +20,4 @@ export class {{ module_class_name }}Controller {
     return { features: this.service.listFeatures() };
   }
 
-  @Get("health")
-  async getHealth(): Promise<UsersCoreHealthPayload> {
-    return this.service.resolveHealth();
-  }
 }

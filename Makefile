@@ -1,7 +1,7 @@
 # RapidKit Community Makefile
 .PHONY: help \
 	install install-dev install-pre-commit install-all install-tools \
-	dev-setup check-hooks verify-env commit-check \
+	bootstrap dev-setup check-hooks verify-env commit-check \
 	test test-cov test-all test-community test-cov-community lint format clean build pre-commit-all \
 	module-integrity
 
@@ -18,10 +18,10 @@ help: ## Show available commands
 # DEPENDENCIES
 # ===============================
 install: ## Install runtime dependencies
-	poetry install --no-dev
+	poetry install --only main
 
 install-dev: ## Install all development dependencies
-	poetry install
+	poetry install --with dev
 
 install-pre-commit: ## Install pre-commit hooks
 	@if [ ! -d .git ]; then \
@@ -39,10 +39,14 @@ install-tools: ## Install optional tooling (ruff, hadolint, shellcheck, ...)
 # ===============================
 # QUICK SETUP
 # ===============================
+bootstrap: install-dev test ## Minimal quick start for contributors
+	@echo "Bootstrap complete."
+
 dev-setup: install-all install-tools format lint test check-hooks ## Prepare a full dev env
 	@echo "Community environment ready."
 	@echo ""
 	@echo "Common commands:"
+	@echo "  make bootstrap      - Install dev deps + run tests"
 	@echo "  make test           - Run community suite"
 	@echo "  make test-cov       - Run community suite with coverage (>=60%)"
 	@echo "  make test-all       - Run full pytest (maintainers only)"
@@ -76,9 +80,17 @@ commit-check: ## Sample commit message validation
 POETRY ?= poetry
 
 test: ## Run community pytest suite (no coverage)
+	@$(POETRY) run python -c "import pytest" >/dev/null 2>&1 || { \
+		echo "pytest is not installed in Poetry env. Run: make install-dev"; \
+		exit 1; \
+	}
 	$(POETRY) run pytest $(ARGS) tests
 
 test-cov: ## Run community pytest suite with coverage gate (>=60%)
+	@$(POETRY) run python -c "import pytest" >/dev/null 2>&1 || { \
+		echo "pytest is not installed in Poetry env. Run: make install-dev"; \
+		exit 1; \
+	}
 	$(POETRY) run pytest --cov=src --cov-config=pyproject.toml --cov-report=term --cov-report=xml:coverage-community.xml --cov-fail-under=60 $(ARGS) tests
 
 test-all: ## Run full pytest suite (maintainers only)

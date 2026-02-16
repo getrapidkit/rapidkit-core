@@ -1,7 +1,7 @@
 name: session
 description: Session management utilities (cookies/tokens, persistence hooks) for
   RapidKit
-version: 0.1.7
+version: 0.1.8
 access: free
 status: stable
 category: auth
@@ -117,8 +117,8 @@ support:
   discussions: https://github.com/getrapidkit/rapidkit-core/discussions
   documentation: https://docs.rapidkit.top/modules/session
 changelog:
-  - version: "0.1.7"
-    date: "2026-02-14"
+  - version: "0.1.8"
+    date: "2026-02-15"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

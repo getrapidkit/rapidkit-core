@@ -393,37 +393,71 @@ def _merge_manifest_details(
     manifest: Dict[str, Any],
     config_base: Dict[str, Any],
     module_dir: Optional[Path] = None,
+    prefer_manifest: bool = False,
 ) -> None:
-    record.setdefault(
-        "access", manifest.get("access") or manifest.get("tier") or record.get("tier")
+    def _set_field(key: str, value: Any) -> None:
+        if value is None:
+            return
+        if prefer_manifest:
+            record[key] = value
+        else:
+            record.setdefault(key, value)
+
+    _set_field("slug", manifest.get("slug") or record.get("slug"))
+    _set_field("name", manifest.get("name") or config_base.get("name") or record.get("name"))
+    _set_field(
+        "display_name",
+        config_base.get("display_name")
+        or manifest.get("display_name")
+        or record.get("display_name"),
     )
-    record.setdefault("priority", manifest.get("priority") or config_base.get("priority"))
-    record.setdefault(
+    _set_field("version", manifest.get("version") or config_base.get("version"))
+    _set_field("category", manifest.get("category") or record.get("category"))
+    _set_field("tier", manifest.get("tier") or record.get("tier"))
+    _set_field("status", manifest.get("status") or record.get("status"))
+    _set_field("description", config_base.get("description") or manifest.get("description"))
+
+    _set_field("access", manifest.get("access") or manifest.get("tier") or record.get("tier"))
+    _set_field("priority", manifest.get("priority") or config_base.get("priority"))
+    _set_field(
         "templates_path",
         manifest.get("templates_path") or config_base.get("templates_path"),
     )
 
-    record.setdefault("module_dependencies", manifest.get("depends_on"))
-    record.setdefault("runtime_dependencies", config_base.get("depends_on"))
-    record.setdefault("dev_dependencies", config_base.get("dev_dependencies"))
-    record.setdefault(
+    _set_field("module_dependencies", manifest.get("depends_on"))
+    _set_field("runtime_dependencies", config_base.get("depends_on"))
+    _set_field("dev_dependencies", config_base.get("dev_dependencies"))
+    _set_field(
         "config_sources", manifest.get("config_sources") or config_base.get("config_sources")
     )
+
+    tags = manifest.get("tags")
+    if isinstance(tags, list):
+        normalized_tags = [tag for tag in tags if isinstance(tag, str)]
+        if normalized_tags:
+            _set_field("tags", normalized_tags)
+
+    capabilities = manifest.get("capabilities")
+    if isinstance(capabilities, list):
+        normalized_capabilities = [cap for cap in capabilities if isinstance(cap, str)]
+        if normalized_capabilities:
+            _set_field("capabilities", normalized_capabilities)
+
     defaults = config_base.get("defaults")
     if isinstance(defaults, dict) and defaults:
-        record.setdefault("defaults", defaults)
+        _set_field("defaults", defaults)
 
     variables = config_base.get("variables")
     if isinstance(variables, dict) and variables:
-        record.setdefault("variables", _summarize_variables(variables))
+        _set_field("variables", _summarize_variables(variables))
 
     profiles = config_base.get("profiles")
     if isinstance(profiles, dict) and profiles:
-        record.setdefault("profiles", profiles)
+        _set_field("profiles", profiles)
 
     features = config_base.get("features")
     if isinstance(features, dict) and features:
-        record.setdefault("features", features)
+        _set_field("features", features)
 
     for key in (
         "dependencies",
@@ -437,7 +471,7 @@ def _merge_manifest_details(
         if value is None:
             value = config_base.get(key)
         if value is not None:
-            record.setdefault(key, value)
+            _set_field(key, value)
 
     if module_dir is not None:
         snippets_path = module_dir / "config" / "snippets.yaml"
@@ -446,7 +480,7 @@ def _merge_manifest_details(
         except RuntimeError:
             snippets = []
         if snippets:
-            record.setdefault("snippets", _summarize_snippets(snippets))
+            _set_field("snippets", _summarize_snippets(snippets))
 
 
 def _prune_empty_fields(payload: Any) -> Any:
@@ -1852,7 +1886,13 @@ def modules_info(
             bundle = _load_manifest_bundle(slug)
             if bundle:
                 manifest_data, config_base, module_dir = bundle
-                _merge_manifest_details(module, manifest_data, config_base, module_dir)
+                _merge_manifest_details(
+                    module,
+                    manifest_data,
+                    config_base,
+                    module_dir,
+                    prefer_manifest=True,
+                )
 
     if not module:
         print_error(f"❌ Module '{name}' not found.")

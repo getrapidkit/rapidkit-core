@@ -5,7 +5,7 @@ snippets:
     anchor: "# <<<inject:module-env>>>"
     template: env.snippet.j2
     features: [session]
-    profiles: [fastapi/standard, nestjs/standard]
+    profiles: [fastapi/standard, fastapi/ddd, nestjs/standard]
     description: Inject session module environment variables
     version: "0.1.0"
     priority: 10

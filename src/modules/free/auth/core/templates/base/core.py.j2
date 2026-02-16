@@ -272,7 +272,7 @@ class AuthCoreRuntime:
             return self._pepper_bytes
 
         logger.warning(
-            "Auth Core pepper env '%%s' missing. Falling back to generated key for runtime only.",
+            "Auth Core pepper env '%s' missing. Falling back to generated key for runtime only.",
             self.settings.pepper_env,
         )
         self._pepper_bytes = secrets.token_bytes(32)

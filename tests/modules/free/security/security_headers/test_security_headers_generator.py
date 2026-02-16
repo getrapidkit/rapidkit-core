@@ -250,13 +250,14 @@ def test_nestjs_variant_surfaces_service_and_module(
     controller_src = controller_path.read_text(encoding="utf-8")
     controller_tokens = (
         '@Controller("security-headers")',
-        '@Get("health")',
         '@Get("headers")',
     )
     for token in controller_tokens:
         assert (
             token in controller_src or token.replace('"', "'") in controller_src
         ), f"NestJS controller missing {token}"
+    assert '@Get("health")' not in controller_src
+    assert "@Get('health')" not in controller_src
 
     assert module_path.exists(), "NestJS module should be generated"
     module_src = module_path.read_text(encoding="utf-8")

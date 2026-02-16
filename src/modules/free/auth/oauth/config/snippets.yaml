@@ -5,7 +5,7 @@ snippets:
     anchor: "# <<<inject:module-env>>>"
     template: env.snippet.j2
     features: [oauth]
-    profiles: [fastapi/standard, nestjs/standard]
+    profiles: [fastapi/standard, fastapi/ddd, nestjs/standard]
     description: Inject OAuth environment variables
     version: "0.1.0"
     priority: 10
@@ -16,6 +16,13 @@ snippets:
         state_ttl_seconds: 900
         state_cleanup_interval: 300
         providers:
+          google:
+            client_id: ""
+            client_secret: ""
+            scopes:
+              - openid
+              - email
+              - profile
           github:
             client_id: ""
             client_secret: ""
@@ -120,4 +127,25 @@ snippets:
       author: "RapidKit Core Team"
       created_at: "2025-11-02"
       last_modified: "2025-11-02"
+    conflict_resolution: merge
+
+  - id: oauth_nestjs_module_registry
+    target: src/modules/index.ts
+    anchor: "// <<<inject:module-exports>>>"
+    template: oauth.nestjs.module_registry.snippet.j2
+    features: [oauth]
+    profiles: [nestjs/standard]
+    description: Register OauthModule in NestJS optional module registry
+    version: "1.0.0"
+    priority: 30
+    dependencies: []
+    schema:
+      type: object
+      properties: {}
+      additionalProperties: true
+      required: []
+    metadata:
+      author: "RapidKit Core Team"
+      created_at: "2026-02-15"
+      last_modified: "2026-02-15"
     conflict_resolution: merge

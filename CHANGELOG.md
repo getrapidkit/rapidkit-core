@@ -2,18 +2,48 @@
 
 <!-- auto:promote-changelog start -->
 
-## [Snapshot 0.3.4]
+## [Snapshot 0.3.8]
 
-> Auto-generated from commits being promoted (`core/main..HEAD`).
+> Auto-generated promote snapshot for this version.
+> Includes both direct `main` updates and staging promote delta.
 
-### Bug Fixes
+### Main branch updates (already on `core/main`, absent in promote branch)
 
-- **distribution:** harden public docs/workflow and license mappings ([d3dad1e](https://github.com/getrapidkit/rapidkit-core/commit/d3dad1e587706b96e4b933b108c6e633bcf5292a))
+#### Bug Fixes
 
-### Chores
+- **docs:** polish public docs and add missing ddd kit license ([242b915](https://github.com/getrapidkit/rapidkit-core/commit/242b915955915fb04c6a73f064384466a0ad9975))
 
-- **release:** finalize version to 0.3.4 ([076a8c7](https://github.com/getrapidkit/rapidkit-core/commit/076a8c7678fdbf7d11a159b5de21919b67932c2c))
-- **release:** bump version to 0.3.4rc1 ([68f978c](https://github.com/getrapidkit/rapidkit-core/commit/68f978c4f0c66e71b3fe23d7e391a920a6433b7f))
+#### Chores
+
+- **changelog:** refresh promote snapshot from core/main..HEAD ([8348d88](https://github.com/getrapidkit/rapidkit-core/commit/8348d8879a2e1c26b9c7d26fb0f2ef82d0f66378))
+- **changelog:** refresh promote snapshot from core/main..HEAD ([feeccb8](https://github.com/getrapidkit/rapidkit-core/commit/feeccb8babce4927a7b954d7946588a27e7aa2c1))
+- **release:** set stable version 0.3.1 ([c4021e9](https://github.com/getrapidkit/rapidkit-core/commit/c4021e914e61f00a0136013e19b4b5fb412e7bb1))
+- optionally sign stable tags ([3404dc8](https://github.com/getrapidkit/rapidkit-core/commit/3404dc8abf0814ec014f4db38c5d1c8aaa5080de))
+- decouple release from publish ([6e55810](https://github.com/getrapidkit/rapidkit-core/commit/6e558105d59b85c67dcf6c891bad5e01f0b887d5))
+- **publish:** avoid non-distribution files in dist and tidy release ([411b5b0](https://github.com/getrapidkit/rapidkit-core/commit/411b5b079df3deb3a5cc1280a4c5dbac377def0b))
+- **tag:** auth git fetch when checking existing tags ([5553efb](https://github.com/getrapidkit/rapidkit-core/commit/5553efb39e1668ae8afd49c29072e98091b47f14))
+- **release:** tag stable from pyproject and auto-release on publish ([67a0d89](https://github.com/getrapidkit/rapidkit-core/commit/67a0d89d44ea05d60c8b4a99b569225fffa63a4b))
+- **workflows:** remove community-staging workflows from core ([62256e1](https://github.com/getrapidkit/rapidkit-core/commit/62256e19ef5b5701f8c4feda5336d804dd72d9a5))
+- **workflows:** make core publish tag-based ([386720f](https://github.com/getrapidkit/rapidkit-core/commit/386720fa79948deacd923c162f842792bb01ab2b))
+- **workflows:** rename core publish workflow ([b2f1779](https://github.com/getrapidkit/rapidkit-core/commit/b2f1779cb2535c78b7e1355e439b55f028513143))
+- **workflows:** add core publish workflow ([bd3b4cc](https://github.com/getrapidkit/rapidkit-core/commit/bd3b4cc6c7336b8dbb20963fa1550178bded9461))
+- **workflows:** remove staging-only workflows ([6a87d41](https://github.com/getrapidkit/rapidkit-core/commit/6a87d418edf6d973002272146ee04ccf7c9344b3))
+
+### Staging promote updates (present in promote branch, absent in `core/main`)
+
+#### Bug Fixes
+
+- **distribution:** emit tool.poetry dependencies for poetry 1.8 lock ([ac197e4](https://github.com/getrapidkit/rapidkit-core/commit/ac197e47defd08e41cdcc58f96a8885fb7003498))
+- **ci:** support poetry dev group in community distribution ([f773e14](https://github.com/getrapidkit/rapidkit-core/commit/f773e14ac187207df6a101a10e368f0e559571c5))
+- **ci:** install dev extras in community staging workflows ([d9cc3ba](https://github.com/getrapidkit/rapidkit-core/commit/d9cc3ba515cd3420060aaab16729583199afa242))
+- **modules:** prefer manifest fields in modules info ([355ff94](https://github.com/getrapidkit/rapidkit-core/commit/355ff94075a23283f4e4a85b3a4113f4532be17a))
+- **gate:** install dev extras in distribution smoke ([1295a3f](https://github.com/getrapidkit/rapidkit-core/commit/1295a3fd2abc6cbee0ef9b72acda244ca91051f1))
+
+#### Chores
+
+- **release:** finalize version to 0.3.8 ([677b983](https://github.com/getrapidkit/rapidkit-core/commit/677b9838a205359facc713f5a33cede5e4b98b78))
+- **release:** bump version to 0.3.8rc1 ([a079907](https://github.com/getrapidkit/rapidkit-core/commit/a0799070728de81e920f24cf8ba75b6e8b7f5844))
+- **modules:** sync metadata for staging push range ([c1058ec](https://github.com/getrapidkit/rapidkit-core/commit/c1058ec65e90555b90034fbe6cb4d1e2161a33a8))
 
 <!-- auto:promote-changelog end -->
 

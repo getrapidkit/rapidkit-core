@@ -111,6 +111,13 @@ python -m pip install --pre -U rapidkit-core
 - Bug reports: https://github.com/getrapidkit/rapidkit-core/issues
 - Ideas and Q&A: https://github.com/getrapidkit/rapidkit-core/discussions
 
+For local source development in this repository:
+
+```bash
+make install-dev
+make test
+```
+
 ## License
 
 MIT — see https://github.com/getrapidkit/rapidkit-core/blob/main/LICENSE

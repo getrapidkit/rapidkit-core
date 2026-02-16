@@ -168,7 +168,7 @@ def test_generator_materialises_expected_artifacts(tmp_path: Path, variant: str)
                     or '@Controller("security/rate-limiting")' in contents
                 )
                 assert "@Get('metadata')" in contents or '@Get("metadata")' in contents
-                assert "@Get('health')" in contents or '@Get("health")' in contents
+                assert "@Get('health')" not in contents and '@Get("health")' not in contents
             elif logical_name == "service":
                 assert "class RateLimitingService" in contents
                 assert "async consume(options" in contents
@@ -331,7 +331,7 @@ def test_generate_nestjs_variant_materialises_routes(tmp_path: Path) -> None:
     ), "Rate limiting controller should expose security/rate-limiting routes"
     assert "@Get('metadata')" in controller_src or '@Get("metadata")' in controller_src
     assert "@Get('features')" in controller_src or '@Get("features")' in controller_src
-    assert "@Get('health')" in controller_src or '@Get("health")' in controller_src
+    assert "@Get('health')" not in controller_src and '@Get("health")' not in controller_src
 
     module_src = module_file.read_text()
     assert "@Module" in module_src

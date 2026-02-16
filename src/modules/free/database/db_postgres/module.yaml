@@ -3,7 +3,7 @@ display_name: PostgreSQL
 description: Production-ready PostgreSQL integration with async/sync engines, connection
   pooling, transactions, health checks, and configuration scaffolding for FastAPI
   and NestJS applications
-version: 0.1.25
+version: 0.1.28
 access: free
 status: stable
 category: database
@@ -158,8 +158,8 @@ support:
   discussions: https://github.com/getrapidkit/rapidkit-core/discussions
   documentation: https://docs.rapidkit.top/modules/db_postgres
 changelog:
-  - version: "0.1.25"
-    date: "2026-02-11"
+  - version: "0.1.28"
+    date: "2026-02-15"
     notes: "See docs/changelog.md"
 validation:
   pre_install:
@@ -216,7 +216,7 @@ file_hashes:
   frameworks/fastapi.py: sha256:f8de74c874873dce1b7dc49992cb708b2b587a20e6c8ffbdc9f548887c2dce81
   frameworks/nestjs.py: sha256:430023fc8fea01a527e9dc3865a9a0667bd94f30a1342472929395dbcc06479f
   generate.py: sha256:f898d9a2c7847551e43950fc72aa4b047b45285c697d2ee14ab4ba7ffa4e33c6
-  module.verify.json: sha256:e057c0fddc2b25711649571492780e97a71db936ff42f388908444d7a955660f
+  module.verify.json: sha256:6d2ebfd6a9b4546ded612470333eeec169e33b14a4748e81f49391db4f2383fe
   overrides.py: sha256:43a943cea90365b531b4f3950e0399d489b656f0239e11a4b07166d916c927a1
   templates/base/db_postgres.py.j2: sha256:1122d3d27e498af09b6f3f36a19ece055d940fe70d3cc9184f70ecc50fe0056e
   templates/base/db_postgres_health.py.j2: sha256:5e91f00602e928598c9f4ced11fe7eaaba0cc9abefa2c2294c117631f591d48c

@@ -1,5 +1,9 @@
 # Changelog — free/users/users_profiles
 
+## 0.1.8 — Automated patch release triggered by content hash change (2026-02-15)
+
+- chore: Automated patch release triggered by content hash change
+
 ## 0.1.7 — Automated patch release triggered by content hash change (2026-02-14)
 
 - chore: Automated patch release triggered by content hash change

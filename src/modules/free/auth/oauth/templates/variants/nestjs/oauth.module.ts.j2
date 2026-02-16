@@ -4,10 +4,11 @@ import { ConfigModule } from "@nestjs/config";
 import oauthConfiguration from "./configuration";
 import { {{ module_class_name }}Controller } from "./oauth.controller";
 import { {{ module_class_name }}Service } from "./oauth.service";
+import { OauthHealthController } from "../../../../health/oauth.health";
 
 @Module({
   imports: [ConfigModule.forFeature(oauthConfiguration)],
-  controllers: [{{ module_class_name }}Controller],
+  controllers: [{{ module_class_name }}Controller, OauthHealthController],
   providers: [{{ module_class_name }}Service],
   exports: [{{ module_class_name }}Service],
 })

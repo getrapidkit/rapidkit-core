@@ -1,7 +1,7 @@
 name: redis
 description: Unified Redis cache integration
 category: cache
-version: 0.1.15
+version: 0.1.17
 access: free
 status: stable
 tags:
@@ -119,8 +119,8 @@ support:
   discussions: https://github.com/getrapidkit/rapidkit-core/discussions
   documentation: https://docs.rapidkit.top/modules/redis
 changelog:
-  - version: "0.1.15"
-    date: "2026-02-14"
+  - version: "0.1.17"
+    date: "2026-02-15"
     notes: "See docs/changelog.md"
 validation:
   pre_install:
@@ -166,7 +166,7 @@ file_hashes:
   frameworks/fastapi.py: sha256:b91bd1b0c65a0fdf6c4bf73634034563e0f6cb0b9700b208f08df549796975b1
   frameworks/nestjs.py: sha256:52a668a1480dc92c555430400d1992e129c32664952cc1259965f3c0039753a7
   generate.py: sha256:7a7bbc9f3b8fd1d1e7375a7faacd0616918fbc02d20f07b53e32c5a5effb058e
-  module.verify.json: sha256:c8e5d837a679ee583e54bfb5a4c86f433cdc2eb6ab1c6a4a02a51cb127dedc4d
+  module.verify.json: sha256:23156e59efd39d62d82c15e1cf494eaee0c0b4e8e65592a123a54cf53dd95877
   overrides.py: sha256:331fa8af37994ce9e8ad642aaffb9c04139f364f756d9100657eb57004cf35d8
   templates/base/redis.py.j2: sha256:3c1034a679c0e47084bb8b955d03d2c75069440983abf146560547572d78cede
   templates/base/redis_client.py.j2: sha256:3a32f8bda4eafa478229ca4158664c4bfc6d611f3f43bd8d7dac03df36a67155

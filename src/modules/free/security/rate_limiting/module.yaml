@@ -1,6 +1,6 @@
 name: rate_limiting
 description: Request rate limiting and throttling protections for RapidKit services
-version: 0.1.7
+version: 0.1.9
 access: free
 status: stable
 category: security
@@ -124,8 +124,8 @@ support:
     discussions: https://github.com/getrapidkit/rapidkit-core/discussions
     documentation: https://docs.rapidkit.top/modules/rate_limiting
 changelog:
-  - version: "0.1.7"
-    date: "2026-02-14"
+  - version: "0.1.9"
+    date: "2026-02-15"
     notes: "See docs/changelog.md"
 validation:
     pre_install:
@@ -154,7 +154,7 @@ signature:
 signer_id: null
 signature_version: null
 file_hashes:
-    templates/variants/nestjs/tests/rate_limiting.e2e-spec.ts: sha256:5b48bf08b7749aa9d8c2bbe537da7edf4784eff416c6663870f780284e28ca26
+    templates/variants/nestjs/tests/rate_limiting.e2e-spec.ts: sha256:4ec0c447108d05663559462386cc7225be32966e28a70b3cae226dc06367ec0c
     templates/variants/fastapi/tests/test_rate_limiting_e2e.py: sha256:8eeb695fd20eaf6aeb1a72cddce69774176032a5a9e174c1a095a9243e8b08e4
     scripts/run_demo.py: sha256:acfe8df39b47a79d47011f4e3eee8018ced663e80ee922652514bd199b729a53
     README.md: sha256:bdcf43cd44810b5d54a749f168823da4c9f6592ffa9b63f6a1aeac501644fc0d
@@ -172,7 +172,7 @@ file_hashes:
     frameworks/fastapi.py: sha256:4426259a125aa482964fc078c60ab8ba9b3eed015a66d86e3e0f91794f25a853
     frameworks/nestjs.py: sha256:70044ecec090d7a85be5d8edc1abd5bde04ed5f1e0ab6d05102a475f2b16663a
     generate.py: sha256:3acf1d0856e84eaf5e680a76ff3af81ce39da978ec1fdc2ac9bd135d5592a512
-    module.verify.json: sha256:c4ebb88e5c17bcd269173ef6301cc31165abe2ec2e684cec28b33fd13e205b95
+    module.verify.json: sha256:4232003a26fa84d92fd617628bfe46e885fe916c556cce66cf2bb71e6928c6eb
     overrides.py: sha256:c9634aa95e739a4f6a21ae2c6a1863fa5fb2e3f1f876c2ca840755f2ea08a76f
     templates/base/rate_limiting.py.j2: sha256:a0344d0b559fa77cd7dfba9475801915b3bdb0c8d17baade33b39bad5f3fad2a
     templates/base/rate_limiting_health.py.j2: sha256:8fedcedcdfc8ccf19a9e66d9cd0a9a2b78b2edb7998ed318c59ec4f04aebf92f

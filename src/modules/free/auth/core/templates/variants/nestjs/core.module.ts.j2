@@ -2,6 +2,7 @@ import { DynamicModule, Module, Provider } from "@nestjs/common";
 import { ConfigModule, ConfigType } from "@nestjs/config";
 
 import { AUTH_CORE_CONFIG, AuthCoreConfig, AuthCoreService, AuthCorePolicy } from "./auth-core.service";
+import { AuthCoreHealthController } from "../../../../health/auth-core.health";
 
 export const AUTH_CORE_CONFIGURATION = "AUTH_CORE_CONFIGURATION";
 
@@ -46,6 +47,7 @@ export class AuthCoreModule {
       module: AuthCoreModule,
       global: true,
       imports: [ConfigModule],
+      controllers: [AuthCoreHealthController],
       providers,
       exports: [AUTH_CORE_CONFIG, AuthCoreService],
     };
