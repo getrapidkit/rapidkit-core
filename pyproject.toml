@@ -83,6 +83,24 @@ packages = [
     { include = "modules", from = "src" },
 ]
 
+[tool.poetry.group.dev.dependencies]
+bandit = "^1.8.6"
+black = "^25.9.0"
+cryptography = "^46.0.2"
+httpx = "^0.28.0"
+mypy = "^1.18.2"
+pip = ">=26"
+pip-audit = "^2.9.0"
+pre-commit = "^4.3.0"
+pytest = "^8.4.2"
+pytest-asyncio = "^0.23.8"
+pytest-cov = "^7.0.0"
+ruff = "^0.14.0"
+tox = "^4.23.0"
+types-PyYAML = "^6.0.12.20250915"
+types-psutil = "^7.0.0.20251116"
+types-requests = "^2.32.4.20250913"
+
 [tool.coverage.run]
 branch = false
 source = [

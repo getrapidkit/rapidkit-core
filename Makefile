@@ -21,7 +21,7 @@ install: ## Install runtime dependencies
 	poetry install --only main
 
 install-dev: ## Install all development dependencies
-	poetry install --extras dev
+	poetry install --with dev
 
 install-pre-commit: ## Install pre-commit hooks
 	@if [ ! -d .git ]; then \

@@ -72,7 +72,7 @@ jobs:
                       venv-${{ runner.os }}-lint-3.10-
 
             - name: Install dependencies
-              run: poetry install --extras dev --no-interaction --no-root
+              run: poetry install --with dev --no-interaction --no-root
 
             - name: Run Ruff for linting and import sorting
               run: poetry run ruff check . --output-format=github --fix
@@ -151,7 +151,7 @@ jobs:
                       venv-${{ runner.os }}-${{ matrix.python-version }}-
 
             - name: Install dependencies
-              run: poetry install --extras dev --no-interaction --no-root
+              run: poetry install --with dev --no-interaction --no-root
 
             - name: Run tests
               shell: bash
@@ -334,7 +334,7 @@ jobs:
                       venv-${{ runner.os }}-security-3.10-
 
             - name: Install dependencies
-              run: poetry install --extras dev --no-interaction --no-root
+              run: poetry install --with dev --no-interaction --no-root
 
             - name: Run pip-audit for dependency vulnerabilities
               run: |

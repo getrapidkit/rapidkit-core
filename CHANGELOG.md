@@ -2,7 +2,7 @@
 
 ## [Snapshot 0.3.8](https://github.com/getrapidkit/rapidkit-core/compare/v0.3.1...HEAD)
 
-> This distribution is built from commit `4b9fc5b9` and is not a tagged release.
+> This distribution is built from commit `d1c022e1` and is not a tagged release.
 
 ### Features
 
