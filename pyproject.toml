@@ -83,6 +83,33 @@ packages = [
     { include = "modules", from = "src" },
 ]
 
+[tool.poetry.dependencies]
+python = ">=3.10,<4.0"
+black = "^25.9.0"
+click = ">=8.3,<8.4"
+cryptography = "^46.0.2"
+email-validator = ">=2.1,<3.0"
+fastapi = ">=0.119.0,<1.0.0"
+jinja2 = "^3.1.6"
+jsonschema = "^4.25.1"
+libcst = ">=1.6.0,<2.0.0"
+mdformat = "^1.0.0"
+packaging = "^25.0"
+poetry-plugin-export = "^1.10.0"
+pydantic = ">=2.12.2"
+pydantic-settings = ">=2.11,<3.0"
+pygithub = "^2.7.0"
+pynacl = "^1.6.2"
+pyyaml = "^6.0.3"
+requests = "^2.32.5"
+rich = "^14.2.0"
+starlette = ">=0.49.1,<0.50"
+tabulate = "^0.9.0"
+typer = ">=0.19,<0.20"
+types-requests = "^2.32.4.20250913"
+uvicorn = { version = ">=0.37.0", extras = ["standard"] }
+yamllint = "^1.37.1"
+
 [tool.poetry.group.dev.dependencies]
 bandit = "^1.8.6"
 black = "^25.9.0"

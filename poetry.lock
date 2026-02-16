@@ -3849,4 +3849,4 @@ dev = ["bandit", "black", "cryptography", "httpx", "mypy", "pip", "pip-audit", "
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10,<4.0"
-content-hash = "6ac945a828995ea91b3591c9257c33ce9159fa7fc455c5e8794315f92bda8caa"
+content-hash = "1433af161ce8f778024745fc142a0f341ae192dc7960a0159dec7655c9a867f6"
