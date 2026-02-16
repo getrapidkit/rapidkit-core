@@ -92,7 +92,7 @@ jobs:
                   echo "Running preflight quality gates (profile: $profile)"
 
                   poetry check
-                  poetry install --with dev --no-interaction
+                  poetry install --extras dev --no-interaction
                   python -m compileall -q src
 
                   if [[ "$profile" == "smoke" ]]; then
