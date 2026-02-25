@@ -47,6 +47,14 @@
 
 <!-- auto:promote-changelog end -->
 
+## [0.3.9](https://github.com/getrapidkit/rapidkit-core/compare/v0.3.8...v0.3.9) - 2026-02-25
+
+### Bug Fixes
+
+- **init:** harden dependency bootstrap on Linux by improving Poetry/keyring behavior during initialization
+- **init:** reduce noisy lock-sync fallback output while preserving compatibility with older Poetry versions
+- **templates:** adjust NestJS standard module index template generation
+
 ## [Snapshot 0.3.2](https://github.com/getrapidkit/rapidkit-core/compare/v0.3.1...HEAD)
 
 > This distribution is built from commit `9a2a3801` and is not a tagged release.
