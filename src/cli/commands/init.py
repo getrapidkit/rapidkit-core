@@ -10,6 +10,7 @@ This helps novice users avoid a separate `pip install poetry` step.
 
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess  # nosec - controlled use (non-shell, static arguments)
 from pathlib import Path
@@ -20,6 +21,10 @@ import typer
 app = typer.Typer(help="Bootstrap project dependencies and virtualenv")
 
 
+def _is_debug_enabled() -> bool:
+    return str(os.environ.get("RAPIDKIT_DEBUG", "")).lower() in {"1", "true", "yes", "on"}
+
+
 def _find_project_root(start: Optional[Path] = None) -> Optional[Path]:
     cur = (start or Path.cwd()).resolve()
     for p in [cur] + list(cur.parents):
@@ -28,11 +33,33 @@ def _find_project_root(start: Optional[Path] = None) -> Optional[Path]:
     return None
 
 
-def _sync_poetry_lock(poetry_exec: str, root: Path) -> None:
+def _sync_poetry_lock(
+    poetry_exec: str, root: Path, pyproject_path: Optional[Path] = None
+) -> None:
     """Make sure poetry.lock matches the current pyproject configuration."""
+
+    if str(os.environ.get("RAPIDKIT_SKIP_LOCK_SYNC", "")).lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }:
+        typer.echo("ℹ️  Lock sync skipped (RAPIDKIT_SKIP_LOCK_SYNC=1)")
+        return
 
     lock_path = root / "poetry.lock"
     if lock_path.exists():
+        if pyproject_path is not None:
+            try:
+                lock_mtime = lock_path.stat().st_mtime
+                pyproject_mtime = pyproject_path.stat().st_mtime
+                if lock_mtime >= pyproject_mtime:
+                    typer.echo("ℹ️  poetry.lock is up-to-date (skipping lock sync)")
+                    return
+            except OSError:
+                # Non-fatal: fall back to lock sync if file metadata can't be read.
+                pass
+
         typer.echo("🔄 Ensuring poetry.lock matches pyproject.toml (poetry lock --no-update)")
         commands: list[list[str]] = [[poetry_exec, "lock", "--no-update"]]
     else:
@@ -50,9 +77,10 @@ def _sync_poetry_lock(poetry_exec: str, root: Path) -> None:
             help_hint = output.lower()
             missing_flag = "--no-update" in cmd and "does not exist" in help_hint
             if missing_flag and len(commands) == 1:
-                typer.echo(
-                    "ℹ️  Installed Poetry version does not support '--no-update'. Falling back to 'poetry lock'."
-                )
+                if _is_debug_enabled():
+                    typer.echo(
+                        "ℹ️  Installed Poetry version does not support '--no-update'. Falling back to 'poetry lock'."
+                    )
                 commands.append([poetry_exec, "lock"])
                 continue
 
@@ -203,7 +231,7 @@ def init(project: Optional[Path] = None) -> None:
     if poetry_exec:
         typer.echo(f"🚀 Using system poetry: {poetry_exec}")
         try:
-            _sync_poetry_lock(poetry_exec, root)
+            _sync_poetry_lock(poetry_exec, root, pyproject)
             subprocess.run([poetry_exec, "install"], cwd=root, check=True)  # nosec
             typer.echo("✅ Dependencies installed via system poetry")
             return
@@ -247,7 +275,7 @@ def init(project: Optional[Path] = None) -> None:
 
     typer.echo("🚀 Running poetry install inside project .venv")
     try:
-        _sync_poetry_lock(str(venv_poetry), root)
+        _sync_poetry_lock(str(venv_poetry), root, pyproject)
         subprocess.run([str(venv_poetry), "install"], cwd=root, check=True)  # nosec
         typer.echo("✅ Project bootstrapped successfully")
     except subprocess.CalledProcessError as e:
