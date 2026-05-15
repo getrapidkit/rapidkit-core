@@ -1,8 +1,8 @@
 # Changelog
 
-## [Snapshot 0.3.8](https://github.com/getrapidkit/rapidkit-core/compare/v0.3.1...HEAD)
+## [Snapshot 0.4.0](https://github.com/getrapidkit/rapidkit-core/compare/v0.3.1...HEAD)
 
-> This distribution is built from commit `6f070f68` and is not a tagged release.
+> This distribution is built from commit `f3460bbd` and is not a tagged release.
 
 ### Features
 
@@ -151,6 +151,10 @@
 
 ### Bug Fixes
 
+- **nestjs:** silence TS6 deprecation in smoke config
+  ([0ec2fde7](https://github.com/getrapidkit/rapidkit-core/commit/0ec2fde75e7472c9ce7b7a76b5054bdc2de151da))
+- **security:** pin poetry>=2.3.4 to fix CVE-2026-34591 CVE-2026-41140
+  ([dde37d70](https://github.com/getrapidkit/rapidkit-core/commit/dde37d70ffcd9f54f0f07d6a9bec1c3126dd4556))
 - **auth:** add ddd snippet profiles and correct pepper log format
   ([9a11ba0c](https://github.com/getrapidkit/rapidkit-core/commit/9a11ba0c6f08dcecf0fb0da31c9b6b51b27e2c2e))
 - **modules:** prefer manifest fields in modules info
@@ -514,6 +518,8 @@
 
 ### Documentation
 
+- sync community README template with ecosystem section
+  ([b51a5251](https://github.com/getrapidkit/rapidkit-core/commit/b51a52513a29d550d9e968f762a454d4199e2198))
 - **modules:** add missing free API reference pages
   ([efd9094e](https://github.com/getrapidkit/rapidkit-core/commit/efd9094e6e58173b918990e829174f33a0802c40))
 - harden public README and distribution documentation
@@ -563,6 +569,8 @@
 
 ### Refactors
 
+- **core:** remove spring/java paths from init and doctor
+  ([afdfe211](https://github.com/getrapidkit/rapidkit-core/commit/afdfe211ec663df03403e07205df223a87086814))
 - sync settings vendor for kits
   ([7d7a7f4b](https://github.com/getrapidkit/rapidkit-core/commit/7d7a7f4bbf2319e108f86b22f1339c8cce824538))
 - **kits:** prefer project-local cli & remove fallback template
@@ -652,6 +660,14 @@
 
 ### Chores
 
+- **settings:** sync module metadata
+  ([3aab8048](https://github.com/getrapidkit/rapidkit-core/commit/3aab8048b563ed22b83bbd0e0a1592f24d2d0429))
+- finalize stabilization updates and version alignment
+  ([c9009767](https://github.com/getrapidkit/rapidkit-core/commit/c9009767adb25d8079ac97965451c7d5da733301))
+- **security:** upgrade vulnerable deps and refresh constraints
+  ([475f964d](https://github.com/getrapidkit/rapidkit-core/commit/475f964d56515f0ac0009ac6cef6fc97ceef166c))
+- **core:** update licensing flow and framework registry
+  ([aeb6e55d](https://github.com/getrapidkit/rapidkit-core/commit/aeb6e55df1208d16615241d474daebbcb943ff42))
 - **modules:** sync metadata for staging push range
   ([c5de871f](https://github.com/getrapidkit/rapidkit-core/commit/c5de871fea1e4a74935824ecc094619805144281))
 - **modules:** sync metadata for staging publish range

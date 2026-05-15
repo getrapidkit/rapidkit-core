@@ -7,7 +7,6 @@ from importlib import util as importlib_util
 
 import pytest
 
-
 SQLALCHEMY_AVAILABLE = importlib_util.find_spec("sqlalchemy") is not None
 SETTINGS_AVAILABLE = importlib_util.find_spec("core.settings") is not None
 

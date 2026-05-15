@@ -9,11 +9,9 @@ from modules.shared.generator import CustomTemplateParser, TemplateRenderer
 
 def test_custom_parser_handles_default_filter_for_missing_value() -> None:
     parser = CustomTemplateParser()
-    template = textwrap.dedent(
-        """
+    template = textwrap.dedent("""
         ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(default={{ ACCESS_TOKEN_EXPIRE_MINUTES | default(15) }})
-        """
-    ).strip()
+        """).strip()
 
     rendered = parser.render(template, {})
 

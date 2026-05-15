@@ -2,6 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
+[![Part of RapidKit Platform](https://img.shields.io/badge/Part%20of-RapidKit%20Workspace%20Platform-0f172a?logo=github)](https://github.com/getrapidkit/rapidkit)
 
 RapidKit Core is the open-source RapidKit engine and CLI for scaffolding, operating, and evolving
 production-ready backend projects.
@@ -14,12 +15,16 @@ production-ready backend projects.
 - Issues: https://github.com/getrapidkit/rapidkit-core/issues
 - Discussions: https://github.com/getrapidkit/rapidkit-core/discussions
 
-## Useful tools
+## Part of the RapidKit Ecosystem
 
-- RapidKit npm CLI: https://github.com/getrapidkit/rapidkit-npm
-- npm package: https://www.npmjs.com/package/rapidkit
-- RapidKit VS Code Extension: https://github.com/getrapidkit/rapidkit-vscode
-- VS Code Marketplace: https://marketplace.visualstudio.com/items?itemName=rapidkit.rapidkit-vscode
+This repository is the core engine layer of the broader **RapidKit Platform**:
+
+| Layer         | Repository                                                                                                                                                                  |
+| ------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Ecosystem Hub | [getrapidkit/rapidkit](https://github.com/getrapidkit/rapidkit)                                                                                                             |
+| CLI           | [getrapidkit/rapidkit-npm](https://github.com/getrapidkit/rapidkit-npm) · [npm](https://www.npmjs.com/package/rapidkit)                                                     |
+| IDE           | [getrapidkit/rapidkit-vscode](https://github.com/getrapidkit/rapidkit-vscode) · [Marketplace](https://marketplace.visualstudio.com/items?itemName=rapidkit.rapidkit-vscode) |
+| Examples      | [getrapidkit/rapidkit-examples](https://github.com/getrapidkit/rapidkit-examples)                                                                                           |
 
 ## What you get
 

@@ -40,16 +40,14 @@ class TestModulesCommands(unittest.TestCase):
 
         # Create module.yaml
         self.module_yaml = self.test_module_dir / "module.yaml"
-        self.module_yaml.write_text(
-            """
+        self.module_yaml.write_text("""
 name: test_module
 version: "1.0.0"
 description: Test module
 config_sources:
   - config/test.yaml
 dependencies: []
-"""
-        )
+""")
 
         # Create config file
         config_dir = self.test_module_dir / "config"

@@ -56,6 +56,13 @@ def test_get_run_command_poetry_missing(monkeypatch: pytest.MonkeyPatch) -> None
     assert pc._get_run_command_for_kit("fastapi.standard") == "rapidkit dev"  # noqa: SLF001
 
 
+def test_get_run_command_for_unknown_kit() -> None:
+    pc = ProjectCreatorService()
+    assert (
+        pc._get_run_command_for_kit("unknown.standard") == "uvicorn src.main:app --reload"
+    )  # noqa: SLF001
+
+
 def test_get_next_steps_for_nestjs(monkeypatch: pytest.MonkeyPatch) -> None:
     pc = ProjectCreatorService()
 
@@ -73,6 +80,14 @@ def test_get_next_steps_for_nestjs(monkeypatch: pytest.MonkeyPatch) -> None:
         "./bootstrap.sh",
     ]
     assert steps[-1] == "run-yarn"
+
+
+def test_get_next_steps_for_unknown_kit(project_creator: ProjectCreatorService) -> None:
+    steps = project_creator._get_next_steps_for_kit("unknown.standard", {})  # noqa: SLF001
+    assert steps == [
+        "poetry install",
+        "uvicorn src.main:app --reload",
+    ]
 
 
 def test_apply_kit_defaults_merges_only_missing(project_creator: ProjectCreatorService) -> None:

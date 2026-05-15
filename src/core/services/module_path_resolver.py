@@ -20,10 +20,20 @@ def _get_registry_for_tier(tier: str) -> Optional[RegistryType]:
 
     if tier == "free":
         try:
-            from modules.free import get_registry  # Imported lazily to avoid cycles
+            from modules.free import (
+                get_registry as get_free_registry,
+            )  # Imported lazily to avoid cycles
         except ImportError:
             return None
-        return get_registry()
+        return get_free_registry()
+    if tier == "paid":
+        try:
+            from modules.paid import (
+                get_registry as get_paid_registry,
+            )  # Imported lazily to avoid cycles
+        except ImportError:
+            return None
+        return get_paid_registry()
     return None
 
 

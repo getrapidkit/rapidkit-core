@@ -1,4 +1,5 @@
 import asyncio
+import os
 import sys
 from email.message import EmailMessage
 from importlib import import_module, util as import_util
@@ -24,6 +25,10 @@ def email_runtime(tmp_path_factory: pytest.TempPathFactory):
     generator.generate_vendor_files(config, target_dir, renderer, context)
     generator.generate_variant_files(config, "fastapi", target_dir, renderer, context)
 
+    vendor_root = target_dir / ".rapidkit" / "vendor"
+    previous_vendor_root = os.environ.get("RAPIDKIT_VENDOR_ROOT")
+    os.environ["RAPIDKIT_VENDOR_ROOT"] = str(vendor_root)
+
     runtime_path = target_dir / "src" / "modules" / "free" / "communication" / "email" / "email.py"
     assert runtime_path.exists(), f"Expected generated email runtime at {runtime_path}"
 
@@ -32,8 +37,14 @@ def email_runtime(tmp_path_factory: pytest.TempPathFactory):
         pytest.fail("Unable to load generated email runtime module")
     module = import_util.module_from_spec(spec)
     sys.modules[spec.name] = module
-    spec.loader.exec_module(module)
-    return module
+    try:
+        spec.loader.exec_module(module)
+        return module
+    finally:
+        if previous_vendor_root is None:
+            os.environ.pop("RAPIDKIT_VENDOR_ROOT", None)
+        else:
+            os.environ["RAPIDKIT_VENDOR_ROOT"] = previous_vendor_root
 
 
 class _TransportRecorder:

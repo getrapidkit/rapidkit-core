@@ -30,39 +30,23 @@ def test_load_module_config_merges_files_and_applies_overrides(
     override_dir = config_dir / "overrides"
     override_dir.mkdir(parents=True)
 
-    (config_dir / "base.yaml").write_text(
-        textwrap.dedent(
-            """
+    (config_dir / "base.yaml").write_text(textwrap.dedent("""
             name: Demo Module
             metadata:
               base: true
-            """
-        ).strip()
-    )
-    (config_dir / "features.yaml").write_text(
-        textwrap.dedent(
-            """
+            """).strip())
+    (config_dir / "features.yaml").write_text(textwrap.dedent("""
             metadata:
               feature_flag: true
-            """
-        ).strip()
-    )
-    (config_dir / "profiles.yaml").write_text(
-        textwrap.dedent(
-            """
+            """).strip())
+    (config_dir / "profiles.yaml").write_text(textwrap.dedent("""
             profiles:
               default: true
-            """
-        ).strip()
-    )
-    (override_dir / "fastapi.yaml").write_text(
-        textwrap.dedent(
-            """
+            """).strip())
+    (override_dir / "fastapi.yaml").write_text(textwrap.dedent("""
             metadata:
               override: fastapi
-            """
-        ).strip()
-    )
+            """).strip())
     (modules_root / "demo" / "module.yaml").write_text("version: 0.1.0\n")
 
     monkeypatch.setattr(config_loader, "MODULES_PATH", modules_root)
@@ -110,13 +94,9 @@ def test_load_module_config_missing_required_fields_raises(
     config_dir = modules_root / "demo" / "config"
     config_dir.mkdir(parents=True)
 
-    (config_dir / "base.yaml").write_text(
-        textwrap.dedent(
-            """
+    (config_dir / "base.yaml").write_text(textwrap.dedent("""
             version: 1.2.3
-            """
-        ).strip()
-    )
+            """).strip())
 
     monkeypatch.setattr(config_loader, "MODULES_PATH", modules_root)
     monkeypatch.delenv("RAPIDKIT_DEBUG", raising=False)
@@ -136,9 +116,7 @@ def test_load_module_config_infers_feature_profiles_and_slug(
     config_dir = modules_root / "demo" / "config"
     config_dir.mkdir(parents=True)
 
-    (config_dir / "base.yaml").write_text(
-        textwrap.dedent(
-            """
+    (config_dir / "base.yaml").write_text(textwrap.dedent("""
             name: Demo Module
             description: Demo
             profiles:
@@ -148,9 +126,7 @@ def test_load_module_config_infers_feature_profiles_and_slug(
               async_client:
                 enabled: true
                 description: Async runtime
-            """
-        ).strip()
-    )
+            """).strip())
     (modules_root / "demo" / "module.yaml").write_text("version: 0.1.0\n")
 
     monkeypatch.setattr(config_loader, "MODULES_PATH", modules_root)
@@ -170,17 +146,13 @@ def test_load_module_config_uses_profile_hint_when_profiles_missing(
     config_dir = modules_root / "demo" / "config"
     config_dir.mkdir(parents=True)
 
-    (config_dir / "base.yaml").write_text(
-        textwrap.dedent(
-            """
+    (config_dir / "base.yaml").write_text(textwrap.dedent("""
             name: Demo Module
             description: Demo
             features:
               widget:
                 enabled: true
-            """
-        ).strip()
-    )
+            """).strip())
     (modules_root / "demo" / "module.yaml").write_text("version: 0.1.0\n")
 
     monkeypatch.setattr(config_loader, "MODULES_PATH", modules_root)

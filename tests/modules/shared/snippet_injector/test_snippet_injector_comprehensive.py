@@ -266,8 +266,7 @@ flask = "2.0.0"
         template_dir = self.project_root / "templates"
         template_dir.mkdir()
         template_file = template_dir / "complex.py.j2"
-        template_file.write_text(
-            """# {{service_name}} Service
+        template_file.write_text("""# {{service_name}} Service
 from typing import List, Optional
 from {{framework}} import {{main_class}}
 
@@ -285,8 +284,7 @@ class {{service_name}}Service:
             {"id": 1, "name": "{{service_name}} Item 1"},
             {"id": 2, "name": "{{service_name}} Item 2"}
         ]
-"""
-        )
+""")
 
         target_file = self.project_root / "user_service.py"
         target_file.write_text("# <<<inject:service>>>\nprint('Existing code')\n")

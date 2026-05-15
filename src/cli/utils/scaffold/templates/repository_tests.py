@@ -6,21 +6,18 @@ import textwrap
 from string import Template
 from typing import Mapping
 
-PLACEHOLDER_SKIP = textwrap.dedent(
-    """
+PLACEHOLDER_SKIP = textwrap.dedent("""
     import pytest
 
 
     pytestmark = pytest.mark.skip("Replace scaffold placeholder with real tests once implementation is ready.")
-    """
-).strip()
+    """).strip()
 
 
 def repository_generator_test_template(identifiers: Mapping[str, str]) -> str:
     module_import_path = identifiers.get("module_import_path", "")
     module_name = identifiers["module_name"]
-    return textwrap.dedent(
-        f"""
+    return textwrap.dedent(f"""
         from importlib import import_module
 
 
@@ -29,16 +26,14 @@ def repository_generator_test_template(identifiers: Mapping[str, str]) -> str:
 
             generator_module = import_module("{module_import_path}.generate")
             assert hasattr(generator_module, "main"), "Expected a main() entrypoint on the generator module"
-        """
-    ).strip()
+        """).strip()
 
 
 def repository_integration_test_template(identifiers: Mapping[str, str]) -> str:
     module_slug_test_path = identifiers.get("module_slug_test_path", identifiers["module_name"])
     module_import_path = identifiers.get("module_import_path", "")
     module_relative = module_import_path.replace(".", "/") if module_import_path else ""
-    return textwrap.dedent(
-        f"""
+    return textwrap.dedent(f"""
         from pathlib import Path
 
 
@@ -48,8 +43,7 @@ def repository_integration_test_template(identifiers: Mapping[str, str]) -> str:
             repo_root = Path(__file__).resolve().parents[3]
             module_path = repo_root / "{module_relative}"
             assert module_path.exists(), "Generated module runtime path should exist before running integration tests"
-        """
-    ).strip()
+        """).strip()
 
 
 def repository_unit_test_template(identifiers: Mapping[str, str], suffix: str) -> str:
@@ -71,9 +65,7 @@ def repository_unit_test_template(identifiers: Mapping[str, str], suffix: str) -
     doc_line = guidance.get(
         suffix, "Replace this scaffold with relevant assertions for the module under test."
     )
-    template = Template(
-        textwrap.dedent(
-            """
+    template = Template(textwrap.dedent("""
             ${placeholder}
 
 
@@ -81,9 +73,7 @@ def repository_unit_test_template(identifiers: Mapping[str, str], suffix: str) -
                 \"\"\"${module_title}: ${doc_line}\"\"\"
 
                 assert True
-            """
-        ).strip()
-    )
+            """).strip())
     return template.substitute(
         placeholder=PLACEHOLDER_SKIP,
         module_name=module_name,
@@ -101,9 +91,7 @@ def repository_tests_init_template(identifiers: Mapping[str, str]) -> str:
 def repository_tests_conftest_template(identifiers: Mapping[str, str]) -> str:
     module_title = identifiers.get("module_title", "RapidKit")
     module_name = identifiers["module_name"]
-    template = Template(
-        textwrap.dedent(
-            """
+    template = Template(textwrap.dedent("""
             from pathlib import Path
 
             import pytest
@@ -120,9 +108,7 @@ def repository_tests_conftest_template(identifiers: Mapping[str, str]) -> str:
                     "workspace": working_dir,
                     "context_file": working_dir / "context.json",
                 }
-            """
-        ).strip()
-    )
+            """).strip())
     return template.substitute(module_title=module_title, module_name=module_name)
 
 

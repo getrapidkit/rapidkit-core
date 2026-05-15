@@ -110,8 +110,7 @@ def fastapi_adapter(
         pkg_init.write_text("", encoding="utf-8")
 
     routes_mirror_path = runtime_path.parent / "security_headers_routes.py"
-    routes_mirror_path.write_text(
-        """
+    routes_mirror_path.write_text("""
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, Response, status
@@ -163,8 +162,7 @@ def build_router() -> APIRouter:
         return response
 
     return router
-"""
-    )
+""")
 
     runtime_rewrite_target = (
         "spec = importlib.util.spec_from_file_location(module_name, vendor_path)"

@@ -161,8 +161,7 @@ def _apply_option_sanitizers(typer_app: typer.Typer) -> None:
 
 # --- CLI App -----------------------------------------------------------------
 app = typer.Typer(
-    help=sanitize_console_text(
-        """🚀 RapidKit Core CLI
+    help=sanitize_console_text("""🚀 RapidKit Core CLI
 
 Global commands:
   rapidkit version       Show version information
@@ -211,8 +210,7 @@ Quick start:
     rapidkit create project fastapi.standard my-api && cd my-api && rapidkit init && rapidkit dev
 
 Notes:
-  • Project commands auto-detect .rapidkit/"""
-    ),
+  • Project commands auto-detect .rapidkit/"""),
     no_args_is_help=True,
     rich_markup_mode=None,  # Disable rich markup to avoid compatibility issues
     rich_help_panel=None,  # Disable rich help panels
