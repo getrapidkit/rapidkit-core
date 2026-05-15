@@ -66,8 +66,7 @@ def test_dependency_validation_and_install_order() -> None:
 
 
 def test_custom_registry_normalizes_entries(tmp_path: Path) -> None:
-    yaml_body = textwrap.dedent(
-        """
+    yaml_body = textwrap.dedent("""
                                 modules:
                                         alpha:
                                                 name: alpha
@@ -82,8 +81,7 @@ def test_custom_registry_normalizes_entries(tmp_path: Path) -> None:
                                         alpha:
                                                 123: 456
                                         beta: invalid
-                                """
-    )
+                                """)
 
     modules_yaml = tmp_path / "modules.yaml"
     modules_yaml.write_text(yaml_body, encoding="utf-8")

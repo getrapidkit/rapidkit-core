@@ -95,8 +95,7 @@ def _module_template_files(module_name: str) -> Dict[Path, Template]:
 
 
 def _run_demo_script_template() -> str:
-    return textwrap.dedent(
-        '''#!/usr/bin/env python3
+    return textwrap.dedent('''#!/usr/bin/env python3
 """Generate a small demo project for ${module_title}.
 
 This script is intended for module developers to quickly smoke-check generator outputs.
@@ -159,13 +158,11 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-'''
-    ).strip()
+''').strip()
 
 
 def _fastapi_e2e_test_template() -> str:
-    return textwrap.dedent(
-        '''"""E2E smoke test for ${module_title} (FastAPI).
+    return textwrap.dedent('''"""E2E smoke test for ${module_title} (FastAPI).
 
 This is intentionally lightweight and designed to run without external services.
 """
@@ -197,13 +194,11 @@ def test_router_builds_without_crashing() -> None:
             pytest.skip("Module router does not expose router/build_router/create_router")
 
     assert getattr(router, "routes", None) is not None
-'''
-    ).strip()
+''').strip()
 
 
 def _nestjs_e2e_test_template() -> str:
-    return textwrap.dedent(
-        """import { Test, TestingModule } from "@nestjs/testing";
+    return textwrap.dedent("""import { Test, TestingModule } from "@nestjs/testing";
 
 import { {{ module_class_name }}Module } from "../../../../../src/${module_kebab}/${module_name}.module";
 
@@ -225,13 +220,11 @@ describe("{{ module_class_name }} NestJS E2E", () => {
     expect(moduleRef).toBeDefined();
   });
 });
-"""
-    ).strip()
+""").strip()
 
 
 def _generator_template() -> str:
-    return textwrap.dedent(
-        '''#!/usr/bin/env python3
+    return textwrap.dedent('''#!/usr/bin/env python3
 """Unified module generator for ${module_title}."""
 
 from __future__ import annotations
@@ -437,13 +430,11 @@ def main() -> None:
 
 if __name__ == "__main__":  # pragma: no cover - CLI entrypoint
     main()
-'''
-    ).strip()
+''').strip()
 
 
 def _readme_template() -> str:
-    return textwrap.dedent(
-        """
+    return textwrap.dedent("""
         # RapidKit ${module_title} Module
 
         The ${module_title_lower} module ${module_description}
@@ -587,13 +578,11 @@ def _readme_template() -> str:
         - Override contracts: `overrides.py`
 
         For additional help, open an issue at <https://github.com/getrapidkit/rapidkit-core/issues> or consult the full product documentation at <https://docs.rapidkit.top>.
-        """
-    ).strip()
+        """).strip()
 
 
 def _module_docs_readme_template() -> str:
-    return textwrap.dedent(
-        """
+    return textwrap.dedent("""
         # ${module_title} Module Documentation
 
         This directory contains the canonical documentation set for the ${module_title_lower} module.
@@ -609,13 +598,11 @@ def _module_docs_readme_template() -> str:
         | [Migration](migration.md) | Upgrade guidance and compatibility notes |
         | [Troubleshooting](troubleshooting.md) | Common diagnostics and remediation steps |
         | [API Reference](api-reference.md) | Public classes, functions, and CLI entrypoints |
-        """
-    ).strip()
+        """).strip()
 
 
 def _module_docs_monitoring_template() -> str:
-    return textwrap.dedent(
-        """
+    return textwrap.dedent("""
         # ${module_title} Monitoring
 
         This document covers metrics, telemetry, and monitoring guidance for the ${module_title_lower} module.
@@ -632,13 +619,11 @@ def _module_docs_monitoring_template() -> str:
 
         ## Telemetry notes
         If you emit telemetry spans/logs, ensure sensitive data is redacted and identifiers are minimised.
-        """
-    ).strip()
+        """).strip()
 
 
 def _module_docs_overview_template() -> str:
-    return textwrap.dedent(
-        """
+    return textwrap.dedent("""
         # ${module_title} Overview
 
         ## Mission
@@ -652,13 +637,11 @@ def _module_docs_overview_template() -> str:
         ## Architecture
         Outline the flow from generator inputs to rendered artefacts. Highlight where overrides, snippets,
         and framework plugins plug into the pipeline.
-        """
-    ).strip()
+        """).strip()
 
 
 def _module_docs_usage_template() -> str:
-    return textwrap.dedent(
-        """
+    return textwrap.dedent("""
         # ${module_title} Usage Guide
 
         ## Quickstart
@@ -674,35 +657,29 @@ def _module_docs_usage_template() -> str:
         ## Framework Examples
         Describe how to integrate the generated FastAPI router and NestJS service into an application,
         including health endpoints and dependency injection touchpoints.
-        """
-    ).strip()
+        """).strip()
 
 
 def _module_docs_advanced_template() -> str:
-    return textwrap.dedent(
-        """
+    return textwrap.dedent("""
         # ${module_title} Advanced Topics
 
         Capture extensibility hooks, override strategies, observability requirements, and cross-cutting concerns.
         Provide concrete code snippets or configuration fragments wherever possible.
-        """
-    ).strip()
+        """).strip()
 
 
 def _module_docs_migration_template() -> str:
-    return textwrap.dedent(
-        """
+    return textwrap.dedent("""
         # ${module_title} Migration Guide
 
         Track version upgrades, breaking changes, and operator checklists required when rolling out new releases.
         Each entry should explain the impact, upgrade steps, and fallback plan.
-        """
-    ).strip()
+        """).strip()
 
 
 def _module_docs_troubleshooting_template() -> str:
-    return textwrap.dedent(
-        """
+    return textwrap.dedent("""
         # ${module_title} Troubleshooting
 
         | Symptom | Diagnostic Steps | Resolution |
@@ -710,13 +687,11 @@ def _module_docs_troubleshooting_template() -> str:
         | Example issue | `rapidkit modules doctor ${module_slug}` | Document the remediation steps |
 
         Update the table as production incidents surface to build a reliable operational playbook.
-        """
-    ).strip()
+        """).strip()
 
 
 def _module_docs_api_reference_template() -> str:
-    return textwrap.dedent(
-        """
+    return textwrap.dedent("""
         # ${module_title} API Reference
 
         ## Runtime Surface
@@ -727,25 +702,21 @@ def _module_docs_api_reference_template() -> str:
 
         ## CLI Entrypoints
         Describe generator commands, arguments, and expected outputs for each framework.
-        """
-    ).strip()
+        """).strip()
 
 
 def _module_docs_changelog_template() -> str:
-    return textwrap.dedent(
-        """
+    return textwrap.dedent("""
         # Changelog — ${module_slug}
 
         ## 0.1.0 — Initial baseline (${today_date})
 
         - Initial scaffold created via `rapidkit modules scaffold`
-        """
-    ).strip()
+        """).strip()
 
 
 def _frameworks_init_template() -> str:
-    return textwrap.dedent(
-        '''
+    return textwrap.dedent('''
         """Framework plugin registry for the ${module_title} module."""
 
         from __future__ import annotations
@@ -795,13 +766,11 @@ def _frameworks_init_template() -> str:
             "get_plugin",
             "list_available_plugins",
         ]
-        '''
-    ).strip()
+        ''').strip()
 
 
 def _framework_fastapi_template() -> str:
-    return textwrap.dedent(
-        '''
+    return textwrap.dedent('''
         """FastAPI plugin for ${module_title} module scaffolding."""
 
         from __future__ import annotations
@@ -869,13 +838,11 @@ def _framework_fastapi_template() -> str:
 
             def post_generation_hook(self, output_dir: Path) -> None:
                 _ = output_dir
-        '''
-    ).strip()
+        ''').strip()
 
 
 def _framework_nestjs_template() -> str:
-    return textwrap.dedent(
-        '''
+    return textwrap.dedent('''
         """NestJS plugin for ${module_title} module scaffolding."""
 
         from __future__ import annotations
@@ -948,18 +915,15 @@ def _framework_nestjs_template() -> str:
 
             def post_generation_hook(self, output_dir: Path) -> None:
                 _ = output_dir
-        '''
-    ).strip()
+        ''').strip()
 
 
 def _init_template() -> str:
-    return textwrap.dedent(
-        '''
+    return textwrap.dedent('''
         """Runtime package for the ${module_title} module."""
 
         __all__ = ["${module_class}"]
-        '''
-    ).strip()
+        ''').strip()
 
 
 def _module_yaml_template() -> str:
@@ -1098,52 +1062,43 @@ def _module_yaml_template() -> str:
 
 
 def _templates_tests_package_template() -> str:
-    return textwrap.dedent(
-        '''
+    return textwrap.dedent('''
         """Test templates package for ${module_title} module."""
 
         __all__ = []
-        '''
-    ).strip()
+        ''').strip()
 
 
 def _templates_tests_integration_package_template() -> str:
-    return textwrap.dedent(
-        '''
+    return textwrap.dedent('''
         """Integration test templates for ${module_title} module."""
 
         __all__ = []
-        '''
-    ).strip()
+        ''').strip()
 
 
 def _module_verify_template() -> str:
-    return textwrap.dedent(
-        """
+    return textwrap.dedent("""
         {
           "module": "${module_name}",
           "version": "0.1.0",
           "templates": [],
           "generated_at": "<populate via rapidkit modules verify>"
         }
-        """
-    ).strip()
+        """).strip()
 
 
 def _module_state_template() -> str:
-    return textwrap.dedent(
-        """
+    return textwrap.dedent("""
         {
                     "hash": "",
                     "version": "0.1.0"
         }
-        """
-    ).strip()
+        """).strip()
 
 
 def _overrides_template() -> str:
-    return textwrap.dedent(
-        '''
+    return textwrap.dedent('''
         """Override contracts for ${module_title}."""
 
         from core.services.override_contracts import ConfigurableOverrideMixin
@@ -1156,8 +1111,7 @@ def _overrides_template() -> str:
             #     """Example override."""
             #     original = self.call_original("custom_method", *args, **kwargs)
             #     return original
-        '''
-    ).strip()
+        ''').strip()
 
 
 def _base_config_template() -> str:
@@ -1182,8 +1136,7 @@ def _snippets_config_template() -> str:
 
 
 def _base_python_template() -> str:
-    return textwrap.dedent(
-        '''
+    return textwrap.dedent('''
         from dataclasses import dataclass
         from typing import Any, Dict
 
@@ -1200,13 +1153,11 @@ def _base_python_template() -> str:
             """Return default configuration payload."""
 
             return {{ module_class_name }}Config()
-        '''
-    ).strip()
+        ''').strip()
 
 
 def _base_types_template() -> str:
-    return textwrap.dedent(
-        '''
+    return textwrap.dedent('''
         from dataclasses import dataclass
         from typing import Any, Mapping
 
@@ -1217,13 +1168,11 @@ def _base_types_template() -> str:
 
             metadata: Mapping[str, Any] | None = None
             enabled: bool = True
-        '''
-    ).strip()
+        ''').strip()
 
 
 def _base_health_template() -> str:
-    return textwrap.dedent(
-        '''
+    return textwrap.dedent('''
         from datetime import datetime
 
 
@@ -1234,13 +1183,11 @@ def _base_health_template() -> str:
                 "timestamp": datetime.utcnow().isoformat(timespec="seconds"),
                 "status": "ok",
             }
-        '''
-    ).strip()
+        ''').strip()
 
 
 def _fastapi_runtime_template() -> str:
-    return textwrap.dedent(
-        '''
+    return textwrap.dedent('''
         from fastapi import APIRouter
 
 
@@ -1254,13 +1201,11 @@ def _fastapi_runtime_template() -> str:
                 return {"module": "{{ module_name }}", "status": "ok"}
 
             return router
-        '''
-    ).strip()
+        ''').strip()
 
 
 def _fastapi_router_template() -> str:
-    return textwrap.dedent(
-        '''
+    return textwrap.dedent('''
         from fastapi import APIRouter
 
 
@@ -1274,13 +1219,11 @@ def _fastapi_router_template() -> str:
                 return {"module": "{{ module_name }}", "status": "ok"}
 
             return router
-        '''
-    ).strip()
+        ''').strip()
 
 
 def _fastapi_health_template() -> str:
-    return textwrap.dedent(
-        '''
+    return textwrap.dedent('''
         from datetime import datetime
 
 
@@ -1288,13 +1231,11 @@ def _fastapi_health_template() -> str:
             """Return a minimal health payload for FastAPI variants."""
 
             return {"checked_at": datetime.utcnow().isoformat(timespec="seconds")}
-        '''
-    ).strip()
+        ''').strip()
 
 
 def _nestjs_service_template() -> str:
-    return textwrap.dedent(
-        """
+    return textwrap.dedent("""
         import { Injectable } from "@nestjs/common";
 
         @Injectable()
@@ -1303,13 +1244,11 @@ def _nestjs_service_template() -> str:
                 return { module: "{{ module_name }}", status: "ok" };
             }
         }
-        """
-    ).strip()
+        """).strip()
 
 
 def _nestjs_controller_template() -> str:
-    return textwrap.dedent(
-        """
+    return textwrap.dedent("""
         import { Controller, Get } from "@nestjs/common";
         import { {{ module_class_name }}Service } from "./{{ module_name }}.service";
 
@@ -1322,13 +1261,11 @@ def _nestjs_controller_template() -> str:
                 return this.service.getStatus();
             }
         }
-        """
-    ).strip()
+        """).strip()
 
 
 def _nestjs_module_template() -> str:
-    return textwrap.dedent(
-        """
+    return textwrap.dedent("""
         import { Module } from "@nestjs/common";
         import { {{ module_class_name }}Controller } from "./{{ module_name }}.controller";
         import { {{ module_class_name }}Service } from "./{{ module_name }}.service";
@@ -1339,13 +1276,11 @@ def _nestjs_module_template() -> str:
             exports: [{{ module_class_name }}Service],
         })
         export class {{ module_class_name }}Module {}
-        """
-    ).strip()
+        """).strip()
 
 
 def _nestjs_health_template() -> str:
-    return textwrap.dedent(
-        """
+    return textwrap.dedent("""
         export interface {{ module_class_name }}Health {
             module: string;
             status: string;
@@ -1359,13 +1294,11 @@ def _nestjs_health_template() -> str:
                 checkedAt: new Date().toISOString(),
             };
         }
-        """
-    ).strip()
+        """).strip()
 
 
 def _nestjs_validation_template() -> str:
-    return textwrap.dedent(
-        """
+    return textwrap.dedent("""
         import { z } from "zod";
 
         export const {{ module_name }}ConfigSchema = z.object({
@@ -1373,37 +1306,31 @@ def _nestjs_validation_template() -> str:
         });
 
         export type {{ module_class_name }}Config = z.infer<typeof {{ module_name }}ConfigSchema>;
-        """
-    ).strip()
+        """).strip()
 
 
 def _nestjs_index_template() -> str:
-    return textwrap.dedent(
-        """
+    return textwrap.dedent("""
         export * from "./{{ module_name }}.module";
         export * from "./{{ module_name }}.service";
         export * from "./{{ module_name }}.controller";
         export * from "./{{ module_name }}.health";
         export * from "./{{ module_name }}.validation";
-        """
-    ).strip()
+        """).strip()
 
 
 def _nestjs_configuration_template() -> str:
-    return textwrap.dedent(
-        """
+    return textwrap.dedent("""
         export const configuration = () => ({
             {{ module_name }}: {
                 enabled: true,
             },
         });
-        """
-    ).strip()
+        """).strip()
 
 
 def _vendor_template() -> str:
-    return textwrap.dedent(
-        """
+    return textwrap.dedent("""
         "use strict";
 
         function loadConfiguration() {
@@ -1417,26 +1344,22 @@ def _vendor_template() -> str:
         module.exports = {
           loadConfiguration,
         };
-        """
-    ).strip()
+        """).strip()
 
 
 def _snippet_template() -> str:
-    return textwrap.dedent(
-        """
+    return textwrap.dedent("""
         {# Jinja snippet used to inject shared fragments into generated artefacts. #}
         {# Name this snippet when referencing from module.yaml generation entries. #}
 
         {% set module_name = "${module_name}" %}
 
         # TODO: Provide snippet content for {{ module_name }}
-        """
-    ).strip()
+        """).strip()
 
 
 def _integration_test_template() -> str:
-    return textwrap.dedent(
-        '''
+    return textwrap.dedent('''
         from pathlib import Path
 
 
@@ -1445,8 +1368,7 @@ def _integration_test_template() -> str:
 
             module_root = Path(__file__).resolve().parents[3]
             assert module_root.exists()
-        '''
-    ).strip()
+        ''').strip()
 
 
 __all__ = ["build_module_files"]

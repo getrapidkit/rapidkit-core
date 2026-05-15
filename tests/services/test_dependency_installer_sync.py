@@ -5,15 +5,13 @@ from core.engine import dependency_installer as di
 
 def test_parse_poetry_dependencies_section_and_sync(tmp_path: Path):
     py = tmp_path / "pyproject.toml"
-    py.write_text(
-        """[tool.poetry.dependencies]
+    py.write_text("""[tool.poetry.dependencies]
 python = "^3.11"
 alpha = "^1.0.0"
 # <<<inject:module-dependencies>>>
 beta = "^0.2.0"
 
-"""
-    )
+""")
     parsed = di._parse_poetry_dependencies_section(py.read_text())
     assert parsed is not None
     section, base, injected = parsed

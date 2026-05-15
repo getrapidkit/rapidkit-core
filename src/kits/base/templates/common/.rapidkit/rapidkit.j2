@@ -34,6 +34,24 @@ function pick_node_pm() {
   fi
 }
 
+# Intercept npm-wrapper-only commands and delegate to npx rapidkit.
+# These commands are handled by the RapidKit npm package, not by the local
+# project toolchain (poetry / pnpm / yarn / npm run).
+# Without this, `rapidkit doctor workspace` would become
+# `poetry run doctor workspace` which fails because the Python CLI
+# does not expose `doctor workspace` as a sub-command.
+_NPM_ONLY_COMMANDS="doctor workspace bootstrap cache mirror setup config shell ai"
+_FIRST_CMD="${1:-}"
+for _cmd in $_NPM_ONLY_COMMANDS; do
+  if [ "$_FIRST_CMD" = "$_cmd" ]; then
+    if ! command -v npx >/dev/null 2>&1; then
+      echo "❌ 'npx' is not available. Install Node.js / npm to use the '${_FIRST_CMD}' command." >&2
+      exit 127
+    fi
+    exec npx rapidkit "$@"
+  fi
+done
+
 case "$PKG_TYPE" in
   python)
     # prefer project-local poetry

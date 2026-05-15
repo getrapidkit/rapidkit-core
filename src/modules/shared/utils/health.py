@@ -32,9 +32,7 @@ class HealthShimSpec:
     slug: str | None = None
 
 
-_VENDOR_HEALTH_WRAPPER_TEMPLATE = Template(
-    dedent(
-        '''
+_VENDOR_HEALTH_WRAPPER_TEMPLATE = Template(dedent('''
         """Project shim exposing vendor health helpers for $module_name."""
 
         from __future__ import annotations
@@ -327,14 +325,10 @@ _VENDOR_HEALTH_WRAPPER_TEMPLATE = Template(
                 "router",
             }
         )
-        '''
-    ).strip()
-)
+        ''').strip())
 
 
-_HEALTH_ALIAS_TEMPLATE = Template(
-    dedent(
-        '''
+_HEALTH_ALIAS_TEMPLATE = Template(dedent('''
         """Compatibility alias for $module_name health shim."""
 
         from __future__ import annotations
@@ -355,9 +349,7 @@ _HEALTH_ALIAS_TEMPLATE = Template(
         DEFAULT_HEALTH_PREFIX = getattr(_health_module, "DEFAULT_HEALTH_PREFIX", "/api/health/module/$slug")
 
         __all__ = getattr(_health_module, "__all__", [])
-        '''
-    ).strip()
-)
+        ''').strip())
 
 
 _BUILTIN_HEALTH_MODULES: Tuple[str, ...] = (
@@ -371,19 +363,16 @@ _BUILTIN_HEALTH_MODULES: Tuple[str, ...] = (
 
 _IMPORT_LINE_PATTERN = re.compile(r"\(\s*['\"]([^'\"]+)['\"]\s*,\s*['\"]([^'\"]+)['\"]\s*\)")
 
-_DATABASE_INIT_TEMPLATE = dedent(
-    '''
+_DATABASE_INIT_TEMPLATE = dedent('''
 """Database health package exports."""
 
 from __future__ import annotations
 
 __all__: list[str] = []
-'''
-)
+''')
 
 
-_HEALTH_REGISTRY_TEMPLATE = dedent(
-    '''
+_HEALTH_REGISTRY_TEMPLATE = dedent('''
 """Shared registry for aggregating RapidKit module health routers."""
 
 from __future__ import annotations
@@ -457,8 +446,7 @@ def list_registered_health_routes(prefix: str = "/api/health") -> List[dict[str,
 
 
 __all__ = ["build_health_router", "list_registered_health_routes"]
-'''
-)
+''')
 
 
 def _render_health_init(imports: Sequence[Tuple[str, str]]) -> str:
@@ -845,9 +833,7 @@ def _ensure_builtin_health_proxies(project_root: Path) -> None:
 
 
 def _generate_public_health_proxy_body(module_name: str) -> str:
-    return (
-        dedent(
-            f'''
+    return dedent(f'''
 """Public proxy exposing {module_name} health helpers from the core namespace."""
 
 from __future__ import annotations
@@ -880,10 +866,7 @@ def __dir__() -> list[str]:
 
 
 __all__ = getattr(_core_health_module, "__all__", [])
-'''
-        ).strip()
-        + "\n"
-    )
+''').strip() + "\n"
 
 
 def synchronize_health_package(project_root: Path) -> None:
@@ -898,9 +881,7 @@ def synchronize_health_package(project_root: Path) -> None:
 
 def _generate_health_wrapper_body(module_name: str) -> str:
     slug = module_name.replace("_", "-")
-    return (
-        dedent(
-            f'''
+    return dedent(f'''
 """Adapter registering {module_name} health routes with the shared registry."""
 
 from __future__ import annotations
@@ -954,10 +935,7 @@ def register_{module_name}_health(app: Any) -> None:
 
 
 __all__ = ["register_{module_name}_health"]
-'''
-        ).strip()
-        + "\n"
-    )
+''').strip() + "\n"
 
 
 def _ensure_routing_mount_uses_registry(project_root: Path) -> None:

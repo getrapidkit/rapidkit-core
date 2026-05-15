@@ -25,6 +25,8 @@ logger = logging.getLogger(__name__)  # pylint: disable=E1101
 _DEFAULT_TSCONFIG: Dict[str, Any] = {
     "compilerOptions": {
         "module": "commonjs",
+        "moduleResolution": "Node",
+        "ignoreDeprecations": "6.0",
         "declaration": True,
         "removeComments": True,
         "emitDecoratorMetadata": True,

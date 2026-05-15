@@ -19,6 +19,16 @@ doctor_app = typer.Typer(help="🩺 Diagnose your development environment")
 NODE_MIN_MAJOR = 20
 
 
+@doctor_app.command("workspace")
+def doctor_workspace() -> None:
+    """Scan all workspace projects (delegates to the RapidKit npm wrapper)."""
+    npx = shutil.which("npx")
+    if not npx:
+        print_error("'npx' is not available. Install Node.js / npm to use 'doctor workspace'.")
+        raise typer.Exit(127)
+    os.execvp(npx, [npx, "rapidkit", "doctor", "workspace"])  # noqa: S606
+
+
 @doctor_app.command("check")
 def check_env(
     json_output: bool = typer.Option(False, "--json", help="Emit JSON"),
@@ -230,3 +240,6 @@ def check_env(
         print_info(
             "Detected package.json files in repository — ensure your local Node and package-manager match kit 'engines' and lockfiles."
         )
+
+    # Java/Spring checks intentionally omitted in core engine. Polyglot scaffolds
+    # are supported at npm/workspace layer, while core doctor focuses on Python/Node.

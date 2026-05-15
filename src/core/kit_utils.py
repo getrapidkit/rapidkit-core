@@ -1,4 +1,5 @@
 import json
+import os
 import re
 import shutil
 import subprocess  # nosec
@@ -26,6 +27,41 @@ except ImportError:  # pragma: no cover - optional dependency
 
 # Optional cryptography serialization: import at runtime in secure_load_public_key
 serialization = None
+
+
+def _candidate_active_license_paths() -> list[Path]:
+    """Return candidate active-license paths ordered by precedence."""
+
+    candidates: list[Path] = []
+
+    env_path = os.environ.get("RAPIDKIT_LICENSE_PATH")
+    if env_path:
+        candidates.append(Path(env_path).expanduser())
+
+    cwd = Path.cwd().resolve()
+    for base in (cwd, *cwd.parents):
+        candidates.append(base / ".rapidkit" / "license.json")
+
+    candidates.append(Path.home() / ".rapidkit" / "license.json")
+
+    repo_root = Path(__file__).resolve().parents[2]
+    candidates.append(repo_root / "license.json")
+
+    unique: list[Path] = []
+    seen: set[str] = set()
+    for path in candidates:
+        key = str(path)
+        if key not in seen:
+            seen.add(key)
+            unique.append(path)
+    return unique
+
+
+def _resolve_active_license_path() -> Optional[Path]:
+    for candidate in _candidate_active_license_paths():
+        if candidate.exists() and candidate.is_file():
+            return candidate
+    return None
 
 
 def _safe_branch(branch: str) -> str:
@@ -85,16 +121,7 @@ def validate_license_auto(*args: Union[str, Any], **kwargs: Any) -> Dict[str, An
         required_features: Any = kwargs.get("required_features")
 
         if possible_path is None or not possible_path.exists():
-            repo_root = Path(__file__).resolve().parents[2]
-            alt = repo_root / "license.json"
-            if alt.exists():
-                possible_path = alt
-            else:
-                licenses_dir = repo_root / "licenses"
-                if licenses_dir.exists():
-                    found: Optional[Path] = next(licenses_dir.rglob("*.json"), None)
-                    if found is not None:
-                        possible_path = found
+            possible_path = None
 
         # If still None, create synthetic license
         if possible_path is None or not possible_path.exists():
@@ -164,14 +191,25 @@ def validate_license_auto(*args: Union[str, Any], **kwargs: Any) -> Dict[str, An
 
 
 def get_license_path(item_type: str, item_name: str, licenses_dir: Optional[str] = None) -> str:
-    base: Path = (
-        Path(licenses_dir) if licenses_dir else Path(__file__).parent.parent.parent / "licenses"
+    if licenses_dir:
+        base = Path(licenses_dir)
+        scoped = base / item_type / f"{item_name}.json"
+        if not scoped.exists():
+            raise FileNotFoundError(f"License file not found: {scoped}")
+        return scoped.as_posix()
+
+    active = _resolve_active_license_path()
+    if active is not None:
+        return active.as_posix()
+
+    base = Path(__file__).parent.parent.parent / "licenses"
+    scoped = base / item_type / f"{item_name}.json"
+    if scoped.exists():
+        return scoped.as_posix()
+
+    raise FileNotFoundError(
+        "No active license found. Run 'rapidkit license activate <license.json>' or set RAPIDKIT_LICENSE_PATH."
     )
-    path = base / item_type / f"{item_name}.json"
-    if not path.exists():
-        raise FileNotFoundError(f"License file not found: {path}")
-    # Normalize to forward slashes so downstream string comparisons remain portable
-    return path.as_posix()
 
 
 def enforce_license_external(license_data: Dict[str, Any]) -> None:

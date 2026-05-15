@@ -8,7 +8,6 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-
 SQLALCHEMY_AVAILABLE = importlib_util.find_spec("sqlalchemy") is not None
 FASTAPI_AVAILABLE = importlib_util.find_spec("fastapi") is not None
 SETTINGS_AVAILABLE = importlib_util.find_spec("core.settings") is not None

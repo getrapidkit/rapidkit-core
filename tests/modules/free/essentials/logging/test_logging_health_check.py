@@ -43,8 +43,7 @@ def get_logger(name):
 
 def get_logging_metadata():
     return {}
-""".strip()
-        + "\n",
+""".strip() + "\n",
         encoding="utf-8",
     )
 

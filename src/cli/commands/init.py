@@ -33,9 +33,7 @@ def _find_project_root(start: Optional[Path] = None) -> Optional[Path]:
     return None
 
 
-def _sync_poetry_lock(
-    poetry_exec: str, root: Path, pyproject_path: Optional[Path] = None
-) -> None:
+def _sync_poetry_lock(poetry_exec: str, root: Path, pyproject_path: Optional[Path] = None) -> None:
     """Make sure poetry.lock matches the current pyproject configuration."""
 
     if str(os.environ.get("RAPIDKIT_SKIP_LOCK_SYNC", "")).lower() in {

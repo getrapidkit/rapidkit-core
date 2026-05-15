@@ -2,7 +2,7 @@
 
 <!-- auto:promote-changelog start -->
 
-## [Snapshot 0.3.8]
+## [Snapshot 0.4.0]
 
 > Auto-generated promote snapshot for this version.
 > Includes both direct `main` updates and staging promote delta.
@@ -11,10 +11,15 @@
 
 #### Bug Fixes
 
+- **init:** improve init robustness and reduce lock-sync noise ([9623e97](https://github.com/getrapidkit/rapidkit-core/commit/9623e97cce8ebd2b021e6d2c581276d27c6aa839))
 - **docs:** polish public docs and add missing ddd kit license ([242b915](https://github.com/getrapidkit/rapidkit-core/commit/242b915955915fb04c6a73f064384466a0ad9975))
 
 #### Chores
 
+- **community:** add onboarding automation and channel templates ([32fdfea](https://github.com/getrapidkit/rapidkit-core/commit/32fdfea29841a0b49ac5b36a25f03d0f57509a72))
+- **release:** align tool.poetry version with v0.3.9 tag ([319125e](https://github.com/getrapidkit/rapidkit-core/commit/319125ec9e092ab43437108b648d1e663484e139))
+- **changelog:** add 0.3.9 release notes ([aed85fa](https://github.com/getrapidkit/rapidkit-core/commit/aed85fa3409acb7df8ffed309b7df7226c8313df))
+- **changelog:** refresh promote snapshot from core/main..HEAD ([6c838dc](https://github.com/getrapidkit/rapidkit-core/commit/6c838dc2c11dc2260ae7ff18d5f3b9e25c779926))
 - **changelog:** refresh promote snapshot from core/main..HEAD ([8348d88](https://github.com/getrapidkit/rapidkit-core/commit/8348d8879a2e1c26b9c7d26fb0f2ef82d0f66378))
 - **changelog:** refresh promote snapshot from core/main..HEAD ([feeccb8](https://github.com/getrapidkit/rapidkit-core/commit/feeccb8babce4927a7b954d7946588a27e7aa2c1))
 - **release:** set stable version 0.3.1 ([c4021e9](https://github.com/getrapidkit/rapidkit-core/commit/c4021e914e61f00a0136013e19b4b5fb412e7bb1))
@@ -33,17 +38,16 @@
 
 #### Bug Fixes
 
-- **distribution:** emit tool.poetry dependencies for poetry 1.8 lock ([ac197e4](https://github.com/getrapidkit/rapidkit-core/commit/ac197e47defd08e41cdcc58f96a8885fb7003498))
-- **ci:** support poetry dev group in community distribution ([f773e14](https://github.com/getrapidkit/rapidkit-core/commit/f773e14ac187207df6a101a10e368f0e559571c5))
-- **ci:** install dev extras in community staging workflows ([d9cc3ba](https://github.com/getrapidkit/rapidkit-core/commit/d9cc3ba515cd3420060aaab16729583199afa242))
-- **modules:** prefer manifest fields in modules info ([355ff94](https://github.com/getrapidkit/rapidkit-core/commit/355ff94075a23283f4e4a85b3a4113f4532be17a))
-- **gate:** install dev extras in distribution smoke ([1295a3f](https://github.com/getrapidkit/rapidkit-core/commit/1295a3fd2abc6cbee0ef9b72acda244ca91051f1))
+- **type:** avoid optional import mypy errors ([d4fda8d](https://github.com/getrapidkit/rapidkit-core/commit/d4fda8d89bc0bbef87dd8258f06baea9ecd4384b))
+
+#### Documentation
+
+- **licensing:** update broker setup and production deploy ([d7ac82d](https://github.com/getrapidkit/rapidkit-core/commit/d7ac82d05f93a0fd48f8ee3a67807ac8814ddcc2))
 
 #### Chores
 
-- **release:** finalize version to 0.3.8 ([677b983](https://github.com/getrapidkit/rapidkit-core/commit/677b9838a205359facc713f5a33cede5e4b98b78))
-- **release:** bump version to 0.3.8rc1 ([a079907](https://github.com/getrapidkit/rapidkit-core/commit/a0799070728de81e920f24cf8ba75b6e8b7f5844))
-- **modules:** sync metadata for staging push range ([c1058ec](https://github.com/getrapidkit/rapidkit-core/commit/c1058ec65e90555b90034fbe6cb4d1e2161a33a8))
+- **release:** finalize version to 0.4.0 ([df0ed20](https://github.com/getrapidkit/rapidkit-core/commit/df0ed20bb3d0b69d8c012509c7a520ac26afc68c))
+- **release:** bump version to 0.4.0rc1 ([d812957](https://github.com/getrapidkit/rapidkit-core/commit/d812957f0e2dd4f80c5cba239cf2fe3dd915efd2))
 
 <!-- auto:promote-changelog end -->
 

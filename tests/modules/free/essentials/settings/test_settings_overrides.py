@@ -10,7 +10,6 @@ import pytest
 
 from modules.free.essentials.settings import overrides as overrides_module
 
-
 EXPECTED_EXTRA_DOTENV_SOURCES = 2
 
 
