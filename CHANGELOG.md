@@ -1,13 +1,70 @@
 # Changelog
 
-## [Snapshot 0.4.0](https://github.com/getrapidkit/rapidkit-core/compare/v0.3.1...HEAD)
+<!-- auto:promote-changelog start -->
 
-> This distribution is built from commit `b0f084ef` and is not a tagged release.
+## [Snapshot 0.4.0]
+
+> Auto-generated promote snapshot for this version.
+> Includes both direct `main` updates and staging promote delta.
+
+### Main branch updates (already on `core/main`, absent in promote branch)
+
+#### Bug Fixes
+
+- **init:** improve init robustness and reduce lock-sync noise ([9623e97](https://github.com/getrapidkit/rapidkit-core/commit/9623e97cce8ebd2b021e6d2c581276d27c6aa839))
+- **docs:** polish public docs and add missing ddd kit license ([242b915](https://github.com/getrapidkit/rapidkit-core/commit/242b915955915fb04c6a73f064384466a0ad9975))
+
+#### Chores
+
+- **community:** add onboarding automation and channel templates ([32fdfea](https://github.com/getrapidkit/rapidkit-core/commit/32fdfea29841a0b49ac5b36a25f03d0f57509a72))
+- **release:** align tool.poetry version with v0.3.9 tag ([319125e](https://github.com/getrapidkit/rapidkit-core/commit/319125ec9e092ab43437108b648d1e663484e139))
+- **changelog:** add 0.3.9 release notes ([aed85fa](https://github.com/getrapidkit/rapidkit-core/commit/aed85fa3409acb7df8ffed309b7df7226c8313df))
+- **changelog:** refresh promote snapshot from core/main..HEAD ([6c838dc](https://github.com/getrapidkit/rapidkit-core/commit/6c838dc2c11dc2260ae7ff18d5f3b9e25c779926))
+- **changelog:** refresh promote snapshot from core/main..HEAD ([8348d88](https://github.com/getrapidkit/rapidkit-core/commit/8348d8879a2e1c26b9c7d26fb0f2ef82d0f66378))
+- **changelog:** refresh promote snapshot from core/main..HEAD ([feeccb8](https://github.com/getrapidkit/rapidkit-core/commit/feeccb8babce4927a7b954d7946588a27e7aa2c1))
+- **release:** set stable version 0.3.1 ([c4021e9](https://github.com/getrapidkit/rapidkit-core/commit/c4021e914e61f00a0136013e19b4b5fb412e7bb1))
+- optionally sign stable tags ([3404dc8](https://github.com/getrapidkit/rapidkit-core/commit/3404dc8abf0814ec014f4db38c5d1c8aaa5080de))
+- decouple release from publish ([6e55810](https://github.com/getrapidkit/rapidkit-core/commit/6e558105d59b85c67dcf6c891bad5e01f0b887d5))
+- **publish:** avoid non-distribution files in dist and tidy release ([411b5b0](https://github.com/getrapidkit/rapidkit-core/commit/411b5b079df3deb3a5cc1280a4c5dbac377def0b))
+- **tag:** auth git fetch when checking existing tags ([5553efb](https://github.com/getrapidkit/rapidkit-core/commit/5553efb39e1668ae8afd49c29072e98091b47f14))
+- **release:** tag stable from pyproject and auto-release on publish ([67a0d89](https://github.com/getrapidkit/rapidkit-core/commit/67a0d89d44ea05d60c8b4a99b569225fffa63a4b))
+- **workflows:** remove community-staging workflows from core ([62256e1](https://github.com/getrapidkit/rapidkit-core/commit/62256e19ef5b5701f8c4feda5336d804dd72d9a5))
+- **workflows:** make core publish tag-based ([386720f](https://github.com/getrapidkit/rapidkit-core/commit/386720fa79948deacd923c162f842792bb01ab2b))
+- **workflows:** rename core publish workflow ([b2f1779](https://github.com/getrapidkit/rapidkit-core/commit/b2f1779cb2535c78b7e1355e439b55f028513143))
+- **workflows:** add core publish workflow ([bd3b4cc](https://github.com/getrapidkit/rapidkit-core/commit/bd3b4cc6c7336b8dbb20963fa1550178bded9461))
+- **workflows:** remove staging-only workflows ([6a87d41](https://github.com/getrapidkit/rapidkit-core/commit/6a87d418edf6d973002272146ee04ccf7c9344b3))
+
+### Staging promote updates (present in promote branch, absent in `core/main`)
+
+#### Bug Fixes
+
+- **type:** avoid optional import mypy errors ([d4fda8d](https://github.com/getrapidkit/rapidkit-core/commit/d4fda8d89bc0bbef87dd8258f06baea9ecd4384b))
+
+#### Documentation
+
+- **licensing:** update broker setup and production deploy ([d7ac82d](https://github.com/getrapidkit/rapidkit-core/commit/d7ac82d05f93a0fd48f8ee3a67807ac8814ddcc2))
+
+#### Chores
+
+- **release:** finalize version to 0.4.0 ([df0ed20](https://github.com/getrapidkit/rapidkit-core/commit/df0ed20bb3d0b69d8c012509c7a520ac26afc68c))
+- **release:** bump version to 0.4.0rc1 ([d812957](https://github.com/getrapidkit/rapidkit-core/commit/d812957f0e2dd4f80c5cba239cf2fe3dd915efd2))
+
+<!-- auto:promote-changelog end -->
+
+## [0.3.9](https://github.com/getrapidkit/rapidkit-core/compare/v0.3.8...v0.3.9) - 2026-02-25
+
+### Bug Fixes
+
+- **init:** harden dependency bootstrap on Linux by improving Poetry/keyring behavior during initialization
+- **init:** reduce noisy lock-sync fallback output while preserving compatibility with older Poetry versions
+- **templates:** adjust NestJS standard module index template generation
+
+## [Snapshot 0.3.2](https://github.com/getrapidkit/rapidkit-core/compare/v0.3.1...HEAD)
+
+> This distribution is built from commit `9a2a3801` and is not a tagged release.
 
 ### Features
 
-- **modules:** add nestjs module registries and centralize health routes
-  ([dac36f7c](https://github.com/getrapidkit/rapidkit-core/commit/dac36f7cd74bced84680793bf80774267a072a8c))
 - **core:** stabilize ai_assistant generation and auto-bump control
   ([a9eaacc5](https://github.com/getrapidkit/rapidkit-core/commit/a9eaacc57bcc86bae3d5f8cdbce2b7b052d3d53d))
 - **core:** ship distribution system updates and CLI enhancements
@@ -151,32 +208,6 @@
 
 ### Bug Fixes
 
-- **type:** avoid optional import mypy errors
-  ([b0f084ef](https://github.com/getrapidkit/rapidkit-core/commit/b0f084efe3471b582204809de2da6ca82aa57fd2))
-- **nestjs:** silence TS6 deprecation in smoke config
-  ([0ec2fde7](https://github.com/getrapidkit/rapidkit-core/commit/0ec2fde75e7472c9ce7b7a76b5054bdc2de151da))
-- **security:** pin poetry>=2.3.4 to fix CVE-2026-34591 CVE-2026-41140
-  ([dde37d70](https://github.com/getrapidkit/rapidkit-core/commit/dde37d70ffcd9f54f0f07d6a9bec1c3126dd4556))
-- **auth:** add ddd snippet profiles and correct pepper log format
-  ([9a11ba0c](https://github.com/getrapidkit/rapidkit-core/commit/9a11ba0c6f08dcecf0fb0da31c9b6b51b27e2c2e))
-- **modules:** prefer manifest fields in modules info
-  ([87a54459](https://github.com/getrapidkit/rapidkit-core/commit/87a54459b809ee57a3a5c1cc2f3941a263d87deb))
-- **release:** align community gates and pyproject
-  ([a2884ea9](https://github.com/getrapidkit/rapidkit-core/commit/a2884ea9122b1abb773f51f4c236856cdf5de287))
-- **distribution:** harden public docs/workflow and license mappings
-  ([e19ede45](https://github.com/getrapidkit/rapidkit-core/commit/e19ede454f711fa2ec0e3f7988f28d1a4f5c414a))
-- **modules:** make metadata sync idempotent with mdformat
-  ([1dd8069c](https://github.com/getrapidkit/rapidkit-core/commit/1dd8069c7e2ba1b065ce8be7d6b44887f018d715))
-- **modules:** stabilize drift check hashing order
-  ([b656671c](https://github.com/getrapidkit/rapidkit-core/commit/b656671c50bcd36a4218ee99219548ec959a4af3))
-- **modules:** run mdformat before metadata sync to prevent drift
-  ([bbf13a57](https://github.com/getrapidkit/rapidkit-core/commit/bbf13a575dd760e3bd276282fc499f6598cb6079))
-- **modules:** sync free module metadata for staging drift gate
-  ([ba69302f](https://github.com/getrapidkit/rapidkit-core/commit/ba69302fd580954c1276c28f7e5c0bce07a86b73))
-- **modules:** enforce staging fail-fast and add paid api docs
-  ([e367033e](https://github.com/getrapidkit/rapidkit-core/commit/e367033e66d600d86cc431b1ab7487cb5d131e8e))
-- standardize Python version to 3.10 for better compatibility
-  ([5f04e18c](https://github.com/getrapidkit/rapidkit-core/commit/5f04e18c7760e6356afbab84dfafc87d61984f5d))
 - **ai-assistant:** standardize health contract and shared shim fallback
   ([a76b8921](https://github.com/getrapidkit/rapidkit-core/commit/a76b8921da7b9412892ef827d307de401e2e731f))
 - **release:** snapshot heading version + stabilize pre-push pytest env
@@ -520,12 +551,6 @@
 
 ### Documentation
 
-- sync community README template with ecosystem section
-  ([b51a5251](https://github.com/getrapidkit/rapidkit-core/commit/b51a52513a29d550d9e968f762a454d4199e2198))
-- **modules:** add missing free API reference pages
-  ([efd9094e](https://github.com/getrapidkit/rapidkit-core/commit/efd9094e6e58173b918990e829174f33a0802c40))
-- harden public README and distribution documentation
-  ([7fc19b9e](https://github.com/getrapidkit/rapidkit-core/commit/7fc19b9e88c8bbb3ba43813c9cf079765d8f3e5d))
 - **community:** fix links and sanitize docs
   ([99850c9c](https://github.com/getrapidkit/rapidkit-core/commit/99850c9c99c891ea27ba8b19b503c0e7ea1b38de))
 - **pypi:** improve readme templates and project urls
@@ -571,8 +596,6 @@
 
 ### Refactors
 
-- **core:** remove spring/java paths from init and doctor
-  ([afdfe211](https://github.com/getrapidkit/rapidkit-core/commit/afdfe211ec663df03403e07205df223a87086814))
 - sync settings vendor for kits
   ([7d7a7f4b](https://github.com/getrapidkit/rapidkit-core/commit/7d7a7f4bbf2319e108f86b22f1339c8cce824538))
 - **kits:** prefer project-local cli & remove fallback template
@@ -662,32 +685,6 @@
 
 ### Chores
 
-- **settings:** sync module metadata
-  ([3aab8048](https://github.com/getrapidkit/rapidkit-core/commit/3aab8048b563ed22b83bbd0e0a1592f24d2d0429))
-- finalize stabilization updates and version alignment
-  ([c9009767](https://github.com/getrapidkit/rapidkit-core/commit/c9009767adb25d8079ac97965451c7d5da733301))
-- **security:** upgrade vulnerable deps and refresh constraints
-  ([475f964d](https://github.com/getrapidkit/rapidkit-core/commit/475f964d56515f0ac0009ac6cef6fc97ceef166c))
-- **core:** update licensing flow and framework registry
-  ([aeb6e55d](https://github.com/getrapidkit/rapidkit-core/commit/aeb6e55df1208d16615241d474daebbcb943ff42))
-- **modules:** sync metadata for staging push range
-  ([c5de871f](https://github.com/getrapidkit/rapidkit-core/commit/c5de871fea1e4a74935824ecc094619805144281))
-- **modules:** sync metadata for staging publish range
-  ([1f80922f](https://github.com/getrapidkit/rapidkit-core/commit/1f80922fa4f74b8778bb29bb0a4d53b0445eb554))
-- **release:** bump version to 0.3.7
-  ([62fe85c4](https://github.com/getrapidkit/rapidkit-core/commit/62fe85c45b65505a419aaceceb044fa4b1ba4315))
-- **modules:** sync auth metadata state and changelogs
-  ([30d63de9](https://github.com/getrapidkit/rapidkit-core/commit/30d63de97f0b1d6fdafdef736ec9935b7aab2a59))
-- **hooks:** auto-amend module metadata on post-commit
-  ([3fe6c9c8](https://github.com/getrapidkit/rapidkit-core/commit/3fe6c9c8fb8476569afee876aff8979f8d1cc485))
-- **gate:** enforce module metadata drift checks
-  ([c71e4308](https://github.com/getrapidkit/rapidkit-core/commit/c71e4308be8bb3087747aab76fb2dcc87e36e178))
-- **modules:** sync metadata and structure pipeline
-  ([a75422fd](https://github.com/getrapidkit/rapidkit-core/commit/a75422fdf814baf5d5284bea73a0df0493a7a3bf))
-- **distribution:** refine staging-to-stable and pyproject generation
-  ([2049e647](https://github.com/getrapidkit/rapidkit-core/commit/2049e6478ad6ac55676fe4ab1d62c608ef687b85))
-- **release:** bump version to 0.3.3
-  ([4879904e](https://github.com/getrapidkit/rapidkit-core/commit/4879904ee4bd695476ad0ce8b250ef2bc6949429))
 - **release:** update changelog
   ([9a2a3801](https://github.com/getrapidkit/rapidkit-core/commit/9a2a380168d1c3b883b9ec076ab766ce19e51324))
 - **release:** update changelog
@@ -838,6 +835,8 @@
   ([0e6f3018](https://github.com/getrapidkit/rapidkit-core/commit/0e6f301829a2ac1891acb6ff9eeac019e313a066))
 - **main:** release  3.0.1
   ([8a9d22aa](https://github.com/getrapidkit/rapidkit-core/commit/8a9d22aa28df723de9f2d048a9acf34243886c36))
+- stabilize community distribution tooling
+  ([f8d92597](https://github.com/getrapidkit/rapidkit-core/commit/f8d925976f7b0728f92167962f5e93b20caf1734))
 - skip staging publish and fix promotion artifacts
   ([2d420982](https://github.com/getrapidkit/rapidkit-core/commit/2d420982a1edf7a9f45d971b18cf37e025925004))
 - relax docker workflow permissions
