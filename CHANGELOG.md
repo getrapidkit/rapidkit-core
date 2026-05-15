@@ -2,7 +2,7 @@
 
 ## [Snapshot 0.4.0](https://github.com/getrapidkit/rapidkit-core/compare/v0.3.1...HEAD)
 
-> This distribution is built from commit `f3460bbd` and is not a tagged release.
+> This distribution is built from commit `b0f084ef` and is not a tagged release.
 
 ### Features
 
@@ -151,6 +151,8 @@
 
 ### Bug Fixes
 
+- **type:** avoid optional import mypy errors
+  ([b0f084ef](https://github.com/getrapidkit/rapidkit-core/commit/b0f084efe3471b582204809de2da6ca82aa57fd2))
 - **nestjs:** silence TS6 deprecation in smoke config
   ([0ec2fde7](https://github.com/getrapidkit/rapidkit-core/commit/0ec2fde75e7472c9ce7b7a76b5054bdc2de151da))
 - **security:** pin poetry>=2.3.4 to fix CVE-2026-34591 CVE-2026-41140

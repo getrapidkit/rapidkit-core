@@ -7,6 +7,7 @@ registry metadata (such as ``templates_path``) used by individual tiers.
 
 from __future__ import annotations
 
+import importlib
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Optional
@@ -28,11 +29,10 @@ def _get_registry_for_tier(tier: str) -> Optional[RegistryType]:
         return get_free_registry()
     if tier == "paid":
         try:
-            from modules.paid import (
-                get_registry as get_paid_registry,
-            )  # Imported lazily to avoid cycles
+            paid_module = importlib.import_module("modules.paid")
         except ImportError:
             return None
+        get_paid_registry = paid_module.get_registry
         return get_paid_registry()
     return None
 

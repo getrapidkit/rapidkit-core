@@ -7,6 +7,7 @@ This module provides commands for managing RapidKit licenses including:
 - Checking license status
 """
 
+import importlib
 import json
 import os
 import sys
@@ -188,7 +189,7 @@ def broker_serve(
     try:
         import uvicorn
 
-        from core.licensing.api import create_app
+        create_app = importlib.import_module("core.licensing.api").create_app
     except ImportError as exc:
         typer.echo(f"Broker dependencies unavailable: {exc}")
         sys.exit(1)
