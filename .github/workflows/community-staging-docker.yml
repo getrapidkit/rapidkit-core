@@ -51,15 +51,20 @@ jobs:
               run: |
                   set -euo pipefail
                   base=""
-                  if [[ "$EVENT_NAME" == "pull_request" && -n "$PR_BASE" ]]; then
+                  zero_sha="0000000000000000000000000000000000000000"
+                  if [[ "$EVENT_NAME" == "pull_request" && -n "$PR_BASE" && "$PR_BASE" != "$zero_sha" ]]; then
                     base="$PR_BASE"
-                  elif [[ "$EVENT_NAME" == "push" && -n "$PUSH_BEFORE" ]]; then
+                  elif [[ "$EVENT_NAME" == "push" && -n "$PUSH_BEFORE" && "$PUSH_BEFORE" != "$zero_sha" ]]; then
                     base="$PUSH_BEFORE"
                   fi
 
                   if [[ -n "$base" ]]; then
-                    git fetch --no-tags --depth=1 origin "$base"
-                    git diff --name-only "$base" "$GITHUB_SHA" > changed.txt
+                    if git fetch --no-tags --depth=1 origin "$base"; then
+                      git diff --name-only "$base" "$GITHUB_SHA" > changed.txt
+                    else
+                      echo "Unable to fetch base $base; falling back to full tracked file scan." >&2
+                      git ls-files > changed.txt
+                    fi
                   else
                     git ls-files > changed.txt
                   fi

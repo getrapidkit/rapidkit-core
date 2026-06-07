@@ -10,7 +10,7 @@ on:
             target_repo:
                 description: "Target core repo (owner/name)"
                 required: true
-                default: "getrapidkit/rapidkit-core"
+                default: "rapidkitlabs/rapidkit-core"
                 type: string
             target_branch:
                 description: "Target branch in core"

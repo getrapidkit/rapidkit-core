@@ -1,6 +1,3 @@
-import pytest
-
-
 def test_ai_guardrails_validates_enterprise_policy(rendered_ai_guardrails) -> None:  # type: ignore[no-untyped-def]
     vendor = rendered_ai_guardrails["vendor"]
 

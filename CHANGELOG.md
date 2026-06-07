@@ -2,7 +2,7 @@
 
 ## [Snapshot 0.5.0](https://github.com/rapidkitlabs/rapidkit-core/compare/v0.3.1...HEAD)
 
-> This distribution is built from commit `1e1fc669` and is not a tagged release.
+> This distribution is built from commit `2529eeab` and is not a tagged release.
 
 ### Features
 
@@ -195,6 +195,8 @@
 
 ### Bug Fixes
 
+- align distribution workflows with rapidkitlabs org
+  ([2529eeab](https://github.com/rapidkitlabs/rapidkit-core/commit/2529eeabd3aeff807c2148cc7d60f9f2d94f206c))
 - patch vulnerable python dependency pins
   ([1e1fc669](https://github.com/rapidkitlabs/rapidkit-core/commit/1e1fc6694c71e81a83c69b55ac835532b34b78d9))
 - make module coverage gate ascii safe
