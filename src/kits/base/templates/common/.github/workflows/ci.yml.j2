@@ -30,8 +30,8 @@ jobs:
           poetry install --no-interaction --sync
       - name: Lint
         run: |
-          poetry run ruff check src
-          poetry run black --check src
+          poetry run ruff check src tests
+          poetry run black --check src tests
       - name: Type check
         run: |
           poetry run mypy src
@@ -42,7 +42,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: {{ node_version | default('20.19.6') }}
+          node-version: {{ node_version | default('20.19.0') }}
       - name: Install dependencies
         run: |
           if [ -f package-lock.json ]; then

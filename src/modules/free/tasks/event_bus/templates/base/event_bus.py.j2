@@ -1,0 +1,191 @@
+from __future__ import annotations
+
+import inspect
+import time
+from dataclasses import dataclass, field
+from enum import Enum
+from threading import RLock
+from typing import Any, Awaitable, Callable, Mapping
+from uuid import uuid4
+
+
+class EventStatus(str, Enum):
+    PUBLISHED = "published"
+    DELIVERED = "delivered"
+    FAILED = "failed"
+    DEAD_LETTERED = "dead_lettered"
+
+
+@dataclass(frozen=True)
+class EventEnvelope:
+    event_id: str
+    topic: str
+    payload: Mapping[str, Any]
+    tenant_id: str | None = None
+    correlation_id: str | None = None
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+    created_at: float = field(default_factory=time.time)
+    status: EventStatus = EventStatus.PUBLISHED
+    attempts: int = 0
+    error: str | None = None
+
+
+@dataclass
+class {{ module_class_name }}Config:
+    enabled: bool = True
+    max_attempts: int = 3
+    dead_letter_enabled: bool = True
+    metadata: dict[str, Any] | None = None
+
+
+EventHandler = Callable[[EventEnvelope], Awaitable[None] | None]
+
+
+class EventBusError(RuntimeError):
+    """Raised when event bus policy or delivery fails."""
+
+
+def build_default_config() -> {{ module_class_name }}Config:
+    return {{ module_class_name }}Config()
+
+
+class {{ module_class_name }}:
+    """In-process event bus with replay and dead-letter semantics."""
+
+    def __init__(self, config: {{ module_class_name }}Config | None = None) -> None:
+        self.config = config or build_default_config()
+        self._subscribers: dict[str, list[EventHandler]] = {}
+        self._events: list[EventEnvelope] = []
+        self._dead_letters: list[EventEnvelope] = []
+        self._lock = RLock()
+
+    def subscribe(self, topic: str, handler: EventHandler) -> None:
+        normalized = topic.strip()
+        if not normalized:
+            raise EventBusError("topic is required")
+        with self._lock:
+            self._subscribers.setdefault(normalized, []).append(handler)
+
+    async def publish(
+        self,
+        topic: str,
+        payload: Mapping[str, Any],
+        *,
+        tenant_id: str | None = None,
+        correlation_id: str | None = None,
+        metadata: Mapping[str, Any] | None = None,
+    ) -> EventEnvelope:
+        if not self.config.enabled:
+            raise EventBusError("event bus is disabled")
+        if not topic.strip():
+            raise EventBusError("topic is required")
+        envelope = EventEnvelope(
+            event_id=str(uuid4()),
+            topic=topic.strip(),
+            payload=dict(payload),
+            tenant_id=tenant_id,
+            correlation_id=correlation_id,
+            metadata=dict(metadata or {}),
+        )
+        with self._lock:
+            self._events.append(envelope)
+        await self._deliver(envelope)
+        return self.get_event(envelope.event_id)
+
+    async def replay(self, *, topic: str | None = None, tenant_id: str | None = None) -> int:
+        candidates = self.list_events(topic=topic, tenant_id=tenant_id)
+        delivered = 0
+        for event in candidates:
+            if event.status in {EventStatus.PUBLISHED, EventStatus.FAILED, EventStatus.DEAD_LETTERED}:
+                await self._deliver(event)
+                delivered += 1
+        return delivered
+
+    def list_events(self, *, topic: str | None = None, tenant_id: str | None = None) -> list[EventEnvelope]:
+        with self._lock:
+            events = list(self._events)
+        if topic is not None:
+            events = [event for event in events if event.topic == topic]
+        if tenant_id is not None:
+            events = [event for event in events if event.tenant_id == tenant_id]
+        return sorted(events, key=lambda event: event.created_at)
+
+    def dead_letters(self) -> list[EventEnvelope]:
+        with self._lock:
+            return list(self._dead_letters)
+
+    def get_event(self, event_id: str) -> EventEnvelope:
+        with self._lock:
+            for event in self._events:
+                if event.event_id == event_id:
+                    return event
+        raise KeyError(f"event {event_id!r} not found")
+
+    def health_check(self) -> dict[str, Any]:
+        with self._lock:
+            topics = len(self._subscribers)
+            events = len(self._events)
+            dead_letters = len(self._dead_letters)
+        return {
+            "module": "{{ module_name }}",
+            "status": "ok" if self.config.enabled else "disabled",
+            "enabled": self.config.enabled,
+            "topics": topics,
+            "events": events,
+            "dead_letters": dead_letters,
+        }
+
+    async def _deliver(self, envelope: EventEnvelope) -> None:
+        with self._lock:
+            handlers = tuple(self._subscribers.get(envelope.topic, ()))
+        if not handlers:
+            self._replace(envelope, status=EventStatus.DELIVERED, attempts=envelope.attempts)
+            return
+        attempts = 0
+        last_error: str | None = None
+        for handler in handlers:
+            for attempt in range(1, max(1, self.config.max_attempts) + 1):
+                attempts = attempt
+                try:
+                    result = handler(envelope)
+                    if inspect.isawaitable(result):
+                        await result
+                    self._replace(envelope, status=EventStatus.DELIVERED, attempts=attempts, error=None)
+                    break
+                except Exception as exc:
+                    last_error = str(exc)
+            else:
+                failed = self._replace(
+                    envelope,
+                    status=EventStatus.DEAD_LETTERED if self.config.dead_letter_enabled else EventStatus.FAILED,
+                    attempts=attempts,
+                    error=last_error,
+                )
+                if self.config.dead_letter_enabled:
+                    with self._lock:
+                        self._dead_letters.append(failed)
+                return
+
+    def _replace(
+        self,
+        envelope: EventEnvelope,
+        *,
+        status: EventStatus,
+        attempts: int,
+        error: str | None = None,
+    ) -> EventEnvelope:
+        replacement = EventEnvelope(
+            event_id=envelope.event_id,
+            topic=envelope.topic,
+            payload=dict(envelope.payload),
+            tenant_id=envelope.tenant_id,
+            correlation_id=envelope.correlation_id,
+            metadata=dict(envelope.metadata),
+            created_at=envelope.created_at,
+            status=status,
+            attempts=attempts,
+            error=error,
+        )
+        with self._lock:
+            self._events = [replacement if item.event_id == envelope.event_id else item for item in self._events]
+        return replacement

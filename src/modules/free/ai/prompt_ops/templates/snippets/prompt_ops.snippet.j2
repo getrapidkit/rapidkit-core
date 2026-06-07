@@ -1,0 +1,12 @@
+{# Shared snippet for the RapidKit Prompt Ops module. #}
+{% set module_name = "prompt_ops" %}
+{% set module_title = "Prompt Ops" %}
+
+# {{ module_title }} integration notes
+
+- Canonical module: `free/ai/prompt_ops`
+- Primary purpose: Prompt versioning, rollout, evaluation, rollback, and audit operations for AI products.
+- Key capabilities: Stores prompt versions with rollout metadata and ownership., Supports evaluation, rollback, and environment promotion workflows., Keeps prompt changes visible to audit, support, and product teams.
+- Runtime environment keys: RAPIDKIT_PROMPT_OPS_ENABLED, RAPIDKIT_PROMPT_OPS_ROLLOUT_MODE, RAPIDKIT_PROMPT_OPS_REQUIRE_APPROVAL
+
+Use this snippet near the owning service/module registration point so generated projects keep module intent, operational boundaries, and security expectations visible to maintainers.

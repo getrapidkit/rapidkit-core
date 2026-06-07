@@ -1,0 +1,10 @@
+# Approval Engine
+#
+# Register high-impact admin policies during application startup and require
+# approval IDs before publish/import/entitlement/billing actions proceed.
+APPROVAL_ENGINE_REQUIRED_ACTIONS = (
+    "commerce.publish",
+    "commerce.archive",
+    "backup.import",
+    "entitlement.assign",
+)

@@ -1,7 +1,7 @@
 name: celery
 display_name: Celery
 description: Production-ready Celery task orchestration for asynchronous workloads
-version: 0.1.8
+version: 0.1.12
 tier: free
 access: free
 status: stable
@@ -128,12 +128,12 @@ documentation:
     api_docs: docs/api-reference.md
     examples: []
 support:
-    issues: https://github.com/getrapidkit/rapidkit-core/issues
-    discussions: https://github.com/getrapidkit/rapidkit-core/discussions
+    issues: https://github.com/rapidkitlabs/rapidkit-core/issues
+    discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
     documentation: https://docs.rapidkit.top/modules/celery
 changelog:
-  - version: "0.1.8"
-    date: "2026-02-14"
+  - version: "0.1.12"
+    date: "2026-06-07"
     notes: "See docs/changelog.md"
 validation:
     pre_install:
@@ -155,6 +155,10 @@ capabilities:
     - tasks
     - async
     - queue
+    - retry_policy
+    - worker_profile
+    - beat_schedule
+    - task_metadata
 signature:
     signature: 2/ks13yRwdn4AZkmier8c7q+dVOZNWNC06/Eh1q8XbnRdL8p5paDyy3O81yyu/H7iA4yxemiTttTXHyEvUWWBA==
     signer_id: c7eb213b1ac6d8c6
@@ -180,7 +184,7 @@ file_hashes:
     frameworks/fastapi.py: sha256:aa288f14f8e142360b28780319c14d1f48ba1cc57f56dcbaf2009d81da9fe035
     frameworks/nestjs.py: sha256:ca2afc695d59182bb04514d51afc63c35864216837cc2edcc2f7af375e5eb807
     generate.py: sha256:15cce37361d4c16ea886c41822abdb641f98dd9522cc5dca6dcc4ad5529952b8
-    module.verify.json: sha256:aba40fee835b6104b223b2a376b51a46daea7b03bde58e41c48647670cdd5271
+    module.verify.json: sha256:8cd51cc103d9517f4ed795eafe12f5b336940f09ffc5f37ebaf35e93c18920a8
     overrides.py: sha256:1d2de9b9ad92227a62ccefc8e1304803c18f814d2d407b20be0317acf39a35f0
     templates/base/celery.py.j2: sha256:fe797b97041858ad3cf5fd87d135f3b5f4d6620c3f2a0da4c545fafa7384d706
     templates/base/celery_health.py.j2: sha256:4f40956cd8ea62ad85b84ab39750a2292eacaefc697dc6a6816f4bab6d00670d
@@ -198,5 +202,5 @@ file_hashes:
     templates/variants/nestjs/celery.health.controller.ts.j2: sha256:9f8814949600889fb289980d51c5b19f743b1eecf11083108750ac0a6672688a
     templates/variants/nestjs/celery.health.module.ts.j2: sha256:e9dd1ba013fb06909e00d08086b42e01b16342a8ad51191adf3ecbba739fac3b
     templates/variants/nestjs/celery.module.ts.j2: sha256:e9cf3122a88e7dc82d1e04e8da0fb645fa557add746e4f6fd75527d83ff765c1
-    templates/variants/nestjs/celery.service.ts.j2: sha256:c5551d1cb08e0e19774972200243ea7fa103d2b1fa41d635dbfc642bab34924b
+    templates/variants/nestjs/celery.service.ts.j2: sha256:4551c0c5cc24bfa5acbdbb751dd95d3a2d6e3442b4288fcd9214424a53a90f38
     templates/vendor/nestjs/configuration.js.j2: sha256:ccbcf4096c82e6e43916cbebaab81345ac567e733430657747977ab9610c8c24

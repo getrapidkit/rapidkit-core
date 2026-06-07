@@ -1,0 +1,12 @@
+{# Shared snippet for the RapidKit Webhook Platform module. #}
+{% set module_name = "webhook_platform" %}
+{% set module_title = "Webhook Platform" %}
+
+# {{ module_title }} integration notes
+
+- Canonical module: `free/communication/webhook_platform`
+- Primary purpose: Inbound and outbound webhook delivery with signatures, attempts, replay, and event history.
+- Key capabilities: Verifies inbound webhook signatures., Tracks outbound delivery attempts and failure reasons., Provides replay-safe event handling patterns.
+- Runtime environment keys: RAPIDKIT_WEBHOOK_PLATFORM_ENABLED, RAPIDKIT_WEBHOOK_PLATFORM_SIGNATURE_TOLERANCE, RAPIDKIT_WEBHOOK_PLATFORM_RETRY_LIMIT
+
+Use this snippet near the owning service/module registration point so generated projects keep module intent, operational boundaries, and security expectations visible to maintainers.

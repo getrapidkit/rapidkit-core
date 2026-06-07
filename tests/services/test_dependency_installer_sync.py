@@ -28,3 +28,24 @@ beta = "^0.2.0"
     assert "alpha" in txt and "beta" in txt
     # caret ^ should be expanded to range in requirements
     assert ">=" in txt
+
+
+def test_lock_sync_skip_env_skips_poetry_and_npm_subprocesses(tmp_path: Path, monkeypatch) -> None:
+    calls: list[list[str]] = []
+
+    def _fake_run(cmd, **_kwargs):
+        calls.append(list(cmd))
+        raise AssertionError("lock sync subprocess should be skipped")
+
+    monkeypatch.setenv("RAPIDKIT_SKIP_LOCK_SYNC", "1")
+    monkeypatch.setattr(di.subprocess, "run", _fake_run)
+
+    (tmp_path / "pyproject.toml").write_text("[tool.poetry.dependencies]\npython = '^3.10'\n")
+    (tmp_path / "poetry.lock").write_text("# lock\n")
+    di._sync_poetry_lockfile(tmp_path)
+
+    (tmp_path / "package.json").write_text('{"dependencies": {}}\n')
+    (tmp_path / "package-lock.json").write_text('{"lockfileVersion": 3}\n')
+    di._sync_npm_lockfile(tmp_path)
+
+    assert calls == []

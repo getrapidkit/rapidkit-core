@@ -1,5 +1,17 @@
 # Changelog — free/security/cors
 
+## 0.1.12 — Automated patch release triggered by content hash change (2026-06-07)
+
+- chore: Automated patch release triggered by content hash change
+
+## 0.1.11 — Automated patch release triggered by content hash change (2026-06-07)
+
+- chore: Automated patch release triggered by content hash change
+
+## 0.1.10 — Automated patch release triggered by content hash change (2026-06-02)
+
+- chore: Automated patch release triggered by content hash change
+
 ## 0.1.9 — Automated patch release triggered by content hash change (2026-02-15)
 
 - chore: Automated patch release triggered by content hash change

@@ -1,0 +1,7 @@
+# Register snippet bundles for Approval Engine
+
+snippets:
+  -
+    name: "approval_engine_usage_example"
+    template: "templates/snippets/approval_engine.snippet.j2"
+    description: "Injects an opinionated usage example for Approval Engine."

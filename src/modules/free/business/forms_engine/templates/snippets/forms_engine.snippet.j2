@@ -1,0 +1,12 @@
+{# Shared snippet for the RapidKit Forms Engine module. #}
+{% set module_name = "forms_engine" %}
+{% set module_title = "Forms Engine" %}
+
+# {{ module_title }} integration notes
+
+- Canonical module: `free/business/forms_engine`
+- Primary purpose: Schema-driven forms engine with validation, submissions, workflow hooks, and audit-ready exports.
+- Key capabilities: Defines versioned form schemas and validation rules., Captures submissions with tenant, actor, and workflow context., Supports admin-controlled schema rollout and deprecation.
+- Runtime environment keys: RAPIDKIT_FORMS_ENGINE_ENABLED, RAPIDKIT_FORMS_ENGINE_SCHEMA_MODE, RAPIDKIT_FORMS_ENGINE_EXPORT_LIMIT
+
+Use this snippet near the owning service/module registration point so generated projects keep module intent, operational boundaries, and security expectations visible to maintainers.

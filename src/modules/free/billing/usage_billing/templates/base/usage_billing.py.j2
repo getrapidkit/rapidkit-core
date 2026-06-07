@@ -1,0 +1,340 @@
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from decimal import Decimal, ROUND_HALF_UP
+from threading import RLock
+from typing import Any, Mapping
+from uuid import uuid4
+
+
+class {{ module_class_name }}Error(ValueError):
+    """Raised when usage billing input or quota checks are invalid."""
+
+
+@dataclass(frozen=True)
+class UsageMeter:
+    key: str
+    unit: str
+    price_per_unit: Decimal = Decimal("0")
+    included_units: Decimal = Decimal("0")
+    hard_limit: Decimal | None = None
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class UsageEvent:
+    id: str
+    account_id: str
+    meter: str
+    quantity: Decimal
+    idempotency_key: str
+    tenant_id: str | None = None
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+    timestamp: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds")
+    )
+
+
+@dataclass(frozen=True)
+class UsageSummary:
+    account_id: str
+    meter: str
+    quantity: Decimal
+    included_units: Decimal
+    billable_units: Decimal
+    estimated_amount: Decimal
+    currency: str
+
+
+@dataclass(frozen=True)
+class UsageAuditEvent:
+    type: str
+    account_id: str | None = None
+    meter: str | None = None
+    tenant_id: str | None = None
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+    timestamp: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds")
+    )
+
+
+@dataclass(frozen=True)
+class QuotaDecision:
+    allowed: bool
+    reason: str
+    remaining: Decimal | None = None
+
+
+@dataclass(frozen=True)
+class {{ module_class_name }}Config:
+    """Runtime configuration for {{ module_title }}."""
+
+    enabled: bool = True
+    currency: str = "USD"
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+
+def build_default_config() -> {{ module_class_name }}Config:
+    """Return default configuration payload."""
+
+    return {{ module_class_name }}Config()
+
+
+def _decimal(value: Decimal | int | float | str) -> Decimal:
+    parsed = value if isinstance(value, Decimal) else Decimal(str(value))
+    if parsed < 0:
+        raise {{ module_class_name }}Error("quantity and prices must be non-negative")
+    return parsed
+
+
+def _money(value: Decimal) -> Decimal:
+    return value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+
+class {{ module_class_name }}:
+    """Thread-safe usage metering and billing estimator."""
+
+    def __init__(self, config: {{ module_class_name }}Config | None = None) -> None:
+        self.config = config or build_default_config()
+        self._meters: dict[str, UsageMeter] = {}
+        self._events: list[UsageEvent] = []
+        self._idempotency_index: dict[str, UsageEvent] = {}
+        self._audit: list[UsageAuditEvent] = []
+        self._lock = RLock()
+
+    def register_meter(
+        self,
+        *,
+        key: str,
+        unit: str,
+        price_per_unit: Decimal | int | float | str = Decimal("0"),
+        included_units: Decimal | int | float | str = Decimal("0"),
+        hard_limit: Decimal | int | float | str | None = None,
+        metadata: Mapping[str, Any] | None = None,
+    ) -> UsageMeter:
+        if not self.config.enabled:
+            raise {{ module_class_name }}Error("usage billing is disabled")
+        if not key.strip():
+            raise {{ module_class_name }}Error("meter key must not be empty")
+        meter = UsageMeter(
+            key=key.strip(),
+            unit=unit.strip() or "unit",
+            price_per_unit=_decimal(price_per_unit),
+            included_units=_decimal(included_units),
+            hard_limit=_decimal(hard_limit) if hard_limit is not None else None,
+            metadata=dict(metadata or {}),
+        )
+        with self._lock:
+            self._meters[meter.key] = meter
+            self._record_audit("meter.registered", meter=meter.key)
+        return meter
+
+    def record_usage(
+        self,
+        *,
+        account_id: str,
+        meter: str,
+        quantity: Decimal | int | float | str,
+        idempotency_key: str | None = None,
+        tenant_id: str | None = None,
+        metadata: Mapping[str, Any] | None = None,
+    ) -> UsageEvent:
+        if not self.config.enabled:
+            raise {{ module_class_name }}Error("usage billing is disabled")
+        if not account_id.strip():
+            raise {{ module_class_name }}Error("account_id must not be empty")
+        with self._lock:
+            meter_config = self._meters.get(meter)
+            if meter_config is None:
+                raise {{ module_class_name }}Error("meter not found")
+            resolved_key = idempotency_key or str(uuid4())
+            if resolved_key in self._idempotency_index:
+                return self._idempotency_index[resolved_key]
+            parsed_quantity = _decimal(quantity)
+            quota = self.check_quota(account_id=account_id, meter=meter, quantity=parsed_quantity)
+            if not quota.allowed:
+                raise {{ module_class_name }}Error(quota.reason)
+            event = UsageEvent(
+                id=str(uuid4()),
+                account_id=account_id,
+                meter=meter_config.key,
+                quantity=parsed_quantity,
+                idempotency_key=resolved_key,
+                tenant_id=tenant_id,
+                metadata=dict(metadata or {}),
+            )
+            self._events.append(event)
+            self._idempotency_index[resolved_key] = event
+            self._record_audit(
+                "usage.recorded",
+                account_id=account_id,
+                meter=meter_config.key,
+                tenant_id=tenant_id,
+                metadata={"quantity": str(parsed_quantity)},
+            )
+            return event
+
+    def check_quota(
+        self,
+        *,
+        account_id: str,
+        meter: str,
+        quantity: Decimal | int | float | str = Decimal("0"),
+    ) -> QuotaDecision:
+        meter_config = self._meters.get(meter)
+        if meter_config is None:
+            return QuotaDecision(False, "meter not found")
+        if meter_config.hard_limit is None:
+            return QuotaDecision(True, "no hard limit")
+        projected = self.total_usage(account_id=account_id, meter=meter) + _decimal(quantity)
+        remaining = meter_config.hard_limit - projected
+        if remaining < 0:
+            return QuotaDecision(False, "hard limit exceeded", remaining=remaining)
+        return QuotaDecision(True, "allowed", remaining=remaining)
+
+    def total_usage(self, *, account_id: str, meter: str | None = None) -> Decimal:
+        with self._lock:
+            return sum(
+                (
+                    event.quantity
+                    for event in self._events
+                    if event.account_id == account_id and (meter is None or event.meter == meter)
+                ),
+                Decimal("0"),
+            )
+
+    def summarize(
+        self,
+        *,
+        account_id: str,
+        meter: str,
+        tenant_id: str | None = None,
+    ) -> UsageSummary:
+        meter_config = self._meters.get(meter)
+        if meter_config is None:
+            raise {{ module_class_name }}Error("meter not found")
+        quantity = sum(
+            (
+                event.quantity
+                for event in self.list_events(account_id=account_id, meter=meter, tenant_id=tenant_id)
+            ),
+            Decimal("0"),
+        )
+        billable_units = max(Decimal("0"), quantity - meter_config.included_units)
+        summary = UsageSummary(
+            account_id=account_id,
+            meter=meter,
+            quantity=quantity,
+            included_units=meter_config.included_units,
+            billable_units=billable_units,
+            estimated_amount=_money(billable_units * meter_config.price_per_unit),
+            currency=self.config.currency,
+        )
+        self._record_audit(
+            "usage.summarized",
+            account_id=account_id,
+            meter=meter,
+            tenant_id=tenant_id,
+            metadata={"billable_units": str(summary.billable_units), "amount": str(summary.estimated_amount)},
+        )
+        return summary
+
+    def list_events(
+        self,
+        *,
+        account_id: str | None = None,
+        meter: str | None = None,
+        tenant_id: str | None = None,
+    ) -> tuple[UsageEvent, ...]:
+        with self._lock:
+            events = tuple(self._events)
+        if account_id is not None:
+            events = tuple(event for event in events if event.account_id == account_id)
+        if meter is not None:
+            events = tuple(event for event in events if event.meter == meter)
+        if tenant_id is not None:
+            events = tuple(event for event in events if event.tenant_id == tenant_id)
+        return events
+
+    def close_billing_cycle(
+        self,
+        *,
+        account_id: str,
+        meter: str,
+        tenant_id: str | None = None,
+    ) -> dict[str, Any]:
+        summary = self.summarize(account_id=account_id, meter=meter, tenant_id=tenant_id)
+        receipt = {
+            "receipt_id": str(uuid4()),
+            "account_id": account_id,
+            "meter": meter,
+            "tenant_id": tenant_id,
+            "currency": summary.currency,
+            "quantity": str(summary.quantity),
+            "billable_units": str(summary.billable_units),
+            "estimated_amount": str(summary.estimated_amount),
+            "closed_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        }
+        self._record_audit(
+            "billing.cycle_closed",
+            account_id=account_id,
+            meter=meter,
+            tenant_id=tenant_id,
+            metadata={"receipt_id": receipt["receipt_id"], "amount": receipt["estimated_amount"]},
+        )
+        return receipt
+
+    def audit_events(
+        self,
+        *,
+        account_id: str | None = None,
+        meter: str | None = None,
+        tenant_id: str | None = None,
+    ) -> tuple[UsageAuditEvent, ...]:
+        events = tuple(self._audit)
+        if account_id is not None:
+            events = tuple(event for event in events if event.account_id == account_id)
+        if meter is not None:
+            events = tuple(event for event in events if event.meter == meter)
+        if tenant_id is not None:
+            events = tuple(event for event in events if event.tenant_id == tenant_id)
+        return events
+
+    def stats(self) -> dict[str, Any]:
+        with self._lock:
+            return {
+                "enabled": self.config.enabled,
+                "meters": len(self._meters),
+                "events": len(self._events),
+                "accounts": len({event.account_id for event in self._events}),
+                "audit_events": len(self._audit),
+                "currency": self.config.currency,
+            }
+
+    def health(self) -> dict[str, Any]:
+        return {
+            "module": "{{ module_name }}",
+            "status": "ok" if self.config.enabled else "disabled",
+            "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "stats": self.stats(),
+        }
+
+    def _record_audit(
+        self,
+        event_type: str,
+        *,
+        account_id: str | None = None,
+        meter: str | None = None,
+        tenant_id: str | None = None,
+        metadata: Mapping[str, Any] | None = None,
+    ) -> None:
+        self._audit.append(
+            UsageAuditEvent(
+                type=event_type,
+                account_id=account_id,
+                meter=meter,
+                tenant_id=tenant_id,
+                metadata=dict(metadata or {}),
+            )
+        )

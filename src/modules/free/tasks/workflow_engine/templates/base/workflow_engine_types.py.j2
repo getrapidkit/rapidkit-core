@@ -1,0 +1,15 @@
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Any, Mapping
+
+
+@dataclass(frozen=True)
+class {{ module_class_name }}Context:
+    """Typed runtime context shared across templates."""
+
+    workflow: str | None = None
+    run_id: str | None = None
+    inputs: Mapping[str, Any] = field(default_factory=dict)
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+    enabled: bool = True

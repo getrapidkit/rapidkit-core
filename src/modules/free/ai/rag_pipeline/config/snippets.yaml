@@ -1,0 +1,7 @@
+# Register snippet bundles for Rag Pipeline
+
+snippets:
+  -
+    name: "rag_pipeline_usage_example"
+    template: "templates/snippets/rag_pipeline.snippet.j2"
+    description: "Injects an opinionated usage example for Rag Pipeline."

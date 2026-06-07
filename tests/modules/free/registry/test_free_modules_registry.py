@@ -18,13 +18,13 @@ def test_kit_support_lookup_returns_status_strings() -> None:
     nest_status = registry.get_kit_status("settings", "nestjs.standard")
 
     assert fastapi_status == "supported"
-    assert nest_status == "experimental"
+    assert nest_status == "supported"
 
 
 def test_kit_support_missing_profile_warns() -> None:
     registry = get_registry()
 
-    assert registry.get_kit_status("db_postgres", "nestjs/standard") == "unsupported"
+    assert registry.get_kit_status("db_postgres", "nestjs/standard") == "supported"
     assert registry.get_kit_status("db_postgres", "unknown/profile") is None
 
 
@@ -108,7 +108,7 @@ def test_custom_registry_normalizes_entries(tmp_path: Path) -> None:
         ("fastapi/standard", "supported"),
         ("fastapi.ddd", "supported"),
         ("fastapi/ddd", "supported"),
-        ("nestjs.standard", "experimental"),
+        ("nestjs.standard", "supported"),
     ],
 )
 def test_profile_normalization_variants(profile: str, expected: str) -> None:

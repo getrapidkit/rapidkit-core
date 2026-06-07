@@ -1,0 +1,195 @@
+import { BadRequestException, Injectable } from "@nestjs/common";
+import { createHash, randomUUID } from "crypto";
+
+export type RagMetadata = Record<string, unknown>;
+
+export interface RagDocument {
+    id: string;
+    text: string;
+    metadata: RagMetadata;
+    namespace: string;
+    createdAt: string;
+}
+
+export interface RagCitation {
+    documentId: string;
+    chunkId: string;
+    text: string;
+    score: number;
+    metadata: RagMetadata;
+}
+
+export interface IngestRagDocument {
+    id?: string;
+    text: string;
+    metadata?: RagMetadata;
+    namespace?: string;
+}
+
+export interface QueryRagPipeline {
+    question: string;
+    namespace?: string;
+    topK?: number;
+    metadataFilter?: RagMetadata;
+}
+
+interface RagChunk {
+    id: string;
+    documentId: string;
+    text: string;
+    vector: number[];
+    metadata: RagMetadata;
+    namespace: string;
+}
+
+@Injectable()
+export class {{ module_class_name }}Service {
+    private readonly documents = new Map<string, RagDocument>();
+    private readonly chunks = new Map<string, RagChunk>();
+    private readonly defaultNamespace = "default";
+    private readonly chunkSize = 800;
+    private readonly chunkOverlap = 120;
+    private readonly embeddingDimensions = 32;
+    private readonly maxTopK = 10;
+
+    getStatus(): Record<string, unknown> {
+        return {
+            module: "{{ module_name }}",
+            status: "ok",
+            stats: this.stats(),
+        };
+    }
+
+    ingest(payload: IngestRagDocument): RagDocument {
+        if (!payload.text?.trim()) {
+            throw new BadRequestException("text must not be empty");
+        }
+        const namespace = payload.namespace ?? this.defaultNamespace;
+        const id = payload.id ?? randomUUID();
+        const document: RagDocument = {
+            id,
+            text: payload.text,
+            metadata: payload.metadata ?? {},
+            namespace,
+            createdAt: new Date().toISOString(),
+        };
+        this.documents.set(this.key(namespace, id), document);
+        for (const [chunkKey, chunk] of this.chunks.entries()) {
+            if (chunk.namespace === namespace && chunk.documentId === id) {
+                this.chunks.delete(chunkKey);
+            }
+        }
+        for (const chunk of this.chunkDocument(document)) {
+            this.chunks.set(this.key(namespace, chunk.id), chunk);
+        }
+        return document;
+    }
+
+    retrieve(payload: QueryRagPipeline): RagCitation[] {
+        if (!payload.question?.trim()) {
+            throw new BadRequestException("question must not be empty");
+        }
+        const topK = payload.topK ?? 4;
+        if (topK < 1 || topK > this.maxTopK) {
+            throw new BadRequestException(`topK must be between 1 and ${this.maxTopK}`);
+        }
+        const namespace = payload.namespace ?? this.defaultNamespace;
+        const questionVector = this.embed(payload.question);
+        return Array.from(this.chunks.values())
+            .filter((chunk) => chunk.namespace === namespace)
+            .filter((chunk) => this.matchesFilter(chunk.metadata, payload.metadataFilter ?? {}))
+            .map((chunk) => ({
+                documentId: chunk.documentId,
+                chunkId: chunk.id,
+                text: chunk.text,
+                score: this.cosineSimilarity(questionVector, chunk.vector),
+                metadata: chunk.metadata,
+            }))
+            .sort((left, right) => right.score - left.score)
+            .slice(0, topK);
+    }
+
+    answer(payload: QueryRagPipeline): Record<string, unknown> {
+        const citations = this.retrieve(payload);
+        const context = citations.map((citation) => `[${citation.documentId}] ${citation.text}`).join("\n\n");
+        const answer = citations.length
+            ? `Grounded answer for '${payload.question}': ${citations[0].text}`
+            : "I do not have enough grounded context to answer.";
+        return {
+            answer,
+            citations,
+            prompt: `Answer using only the grounded context.\n\nContext:\n${context || "No grounded context."}\n\nQuestion:\n${payload.question}`,
+            metadata: {
+                citationCount: citations.length,
+                namespace: payload.namespace ?? this.defaultNamespace,
+            },
+        };
+    }
+
+    stats(): Record<string, unknown> {
+        const namespaces: Record<string, number> = {};
+        for (const document of this.documents.values()) {
+            namespaces[document.namespace] = (namespaces[document.namespace] ?? 0) + 1;
+        }
+        return {
+            documents: this.documents.size,
+            chunks: this.chunks.size,
+            namespaces,
+            embeddingDimensions: this.embeddingDimensions,
+            maxTopK: this.maxTopK,
+        };
+    }
+
+    private chunkDocument(document: RagDocument): RagChunk[] {
+        const chunks: RagChunk[] = [];
+        const step = this.chunkSize - this.chunkOverlap;
+        for (let start = 0, index = 0; start < document.text.length; start += step, index += 1) {
+            const chunkText = document.text.slice(start, start + this.chunkSize).trim();
+            if (!chunkText) {
+                continue;
+            }
+            chunks.push({
+                id: `${document.id}:${index}`,
+                documentId: document.id,
+                text: chunkText,
+                vector: this.embed(chunkText),
+                metadata: document.metadata,
+                namespace: document.namespace,
+            });
+        }
+        return chunks;
+    }
+
+    private key(namespace: string, id: string): string {
+        return `${namespace}:${id}`;
+    }
+
+    private embed(text: string): number[] {
+        const vector = new Array<number>(this.embeddingDimensions).fill(0);
+        const tokens = text.split(/\s+/).filter(Boolean);
+        for (const token of tokens.length ? tokens : [text]) {
+            const digest = createHash("sha256").update(token.toLowerCase()).digest();
+            const index = digest.readUInt16BE(0) % this.embeddingDimensions;
+            vector[index] += 1;
+        }
+        const norm = Math.sqrt(vector.reduce((sum, value) => sum + value * value, 0));
+        return norm === 0 ? vector : vector.map((value) => value / norm);
+    }
+
+    private cosineSimilarity(left: number[], right: number[]): number {
+        const leftNorm = Math.sqrt(left.reduce((sum, value) => sum + value * value, 0));
+        const rightNorm = Math.sqrt(right.reduce((sum, value) => sum + value * value, 0));
+        if (leftNorm === 0 || rightNorm === 0) {
+            return 0;
+        }
+        const dot = left.reduce((sum, value, index) => sum + value * right[index], 0);
+        return dot / (leftNorm * rightNorm);
+    }
+
+    private matchesFilter(metadata: RagMetadata, metadataFilter: RagMetadata): boolean {
+        return Object.entries(metadataFilter).every(([key, expected]) => {
+            const actual = metadata[key];
+            return Array.isArray(expected) ? expected.includes(actual) : actual === expected;
+        });
+    }
+}

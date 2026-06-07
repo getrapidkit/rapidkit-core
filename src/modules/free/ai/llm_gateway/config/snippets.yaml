@@ -1,0 +1,7 @@
+# Register snippet bundles for Llm Gateway
+
+snippets:
+  -
+    name: "llm_gateway_usage_example"
+    template: "templates/snippets/llm_gateway.snippet.j2"
+    description: "Injects an opinionated usage example for Llm Gateway."

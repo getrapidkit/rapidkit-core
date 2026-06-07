@@ -1,0 +1,7 @@
+# Register snippet bundles for Support Center
+
+snippets:
+  -
+    name: "support_center_usage_example"
+    template: "templates/snippets/support_center.snippet.j2"
+    description: "Injects an opinionated usage example for Support Center."

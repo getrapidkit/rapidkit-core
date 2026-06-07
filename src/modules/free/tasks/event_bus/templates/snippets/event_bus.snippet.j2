@@ -1,0 +1,12 @@
+{# Shared snippet for the RapidKit Event Bus module. #}
+{% set module_name = "event_bus" %}
+{% set module_title = "Event Bus" %}
+
+# {{ module_title }} integration notes
+
+- Canonical module: `free/tasks/event_bus`
+- Primary purpose: In-process event bus with subscriptions, durable-style event records, replay, and dead-letter semantics.
+- Key capabilities: Provides a consistent publish/subscribe boundary for product events., Captures event metadata required for replay and troubleshooting., Supports dead-letter style handling for failed subscribers.
+- Runtime environment keys: RAPIDKIT_EVENT_BUS_ENABLED, RAPIDKIT_EVENT_BUS_REPLAY_MODE, RAPIDKIT_EVENT_BUS_DEAD_LETTER_LIMIT
+
+Use this snippet near the owning service/module registration point so generated projects keep module intent, operational boundaries, and security expectations visible to maintainers.

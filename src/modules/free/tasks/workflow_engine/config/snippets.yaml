@@ -1,0 +1,7 @@
+# Register snippet bundles for Workflow Engine
+
+snippets:
+  -
+    name: "workflow_engine_usage_example"
+    template: "templates/snippets/workflow_engine.snippet.j2"
+    description: "Injects an opinionated usage example for Workflow Engine."

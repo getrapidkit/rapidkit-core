@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 _runtime: Optional[SessionRuntime] = None
 
 
-def get_runtime() -> SessionRuntime:
+async def get_runtime() -> SessionRuntime:
     global _runtime
     if _runtime is None:
         _runtime = SessionRuntime(load_session_settings())
@@ -20,11 +20,11 @@ def create_router(*, router: APIRouter | None = None) -> APIRouter:
     router = router or APIRouter(prefix="/sessions", tags=["session"])
 
     @router.get("/metadata", response_model=Dict[str, Any])
-    def get_metadata() -> Dict[str, Any]:
+    async def get_metadata() -> Dict[str, Any]:
         return describe_session()
 
     @router.get("/features", response_model=Dict[str, Any])
-    def list_features() -> Dict[str, Any]:
+    async def list_features() -> Dict[str, Any]:
         return {"features": list_session_features()}
 
     @router.post("/", status_code=status.HTTP_201_CREATED)

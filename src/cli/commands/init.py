@@ -42,7 +42,10 @@ def _sync_poetry_lock(poetry_exec: str, root: Path, pyproject_path: Optional[Pat
         "yes",
         "on",
     }:
-        typer.echo("ℹ️  Lock sync skipped (RAPIDKIT_SKIP_LOCK_SYNC=1)")
+        typer.echo(
+            "⚠️  Lock sync skipped (RAPIDKIT_SKIP_LOCK_SYNC=1). "
+            "Lockfiles may be stale; use only for diagnostic or offline development runs."
+        )
         return
 
     lock_path = root / "poetry.lock"

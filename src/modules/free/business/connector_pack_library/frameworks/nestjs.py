@@ -1,0 +1,74 @@
+"""NestJS plugin for Connector Pack Library module scaffolding."""
+
+from __future__ import annotations
+
+from pathlib import Path
+from typing import Any, Dict, List, Mapping
+
+from modules.shared.frameworks import FrameworkPlugin
+
+
+class NestJSPlugin(FrameworkPlugin):
+    """Provide NestJS-specific template and output mappings."""
+
+    @property
+    def name(self) -> str:
+        return "nestjs"
+
+    @property
+    def language(self) -> str:
+        return "typescript"
+
+    @property
+    def display_name(self) -> str:
+        return "NestJS"
+
+    def get_template_mappings(self) -> Dict[str, str]:
+        return {
+            "service": "templates/variants/nestjs/connector_pack_library.service.ts.j2",
+            "controller": "templates/variants/nestjs/connector_pack_library.controller.ts.j2",
+            "module": "templates/variants/nestjs/connector_pack_library.module.ts.j2",
+            "health": "templates/variants/nestjs/connector_pack_library.health.ts.j2",
+            "validation": "templates/variants/nestjs/connector_pack_library.validation.ts.j2",
+            "index": "templates/variants/nestjs/connector_pack_library.index.ts.j2",
+            "configuration": "templates/variants/nestjs/connector_pack_library.configuration.ts.j2",
+            "e2e": "templates/variants/nestjs/tests/connector_pack_library.e2e-spec.ts",
+        }
+
+    def get_output_paths(self) -> Dict[str, str]:
+        return {
+            "service": "src/connector-pack-library/connector_pack_library.service.ts",
+            "controller": "src/connector-pack-library/connector_pack_library.controller.ts",
+            "module": "src/connector-pack-library/connector_pack_library.module.ts",
+            "health": "src/connector-pack-library/connector_pack_library.health.ts",
+            "validation": "src/connector-pack-library/connector_pack_library.validation.ts",
+            "index": "src/connector-pack-library/index.ts",
+            "configuration": "src/connector-pack-library/configuration.ts",
+            "e2e": "tests/modules/e2e/business/connector_pack_library/connector_pack_library.e2e-spec.ts",
+        }
+
+    def get_context_enrichments(self, base_context: Mapping[str, Any]) -> Dict[str, Any]:
+        enriched = dict(base_context)
+        enriched.update(
+            {
+                "framework": "nestjs",
+                "framework_display_name": "NestJS",
+                "language": "typescript",
+            }
+        )
+        return enriched
+
+    def validate_requirements(self) -> List[str]:
+        return []
+
+    def get_dependencies(self) -> List[str]:
+        return ["@nestjs/common>=10.0.0"]
+
+    def get_dev_dependencies(self) -> List[str]:
+        return ["@nestjs/testing>=10.0.0", "ts-jest>=29.0.0"]
+
+    def pre_generation_hook(self, output_dir: Path) -> None:
+        (output_dir / "src").mkdir(parents=True, exist_ok=True)
+
+    def post_generation_hook(self, output_dir: Path) -> None:
+        _ = output_dir

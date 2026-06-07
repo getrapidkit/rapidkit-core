@@ -248,4 +248,4 @@ RAPIDKIT_DEPLOYMENT_INCLUDE_REDIS=1
 - **Migration Guide**: Upgrading deployment assets
 
 For issues and questions, visit our
-[GitHub repository](https://github.com/getrapidkit/rapidkit-core).
+[GitHub repository](https://github.com/rapidkitlabs/rapidkit-core).

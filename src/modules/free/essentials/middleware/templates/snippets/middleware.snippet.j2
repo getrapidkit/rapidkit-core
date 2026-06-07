@@ -1,2 +1,19 @@
-{# Placeholder snippet for injecting custom middleware entries. #}
-# Provide additional middleware descriptors via generator overrides.
+{# Request-correlation middleware factory for generated FastAPI projects. #}
+
+
+def register_request_correlation_middleware(app: FastAPI, config: MiddlewareConfig) -> None:
+    """Preserve or emit request correlation IDs at the middleware boundary."""
+
+    header_name = "{{ response_header | default('X-Request-ID') }}"
+
+    @app.middleware("http")
+    async def add_request_correlation_header(request: Request, call_next):
+        response = await call_next(request)
+        response.headers[header_name] = request.headers.get(
+            "{{ request_header | default('X-Request-ID') }}",
+            "rapidkit-middleware",
+        )
+        return response
+
+
+register_middleware_factory(register_request_correlation_middleware)

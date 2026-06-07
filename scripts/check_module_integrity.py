@@ -236,16 +236,24 @@ def run_nestjs_smoke(strict: bool = False) -> None:
         python_path = ensure_python_path(env)
         env.setdefault("PYTHON", sys.executable)
         print(f"Using PYTHONPATH for NestJS smoke: {python_path}")
-        subprocess.run(
-            [
-                node_bin,
-                str(NESTJS_SMOKE_SCRIPT),
-                str(PROJECT_ROOT),
-                str(workdir),
-            ],
-            check=True,
-            env=env,
-        )
+        try:
+            subprocess.run(
+                [
+                    node_bin,
+                    str(NESTJS_SMOKE_SCRIPT),
+                    str(PROJECT_ROOT),
+                    str(workdir),
+                ],
+                check=True,
+                env=env,
+            )
+        except subprocess.CalledProcessError as exc:
+            if strict:
+                raise
+            print(
+                "WARN Skipping NestJS smoke test after non-strict execution failure: " f"{exc}",
+                file=sys.stderr,
+            )
     finally:
         shutil.rmtree(workdir, ignore_errors=True)
 

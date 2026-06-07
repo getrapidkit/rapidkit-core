@@ -1,0 +1,43 @@
+{
+  "checked_at": "2026-05-31T16:12:15.550207+00:00",
+  "description": "Lean module layout blueprint (v3)",
+  "extra_directories": [
+    "scripts"
+  ],
+  "extra_files": [
+    "scripts/run_demo.py",
+    "templates/base/audit_policy_health.py.j2"
+  ],
+  "missing_directories": [],
+  "missing_files": [],
+  "module": "free/security/audit_policy",
+  "parity": {
+    "fastapi": {
+      "declared": true,
+      "has_config": true,
+      "has_health": true,
+      "has_metadata": true,
+      "has_tests": true,
+      "issues": [],
+      "plugin": true,
+      "status": "ok"
+    },
+    "nestjs": {
+      "declared": true,
+      "has_config": true,
+      "has_health": true,
+      "has_metadata": true,
+      "has_tests": true,
+      "issues": [],
+      "plugin": true,
+      "status": "ok"
+    }
+  },
+  "parity_checked_at": "2026-06-06T22:22:38.716662+00:00",
+  "parity_valid": true,
+  "spec_version": 4,
+  "structure_tree_hash": "e88f3c24c64335c21cb204ce23811a6c9a9e2a4eefdbf33c5c38b5f05d074594",
+  "structure_valid": true,
+  "tree_hash": "e88f3c24c64335c21cb204ce23811a6c9a9e2a4eefdbf33c5c38b5f05d074594",
+  "valid": true
+}

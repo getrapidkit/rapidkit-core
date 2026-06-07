@@ -1,0 +1,296 @@
+from __future__ import annotations
+
+from dataclasses import dataclass, field, replace
+from datetime import datetime, timezone
+from enum import Enum
+from threading import RLock
+from typing import Any, Mapping
+from uuid import uuid4
+
+
+class ApprovalStatus(str, Enum):
+    PENDING = "pending"
+    APPROVED = "approved"
+    REJECTED = "rejected"
+    ESCALATED = "escalated"
+    CANCELLED = "cancelled"
+
+
+class {{ module_class_name }}Error(ValueError):
+    """Raised when an approval workflow violates policy."""
+
+
+@dataclass(frozen=True)
+class ApprovalPolicy:
+    key: str
+    required_roles: tuple[str, ...] = ("admin",)
+    require_reason: bool = True
+    escalation_role: str | None = "owner"
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class ApprovalRequest:
+    id: str
+    policy_key: str
+    action: str
+    requester_id: str
+    reason: str
+    status: ApprovalStatus = ApprovalStatus.PENDING
+    tenant_id: str | None = None
+    reviewer_id: str | None = None
+    reviewer_role: str | None = None
+    decision_reason: str | None = None
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+    created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds"))
+    decided_at: str | None = None
+
+
+@dataclass(frozen=True)
+class ApprovalAuditEvent:
+    type: str
+    request_id: str | None = None
+    actor_id: str | None = None
+    tenant_id: str | None = None
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds"))
+
+
+@dataclass(frozen=True)
+class {{ module_class_name }}Config:
+    """Runtime configuration for {{ module_title }}."""
+
+    enabled: bool = True
+    default_required_role: str = "admin"
+    require_reason: bool = True
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+
+def build_default_config() -> {{ module_class_name }}Config:
+    """Return default configuration payload."""
+
+    return {{ module_class_name }}Config()
+
+
+class {{ module_class_name }}:
+    """Approval workflow engine with required reasons and immutable audit records."""
+
+    def __init__(self, config: {{ module_class_name }}Config | None = None) -> None:
+        self.config = config or build_default_config()
+        self._policies: dict[str, ApprovalPolicy] = {}
+        self._requests: dict[str, ApprovalRequest] = {}
+        self._audit: list[ApprovalAuditEvent] = []
+        self._lock = RLock()
+
+    def register_policy(
+        self,
+        *,
+        key: str,
+        required_roles: tuple[str, ...] | list[str] | None = None,
+        require_reason: bool | None = None,
+        escalation_role: str | None = "owner",
+        metadata: Mapping[str, Any] | None = None,
+    ) -> ApprovalPolicy:
+        if not key.strip():
+            raise {{ module_class_name }}Error("policy key is required")
+        roles = tuple(required_roles or (self.config.default_required_role,))
+        if not roles:
+            raise {{ module_class_name }}Error("at least one reviewer role is required")
+        policy = ApprovalPolicy(
+            key=key.strip(),
+            required_roles=roles,
+            require_reason=self.config.require_reason if require_reason is None else require_reason,
+            escalation_role=escalation_role,
+            metadata=dict(metadata or {}),
+        )
+        with self._lock:
+            self._policies[policy.key] = policy
+            self._record_audit("policy.registered", metadata={"policy_key": policy.key, "roles": list(roles)})
+        return policy
+
+    def request_approval(
+        self,
+        *,
+        policy_key: str,
+        action: str,
+        requester_id: str,
+        reason: str,
+        tenant_id: str | None = None,
+        metadata: Mapping[str, Any] | None = None,
+    ) -> ApprovalRequest:
+        if not self.config.enabled:
+            raise {{ module_class_name }}Error("approval engine is disabled")
+        if not action.strip():
+            raise {{ module_class_name }}Error("action is required")
+        if not requester_id.strip():
+            raise {{ module_class_name }}Error("requester_id is required")
+        with self._lock:
+            policy = self._policy(policy_key)
+            if policy.require_reason and not reason.strip():
+                raise {{ module_class_name }}Error("approval reason is required")
+            request = ApprovalRequest(
+                id=str(uuid4()),
+                policy_key=policy.key,
+                action=action.strip(),
+                requester_id=requester_id.strip(),
+                reason=reason.strip(),
+                tenant_id=tenant_id,
+                metadata=dict(metadata or {}),
+            )
+            self._requests[request.id] = request
+            self._record_audit(
+                "approval.requested",
+                request_id=request.id,
+                actor_id=requester_id,
+                tenant_id=tenant_id,
+                metadata={"policy_key": policy.key, "action": request.action},
+            )
+        return request
+
+    def decide(
+        self,
+        request_id: str,
+        *,
+        reviewer_id: str,
+        reviewer_role: str,
+        approved: bool,
+        reason: str,
+    ) -> ApprovalRequest:
+        with self._lock:
+            request = self._request(request_id)
+            if request.status != ApprovalStatus.PENDING:
+                raise {{ module_class_name }}Error("only pending approvals can be decided")
+            policy = self._policy(request.policy_key)
+            if reviewer_role not in policy.required_roles:
+                raise {{ module_class_name }}Error("reviewer role is not allowed for this policy")
+            if policy.require_reason and not reason.strip():
+                raise {{ module_class_name }}Error("decision reason is required")
+            decided = replace(
+                request,
+                status=ApprovalStatus.APPROVED if approved else ApprovalStatus.REJECTED,
+                reviewer_id=reviewer_id,
+                reviewer_role=reviewer_role,
+                decision_reason=reason.strip(),
+                decided_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            )
+            self._requests[request_id] = decided
+            self._record_audit(
+                "approval.approved" if approved else "approval.rejected",
+                request_id=request_id,
+                actor_id=reviewer_id,
+                tenant_id=request.tenant_id,
+                metadata={"role": reviewer_role, "reason": reason.strip()},
+            )
+        return decided
+
+    def escalate(self, request_id: str, *, actor_id: str, reason: str) -> ApprovalRequest:
+        with self._lock:
+            request = self._request(request_id)
+            policy = self._policy(request.policy_key)
+            if request.status != ApprovalStatus.PENDING:
+                raise {{ module_class_name }}Error("only pending approvals can be escalated")
+            if not policy.escalation_role:
+                raise {{ module_class_name }}Error("policy does not define escalation")
+            if policy.require_reason and not reason.strip():
+                raise {{ module_class_name }}Error("escalation reason is required")
+            escalated = replace(request, status=ApprovalStatus.ESCALATED, decision_reason=reason.strip())
+            self._requests[request_id] = escalated
+            self._record_audit(
+                "approval.escalated",
+                request_id=request_id,
+                actor_id=actor_id,
+                tenant_id=request.tenant_id,
+                metadata={"escalation_role": policy.escalation_role, "reason": reason.strip()},
+            )
+        return escalated
+
+    def cancel(self, request_id: str, *, actor_id: str, reason: str) -> ApprovalRequest:
+        if self.config.require_reason and not reason.strip():
+            raise {{ module_class_name }}Error("cancellation reason is required")
+        with self._lock:
+            request = self._request(request_id)
+            if request.status != ApprovalStatus.PENDING:
+                raise {{ module_class_name }}Error("only pending approvals can be cancelled")
+            cancelled = replace(request, status=ApprovalStatus.CANCELLED, decision_reason=reason.strip())
+            self._requests[request_id] = cancelled
+            self._record_audit(
+                "approval.cancelled",
+                request_id=request_id,
+                actor_id=actor_id,
+                tenant_id=request.tenant_id,
+                metadata={"reason": reason.strip()},
+            )
+        return cancelled
+
+    def get_request(self, request_id: str) -> ApprovalRequest:
+        with self._lock:
+            return self._request(request_id)
+
+    def list_requests(
+        self,
+        *,
+        status: ApprovalStatus | None = None,
+        tenant_id: str | None = None,
+        policy_key: str | None = None,
+    ) -> tuple[ApprovalRequest, ...]:
+        with self._lock:
+            requests = tuple(self._requests.values())
+        if status is not None:
+            requests = tuple(item for item in requests if item.status == status)
+        if tenant_id is not None:
+            requests = tuple(item for item in requests if item.tenant_id == tenant_id)
+        if policy_key is not None:
+            requests = tuple(item for item in requests if item.policy_key == policy_key)
+        return requests
+
+    def audit_events(self, *, request_id: str | None = None) -> tuple[ApprovalAuditEvent, ...]:
+        with self._lock:
+            events = tuple(self._audit)
+        if request_id is not None:
+            events = tuple(item for item in events if item.request_id == request_id)
+        return events
+
+    def health(self) -> dict[str, Any]:
+        with self._lock:
+            policies = len(self._policies)
+            requests = tuple(self._requests.values())
+            audit_events = len(self._audit)
+        return {
+            "module": "{{ module_name }}",
+            "status": "ok" if self.config.enabled else "disabled",
+            "policies": policies,
+            "requests": len(requests),
+            "pending": len([request for request in requests if request.status == ApprovalStatus.PENDING]),
+            "audit_events": audit_events,
+        }
+
+    def _policy(self, key: str) -> ApprovalPolicy:
+        try:
+            return self._policies[key]
+        except KeyError as exc:
+            raise {{ module_class_name }}Error("approval policy not found") from exc
+
+    def _request(self, request_id: str) -> ApprovalRequest:
+        try:
+            return self._requests[request_id]
+        except KeyError as exc:
+            raise {{ module_class_name }}Error("approval request not found") from exc
+
+    def _record_audit(
+        self,
+        event_type: str,
+        *,
+        request_id: str | None = None,
+        actor_id: str | None = None,
+        tenant_id: str | None = None,
+        metadata: Mapping[str, Any] | None = None,
+    ) -> None:
+        self._audit.append(
+            ApprovalAuditEvent(
+                type=event_type,
+                request_id=request_id,
+                actor_id=actor_id,
+                tenant_id=tenant_id,
+                metadata=dict(metadata or {}),
+            )
+        )

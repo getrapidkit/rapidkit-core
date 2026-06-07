@@ -8,6 +8,7 @@ import hmac
 import json
 import os
 import secrets
+import time
 import uuid
 from collections import Counter, defaultdict
 from dataclasses import replace
@@ -34,6 +35,7 @@ MODULE_NAME = "{{ module_name }}"
 MODULE_TITLE = "{{ module_title }}"
 MODULE_VERSION = "{{ rapidkit_vendor_version }}"
 MODULE_TIER = "{{ module_tier }}"
+_STARTED_AT = time.monotonic()
 
 UTC = timezone.utc
 
@@ -391,6 +393,9 @@ class {{ module_class_name }}:
             issues=self._health_issues(pepper_loaded=pepper_loaded),
             now=self._clock(),
         )
+        payload.setdefault("module", MODULE_NAME)
+        payload.setdefault("version", MODULE_VERSION)
+        payload.setdefault("uptime", max(0.0, time.monotonic() - _STARTED_AT))
         payload.setdefault("telemetry", {})
         payload["telemetry"].update(
             {

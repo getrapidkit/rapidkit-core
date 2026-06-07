@@ -1,0 +1,16 @@
+from __future__ import annotations
+
+from datetime import datetime, timezone
+from typing import Any
+
+
+def check_health(pipeline: Any | None = None) -> dict[str, Any]:
+    """Return health and index statistics for the runtime facade."""
+
+    if pipeline is not None and hasattr(pipeline, "health"):
+        return pipeline.health()
+    return {
+        "module": "{{ module_name }}",
+        "status": "ok",
+        "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+    }

@@ -1,0 +1,12 @@
+{# Shared snippet for the RapidKit Feature Flags module. #}
+{% set module_name = "feature_flags" %}
+{% set module_title = "Feature Flags" %}
+
+# {{ module_title }} integration notes
+
+- Canonical module: `free/business/feature_flags`
+- Primary purpose: Rollout, entitlement gates, experiments, and kill switches for productized workspaces.
+- Key capabilities: Evaluates flags by tenant, user, role, and entitlement., Supports staged rollout and emergency kill switches., Keeps product experiments isolated from deployment.
+- Runtime environment keys: RAPIDKIT_FEATURE_FLAGS_ENABLED, RAPIDKIT_FEATURE_FLAGS_DEFAULT_MODE, RAPIDKIT_FEATURE_FLAGS_CACHE_TTL
+
+Use this snippet near the owning service/module registration point so generated projects keep module intent, operational boundaries, and security expectations visible to maintainers.

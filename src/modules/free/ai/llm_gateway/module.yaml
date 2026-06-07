@@ -1,0 +1,177 @@
+name: llm_gateway
+display_name: LLM Gateway
+description: Provider-neutral LLM gateway with routing, fallback, budgets, and usage telemetry for AI
+  products
+version: 0.1.13
+access: free
+status: stable
+tier: free
+category: ai
+tags:
+- ai
+- llm
+- gateway
+- routing
+- telemetry
+generated_from_config: true
+profile_inherits:
+  fastapi.standard: fastapi
+  fastapi.ddd: fastapi
+  nestjs.standard: nestjs
+config_sources:
+- config/base.yaml
+- config/snippets.yaml
+generation:
+  vendor:
+    root: .rapidkit/vendor
+    files:
+    - template: templates/base/llm_gateway.py.j2
+      relative: src/ai/llm_gateway.py
+    - template: templates/base/llm_gateway_types.py.j2
+      relative: src/ai/llm_gateway_types.py
+    - template: templates/base/llm_gateway_health.py.j2
+      relative: src/health/ai/llm_gateway.py
+    - template: templates/vendor/nestjs/configuration.js.j2
+      relative: nestjs/configuration.js
+  variants:
+    fastapi: &fastapi_variant
+      root: .
+      context:
+        framework: fastapi
+        module_class_name: LlmGateway
+      files:
+      - template: templates/variants/fastapi/llm_gateway.py.j2
+        output: src/ai/llm_gateway.py
+      - template: templates/variants/fastapi/llm_gateway_routes.py.j2
+        output: src/routers/ai/llm_gateway.py
+      - template: templates/variants/fastapi/llm_gateway_health.py.j2
+        output: src/health/ai/llm_gateway.py
+      - template: templates/tests/integration/test_llm_gateway_integration.j2
+        output: tests/modules/free/integration/ai/llm_gateway/test_llm_gateway_integration.py
+      - template: templates/variants/fastapi/tests/test_llm_gateway_e2e.py
+        output: tests/modules/e2e/free/ai/llm_gateway/test_llm_gateway_e2e.py
+    fastapi.standard: *fastapi_variant
+    fastapi.ddd: *fastapi_variant
+    nestjs: &nestjs_variant
+      root: .
+      context:
+        framework: nestjs
+        vendor_configuration_relative: nestjs/configuration.js
+        module_class_name: LlmGateway
+        module_kebab: llm-gateway
+      files:
+      - template: templates/variants/nestjs/llm_gateway.service.ts.j2
+        output: src/llm-gateway/llm_gateway.service.ts
+      - template: templates/variants/nestjs/llm_gateway.controller.ts.j2
+        output: src/llm-gateway/llm_gateway.controller.ts
+      - template: templates/variants/nestjs/llm_gateway.module.ts.j2
+        output: src/llm-gateway/llm_gateway.module.ts
+      - template: templates/variants/nestjs/llm_gateway.health.ts.j2
+        output: src/llm-gateway/llm_gateway.health.ts
+      - template: templates/variants/nestjs/llm_gateway.validation.ts.j2
+        output: src/llm-gateway/llm_gateway.validation.ts
+      - template: templates/variants/nestjs/llm_gateway.index.ts.j2
+        output: src/llm-gateway/index.ts
+      - template: templates/variants/nestjs/llm_gateway.configuration.ts.j2
+        output: src/llm-gateway/configuration.ts
+      - template: templates/variants/nestjs/tests/llm_gateway.e2e-spec.ts
+        output: tests/modules/e2e/ai/llm_gateway/llm_gateway.e2e-spec.ts
+    nestjs.standard: *nestjs_variant
+  snippets:
+    enabled: true
+    config: config/snippets.yaml
+    default: []
+compatibility:
+  python: '>=3.9,<4.0'
+  frameworks:
+  - fastapi
+  - nestjs
+  os:
+  - linux
+  - darwin
+  - windows
+testing:
+  coverage_min: 85
+  integration_tests: true
+  e2e_tests: false
+  unit_tests:
+  - tests/modules/free/ai/llm_gateway/test_llm_gateway_generator.py
+  - tests/modules/free/ai/llm_gateway/test_llm_gateway_overrides.py
+  - tests/modules/free/ai/llm_gateway/test_llm_gateway_runtime.py
+  - tests/modules/free/ai/llm_gateway/test_llm_gateway_adapters.py
+  - tests/modules/free/ai/llm_gateway/test_llm_gateway_validation.py
+  - tests/modules/free/ai/llm_gateway/test_llm_gateway_error_handling.py
+  - tests/modules/free/ai/llm_gateway/test_llm_gateway_health_check.py
+  - tests/modules/free/ai/llm_gateway/test_llm_gateway_framework_variants.py
+  - tests/modules/free/ai/llm_gateway/test_llm_gateway_vendor_layer.py
+  - tests/modules/free/ai/llm_gateway/test_llm_gateway_configuration.py
+  - tests/modules/free/ai/llm_gateway/test_llm_gateway_versioning.py
+  - tests/modules/free/ai/llm_gateway/test_llm_gateway_standard_module.py
+  integration_test_files:
+  - tests/modules/free/integration/ai/llm_gateway/test_llm_gateway_integration.py
+  fixtures: []
+documentation:
+  changelog: docs/changelog.md
+  readme: README.md
+  overview: docs/overview.md
+  usage: docs/usage.md
+  advanced: docs/advanced.md
+  migration: docs/migration.md
+  troubleshooting: docs/troubleshooting.md
+  api_docs: docs/api-reference.md
+  examples: []
+support:
+  issues: https://github.com/rapidkitlabs/rapidkit-core/issues
+  discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+  documentation: https://docs.rapidkit.top/modules/llm_gateway
+changelog:
+  - version: "0.1.13"
+    date: "2026-06-02"
+    notes: "See docs/changelog.md"
+validation:
+  pre_install:
+  - check_python_version
+  post_install:
+  - validate_generated_code
+rollback:
+  strategy: uninstall
+  backup_path: .rapidkit/backups/
+  max_backups: 3
+performance:
+  lazy_loading: true
+  caching:
+    templates: true
+    ttl: 300
+capabilities:
+- provider_routing
+- model_fallback
+- budget_controls
+- usage_telemetry
+- health_checks
+- override_support
+signature: null
+signer_id: null
+signature_version: null
+file_hashes:
+  README.md: sha256:7fbfc92d8be766b579937ea89255dbe03297b221823301b3874877c9110abea9
+  __init__.py: sha256:57d4317fea7b9e2cda4f0b9d6d8da26041d99085938d2e15da0fea48e3110a2d
+  config/base.yaml: sha256:2fd319d8f510798284542ab69a4eee390595c43d43aa2fdb139fd43b37af555b
+  config/snippets.yaml: sha256:279b84f5f5598d66232ad87fbecdae14c61a6af2fb9adf93981ecaf36a76fa95
+  docs/README.md: sha256:ffcdeb11ba688ea13e29aecb7fd3a8afd3d98a32c492bad7c765e4f9032aba31
+  docs/advanced.md: sha256:432f858314bede11a38a409bea51049328a9dc10f6b7341fdd410379da005235
+  docs/api-reference.md: sha256:6efc3e3c0dcda7172dece8e2e601ea96ef377f0593b0f0dda274f43ec05ce21e
+  docs/changelog.md: sha256:118bca3a0385651e33c309e4e4a8aae8fdbebcbeb66cb7d4499c3e6828a49b9a
+  docs/migration.md: sha256:7f54cc567dc9270e24c98e00121727acba46e735edf0fbf35b972726887290dd
+  docs/overview.md: sha256:fb51ceb543c4ab8c4a06082e518f646765c07849515b5be372a007c341acb59e
+  docs/troubleshooting.md: sha256:465177a481db9580d5432a113e862ef977f9e14726f994c8dfe3ff2b6f0e019d
+  docs/usage.md: sha256:a27231735a4a24b328e5691b6792da649720cb5c3027dee8d29c983df7a99f47
+  templates/vendor/nestjs/configuration.js.j2: sha256:602b4d0516924ddf7bf61b2e94f7c1546eef772d3a1e01f61aca7ad6300dd837
+  module.verify.json: sha256:b956f08e106e48cc1502c147322cbec2b96c211147baabebe441f2b2c352a2e3
+depends_on:
+- free/essentials/settings
+- free/essentials/logging
+- free/observability/core
+metadata:
+  enterprise_ready: true
+  free_marketplace_module: true
+  product_factory_priority: high

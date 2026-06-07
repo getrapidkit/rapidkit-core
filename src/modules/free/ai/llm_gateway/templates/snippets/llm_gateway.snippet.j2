@@ -1,0 +1,12 @@
+{# Shared snippet for the RapidKit LLM Gateway module. #}
+{% set module_name = "llm_gateway" %}
+{% set module_title = "LLM Gateway" %}
+
+# {{ module_title }} integration notes
+
+- Canonical module: `free/ai/llm_gateway`
+- Primary purpose: Provider-neutral model access with routing, fallback, budget controls, and usage telemetry.
+- Key capabilities: Routes prompts through a single provider-neutral interface., Keeps fallback, timeout, and budget policy close to the application code., Emits model usage telemetry for product analytics and cost control.
+- Runtime environment keys: RAPIDKIT_LLM_GATEWAY_ENABLED, RAPIDKIT_LLM_GATEWAY_DEFAULT_PROVIDER, RAPIDKIT_LLM_GATEWAY_BUDGET_MODE
+
+Use this snippet near the owning service/module registration point so generated projects keep module intent, operational boundaries, and security expectations visible to maintainers.

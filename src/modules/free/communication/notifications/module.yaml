@@ -1,5 +1,5 @@
 name: notifications
-version: 0.1.25
+version: 0.1.28
 tier: free
 access: free
 status: stable
@@ -140,12 +140,12 @@ documentation:
     api_docs: docs/api-reference.md
     examples: []
 support:
-    issues: https://github.com/getrapidkit/rapidkit-core/issues
-    discussions: https://github.com/getrapidkit/rapidkit-core/discussions
+    issues: https://github.com/rapidkitlabs/rapidkit-core/issues
+    discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
     documentation: https://docs.rapidkit.top/modules/notifications
 changelog:
-  - version: "0.1.25"
-    date: "2026-02-14"
+  - version: "0.1.28"
+    date: "2026-06-02"
     notes: "See docs/changelog.md"
 validation:
     pre_install:
@@ -163,7 +163,12 @@ performance:
     caching:
         templates: true
         ttl: 300
-capabilities: []
+capabilities:
+    - notification_provider_registry
+    - email_push_sms_channels
+    - delivery_log
+    - provider_health
+    - audit_metadata
 file_hashes:
     templates/variants/nestjs/tests/notifications.e2e-spec.ts: sha256:48ef34c26144166931b106a4f7f6b96871287a071f73210953ebe53e3f8087e1
     templates/variants/fastapi/tests/test_notifications_e2e.py: sha256:27db17ac1b467fa13c6bdf6c78350944dc27a54d8ed5553570ee4adb5d93ed35
@@ -183,7 +188,7 @@ file_hashes:
     frameworks/fastapi.py: sha256:706cad34ef2cc600c2e7d71e109447cae106c7344ea39c3892aadffa0462d0df
     frameworks/nestjs.py: sha256:28424e92ef6be431b8ff6380b248bb3feae306546830d72b160eb7c6400df24b
     generate.py: sha256:f9e53811ff921a41b9db7b144c7b8b6ded39a6777f551b2a614a991b97911b16
-    module.verify.json: sha256:542edc0f2dc3ec2e306ef8612cab3b66a7aa8dbcd9c7d34386f30f99ec168f35
+    module.verify.json: sha256:905e40f2df1f7b14542aa8712732d4f204d1c5b3eeb3baae372969c0580f90f7
     overrides.py: sha256:433388a9d218e1159cc25aa132b748a9a490768709e2382f14f1c793f1242535
     templates/__init__.py: sha256:829c91a7b342975972d0c4b5f22096f215871f18931f0897ac10d7a830877d14
     templates/base/__init__.py: sha256:09656ba66e544f144fa7f45b1c084c52d6ea318e4af47a4f01114900a12a2f2b

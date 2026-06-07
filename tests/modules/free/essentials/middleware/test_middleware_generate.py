@@ -74,6 +74,16 @@ def test_generate_fastapi_variant(monkeypatch: pytest.MonkeyPatch) -> None:
                 / "middleware"
                 / "test_middleware_integration.py"
             )
+            e2e_test_file = (
+                Path(tmpdir)
+                / "tests"
+                / "modules"
+                / "e2e"
+                / "free"
+                / "essentials"
+                / "middleware"
+                / "test_middleware_e2e.py"
+            )
             config_file = (
                 Path(tmpdir)
                 / "src"
@@ -91,6 +101,7 @@ def test_generate_fastapi_variant(monkeypatch: pytest.MonkeyPatch) -> None:
             ), "legacy src/core/middleware_health.py should not be generated under canonical policy"
             assert health_file.exists(), "src/health/middleware.py should be generated"
             assert test_file.exists(), "test file should be generated"
+            assert e2e_test_file.exists(), "FastAPI E2E test should be generated"
             assert config_file.exists(), "Configuration file should be generated"
 
             config_content = yaml.safe_load(config_file.read_text())
@@ -113,6 +124,10 @@ def test_generate_fastapi_variant(monkeypatch: pytest.MonkeyPatch) -> None:
             assert "ProcessTimeMiddleware" in content
             assert "ServiceHeaderMiddleware" in content
             assert "register_middleware" in content
+
+            e2e_src = e2e_test_file.read_text()
+            assert "test_middleware_headers_are_applied_end_to_end" in e2e_src
+            assert "test_middleware_can_be_disabled_end_to_end" in e2e_src
 
             # Import the generated runtime to ensure it is loadable
             import importlib

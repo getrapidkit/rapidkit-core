@@ -229,6 +229,26 @@ class Settings(BaseSettings):
             return parts or ["*"]
         return v
 
+    @field_validator("DEBUG", mode="before")
+    @classmethod
+    def _normalize_debug(cls, v):  # type: ignore[override]
+        """Parse common boolean env values and ignore namespace-style DEBUG values.
+
+        Many toolchains use DEBUG for logging namespaces (for example "app:*" or
+        "release"). A production settings module should not fail startup because
+        the host shell carries a non-boolean DEBUG value.
+        """
+        if isinstance(v, bool) or v is None:
+            return v
+        if isinstance(v, str):
+            normalized = v.strip().lower()
+            if normalized in {"1", "true", "yes", "on"}:
+                return True
+            if normalized in {"0", "false", "no", "off", ""}:
+                return False
+            return False
+        return v
+
     @field_validator("LOG_SINKS", mode="before")
     @classmethod
     def _normalize_log_sinks(cls, v):  # type: ignore[override]

@@ -1,0 +1,181 @@
+name: media_pipeline
+display_name: "Media Pipeline"
+description: "Media ingestion and transformation pipeline with checksum, variant generation, and moderation hooks"
+version: 0.1.4
+access: free
+status: stable
+tier: free
+category: business
+tags:
+  - business
+  - media
+  - assets
+  - moderation
+  - variants
+depends_on:
+  - free/business/storage
+  - free/security/audit_policy
+  - free/observability/core
+generated_from_config: true
+profile_inherits:
+  fastapi.standard: fastapi
+  fastapi.ddd: fastapi
+  nestjs.standard: nestjs
+config_sources:
+  - config/base.yaml
+  - config/snippets.yaml
+generation:
+  vendor:
+    root: .rapidkit/vendor
+    files:
+      - template: templates/base/media_pipeline.py.j2
+        relative: src/business/media_pipeline.py
+      - template: templates/base/media_pipeline_types.py.j2
+        relative: src/business/media_pipeline_types.py
+      - template: templates/base/media_pipeline_health.py.j2
+        relative: src/health/business/media_pipeline.py
+      - template: templates/vendor/nestjs/configuration.js.j2
+        relative: nestjs/configuration.js
+  variants:
+    fastapi: &fastapi_variant
+      root: .
+      context:
+        framework: fastapi
+        module_class_name: MediaPipeline
+      files:
+        - template: templates/variants/fastapi/media_pipeline.py.j2
+          output: src/business/media_pipeline.py
+        - template: templates/variants/fastapi/media_pipeline_routes.py.j2
+          output: src/routers/business/media_pipeline.py
+        - template: templates/variants/fastapi/media_pipeline_health.py.j2
+          output: src/health/business/media_pipeline.py
+        - template: templates/tests/integration/test_media_pipeline_integration.j2
+          output: tests/modules/free/integration/business/media_pipeline/test_media_pipeline_integration.py
+        - template: templates/variants/fastapi/tests/test_media_pipeline_e2e.py
+          output: tests/modules/e2e/free/business/media_pipeline/test_media_pipeline_e2e.py
+
+    # Compatibility aliases: the installer uses kit profile names.
+    fastapi.standard: *fastapi_variant
+    fastapi.ddd: *fastapi_variant
+
+    nestjs: &nestjs_variant
+      root: .
+      context:
+        framework: nestjs
+        vendor_configuration_relative: nestjs/configuration.js
+        module_class_name: MediaPipeline
+        module_kebab: media-pipeline
+      files:
+        - template: templates/variants/nestjs/media_pipeline.service.ts.j2
+          output: src/media-pipeline/media_pipeline.service.ts
+        - template: templates/variants/nestjs/media_pipeline.controller.ts.j2
+          output: src/media-pipeline/media_pipeline.controller.ts
+        - template: templates/variants/nestjs/media_pipeline.module.ts.j2
+          output: src/media-pipeline/media_pipeline.module.ts
+        - template: templates/variants/nestjs/media_pipeline.health.ts.j2
+          output: src/media-pipeline/media_pipeline.health.ts
+        - template: templates/variants/nestjs/media_pipeline.validation.ts.j2
+          output: src/media-pipeline/media_pipeline.validation.ts
+        - template: templates/variants/nestjs/media_pipeline.index.ts.j2
+          output: src/media-pipeline/index.ts
+        - template: templates/variants/nestjs/media_pipeline.configuration.ts.j2
+          output: src/media-pipeline/configuration.ts
+        - template: templates/variants/nestjs/tests/media_pipeline.e2e-spec.ts
+          output: tests/modules/e2e/business/media_pipeline/media_pipeline.e2e-spec.ts
+
+    nestjs.standard: *nestjs_variant
+  snippets:
+    enabled: true
+    config: config/snippets.yaml
+    default: []
+compatibility:
+  python: ">=3.9,<4.0"
+  frameworks:
+    - fastapi
+    - nestjs
+  os:
+    - linux
+    - darwin
+    - windows
+testing:
+  coverage_min: 85
+  integration_tests: true
+  e2e_tests: false
+  unit_tests:
+    - tests/modules/free/business/media_pipeline/test_media_pipeline_generator.py
+    - tests/modules/free/business/media_pipeline/test_media_pipeline_overrides.py
+    - tests/modules/free/business/media_pipeline/test_media_pipeline_runtime.py
+    - tests/modules/free/business/media_pipeline/test_media_pipeline_adapters.py
+    - tests/modules/free/business/media_pipeline/test_media_pipeline_validation.py
+    - tests/modules/free/business/media_pipeline/test_media_pipeline_error_handling.py
+    - tests/modules/free/business/media_pipeline/test_media_pipeline_health_check.py
+    - tests/modules/free/business/media_pipeline/test_media_pipeline_framework_variants.py
+    - tests/modules/free/business/media_pipeline/test_media_pipeline_vendor_layer.py
+    - tests/modules/free/business/media_pipeline/test_media_pipeline_configuration.py
+    - tests/modules/free/business/media_pipeline/test_media_pipeline_versioning.py
+    - tests/modules/free/business/media_pipeline/test_media_pipeline_standard_module.py
+  integration_test_files:
+    - tests/modules/free/integration/business/media_pipeline/test_media_pipeline_integration.py
+  fixtures: []
+documentation:
+  changelog: "docs/changelog.md"
+  readme: "README.md"
+  overview: "docs/overview.md"
+  usage: "docs/usage.md"
+  advanced: "docs/advanced.md"
+  migration: "docs/migration.md"
+  troubleshooting: "docs/troubleshooting.md"
+  api_docs: "docs/api-reference.md"
+  examples: []
+support:
+  issues: https://github.com/rapidkitlabs/rapidkit-core/issues
+  discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+  documentation: https://docs.rapidkit.top/modules/media_pipeline
+changelog:
+  - version: "0.1.4"
+    date: "2026-06-02"
+    notes: "See docs/changelog.md"
+validation:
+  pre_install:
+    - check_python_version
+  post_install:
+    - validate_generated_code
+rollback:
+  strategy: uninstall
+  backup_path: .rapidkit/backups/
+  max_backups: 3
+performance:
+  lazy_loading: true
+  caching:
+    templates: true
+    ttl: 300
+capabilities:
+  - media_ingestion
+  - checksum_verification
+  - variant_generation
+  - moderation_hooks
+  - tenant_scoped_assets
+  - health_checks
+metadata:
+  enterprise_ready: true
+  free_marketplace_module: true
+  product_factory_priority: high
+signature: null
+signer_id: null
+signature_version: null
+
+file_hashes:
+  README.md: sha256:b70485c41d18a27628593c52b47b1f3c4c18dc10dce62e217480143beeec6b0d
+  __init__.py: sha256:2cc8f6838404ba3757d8f74f1607fd10492fc010c912ae3aa1760d896eb45ce1
+  config/base.yaml: sha256:a5fb296518d83673681701a2bf327d43f20ae109ba7172dba327f50b9cf20e82
+  config/snippets.yaml: sha256:3fd9f3413369a85f880ac4ea1955ac1acf896b4c7958b4d2790a5073e7dc8e5b
+  docs/README.md: sha256:490563c25ad29c41329d2675f3cdb18853a359cc36bd27f8b1d759181fb33a99
+  docs/advanced.md: sha256:ebb0257cfdd31be5089708ea263d9fc389bdd905ec810b9098ba17f1f30580a7
+  docs/api-reference.md: sha256:e541e4315af0b365bae7b2ce762f99bdc3f8269072415c441b7f965b0f6bbf58
+  docs/changelog.md: sha256:a4aa6affb930390beaca8880ea3c716e4af13ec0f44cbb2180363de82b9e5942
+  docs/migration.md: sha256:986e14bfd9ce4594f176f865bc0d2ab76fb59d6d2c719cc6052f006180ab76a3
+  docs/overview.md: sha256:a818f90a43ec034fb2617a8db9ae04804558dad1eb559a878cd8596e68009089
+  docs/troubleshooting.md: sha256:5affe47bd473ed71788a7a55a0914350cb7d35d9ac7dc184affa1c40e00c98ca
+  docs/usage.md: sha256:8c6a0f78765cc30d68d93a6b886d919530fe5c8bb719233dec297e896abffbb4
+  templates/vendor/nestjs/configuration.js.j2: sha256:2561dc2ee59b7d63c3ef3f94cc20b567f3d6d57b3f650bc3ab74803c725627be
+  module.verify.json: sha256:e13f931ed1ec61184f2fb74be9d43c97045ae9d4eb61fc68f5103aff8127adab

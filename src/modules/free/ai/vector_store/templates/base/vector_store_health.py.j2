@@ -1,0 +1,16 @@
+from __future__ import annotations
+
+from datetime import datetime, timezone
+from typing import Any
+
+
+def check_health(store: Any | None = None) -> dict[str, Any]:
+    """Return health and index statistics for the runtime facade."""
+
+    if store is not None and hasattr(store, "health"):
+        return store.health()
+    return {
+        "module": "{{ module_name }}",
+        "status": "ok",
+        "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+    }

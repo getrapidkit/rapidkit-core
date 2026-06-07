@@ -1,0 +1,12 @@
+{# Shared snippet for the RapidKit Document Pipeline module. #}
+{% set module_name = "document_pipeline" %}
+{% set module_title = "Document Pipeline" %}
+
+# {{ module_title }} integration notes
+
+- Canonical module: `free/business/document_pipeline`
+- Primary purpose: Document ingestion, extraction, chunking, classification, and audit-safe processing pipeline for AI/workflow products.
+- Key capabilities: Normalizes document ingestion and extraction workflows., Tracks processing state, checksums, and source metadata., Supports chunking and classification handoff to RAG or workflow modules.
+- Runtime environment keys: RAPIDKIT_DOCUMENT_PIPELINE_ENABLED, RAPIDKIT_DOCUMENT_PIPELINE_MAX_BYTES, RAPIDKIT_DOCUMENT_PIPELINE_REQUIRE_CHECKSUM
+
+Use this snippet near the owning service/module registration point so generated projects keep module intent, operational boundaries, and security expectations visible to maintainers.

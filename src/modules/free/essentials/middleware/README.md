@@ -93,18 +93,58 @@ added by editing the generated `middleware.py` file or extending the override ho
 
 ______________________________________________________________________
 
+## Demo And Smoke Checks
+
+Use the module demo runner to inspect generated output before promoting template changes:
+
+```bash
+python scripts/run_demo.py fastapi
+python scripts/run_demo.py nestjs
+```
+
+For release validation, compare the generated FastAPI and NestJS projects with the module's expected
+outputs, then run the module-scoped test and validator commands in the testing checklist below.
+
+______________________________________________________________________
+
 ## Security & Audit
 
-This module ships as part of the RapidKit module ecosystem and is intended to be **audited** as a
-unit:
+- Treat request headers as untrusted input; only propagate correlation headers after normalization.
+- Keep CORS disabled by default and scope origins/methods/headers explicitly in production.
+- Do not expose internal service names or tenant identifiers through response headers unless they
+  are approved for external clients.
+- Record middleware configuration changes with actor, reason, target environment, and rollback
+  version.
 
-- Use `scripts/modules_doctor.py` (or `rapidkit modules vet`) to validate structure and generator
-  invariants.
-- Use `rapidkit modules verify-all` to verify recorded hashes/signatures when running in release
-  mode.
+Use `scripts/modules_doctor.py` or `rapidkit modules verify-all` before release to validate
+structure, generated assets, and recorded hashes/signatures.
 
 If you extend this module, keep the documentation updated with the security assumptions and any
 threat model relevant to your deployment.
+
+______________________________________________________________________
+
+## Enterprise Operations
+
+| Area        | Production expectation                                                                                       |
+| ----------- | ------------------------------------------------------------------------------------------------------------ |
+| Ownership   | Assign platform/API ownership for middleware order, header policy, and CORS changes.                         |
+| Metrics     | Track request counts, latency percentiles, error rates, rejected origins, and missing correlation IDs.       |
+| Audit       | Capture operator, reason, previous value, new value, environment, and correlation ID for config changes.     |
+| Idempotency | Keep middleware registration deterministic so repeated startup or module installs do not duplicate behavior. |
+| Rollback    | Preserve the previous generated middleware config and module snapshot before changing header/CORS policy.    |
+
+## Failure Modes
+
+- Invalid CORS policy: fail closed for external origins and emit a clear health/configuration
+  signal.
+- Duplicate middleware registration: verify headers are emitted once and request latency remains
+  bounded.
+- Missing correlation ID: add a deterministic fallback and surface the rate as telemetry.
+- Downstream exception: middleware must propagate the exception while preserving observable timing
+  behavior when possible.
+- Configuration drift: rerun generator smoke checks and compare `.rapidkit/vendor` output before
+  publishing.
 
 ______________________________________________________________________
 
@@ -114,6 +154,9 @@ ______________________________________________________________________
 poetry run pytest tests/modules/free/essentials/middleware -q
 
 poetry run python scripts/check_module_integrity.py --module free/essentials/middleware
+poetry run python scripts/validate_module_readme_standard.py --module free/essentials/middleware
+poetry run python scripts/validate_module_docs_quality.py --module free/essentials/middleware
+poetry run python scripts/validate_module_snippet_configs.py --module free/essentials/middleware
 ```
 
 ______________________________________________________________________
@@ -140,5 +183,5 @@ ______________________________________________________________________
 - API reference: `docs/api-reference.md`
 - Override contracts: `overrides.py`
 
-For additional help, open an issue at <https://github.com/getrapidkit/rapidkit-core/issues> or
+For additional help, open an issue at <https://github.com/rapidkitlabs/rapidkit-core/issues> or
 consult the full product documentation at <https://docs.rapidkit.top>.

@@ -338,7 +338,10 @@ def _render_markdown_changelog_section(entry: Mapping[str, Any]) -> str:
     if extras:
         lines.append(f"- Metadata: {'; '.join(extras)}")
 
-    lines.append("")
+    # Keep generated sections stable under mdformat/pre-commit. A single
+    # trailing newline lets the next heading attach directly to the list, which
+    # mdformat then rewrites and invalidates module content hashes.
+    lines.extend(["", ""])
     return "\n".join(lines)
 
 

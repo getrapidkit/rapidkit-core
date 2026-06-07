@@ -1,0 +1,178 @@
+from __future__ import annotations
+
+import re
+import time
+from dataclasses import dataclass, field as dataclass_field
+from enum import Enum
+from threading import RLock
+from typing import Any, Dict, Mapping, Sequence
+
+
+@dataclass
+class {{ module_class_name }}Config:
+    """Runtime configuration for {{ module_title }}."""
+
+    enabled: bool = True
+    block_on_high_severity: bool = True
+    pii_redaction: bool = True
+    blocked_terms: Sequence[str] = ()
+    metadata: Dict[str, Any] | None = None
+
+
+class GuardrailSeverity(str, Enum):
+    INFO = "info"
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+
+
+@dataclass(frozen=True)
+class GuardrailFinding:
+    code: str
+    message: str
+    severity: GuardrailSeverity
+    field: str = "content"
+    metadata: Mapping[str, Any] = dataclass_field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class GuardrailDecision:
+    allowed: bool
+    redacted_content: str
+    findings: tuple[GuardrailFinding, ...] = ()
+    checked_at: float = dataclass_field(default_factory=time.time)
+
+    @property
+    def blocked(self) -> bool:
+        return not self.allowed
+
+
+class AiGuardrailsError(RuntimeError):
+    """Raised when guardrail policy cannot be evaluated."""
+
+
+def build_default_config() -> {{ module_class_name }}Config:
+    """Return default configuration payload."""
+
+    return {{ module_class_name }}Config()
+
+
+class {{ module_class_name }}:
+    """Input/output safety boundary for AI products."""
+
+    EMAIL_RE = re.compile(r"(?P<email>[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,})")
+    PHONE_RE = re.compile(r"(?P<phone>\+?\d[\d\s().-]{7,}\d)")
+    SECRET_RE = re.compile(r"(?i)(api[_-]?key|secret|token)\s*[:=]\s*['\"]?([A-Za-z0-9_\-]{12,})")
+
+    def __init__(self, config: {{ module_class_name }}Config | None = None) -> None:
+        self.config = config or build_default_config()
+        self._audit: list[dict[str, Any]] = []
+        self._lock = RLock()
+
+    def check_input(
+        self,
+        content: str,
+        *,
+        tenant_id: str | None = None,
+        user_id: str | None = None,
+        metadata: Mapping[str, Any] | None = None,
+    ) -> GuardrailDecision:
+        return self._evaluate("input", content, tenant_id=tenant_id, user_id=user_id, metadata=metadata)
+
+    def check_output(
+        self,
+        content: str,
+        *,
+        tenant_id: str | None = None,
+        user_id: str | None = None,
+        metadata: Mapping[str, Any] | None = None,
+    ) -> GuardrailDecision:
+        return self._evaluate("output", content, tenant_id=tenant_id, user_id=user_id, metadata=metadata)
+
+    def assert_allowed(self, decision: GuardrailDecision) -> None:
+        if not decision.allowed:
+            reasons = ", ".join(finding.code for finding in decision.findings)
+            raise AiGuardrailsError(f"AI guardrail blocked content: {reasons}")
+
+    def audit_log(self) -> list[dict[str, Any]]:
+        with self._lock:
+            return [dict(event) for event in self._audit]
+
+    def health_check(self) -> dict[str, Any]:
+        with self._lock:
+            checks = len(self._audit)
+        return {
+            "module": "{{ module_name }}",
+            "status": "ok" if self.config.enabled else "disabled",
+            "enabled": self.config.enabled,
+            "pii_redaction": self.config.pii_redaction,
+            "blocked_terms": len(tuple(self.config.blocked_terms)),
+            "checks": checks,
+        }
+
+    def _evaluate(
+        self,
+        direction: str,
+        content: str,
+        *,
+        tenant_id: str | None,
+        user_id: str | None,
+        metadata: Mapping[str, Any] | None,
+    ) -> GuardrailDecision:
+        if not self.config.enabled:
+            decision = GuardrailDecision(True, content)
+            self._record(direction, decision, tenant_id, user_id, metadata)
+            return decision
+        findings: list[GuardrailFinding] = []
+        redacted = content
+
+        for term in self.config.blocked_terms:
+            if term and term.lower() in content.lower():
+                findings.append(
+                    GuardrailFinding(
+                        "blocked_term",
+                        "Content matched a blocked term",
+                        GuardrailSeverity.HIGH,
+                        metadata={"term": term},
+                    )
+                )
+
+        if self.SECRET_RE.search(content):
+            findings.append(GuardrailFinding("secret_detected", "Potential secret detected", GuardrailSeverity.HIGH))
+            redacted = self.SECRET_RE.sub(r"\1=[REDACTED_SECRET]", redacted)
+        if self.EMAIL_RE.search(content):
+            findings.append(GuardrailFinding("email_detected", "Email address detected", GuardrailSeverity.MEDIUM))
+            redacted = self.EMAIL_RE.sub("[REDACTED_EMAIL]", redacted)
+        if self.PHONE_RE.search(content):
+            findings.append(GuardrailFinding("phone_detected", "Phone number detected", GuardrailSeverity.MEDIUM))
+            redacted = self.PHONE_RE.sub("[REDACTED_PHONE]", redacted)
+
+        if not self.config.pii_redaction:
+            redacted = content
+
+        has_high = any(finding.severity == GuardrailSeverity.HIGH for finding in findings)
+        allowed = not (self.config.block_on_high_severity and has_high)
+        decision = GuardrailDecision(allowed, redacted, tuple(findings))
+        self._record(direction, decision, tenant_id, user_id, metadata)
+        return decision
+
+    def _record(
+        self,
+        direction: str,
+        decision: GuardrailDecision,
+        tenant_id: str | None,
+        user_id: str | None,
+        metadata: Mapping[str, Any] | None,
+    ) -> None:
+        with self._lock:
+            self._audit.append(
+                {
+                    "event": "guardrail.checked",
+                    "direction": direction,
+                    "allowed": decision.allowed,
+                    "finding_codes": [finding.code for finding in decision.findings],
+                    "tenant_id": tenant_id,
+                    "user_id": user_id,
+                    "metadata": dict(metadata or {}),
+                }
+            )

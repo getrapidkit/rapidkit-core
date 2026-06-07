@@ -206,16 +206,16 @@ def _inject_module_imports(
 
     import_line: str
     if symbols_list:
-        MAX_INLINE_IMPORTS = 3
         sorted_symbols = sorted(dict.fromkeys(symbols_list))
-        if len(sorted_symbols) <= MAX_INLINE_IMPORTS:
-            import_line = f"from {module_import} import {', '.join(sorted_symbols)}"
-        else:
-            joined = ",\n    ".join(sorted_symbols)
-            import_line = f"from {module_import} import (\n    {joined},\n)"
+        aliased_symbols = [f"{symbol} as {symbol}" for symbol in sorted_symbols]
+        # Keep bootstrap imports single-line so the local import organizer can
+        # deterministically de-duplicate and sort them after every injection.
+        import_line = f"from {module_import} import {', '.join(aliased_symbols)}"
     else:
-        # Fall back to a plain import when __all__ is unavailable
-        import_line = f"import {module_import}"
+        # Fall back to an explicit module re-export when __all__ is unavailable.
+        # Ruff treats `name as name` imports as intentional public namespace exports.
+        parent_import, exported_name = module_import.rsplit(".", 1)
+        import_line = f"from {parent_import} import {exported_name} as {exported_name}"
 
     try:
         content = modules_init.read_text(encoding="utf-8")
@@ -229,10 +229,35 @@ def _inject_module_imports(
         return
 
     updated = content.replace(anchor, import_line + "\n" + anchor, 1)
+    updated = _sort_module_init_imports(updated, anchor)
     try:
         modules_init.write_text(updated, encoding="utf-8")
     except OSError:
         return
+
+
+def _sort_module_init_imports(content: str, anchor: str) -> str:
+    """Sort the injected bootstrap import block without moving file metadata."""
+
+    lines = content.splitlines()
+    try:
+        anchor_index = lines.index(anchor)
+    except ValueError:
+        return content
+
+    start = anchor_index
+    while start > 0 and (
+        lines[start - 1].startswith("from ") or lines[start - 1].startswith("import ")
+    ):
+        start -= 1
+
+    if start == anchor_index:
+        return content
+
+    sorted_imports = sorted(dict.fromkeys(lines[start:anchor_index]))
+    updated_lines = [*lines[:start], *sorted_imports, *lines[anchor_index:]]
+    suffix = "\n" if content.endswith("\n") else ""
+    return "\n".join(updated_lines) + suffix
 
 
 @lru_cache(maxsize=None)
@@ -355,6 +380,27 @@ def _collect_generated_health_entries(
     return discovered
 
 
+def _resolve_module_generation_temp_root(project_root: Path) -> Optional[Path]:
+    """Resolve a durable temp root for module generation."""
+
+    configured = os.environ.get("RAPIDKIT_MODULE_TMPDIR", "").strip()
+    candidates: List[Path] = []
+    if configured:
+        candidates.append(Path(configured).expanduser())
+    candidates.append(project_root / ".rapidkit" / "tmp" / "modules")
+
+    for candidate in candidates:
+        try:
+            candidate.mkdir(parents=True, exist_ok=True)
+            probe = candidate / ".rapidkit-write-probe"
+            probe.write_text("ok", encoding="utf-8")
+            probe.unlink(missing_ok=True)
+            return candidate
+        except OSError:
+            continue
+    return None
+
+
 def _apply_generated_module(
     module_dir: Path,
     project_root: Path,
@@ -392,7 +438,11 @@ def _apply_generated_module(
     if "project_name" not in variables or not variables["project_name"]:
         variables["project_name"] = project_root.name
 
-    with tempfile.TemporaryDirectory(prefix="rapidkit-module-") as tmp_dir:
+    temp_root = _resolve_module_generation_temp_root(project_root)
+    with tempfile.TemporaryDirectory(
+        prefix="rapidkit-module-",
+        dir=str(temp_root) if temp_root is not None else None,
+    ) as tmp_dir:
         tmp_path = Path(tmp_dir)
         config_data = generator_module.load_module_config()
         base_context = generator_module.build_base_context(config_data)

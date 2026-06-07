@@ -1,0 +1,43 @@
+{
+  "checked_at": "2026-06-02T08:45:29.466117+00:00",
+  "description": "Lean module layout blueprint (v3)",
+  "extra_directories": [
+    "scripts"
+  ],
+  "extra_files": [
+    "scripts/run_demo.py",
+    "templates/base/support_center_health.py.j2"
+  ],
+  "missing_directories": [],
+  "missing_files": [],
+  "module": "free/business/support_center",
+  "parity": {
+    "fastapi": {
+      "declared": true,
+      "has_config": true,
+      "has_health": true,
+      "has_metadata": true,
+      "has_tests": true,
+      "issues": [],
+      "plugin": true,
+      "status": "ok"
+    },
+    "nestjs": {
+      "declared": true,
+      "has_config": true,
+      "has_health": true,
+      "has_metadata": true,
+      "has_tests": true,
+      "issues": [],
+      "plugin": true,
+      "status": "ok"
+    }
+  },
+  "parity_checked_at": "2026-06-06T22:22:38.714804+00:00",
+  "parity_valid": true,
+  "spec_version": 4,
+  "structure_tree_hash": "4c17288351523550f69ad47691acd43caea6bbd4cf3f460cc6c9795b415cc143",
+  "structure_valid": true,
+  "tree_hash": "4c17288351523550f69ad47691acd43caea6bbd4cf3f460cc6c9795b415cc143",
+  "valid": true
+}

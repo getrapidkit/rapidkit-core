@@ -1,0 +1,7 @@
+# Register snippet bundles for Ai Guardrails
+
+snippets:
+  -
+    name: "ai_guardrails_usage_example"
+    template: "templates/snippets/ai_guardrails.snippet.j2"
+    description: "Injects an opinionated usage example for Ai Guardrails."

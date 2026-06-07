@@ -307,4 +307,4 @@ Planned notification channels:
 - **Migration Guide**: Upgrading from previous versions
 
 For issues and questions, visit our
-[GitHub repository](https://github.com/getrapidkit/rapidkit-core).
+[GitHub repository](https://github.com/rapidkitlabs/rapidkit-core).

@@ -1,0 +1,43 @@
+{
+  "checked_at": "2026-05-31T23:06:06.044406+00:00",
+  "description": "Lean module layout blueprint (v3)",
+  "extra_directories": [
+    "scripts"
+  ],
+  "extra_files": [
+    "scripts/run_demo.py",
+    "templates/base/tool_registry_health.py.j2"
+  ],
+  "missing_directories": [],
+  "missing_files": [],
+  "module": "free/ai/tool_registry",
+  "parity": {
+    "fastapi": {
+      "declared": true,
+      "has_config": true,
+      "has_health": true,
+      "has_metadata": true,
+      "has_tests": true,
+      "issues": [],
+      "plugin": true,
+      "status": "ok"
+    },
+    "nestjs": {
+      "declared": true,
+      "has_config": true,
+      "has_health": true,
+      "has_metadata": true,
+      "has_tests": true,
+      "issues": [],
+      "plugin": true,
+      "status": "ok"
+    }
+  },
+  "parity_checked_at": "2026-06-06T22:22:38.711661+00:00",
+  "parity_valid": true,
+  "spec_version": 4,
+  "structure_tree_hash": "6b1f0891fc079adf3d183aeb6dabf559aeafd0d34ae5855b5843abd748f196d8",
+  "structure_valid": true,
+  "tree_hash": "6b1f0891fc079adf3d183aeb6dabf559aeafd0d34ae5855b5843abd748f196d8",
+  "valid": true
+}

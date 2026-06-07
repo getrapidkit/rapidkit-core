@@ -1,0 +1,12 @@
+from __future__ import annotations
+
+from typing import Any
+
+from src.ai.vector_store import {{ module_class_name }}
+
+
+def module_health_status(store: Any | None = None) -> dict[str, Any]:
+    """Return vector store health for FastAPI variants."""
+
+    runtime = store or {{ module_class_name }}()
+    return runtime.health()

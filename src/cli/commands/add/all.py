@@ -13,10 +13,11 @@ from ...ui.printer import print_error, print_info, print_success, print_warning
 # from ...ui.printer import print_error, print_info, print_success, print_warning
 from .module import add_module as invoke_add_module
 
+yaml: Any
 try:  # optional dependency
     import yaml
 except (ImportError, OSError):  # pragma: no cover - optional dependency
-    yaml = None  # type: ignore[assignment]
+    yaml = None
 
 all_app = typer.Typer()
 

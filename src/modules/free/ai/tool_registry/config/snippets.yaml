@@ -1,0 +1,7 @@
+# Register snippet bundles for Tool Registry
+
+snippets:
+  -
+    name: "tool_registry_usage_example"
+    template: "templates/snippets/tool_registry.snippet.j2"
+    description: "Injects an opinionated usage example for Tool Registry."

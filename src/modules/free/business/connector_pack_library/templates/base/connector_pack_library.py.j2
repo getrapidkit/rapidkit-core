@@ -1,0 +1,150 @@
+from __future__ import annotations
+
+from dataclasses import dataclass, field, replace
+from datetime import datetime, timezone
+from enum import Enum
+from threading import RLock
+from typing import Any, Mapping
+
+
+class ConnectorStatus(str, Enum):
+    AVAILABLE = "available"
+    INSTALLED = "installed"
+    DEGRADED = "degraded"
+    DISABLED = "disabled"
+
+
+class {{ module_class_name }}Error(ValueError):
+    """Raised when connector pack registry input is invalid."""
+
+
+@dataclass(frozen=True)
+class ConnectorPack:
+    key: str
+    provider: str
+    display_name: str
+    scopes: tuple[str, ...]
+    status: ConnectorStatus = ConnectorStatus.AVAILABLE
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+    installed_at: str | None = None
+    rotated_at: str | None = None
+
+
+@dataclass(frozen=True)
+class {{ module_class_name }}Config:
+    enabled: bool = True
+    require_scopes: bool = True
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+
+def build_default_config() -> {{ module_class_name }}Config:
+    return {{ module_class_name }}Config()
+
+
+class {{ module_class_name }}:
+    """Connector pack catalog with install state, health, scopes, and rotation tracking."""
+
+    def __init__(self, config: {{ module_class_name }}Config | None = None) -> None:
+        self.config = config or build_default_config()
+        self._packs: dict[str, ConnectorPack] = {}
+        self._audit: list[dict[str, Any]] = []
+        self._lock = RLock()
+
+    def register_pack(
+        self,
+        *,
+        key: str,
+        provider: str,
+        display_name: str,
+        scopes: tuple[str, ...] | list[str],
+        metadata: Mapping[str, Any] | None = None,
+    ) -> ConnectorPack:
+        if not self.config.enabled:
+            raise {{ module_class_name }}Error("connector pack library is disabled")
+        if not key.strip() or not provider.strip():
+            raise {{ module_class_name }}Error("connector key and provider are required")
+        if self.config.require_scopes and not scopes:
+            raise {{ module_class_name }}Error("connector scopes are required")
+        pack = ConnectorPack(
+            key=key.strip(),
+            provider=provider.strip(),
+            display_name=display_name.strip() or key.strip(),
+            scopes=tuple(scopes),
+            metadata=dict(metadata or {}),
+        )
+        with self._lock:
+            self._packs[pack.key] = pack
+            self._record("connector.registered", pack.key, {"provider": pack.provider})
+        return pack
+
+    def install_pack(self, key: str, *, actor_id: str, tenant_id: str | None = None) -> ConnectorPack:
+        with self._lock:
+            pack = self._pack(key)
+            installed = replace(
+                pack,
+                status=ConnectorStatus.INSTALLED,
+                installed_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                metadata={**dict(pack.metadata), "tenant_id": tenant_id} if tenant_id else dict(pack.metadata),
+            )
+            self._packs[key] = installed
+            self._record("connector.installed", key, {"actor_id": actor_id, "tenant_id": tenant_id})
+        return installed
+
+    def rotate_credentials(self, key: str, *, actor_id: str, reason: str) -> ConnectorPack:
+        if not reason.strip():
+            raise {{ module_class_name }}Error("rotation reason is required")
+        with self._lock:
+            pack = self._pack(key)
+            rotated = replace(pack, rotated_at=datetime.now(timezone.utc).isoformat(timespec="seconds"))
+            self._packs[key] = rotated
+            self._record("connector.credentials_rotated", key, {"actor_id": actor_id, "reason": reason.strip()})
+        return rotated
+
+    def mark_health(self, key: str, *, healthy: bool, reason: str = "") -> ConnectorPack:
+        with self._lock:
+            pack = self._pack(key)
+            updated = replace(pack, status=ConnectorStatus.INSTALLED if healthy else ConnectorStatus.DEGRADED)
+            self._packs[key] = updated
+            self._record("connector.health_updated", key, {"healthy": healthy, "reason": reason})
+        return updated
+
+    def list_packs(self, *, provider: str | None = None, status: ConnectorStatus | None = None) -> tuple[ConnectorPack, ...]:
+        with self._lock:
+            packs = tuple(self._packs.values())
+        if provider is not None:
+            packs = tuple(pack for pack in packs if pack.provider == provider)
+        if status is not None:
+            packs = tuple(pack for pack in packs if pack.status == status)
+        return packs
+
+    def audit_events(self, *, key: str | None = None) -> tuple[dict[str, Any], ...]:
+        with self._lock:
+            events = tuple(dict(event) for event in self._audit)
+        if key is not None:
+            events = tuple(event for event in events if event.get("key") == key)
+        return events
+
+    def health(self) -> dict[str, Any]:
+        with self._lock:
+            packs = tuple(self._packs.values())
+        return {
+            "module": "{{ module_name }}",
+            "status": "ok" if self.config.enabled else "disabled",
+            "packs": len(packs),
+            "installed": len([pack for pack in packs if pack.status == ConnectorStatus.INSTALLED]),
+            "degraded": len([pack for pack in packs if pack.status == ConnectorStatus.DEGRADED]),
+        }
+
+    def _pack(self, key: str) -> ConnectorPack:
+        try:
+            return self._packs[key]
+        except KeyError as exc:
+            raise {{ module_class_name }}Error("connector pack not found") from exc
+
+    def _record(self, event_type: str, key: str, metadata: Mapping[str, Any]) -> None:
+        self._audit.append({
+            "type": event_type,
+            "key": key,
+            "metadata": dict(metadata),
+            "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        })

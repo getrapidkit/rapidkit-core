@@ -1,7 +1,7 @@
 name: cart
 display_name: Cart
 description: Shopping cart service for checkout flows
-version: 0.1.5
+version: 0.1.15
 access: free
 status: stable
 tier: free
@@ -129,12 +129,12 @@ documentation:
     api_docs: docs/api-reference.md
     examples: []
 support:
-    issues: https://github.com/getrapidkit/rapidkit-core/issues
-    discussions: https://github.com/getrapidkit/rapidkit-core/discussions
+    issues: https://github.com/rapidkitlabs/rapidkit-core/issues
+    discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
     documentation: https://docs.rapidkit.top/modules/billing/cart
 changelog:
-  - version: "0.1.5"
-    date: "2026-02-11"
+  - version: "0.1.15"
+    date: "2026-06-07"
     notes: "See docs/changelog.md"
 validation:
     pre_install:
@@ -181,7 +181,7 @@ file_hashes:
     frameworks/fastapi.py: sha256:5b1aa638aac61b54b68c1fdca81cdc16e6186560c9922bfce9c7b91e4b70eea6
     frameworks/nestjs.py: sha256:23cd13eb3242f875e92c51923980412e677100a6b81856c0726bee060d1081e0
     generate.py: sha256:ad7c4e99e8c17a03c6168fe9a0a54d266fbe692f4581eeccab53d7c7349e2d57
-    module.verify.json: sha256:59294ca9ae65bba169ec9944033b95d614b809ac6320c206246d7e61395640d4
+    module.verify.json: sha256:c1953dfcb1a576965aae623beac2252d7113b695a041bcc0e974f45ddaa6c59e
     overrides.py: sha256:7be5b23494b03adb2662f0e6a9a90eb509251ddd3322cfd6818143eaf4c95095
     templates/base/cart.py.j2: sha256:67bbeb6bf96227158484a4b5c67c5ca34055159066c472437705269f99a8a1fc
     templates/base/cart_health.py.j2: sha256:6b61ee70f78351c6570c7bb69c2f8867af07a96ba0a2c5067b7d70e3881c9890

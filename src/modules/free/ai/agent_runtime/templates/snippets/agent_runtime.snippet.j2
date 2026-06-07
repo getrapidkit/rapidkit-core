@@ -1,0 +1,12 @@
+{# Shared snippet for the RapidKit Agent Runtime module. #}
+{% set module_name = "agent_runtime" %}
+{% set module_title = "Agent Runtime" %}
+
+# {{ module_title }} integration notes
+
+- Canonical module: `free/ai/agent_runtime`
+- Primary purpose: Agent execution scaffolding for tools, memory hooks, retries, and durable workflow state.
+- Key capabilities: Models agent runs as observable units of work., Separates tool registration from execution policy., Supports retry, cancellation, and state persistence hooks.
+- Runtime environment keys: RAPIDKIT_AGENT_RUNTIME_ENABLED, RAPIDKIT_AGENT_RUNTIME_MAX_STEPS, RAPIDKIT_AGENT_RUNTIME_RETRY_LIMIT
+
+Use this snippet near the owning service/module registration point so generated projects keep module intent, operational boundaries, and security expectations visible to maintainers.

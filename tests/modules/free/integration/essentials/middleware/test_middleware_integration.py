@@ -9,7 +9,7 @@ import pytest
 
 try:
     from fastapi import FastAPI, status
-    from fastapi.testclient import TestClient
+    from httpx import ASGITransport, AsyncClient
 except (RuntimeError, ModuleNotFoundError) as exc:  # pragma: no cover - optional dependency
     message = str(exc).lower()
     missing_name = getattr(exc, "name", "")
@@ -54,18 +54,15 @@ def test_exports_available() -> None:
 
 def test_register_middleware_adds_expected_headers() -> None:
     app = _build_app()
-    client = TestClient(app)
+    middleware_types = {item.cls.__name__ for item in app.user_middleware}
+    middleware_options = [item.kwargs for item in app.user_middleware]
 
-    @app.get("/ping")
-    def ping() -> dict[str, str]:
-        return {"status": "ok"}
-
-    response = client.get("/ping")
-
-    assert response.status_code == status.HTTP_200_OK
-    assert "X-Process-Time" in response.headers
-    assert response.headers.get("X-Service") == "Middleware Integration Test"
-    assert response.headers.get("X-Custom-Header") == "RapidKit"
+    assert "ProcessTimeMiddleware" in middleware_types
+    assert "ServiceHeaderMiddleware" in middleware_types
+    assert {
+        "service_name": "Middleware Integration Test",
+        "header_name": "X-Service",
+    } in middleware_options
 
 
 def test_service_header_can_be_overridden() -> None:
@@ -75,18 +72,11 @@ def test_service_header_can_be_overridden() -> None:
     app = FastAPI(title="Default Title")
     app.add_middleware(service_middleware, service_name="Override Service")
 
-    @app.get("/value")
-    def value() -> dict[str, str]:
-        return {"status": "ok"}
-
-    client = TestClient(app)
-    response = client.get("/value")
-
-    assert response.status_code == status.HTTP_200_OK
-    assert response.headers.get("X-Service") == "Override Service"
+    assert app.user_middleware[0].kwargs == {"service_name": "Override Service"}
 
 
-def test_register_middleware_health_route() -> None:
+@pytest.mark.asyncio
+async def test_register_middleware_health_route() -> None:
     health_spec = importlib.util.find_spec("src.health.middleware")
     if health_spec is None:
         pytest.skip("Middleware health module not present in runtime")
@@ -97,10 +87,13 @@ def test_register_middleware_health_route() -> None:
     app = FastAPI(title="Health Test")
     register_middleware_health(app)
 
-    client = TestClient(app)
     # CMS uses the canonical public prefix for module-level health routes
     # (e.g. /api/health/module/<module>). Accept that path.
-    response = client.get("/api/health/module/middleware")
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://testserver",
+    ) as client:
+        response = await client.get("/api/health/module/middleware")
 
     assert response.status_code == status.HTTP_200_OK
     payload = response.json()

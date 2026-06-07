@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
 import json
@@ -123,32 +124,40 @@ class {{ module_class_name }}Config:
         )
 
 
-class InventoryStore:
+class InventoryStore(ABC):
     """Persistence contract for inventory data."""
 
+    @abstractmethod
     def get_item(self, sku: str) -> Optional[InventoryItem]:  # pragma: no cover - interface
-        raise NotImplementedError
+        """Return an item by SKU, or None when it is absent."""
 
+    @abstractmethod
     def set_item(self, item: InventoryItem) -> None:  # pragma: no cover - interface
-        raise NotImplementedError
+        """Persist an item snapshot."""
 
+    @abstractmethod
     def remove_item(self, sku: str) -> None:  # pragma: no cover - interface
-        raise NotImplementedError
+        """Remove an item by SKU."""
 
+    @abstractmethod
     def iter_items(self) -> Iterable[InventoryItem]:  # pragma: no cover - interface
-        raise NotImplementedError
+        """Iterate over persisted item snapshots."""
 
+    @abstractmethod
     def get_reservation(self, reference: str) -> Optional[InventoryReservation]:  # pragma: no cover - interface
-        raise NotImplementedError
+        """Return a reservation by reference, or None when it is absent."""
 
+    @abstractmethod
     def set_reservation(self, reservation: InventoryReservation) -> None:  # pragma: no cover - interface
-        raise NotImplementedError
+        """Persist a reservation snapshot."""
 
+    @abstractmethod
     def remove_reservation(self, reference: str) -> None:  # pragma: no cover - interface
-        raise NotImplementedError
+        """Remove a reservation by reference."""
 
+    @abstractmethod
     def iter_reservations(self) -> Iterable[InventoryReservation]:  # pragma: no cover - interface
-        raise NotImplementedError
+        """Iterate over persisted reservation snapshots."""
 
 
 class InMemoryInventoryStore(InventoryStore):

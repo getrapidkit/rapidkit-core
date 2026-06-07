@@ -15,7 +15,7 @@ except ImportError:  # pragma: no cover
         from ..{{ module_name }} import {{ module_class_name }}
 
 
-def get_runtime_dependency(request: Request) -> {{ module_class_name }}:
+async def get_runtime_dependency(request: Request) -> {{ module_class_name }}:
     runtime: {{ module_class_name }} = getattr(request.app.state, "{{ module_name }}_runtime", None)
     if runtime is None:
         runtime = {{ module_class_name }}()
