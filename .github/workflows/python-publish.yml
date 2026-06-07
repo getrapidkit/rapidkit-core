@@ -300,7 +300,7 @@ jobs:
                   repo_url=$(awk -F '"' 'BEGIN{in_poetry=0} /^\[tool\.poetry\]$/{in_poetry=1;next} in_poetry && /^\[/{in_poetry=0} in_poetry && /^repository =/{print $2; exit}' pyproject.toml)
                   repo_url="${repo_url%/}"
                   if [ -z "${repo_url:-}" ]; then
-                      repo_url="https://github.com/getrapidkit/rapidkit-core"
+                      repo_url="https://github.com/rapidkitlabs/rapidkit-core"
                   fi
 
                   cat <<'EOF' > pypi_release_notes.md

@@ -8,8 +8,8 @@ from importlib import import_module
 import pytest
 
 try:
+    import httpx
     from fastapi import FastAPI, status
-    from fastapi.testclient import TestClient
 except (RuntimeError, ModuleNotFoundError) as exc:  # pragma: no cover - optional dependency
     message = str(exc).lower()
     missing_name = getattr(exc, "name", "")
@@ -18,7 +18,7 @@ except (RuntimeError, ModuleNotFoundError) as exc:  # pragma: no cover - optiona
             "fastapi is required for notifications integration tests", allow_module_level=True
         )
     if "httpx" in message or missing_name == "httpx":
-        pytest.skip("httpx is required for FastAPI TestClient", allow_module_level=True)
+        pytest.skip("httpx is required for FastAPI integration tests", allow_module_level=True)
     raise
 
 
@@ -132,7 +132,8 @@ def test_notification_manager_creation() -> None:
     assert manager.email_service is not None
 
 
-def test_register_notifications_health_route() -> None:
+@pytest.mark.asyncio
+async def test_register_notifications_health_route() -> None:
     """Test that health endpoint is available after registration."""
     try:
         health_spec = importlib.util.find_spec("src.health.notifications")
@@ -147,8 +148,9 @@ def test_register_notifications_health_route() -> None:
     app = FastAPI(title="Health Test")
     register_notifications_health(app)
 
-    client = TestClient(app)
-    response = client.get("/health/notifications")
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url="http://test") as client:
+        response = await client.get("/health/notifications")
 
     assert response.status_code == status.HTTP_200_OK
     payload = response.json()

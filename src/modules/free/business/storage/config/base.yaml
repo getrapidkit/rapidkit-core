@@ -1,4 +1,10 @@
 # Default configuration for File Storage Module
+profiles:
+  fastapi/standard:
+    description: Standard FastAPI project support for storage runtime and snippet injection.
+  nestjs/standard:
+    description: NestJS project support for storage runtime and snippet injection.
+
 storage:
   # Primary adapter: local, s3, gcs
   adapter: local

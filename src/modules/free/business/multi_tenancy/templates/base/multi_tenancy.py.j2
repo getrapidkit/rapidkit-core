@@ -1,0 +1,298 @@
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from enum import Enum
+from threading import RLock
+from typing import Any, Mapping
+from uuid import uuid4
+
+
+class {{ module_class_name }}Error(ValueError):
+    """Raised when tenant state or access checks are invalid."""
+
+
+class TenantStatus(str, Enum):
+    ACTIVE = "active"
+    SUSPENDED = "suspended"
+    ARCHIVED = "archived"
+
+
+class TenantRole(str, Enum):
+    OWNER = "owner"
+    ADMIN = "admin"
+    MEMBER = "member"
+    VIEWER = "viewer"
+
+
+@dataclass(frozen=True)
+class Tenant:
+    id: str
+    name: str
+    slug: str
+    status: TenantStatus = TenantStatus.ACTIVE
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+    created_at: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds")
+    )
+
+
+@dataclass(frozen=True)
+class TenantMembership:
+    tenant_id: str
+    user_id: str
+    role: TenantRole
+    created_at: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds")
+    )
+
+
+@dataclass(frozen=True)
+class TenantContext:
+    tenant_id: str
+    user_id: str | None = None
+    role: TenantRole | None = None
+    isolation_key: str = ""
+
+
+@dataclass(frozen=True)
+class TenantEvent:
+    type: str
+    tenant_id: str
+    actor_id: str | None = None
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+    timestamp: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds")
+    )
+
+
+@dataclass(frozen=True)
+class {{ module_class_name }}Config:
+    """Runtime configuration for {{ module_title }}."""
+
+    enabled: bool = True
+    default_role: TenantRole = TenantRole.MEMBER
+    allow_slug_updates: bool = False
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+
+def build_default_config() -> {{ module_class_name }}Config:
+    """Return default configuration payload."""
+
+    return {{ module_class_name }}Config()
+
+
+def _normalize_slug(value: str) -> str:
+    slug = value.strip().lower().replace("_", "-").replace(" ", "-")
+    slug = "".join(char for char in slug if char.isalnum() or char == "-").strip("-")
+    if not slug:
+        raise {{ module_class_name }}Error("tenant slug must not be empty")
+    return slug
+
+
+class {{ module_class_name }}:
+    """Thread-safe tenant registry and authorization helper."""
+
+    ROLE_ORDER = {
+        TenantRole.VIEWER: 0,
+        TenantRole.MEMBER: 1,
+        TenantRole.ADMIN: 2,
+        TenantRole.OWNER: 3,
+    }
+
+    def __init__(self, config: {{ module_class_name }}Config | None = None) -> None:
+        self.config = config or build_default_config()
+        self._tenants: dict[str, Tenant] = {}
+        self._slug_index: dict[str, str] = {}
+        self._memberships: dict[tuple[str, str], TenantMembership] = {}
+        self._events: list[TenantEvent] = []
+        self._lock = RLock()
+
+    def create_tenant(
+        self,
+        *,
+        name: str,
+        slug: str | None = None,
+        owner_user_id: str | None = None,
+        metadata: Mapping[str, Any] | None = None,
+    ) -> Tenant:
+        if not self.config.enabled:
+            raise {{ module_class_name }}Error("multi tenancy is disabled")
+        if not name.strip():
+            raise {{ module_class_name }}Error("tenant name must not be empty")
+        resolved_slug = _normalize_slug(slug or name)
+        with self._lock:
+            if resolved_slug in self._slug_index:
+                raise {{ module_class_name }}Error("tenant slug already exists")
+            tenant = Tenant(
+                id=str(uuid4()),
+                name=name.strip(),
+                slug=resolved_slug,
+                metadata=dict(metadata or {}),
+            )
+            self._tenants[tenant.id] = tenant
+            self._slug_index[tenant.slug] = tenant.id
+            self._record("tenant.created", tenant.id, actor_id=owner_user_id)
+            if owner_user_id:
+                self.assign_role(
+                    tenant_id=tenant.id,
+                    user_id=owner_user_id,
+                    role=TenantRole.OWNER,
+                    actor_id=owner_user_id,
+                )
+            return tenant
+
+    def get_tenant(self, tenant_id: str) -> Tenant:
+        with self._lock:
+            tenant = self._tenants.get(tenant_id)
+        if tenant is None:
+            raise {{ module_class_name }}Error("tenant not found")
+        return tenant
+
+    def resolve_tenant(self, slug: str) -> Tenant:
+        normalized = _normalize_slug(slug)
+        with self._lock:
+            tenant_id = self._slug_index.get(normalized)
+        if tenant_id is None:
+            raise {{ module_class_name }}Error("tenant not found")
+        return self.get_tenant(tenant_id)
+
+    def set_status(
+        self,
+        tenant_id: str,
+        status: TenantStatus | str,
+        *,
+        actor_id: str | None = None,
+    ) -> Tenant:
+        resolved_status = TenantStatus(status)
+        with self._lock:
+            existing = self.get_tenant(tenant_id)
+            tenant = Tenant(
+                id=existing.id,
+                name=existing.name,
+                slug=existing.slug,
+                status=resolved_status,
+                metadata=dict(existing.metadata),
+                created_at=existing.created_at,
+            )
+            self._tenants[tenant.id] = tenant
+            self._record("tenant.status_changed", tenant.id, actor_id=actor_id)
+            return tenant
+
+    def assign_role(
+        self,
+        *,
+        tenant_id: str,
+        user_id: str,
+        role: TenantRole | str | None = None,
+        actor_id: str | None = None,
+    ) -> TenantMembership:
+        self._ensure_active(tenant_id)
+        if not user_id.strip():
+            raise {{ module_class_name }}Error("user_id must not be empty")
+        resolved_role = TenantRole(role or self.config.default_role)
+        membership = TenantMembership(
+            tenant_id=tenant_id,
+            user_id=user_id,
+            role=resolved_role,
+        )
+        with self._lock:
+            self._memberships[(tenant_id, user_id)] = membership
+            self._record(
+                "tenant.member_assigned",
+                tenant_id,
+                actor_id=actor_id,
+                metadata={"user_id": user_id, "role": resolved_role.value},
+            )
+        return membership
+
+    def revoke_member(self, *, tenant_id: str, user_id: str, actor_id: str | None = None) -> bool:
+        with self._lock:
+            removed = self._memberships.pop((tenant_id, user_id), None) is not None
+            if removed:
+                self._record(
+                    "tenant.member_revoked",
+                    tenant_id,
+                    actor_id=actor_id,
+                    metadata={"user_id": user_id},
+                )
+            return removed
+
+    def resolve_context(self, *, tenant_id: str, user_id: str | None = None) -> TenantContext:
+        tenant = self.get_tenant(tenant_id)
+        if tenant.status != TenantStatus.ACTIVE:
+            raise {{ module_class_name }}Error("tenant is not active")
+        membership = self._memberships.get((tenant_id, user_id)) if user_id else None
+        return TenantContext(
+            tenant_id=tenant.id,
+            user_id=user_id,
+            role=membership.role if membership else None,
+            isolation_key=f"tenant:{tenant.id}",
+        )
+
+    def require_role(self, *, tenant_id: str, user_id: str, minimum_role: TenantRole | str) -> TenantContext:
+        context = self.resolve_context(tenant_id=tenant_id, user_id=user_id)
+        if context.role is None:
+            raise {{ module_class_name }}Error("user is not a tenant member")
+        required = TenantRole(minimum_role)
+        if self.ROLE_ORDER[context.role] < self.ROLE_ORDER[required]:
+            raise {{ module_class_name }}Error("user does not have required tenant role")
+        return context
+
+    def list_members(self, tenant_id: str) -> list[TenantMembership]:
+        with self._lock:
+            return [
+                membership
+                for (member_tenant_id, _), membership in self._memberships.items()
+                if member_tenant_id == tenant_id
+            ]
+
+    def audit_events(self, tenant_id: str | None = None) -> tuple[TenantEvent, ...]:
+        with self._lock:
+            events = tuple(self._events)
+        if tenant_id is None:
+            return events
+        return tuple(event for event in events if event.tenant_id == tenant_id)
+
+    def stats(self) -> dict[str, Any]:
+        with self._lock:
+            by_status: dict[str, int] = {}
+            for tenant in self._tenants.values():
+                by_status[tenant.status.value] = by_status.get(tenant.status.value, 0) + 1
+            return {
+                "enabled": self.config.enabled,
+                "tenants": len(self._tenants),
+                "memberships": len(self._memberships),
+                "events": len(self._events),
+                "by_status": by_status,
+            }
+
+    def health(self) -> dict[str, Any]:
+        return {
+            "module": "{{ module_name }}",
+            "status": "ok" if self.config.enabled else "disabled",
+            "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "stats": self.stats(),
+        }
+
+    def _ensure_active(self, tenant_id: str) -> None:
+        tenant = self.get_tenant(tenant_id)
+        if tenant.status != TenantStatus.ACTIVE:
+            raise {{ module_class_name }}Error("tenant is not active")
+
+    def _record(
+        self,
+        event_type: str,
+        tenant_id: str,
+        *,
+        actor_id: str | None = None,
+        metadata: Mapping[str, Any] | None = None,
+    ) -> None:
+        self._events.append(
+            TenantEvent(
+                type=event_type,
+                tenant_id=tenant_id,
+                actor_id=actor_id,
+                metadata=dict(metadata or {}),
+            )
+        )

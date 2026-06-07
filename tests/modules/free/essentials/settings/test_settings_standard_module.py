@@ -91,6 +91,8 @@ def test_fastapi_generation_rehydrates_basesettings(fastapi_generation, monkeypa
     from pydantic.errors import PydanticImportError
     from pydantic_settings import BaseSettings as PydanticSettingsBase
 
+    monkeypatch.setenv("DEBUG", "false")
+
     with contextlib.suppress(PydanticImportError):
         monkeypatch.delattr(pydantic, "BaseSettings", raising=False)
 
@@ -101,6 +103,15 @@ def test_fastapi_generation_rehydrates_basesettings(fastapi_generation, monkeypa
 
     settings_instance = module.Settings()
     assert hasattr(settings_instance, "PROJECT_NAME")
+
+
+def test_fastapi_generation_ignores_namespace_style_debug_env(fastapi_generation, monkeypatch):
+    monkeypatch.setenv("DEBUG", "release")
+
+    module = _import_generated_settings(fastapi_generation, monkeypatch)
+    settings_instance = module.Settings()
+
+    assert settings_instance.DEBUG is False
 
 
 def test_infer_vendor_settings_path_prefers_settings_template():

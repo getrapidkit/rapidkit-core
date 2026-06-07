@@ -1,0 +1,7 @@
+# Register snippet bundles for Usage Billing
+
+snippets:
+  -
+    name: "usage_billing_usage_example"
+    template: "templates/snippets/usage_billing.snippet.j2"
+    description: "Injects an opinionated usage example for Usage Billing."

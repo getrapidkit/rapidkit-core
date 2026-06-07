@@ -1,7 +1,7 @@
 name: stripe_payment
 display_name: Stripe Payment
 description: Stripe payments and subscriptions
-version: 0.1.2
+version: 0.1.4
 access: free
 status: stable
 tier: free
@@ -126,12 +126,12 @@ documentation:
     api_docs: docs/api-reference.md
     examples: []
 support:
-    issues: https://github.com/getrapidkit/rapidkit-core/issues
-    discussions: https://github.com/getrapidkit/rapidkit-core/discussions
+    issues: https://github.com/rapidkitlabs/rapidkit-core/issues
+    discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
     documentation: https://docs.rapidkit.top/modules/billing/stripe_payment
 changelog:
-  - version: "0.1.2"
-    date: "2026-02-11"
+  - version: "0.1.4"
+    date: "2026-06-07"
     notes: "See docs/changelog.md"
 validation:
     pre_install:
@@ -176,7 +176,7 @@ file_hashes:
     frameworks/fastapi.py: sha256:1361ed2709d2f94ea8385add2a06e40baba266da03b412597dbcc436394127b7
     frameworks/nestjs.py: sha256:e8f8d70f6d90164fa05ae988a1e585504a7160699e4cfd7d30ce7034ad4916fb
     generate.py: sha256:d16051bc22c942d5a626119152062b32fa8852c7b89d756e98bebc04f0d05d71
-    module.verify.json: sha256:2833abce73c53ec2c7fe8411a5fee30021e3fd83733977212db6053529e81c0d
+    module.verify.json: sha256:a5bb4bb45c851fd0643e3db01242f6008a71e69aa1c4996f6fa25557346c5cca
     overrides.py: sha256:c08a11a365fb8b85a7e0fbbecef5a80139b214c370c963a2afbd9c31028b88eb
     templates/base/stripe_payment.py.j2: sha256:510e8a4a468b7f73a12ec831a821f46bb3165e567b2763b0b0ae06315432dffa
     templates/base/stripe_payment_health.py.j2: sha256:3feac1dedc14d1271a6cb6d458ca2765f1702b1f22f3933011d55ec66e8acddc

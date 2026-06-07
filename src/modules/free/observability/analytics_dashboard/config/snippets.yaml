@@ -1,0 +1,7 @@
+# Register snippet bundles for Analytics Dashboard
+
+snippets:
+  -
+    name: "analytics_dashboard_usage_example"
+    template: "templates/snippets/analytics_dashboard.snippet.j2"
+    description: "Injects an opinionated usage example for Analytics Dashboard."

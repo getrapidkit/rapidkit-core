@@ -1,0 +1,43 @@
+{
+  "checked_at": "2026-05-31T16:12:15.434952+00:00",
+  "description": "Lean module layout blueprint (v3)",
+  "extra_directories": [
+    "scripts"
+  ],
+  "extra_files": [
+    "scripts/run_demo.py",
+    "templates/base/connector_hub_health.py.j2"
+  ],
+  "missing_directories": [],
+  "missing_files": [],
+  "module": "free/business/connector_hub",
+  "parity": {
+    "fastapi": {
+      "declared": true,
+      "has_config": true,
+      "has_health": true,
+      "has_metadata": true,
+      "has_tests": true,
+      "issues": [],
+      "plugin": true,
+      "status": "ok"
+    },
+    "nestjs": {
+      "declared": true,
+      "has_config": true,
+      "has_health": true,
+      "has_metadata": true,
+      "has_tests": true,
+      "issues": [],
+      "plugin": true,
+      "status": "ok"
+    }
+  },
+  "parity_checked_at": "2026-06-06T22:22:38.713564+00:00",
+  "parity_valid": true,
+  "spec_version": 4,
+  "structure_tree_hash": "d5026e45a84209be504fe6abf1e5169db5f69bb9154438761cddd5ef02d31c84",
+  "structure_valid": true,
+  "tree_hash": "d5026e45a84209be504fe6abf1e5169db5f69bb9154438761cddd5ef02d31c84",
+  "valid": true
+}

@@ -4,8 +4,8 @@ snippets:
     target: .env,.env.dev,.env.prod,.env.example
     anchor: "# <<<inject:module-env>>>"
     template: db_sqlite_env.snippet.j2
-    features: [sqlite, database]
-    profiles: [fastapi/standard, nestjs/standard]
+    features: [db_sqlite, sqlite, database]
+    profiles: [fastapi/standard, fastapi/ddd, nestjs/standard]
     description: Injects Db Sqlite environment variable defaults
     version: "1.0.0"
     priority: 12
@@ -61,8 +61,8 @@ snippets:
     target: src/modules/free/essentials/settings/settings.py
     anchor: "# <<<inject:settings-fields>>>"
     template: db_sqlite_settings_fields.snippet.j2
-    features: [sqlite, database, extendable_settings]
-    profiles: [fastapi/standard]
+    features: [extendable_settings]
+    profiles: [fastapi/standard, fastapi/ddd]
     description: Injects Db Sqlite configuration fields into the Python settings module
     version: "1.0.0"
     priority: 18
@@ -94,7 +94,7 @@ snippets:
     target: src/config/configuration.ts
     anchor: "// <<<inject:configuration>>>"
     template: db_sqlite_settings_fields_nestjs.snippet.j2
-    features: [sqlite, database]
+    features: [db_sqlite, sqlite, database]
     profiles: [nestjs/standard]
     description: Adds Db Sqlite configuration typings for NestJS configuration modules
     version: "1.0.0"

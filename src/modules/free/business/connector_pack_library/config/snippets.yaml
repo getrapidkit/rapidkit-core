@@ -1,0 +1,7 @@
+# Register snippet bundles for Connector Pack Library
+
+snippets:
+  -
+    name: "connector_pack_library_usage_example"
+    template: "templates/snippets/connector_pack_library.snippet.j2"
+    description: "Injects an opinionated usage example for Connector Pack Library."

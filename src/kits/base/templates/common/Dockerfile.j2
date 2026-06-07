@@ -33,7 +33,7 @@ EXPOSE 8000
 CMD ["poetry", "run", "uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8000"]
 
 {% elif runtime == 'node' %}
-FROM node:{{ node_version | default('20.19.6') }}-alpine
+FROM node:{{ node_version | default('20.19.0') }}-alpine
 
 WORKDIR /app
 

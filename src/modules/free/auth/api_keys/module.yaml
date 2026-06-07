@@ -1,7 +1,7 @@
 name: api_keys
 display_name: API Keys
 description: Deterministic API key issuance, verification, and auditing
-version: 0.1.1
+version: 0.1.3
 access: free
 status: stable
 tier: free
@@ -27,9 +27,9 @@ generation:
             - template: templates/base/api_keys.py.j2
               relative: src/modules/free/auth/api_keys/api_keys.py
             - template: templates/base/api_keys_health.py.j2
-              relative: src/health/api_keys.py
+              relative: src/modules/free/auth/api_keys/api_keys_health.py
             - template: templates/base/api_keys_types.py.j2
-              relative: src/modules/free/auth/api_keys/types/api_keys.py
+              relative: src/modules/free/auth/api_keys/api_keys_types.py
             - template: templates/vendor/nestjs/configuration.js.j2
               relative: nestjs/configuration.js
     variants:
@@ -127,12 +127,12 @@ documentation:
     examples:
         - templates/snippets/api_keys.snippet.j2
 support:
-    issues: https://github.com/getrapidkit/rapidkit-core/issues
-    discussions: https://github.com/getrapidkit/rapidkit-core/discussions
+    issues: https://github.com/rapidkitlabs/rapidkit-core/issues
+    discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
     documentation: https://docs.rapidkit.top/modules/auth/api_keys
 changelog:
-  - version: "0.1.1"
-    date: "2026-02-11"
+  - version: "0.1.3"
+    date: "2026-06-07"
     notes: "See docs/changelog.md"
 validation:
     pre_install:
@@ -183,7 +183,7 @@ file_hashes:
     frameworks/fastapi.py: sha256:e5f6211c58db9de959ca9925c078d525bd2656b59dc82fec392aad2e6bd42a62
     frameworks/nestjs.py: sha256:7f0f9eb8e655e9acf0d9509457dd1a3658df77f869a721540fc32abc54f2126b
     generate.py: sha256:43a02933cf0edae16608f1a6d11aa8c78b7915efac9ea3984e3460938f8f0436
-    module.verify.json: sha256:b231b1ee308259ec5e8fe91bc4ca073af248d4ddc9422e6b2cacecc6b2641e6e
+    module.verify.json: sha256:c13503a4cde315c051a2cb63250c78af0aa226a85f20f02438efacccfed969ec
     overrides.py: sha256:ccbb621d4c0e35bcf64ab19d6d89a94c5eb5127f36a66b539db9afc7ecbf116e
     templates/base/api_keys.py.j2: sha256:2db6cd4f22f580302e55dfc4e1def1bb1901a296b9048738ae3e2ec55b6211bd
     templates/base/api_keys_health.py.j2: sha256:eb30adff1845b04385268ec11c9263da3cfac782697e331901ba66847a46735e

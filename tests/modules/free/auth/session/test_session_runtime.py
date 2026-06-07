@@ -8,10 +8,12 @@ from http import HTTPStatus
 from pathlib import Path
 
 import pytest
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
 
-from modules.free.auth.session import generate
+httpx = pytest.importorskip("httpx")
+
+from fastapi import FastAPI  # noqa: E402
+
+from modules.free.auth.session import generate  # noqa: E402
 
 
 def _load_module(module_name: str, path: Path):  # type: ignore[no-untyped-def]
@@ -66,39 +68,43 @@ def test_session_issue_and_verify(rendered_modules):  # type: ignore[no-untyped-
         runtime.verify_session_token(envelope.token)
 
 
-def test_fastapi_session_endpoints(rendered_modules):  # type: ignore[no-untyped-def]
+@pytest.mark.asyncio
+async def test_fastapi_session_endpoints(rendered_modules):  # type: ignore[no-untyped-def]
     _, session_fastapi = rendered_modules
 
     app = FastAPI()
     app.include_router(session_fastapi.create_router())
-    client = TestClient(app)
+    transport = httpx.ASGITransport(app=app)
 
-    create_resp = client.post("/sessions/", json={"user_id": "99", "claims": {"scope": "rw"}})
-    assert create_resp.status_code == HTTPStatus.CREATED
-    refresh_token = create_resp.json()["refresh_token"]
+    async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as client:
+        create_resp = await client.post(
+            "/sessions/", json={"user_id": "99", "claims": {"scope": "rw"}}
+        )
+        assert create_resp.status_code == HTTPStatus.CREATED
+        refresh_token = create_resp.json()["refresh_token"]
 
-    with client:
         token = client.cookies.get("rapidkit_session")
-    assert token is not None
+        assert token is not None
 
-    current_resp = client.get("/sessions/current", cookies={"rapidkit_session": token})
-    assert current_resp.status_code == HTTPStatus.OK
-    assert current_resp.json()["user_id"] == "99"
+        client.cookies.set("rapidkit_session", token)
+        current_resp = await client.get("/sessions/current")
+        assert current_resp.status_code == HTTPStatus.OK
+        assert current_resp.json()["user_id"] == "99"
 
-    refresh_resp = client.post(
-        "/sessions/refresh",
-        json={"refresh_token": refresh_token},
-        cookies={"rapidkit_session": token},
-    )
-    assert refresh_resp.status_code == HTTPStatus.OK
-    new_refresh = refresh_resp.json()["refresh_token"]
-    assert new_refresh != refresh_token
+        refresh_resp = await client.post(
+            "/sessions/refresh",
+            json={"refresh_token": refresh_token},
+        )
+        assert refresh_resp.status_code == HTTPStatus.OK
+        new_refresh = refresh_resp.json()["refresh_token"]
+        assert new_refresh != refresh_token
 
-    revoke_resp = client.delete(f"/sessions/{create_resp.json()['session_id']}")
-    assert revoke_resp.status_code == HTTPStatus.NO_CONTENT
+        revoke_resp = await client.delete(f"/sessions/{create_resp.json()['session_id']}")
+        assert revoke_resp.status_code == HTTPStatus.NO_CONTENT
 
-    invalid_resp = client.get("/sessions/current", cookies={"rapidkit_session": token})
-    assert invalid_resp.status_code == HTTPStatus.UNAUTHORIZED
+        client.cookies.set("rapidkit_session", token)
+        invalid_resp = await client.get("/sessions/current")
+        assert invalid_resp.status_code == HTTPStatus.UNAUTHORIZED
 
-    missing_resp = client.post("/sessions/refresh", json={"refresh_token": "bad-token"})
-    assert missing_resp.status_code == HTTPStatus.BAD_REQUEST
+        missing_resp = await client.post("/sessions/refresh", json={"refresh_token": "bad-token"})
+        assert missing_resp.status_code == HTTPStatus.BAD_REQUEST

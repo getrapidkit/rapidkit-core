@@ -30,6 +30,59 @@ class {{ module_class_name }}RuntimeError(RuntimeError):
 
 
 @dataclass(slots=True)
+class {{ module_class_name }}RetryPolicy:
+    """Retry/backoff policy shared by generated task definitions."""
+
+    max_retries: int = 3
+    base_delay_seconds: float = 1.0
+    backoff_multiplier: float = 2.0
+    max_delay_seconds: float = 60.0
+    jitter_seconds: float = 0.0
+
+    def delay_for_attempt(self, attempt: int) -> float:
+        if attempt < 1:
+            raise ValueError("attempt must be >= 1")
+        delay = self.base_delay_seconds * (self.backoff_multiplier ** (attempt - 1))
+        if self.jitter_seconds:
+            delay += min(self.jitter_seconds, self.max_delay_seconds)
+        return min(delay, self.max_delay_seconds)
+
+    def as_task_options(self) -> MutableMapping[str, Any]:
+        return {
+            "max_retries": self.max_retries,
+            "default_retry_delay": self.base_delay_seconds,
+        }
+
+
+@dataclass(slots=True)
+class {{ module_class_name }}WorkerProfile:
+    """Operational worker profile for production queues."""
+
+    queue: str = "default"
+    concurrency: int = 2
+    prefetch_multiplier: int = 1
+    max_tasks_per_child: int | None = 100
+    soft_time_limit_seconds: int | None = 300
+    hard_time_limit_seconds: int | None = 360
+
+    def validate(self) -> None:
+        if self.concurrency < 1:
+            raise ValueError("worker concurrency must be >= 1")
+        if self.prefetch_multiplier < 1:
+            raise ValueError("prefetch_multiplier must be >= 1")
+
+    def as_config(self) -> MutableMapping[str, Any]:
+        self.validate()
+        return {
+            "worker_concurrency": self.concurrency,
+            "worker_prefetch_multiplier": self.prefetch_multiplier,
+            "worker_max_tasks_per_child": self.max_tasks_per_child,
+            "task_soft_time_limit": self.soft_time_limit_seconds,
+            "task_time_limit": self.hard_time_limit_seconds,
+        }
+
+
+@dataclass(slots=True)
 class {{ module_class_name }}Schedule:
     """Represents a Celery beat schedule entry."""
 
@@ -73,10 +126,14 @@ class {{ module_class_name }}Settings:
     beat_schedule: MutableMapping[str, {{ module_class_name }}Schedule] = field(default_factory=dict)
     worker_max_tasks_per_child: Optional[int] = None
     result_expires: Optional[int] = 3600
+    retry_policy: {{ module_class_name }}RetryPolicy = field(default_factory={{ module_class_name }}RetryPolicy)
+    worker_profile: {{ module_class_name }}WorkerProfile = field(default_factory={{ module_class_name }}WorkerProfile)
 
     @classmethod
     def from_mapping(cls, payload: Mapping[str, Any]) -> "{{ module_class_name }}Settings":
         beat_payload = payload.get("beat_schedule", {}) or {}
+        retry_payload = payload.get("retry_policy", {}) or {}
+        worker_payload = payload.get("worker_profile", {}) or {}
         schedule_map: MutableMapping[str, {{ module_class_name }}Schedule] = {}
         for name, entry in beat_payload.items():
             if not isinstance(entry, Mapping):
@@ -95,6 +152,16 @@ class {{ module_class_name }}Settings:
             beat_schedule=schedule_map,
             worker_max_tasks_per_child=_maybe(payload.get("worker_max_tasks_per_child")),
             result_expires=_maybe(payload.get("result_expires"), default=cls.result_expires),
+            retry_policy={{ module_class_name }}RetryPolicy(
+                **retry_payload
+            )
+            if isinstance(retry_payload, Mapping)
+            else {{ module_class_name }}RetryPolicy(),
+            worker_profile={{ module_class_name }}WorkerProfile(
+                **worker_payload
+            )
+            if isinstance(worker_payload, Mapping)
+            else {{ module_class_name }}WorkerProfile(),
         )
 
 
@@ -185,6 +252,7 @@ def create_{{ module_name }}_app(config: {{ module_class_name }}AppConfig) -> An
         beat_schedule={name: _serialise_schedule(entry) for name, entry in config.settings.beat_schedule.items()},
         **config.config_overrides,
     )
+    app.conf.update(config.settings.worker_profile.as_config())
     if config.autodiscover:
         app.autodiscover_tasks(config.autodiscover, force=True)
     return app
@@ -276,6 +344,13 @@ def describe_{{ module_name }}(
             for name, entry in settings.beat_schedule.items()
         },
         "config_overrides": dict(resolved_config.config_overrides),
+        "retry_policy": {
+            "max_retries": settings.retry_policy.max_retries,
+            "base_delay_seconds": settings.retry_policy.base_delay_seconds,
+            "backoff_multiplier": settings.retry_policy.backoff_multiplier,
+            "max_delay_seconds": settings.retry_policy.max_delay_seconds,
+        },
+        "worker_profile": settings.worker_profile.as_config(),
         "features": list(MODULE_FEATURES),
     }
 

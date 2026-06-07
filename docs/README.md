@@ -1,67 +1,58 @@
-# 📚 RapidKit Documentation Hub
+# RapidKit Core Documentation Hub
 
-Welcome to the RapidKit documentation portal. Everything here is written for the single, community
-edition of RapidKit with optional marketplace modules layered on top.
+Last updated: 2026-06-04
 
-## 🎯 What to Expect
+This documentation covers the RapidKit core engine: the Python package that ships the module
+catalog, framework kits, distribution tooling, and the `rapidkit` / `rkc` command surface used by
+the npm wrapper and Workspai.
 
-- **One stable edition** powering every guide in this portal
-- **FastAPI standard kit** available today, with additional adapters in development
-- **Modular ecosystem** that mixes free and future licensed modules through the marketplace
-- **Open contribution model** so community improvements land in this repository first
+## Current Platform Snapshot
 
-## 📖 Documentation Categories
+- Public package: `rapidkit-core`
+- Python CLI entry points: `rapidkit`, `rkc`
+- npm wrapper: `rapidkit`
+- Free module catalog: 52 stable modules under `src/modules/free`
+- Supported release kits: `fastapi.standard`, `fastapi.ddd`, `nestjs.standard`
+- Canonical audit evidence: `dev-engine/audit-history/`
+- Operator playbooks: `dev-engine/playbooks/`
 
-| Category                                | Description                                     | Audience                    |
-| --------------------------------------- | ----------------------------------------------- | --------------------------- |
-| **[Getting Started](getting-started/)** | Install the CLI and scaffold your first project | New builders                |
-| **[Developer Guide](developer-guide/)** | Contribute to the engine and extend modules     | Contributors & maintainers  |
-| **[API Reference](api-reference/)**     | RapidKit CLI and module management commands     | Advanced users              |
-| **[Configuration](configuration/)**     | Environment files, constraints, and structure   | DevOps & platform engineers |
-| **[Modules](modules/)**                 | Authoring reusable modules and manifests        | Module authors              |
-| **[Project Templates](project/)**       | README templates and project documentation flow | Docs & enablement teams     |
-| **[Deployment](deployment/)**           | CI/CD packaging and release distribution        | Release engineers           |
-| **[Testing](testing/)**                 | Coverage policies and automation guidance       | QA & reliability engineers  |
-| **[Contributing](contributing/)**       | Community contribution workflow and templates   | Open source contributors    |
-| **[Licensing](licensing/)**             | Marketplace and security licensing overview     | Legal & compliance teams    |
+## Documentation Map
 
-> Looking for a section that is “coming soon”? Files that reference commercial plans or unreleased
-> frameworks stay private until they are ready for community consumption.
+| Section                                                | Purpose                                                             |
+| ------------------------------------------------------ | ------------------------------------------------------------------- |
+| [Getting Started](getting-started/README.md)           | Install and use RapidKit Core directly.                             |
+| [Developer Guide](developer-guide/README.md)           | Contribute to the engine, modules, and kits.                        |
+| [Modules](modules/overview.md)                         | Understand module manifests, registry, snippets, and stabilization. |
+| [API Reference](api-reference/README.md)               | CLI command reference and machine-readable surfaces.                |
+| [Configuration](configuration/CONFIG_FILES.md)         | Config files used by generated projects and the engine.             |
+| [Deployment](deployment/PACKAGE_DISTRIBUTION_GUIDE.md) | Build, verify, and publish the community distribution.              |
+| [Testing](testing/README.md)                           | Test strategy, coverage, and release gates.                         |
+| [Contributing](contributing/CONTRIBUTING.md)           | Contribution flow and PR expectations.                              |
+| [Licensing](licensing/OVERVIEW.md)                     | Licensing boundaries for the public package and generated assets.   |
+| [Internal Docs](internal/)                             | Maintainer-only release, mapping, and policy references.            |
 
-## 🧭 Quick Navigation
+## Recommended Entry Points
 
-- **New to RapidKit?** Start with the [Getting Started Guide](getting-started/README.md).
-- **Shipping modules?** Review the [Module System overview](modules/overview.md).
-- **Extending the engine?** Dive into the [Developer Guide](developer-guide/README.md).
-- **Documenting your generated app?** Use the templates in [project/](project/).
-- **Need configuration details?** Browse [configuration/](configuration/).
-- **Operating CI/CD?** Review the
-  [GitHub Actions Overview](developer-guide/github-actions-overview.md).
+For public users:
 
-## 🛰️ Platform Snapshot
+1. Install the npm CLI: `npm install -g rapidkit`
+1. Use Workspai for a graphical workflow when needed.
+1. Use the Python package directly only when building or debugging the core.
 
-- **Edition:** RapidKit Community
-- **CLI Version:** see `rapidkit --version`
-- **Primary kit:** FastAPI standard (ships today)
-- **Marketplace roadmap:** Additional licensed modules and support plans will land here when
-  available—no tier naming or gated editions required.
+For maintainers:
 
-## 🤝 Support & Community
+1. Read `dev-engine/README.md`.
+1. Use `dev-engine/playbooks/modules/MODULE_QUICK_REFERENCE.md`.
+1. Run `make stabilize-release <category>` for module release confidence.
+1. Run `make community-dist-install` before publishing.
 
-- **GitHub Discussions:** Community Q&A and ideas
-- **GitHub Issues:** Bug reports and feature requests
-- **Documentation feedback:** Open PRs or comments in the related file
+## Release Evidence Rule
 
-Support plans, if offered, will be published through the marketplace and clearly documented in the
-licensing section. Until then, everything here is supported by the community process above.
+New stabilization, security, distribution, and shared-integration artifacts must be written under:
 
-## 🚧 What to Expect Next
+```text
+dev-engine/audit-history/
+```
 
-Roadmap milestones are tracked via GitHub releases and Discussions. Community releases call out
-upcoming kits or module drops in the main [CHANGELOG](../CHANGELOG.md) and the distributions
-published through PyPI.
-
-______________________________________________________________________
-
-**Start building with RapidKit today.** Jump to the [Getting Started Guide](getting-started/) or
-explore modules in [`src/modules/free/`](../src/modules/free/).
+Legacy docs may remain under `dev-engine/audit-history/legacy/`, but new docs should not reference
+retired sandbox paths as active workflow locations.

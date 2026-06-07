@@ -1,0 +1,296 @@
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from enum import Enum
+from threading import RLock
+from typing import Any, Callable, Mapping
+from uuid import uuid4
+
+
+class {{ module_class_name }}Error(ValueError):
+    """Raised when workflow definitions or executions are invalid."""
+
+
+class WorkflowStatus(str, Enum):
+    PENDING = "pending"
+    RUNNING = "running"
+    SUCCEEDED = "succeeded"
+    FAILED = "failed"
+    CANCELED = "canceled"
+
+
+@dataclass(frozen=True)
+class WorkflowStep:
+    name: str
+    task: str
+    depends_on: tuple[str, ...] = ()
+    max_retries: int = 0
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class WorkflowDefinition:
+    name: str
+    steps: tuple[WorkflowStep, ...]
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class StepResult:
+    name: str
+    status: WorkflowStatus
+    attempts: int
+    output: Any = None
+    error: str | None = None
+
+
+@dataclass(frozen=True)
+class WorkflowRun:
+    id: str
+    workflow: str
+    status: WorkflowStatus
+    inputs: Mapping[str, Any] = field(default_factory=dict)
+    results: tuple[StepResult, ...] = ()
+    created_at: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds")
+    )
+    updated_at: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds")
+    )
+
+
+@dataclass(frozen=True)
+class WorkflowEvent:
+    type: str
+    run_id: str
+    step: str | None = None
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+    timestamp: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds")
+    )
+
+
+@dataclass(frozen=True)
+class {{ module_class_name }}Config:
+    """Runtime configuration for {{ module_title }}."""
+
+    enabled: bool = True
+    max_steps: int = 50
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+
+TaskHandler = Callable[[Mapping[str, Any], Mapping[str, StepResult]], Any]
+
+
+def build_default_config() -> {{ module_class_name }}Config:
+    """Return default configuration payload."""
+
+    return {{ module_class_name }}Config()
+
+
+def _utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+class {{ module_class_name }}:
+    """Deterministic in-process workflow executor for generated workspaces."""
+
+    def __init__(self, config: {{ module_class_name }}Config | None = None) -> None:
+        self.config = config or build_default_config()
+        self._definitions: dict[str, WorkflowDefinition] = {}
+        self._handlers: dict[str, TaskHandler] = {}
+        self._runs: dict[str, WorkflowRun] = {}
+        self._events: list[WorkflowEvent] = []
+        self._lock = RLock()
+
+    def register_task(self, name: str, handler: TaskHandler) -> None:
+        if not name.strip():
+            raise {{ module_class_name }}Error("task name must not be empty")
+        self._handlers[name] = handler
+
+    def register_workflow(self, definition: WorkflowDefinition) -> WorkflowDefinition:
+        if not self.config.enabled:
+            raise {{ module_class_name }}Error("workflow engine is disabled")
+        if not definition.name.strip():
+            raise {{ module_class_name }}Error("workflow name must not be empty")
+        if not definition.steps:
+            raise {{ module_class_name }}Error("workflow must contain at least one step")
+        if len(definition.steps) > self.config.max_steps:
+            raise {{ module_class_name }}Error("workflow exceeds max_steps")
+        names = [step.name for step in definition.steps]
+        if len(names) != len(set(names)):
+            raise {{ module_class_name }}Error("workflow step names must be unique")
+        # Execution is deterministic and sequential; dependencies must reference
+        # already-declared steps to avoid non-deterministic order or runtime key errors.
+        seen: set[str] = set()
+        for step in definition.steps:
+            unresolved = [dependency for dependency in step.depends_on if dependency not in seen]
+            if unresolved:
+                raise {{ module_class_name }}Error(
+                    f"step {step.name!r} depends on future or unknown steps: {sorted(unresolved)}"
+                )
+            seen.add(step.name)
+        missing = {
+            dependency
+            for step in definition.steps
+            for dependency in step.depends_on
+            if dependency not in names
+        }
+        if missing:
+            raise {{ module_class_name }}Error(f"unknown step dependencies: {sorted(missing)}")
+        with self._lock:
+            self._definitions[definition.name] = definition
+        return definition
+
+    def start(self, workflow: str, *, inputs: Mapping[str, Any] | None = None) -> WorkflowRun:
+        if not self.config.enabled:
+            raise {{ module_class_name }}Error("workflow engine is disabled")
+        definition = self._definitions.get(workflow)
+        if definition is None:
+            raise {{ module_class_name }}Error("workflow not found")
+        run = WorkflowRun(
+            id=str(uuid4()),
+            workflow=workflow,
+            status=WorkflowStatus.RUNNING,
+            inputs=dict(inputs or {}),
+            updated_at=_utc_now(),
+        )
+        with self._lock:
+            self._runs[run.id] = run
+            self._record("run.started", run.id)
+        return self._execute(run, definition)
+
+    def cancel(self, run_id: str) -> WorkflowRun:
+        run = self.get_run(run_id)
+        if run.status in {WorkflowStatus.SUCCEEDED, WorkflowStatus.FAILED, WorkflowStatus.CANCELED}:
+            raise {{ module_class_name }}Error("completed workflow cannot be canceled")
+        updated = self._replace_run(run, status=WorkflowStatus.CANCELED)
+        self._record("run.canceled", run_id)
+        return updated
+
+    def get_run(self, run_id: str) -> WorkflowRun:
+        with self._lock:
+            run = self._runs.get(run_id)
+        if run is None:
+            raise {{ module_class_name }}Error("workflow run not found")
+        return run
+
+    def list_runs(self, *, status: WorkflowStatus | str | None = None) -> tuple[WorkflowRun, ...]:
+        with self._lock:
+            runs = tuple(self._runs.values())
+        if status is None:
+            return runs
+        resolved = WorkflowStatus(status)
+        return tuple(run for run in runs if run.status == resolved)
+
+    def events(self, run_id: str | None = None) -> tuple[WorkflowEvent, ...]:
+        with self._lock:
+            events = tuple(self._events)
+        if run_id is None:
+            return events
+        return tuple(event for event in events if event.run_id == run_id)
+
+    def stats(self) -> dict[str, Any]:
+        with self._lock:
+            by_status: dict[str, int] = {}
+            for run in self._runs.values():
+                by_status[run.status.value] = by_status.get(run.status.value, 0) + 1
+            return {
+                "enabled": self.config.enabled,
+                "workflows": len(self._definitions),
+                "tasks": len(self._handlers),
+                "runs": len(self._runs),
+                "events": len(self._events),
+                "by_status": by_status,
+            }
+
+    def health(self) -> dict[str, Any]:
+        return {
+            "module": "{{ module_name }}",
+            "status": "ok" if self.config.enabled else "disabled",
+            "timestamp": _utc_now(),
+            "stats": self.stats(),
+        }
+
+    def _execute(self, run: WorkflowRun, definition: WorkflowDefinition) -> WorkflowRun:
+        results: dict[str, StepResult] = {}
+        for step in definition.steps:
+            self._record("step.started", run.id, step=step.name, metadata={"task": step.task})
+            if any(results[dependency].status != WorkflowStatus.SUCCEEDED for dependency in step.depends_on):
+                result = StepResult(step.name, WorkflowStatus.FAILED, 0, error="dependency failed")
+                results[step.name] = result
+                self._record("step.failed", run.id, step=step.name, metadata={"error": "dependency failed"})
+                return self._finish(run, WorkflowStatus.FAILED, tuple(results.values()))
+            result = self._execute_step(step, run.inputs, results)
+            results[step.name] = result
+            self._record(
+                "step.succeeded" if result.status == WorkflowStatus.SUCCEEDED else "step.failed",
+                run.id,
+                step=step.name,
+                metadata={"attempts": result.attempts, "error": result.error},
+            )
+            if result.status != WorkflowStatus.SUCCEEDED:
+                return self._finish(run, WorkflowStatus.FAILED, tuple(results.values()))
+        return self._finish(run, WorkflowStatus.SUCCEEDED, tuple(results.values()))
+
+    def _execute_step(
+        self,
+        step: WorkflowStep,
+        inputs: Mapping[str, Any],
+        results: Mapping[str, StepResult],
+    ) -> StepResult:
+        handler = self._handlers.get(step.task)
+        if handler is None:
+            return StepResult(step.name, WorkflowStatus.FAILED, 0, error="task handler not found")
+        attempts = 0
+        while attempts <= step.max_retries:
+            attempts += 1
+            try:
+                output = handler(inputs, results)
+                return StepResult(step.name, WorkflowStatus.SUCCEEDED, attempts, output=output)
+            except Exception as exc:  # pragma: no cover - caller error captured in result
+                if attempts > step.max_retries:
+                    return StepResult(step.name, WorkflowStatus.FAILED, attempts, error=str(exc))
+        return StepResult(step.name, WorkflowStatus.FAILED, attempts, error="retry exhausted")
+
+    def _finish(
+        self,
+        run: WorkflowRun,
+        status: WorkflowStatus,
+        results: tuple[StepResult, ...],
+    ) -> WorkflowRun:
+        updated = self._replace_run(run, status=status, results=results)
+        self._record(f"run.{status.value}", run.id)
+        return updated
+
+    def _replace_run(
+        self,
+        run: WorkflowRun,
+        *,
+        status: WorkflowStatus,
+        results: tuple[StepResult, ...] | None = None,
+    ) -> WorkflowRun:
+        updated = WorkflowRun(
+            id=run.id,
+            workflow=run.workflow,
+            status=status,
+            inputs=run.inputs,
+            results=run.results if results is None else results,
+            created_at=run.created_at,
+            updated_at=_utc_now(),
+        )
+        with self._lock:
+            self._runs[updated.id] = updated
+        return updated
+
+    def _record(
+        self,
+        event_type: str,
+        run_id: str,
+        step: str | None = None,
+        metadata: Mapping[str, Any] | None = None,
+    ) -> None:
+        self._events.append(
+            WorkflowEvent(type=event_type, run_id=run_id, step=step, metadata=dict(metadata or {}))
+        )

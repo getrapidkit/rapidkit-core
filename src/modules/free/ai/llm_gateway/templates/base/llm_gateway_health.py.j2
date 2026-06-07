@@ -1,0 +1,17 @@
+from __future__ import annotations
+
+from datetime import datetime
+from typing import Any
+
+
+def check_health(runtime: Any | None = None) -> dict[str, Any]:
+    """Return a health payload for the runtime facade."""
+
+    payload: dict[str, Any] = {
+        "module": "{{ module_name }}",
+        "timestamp": datetime.utcnow().isoformat(timespec="seconds"),
+        "status": "ok",
+    }
+    if runtime is not None and hasattr(runtime, "health_check"):
+        payload.update(runtime.health_check())
+    return payload

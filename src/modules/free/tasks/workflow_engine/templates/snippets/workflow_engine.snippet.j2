@@ -1,0 +1,12 @@
+{# Shared snippet for the RapidKit Workflow Engine module. #}
+{% set module_name = "workflow_engine" %}
+{% set module_title = "Workflow Engine" %}
+
+# {{ module_title }} integration notes
+
+- Canonical module: `free/tasks/workflow_engine`
+- Primary purpose: Triggers, actions, conditions, approvals, schedules, and durable workflow run scaffolding.
+- Key capabilities: Models workflow definitions and run state., Supports trigger/action/condition composition., Provides approval and scheduled execution hooks.
+- Runtime environment keys: RAPIDKIT_WORKFLOW_ENGINE_ENABLED, RAPIDKIT_WORKFLOW_ENGINE_MAX_CONCURRENCY, RAPIDKIT_WORKFLOW_ENGINE_RETRY_LIMIT
+
+Use this snippet near the owning service/module registration point so generated projects keep module intent, operational boundaries, and security expectations visible to maintainers.

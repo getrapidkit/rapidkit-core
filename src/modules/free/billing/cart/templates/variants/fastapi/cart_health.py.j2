@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, FastAPI, HTTPException, Request, status
 from {{ module_import_base }}.cart import CartService
 
 
-def _get_cart_service(request: Request) -> CartService:
+async def _get_cart_service(request: Request) -> CartService:
     service = getattr(request.app.state, "cart_service", None)
     if service is None:
         service = CartService()

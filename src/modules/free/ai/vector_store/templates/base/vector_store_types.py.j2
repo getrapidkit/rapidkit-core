@@ -1,0 +1,24 @@
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from typing import Any, Mapping
+
+
+@dataclass(frozen=True)
+class {{ module_class_name }}Context:
+    """Typed runtime context shared across templates."""
+
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+    enabled: bool = True
+    dimensions: int = 0
+    default_namespace: str = "default"
+
+
+@dataclass(frozen=True)
+class VectorQuery:
+    """Portable query contract for framework adapters."""
+
+    vector: tuple[float, ...]
+    top_k: int = 5
+    namespace: str = "default"
+    metadata_filter: Mapping[str, Any] = field(default_factory=dict)

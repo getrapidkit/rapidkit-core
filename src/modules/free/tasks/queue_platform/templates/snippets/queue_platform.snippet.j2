@@ -1,0 +1,12 @@
+{# Shared snippet for the RapidKit Queue Platform module. #}
+{% set module_name = "queue_platform" %}
+{% set module_title = "Queue Platform" %}
+
+# {{ module_title }} integration notes
+
+- Canonical module: `free/tasks/queue_platform`
+- Primary purpose: Tenant-aware durable queue abstraction with retry, delay, dead-letter, and worker leasing.
+- Key capabilities: Provides a framework-neutral queue boundary for background jobs., Models retries, delays, leases, and dead-letter outcomes., Preserves tenant and correlation context across job execution.
+- Runtime environment keys: RAPIDKIT_QUEUE_PLATFORM_ENABLED, RAPIDKIT_QUEUE_PLATFORM_RETRY_LIMIT, RAPIDKIT_QUEUE_PLATFORM_LEASE_SECONDS
+
+Use this snippet near the owning service/module registration point so generated projects keep module intent, operational boundaries, and security expectations visible to maintainers.

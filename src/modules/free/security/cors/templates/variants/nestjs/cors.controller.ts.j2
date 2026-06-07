@@ -2,6 +2,7 @@ import { Controller, Get } from "@nestjs/common";
 
 import {
   {{ module_class_name }}Service,
+  CorsHealthPayload,
   CorsMetadataPayload,
   CORS_FEATURES,
 } from "./cors.service";
@@ -13,6 +14,11 @@ export class {{ module_class_name }}Controller {
   @Get("metadata")
   getMetadata(): CorsMetadataPayload {
     return this.corsService.getMetadata();
+  }
+
+  @Get("health")
+  getHealth(): CorsHealthPayload {
+    return this.corsService.getHealthPayload();
   }
 
   @Get("features")

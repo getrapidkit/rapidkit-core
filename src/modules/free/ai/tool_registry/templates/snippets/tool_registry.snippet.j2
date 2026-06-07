@@ -1,0 +1,12 @@
+{# Shared snippet for the RapidKit Tool Registry module. #}
+{% set module_name = "tool_registry" %}
+{% set module_title = "Tool Registry" %}
+
+# {{ module_title }} integration notes
+
+- Canonical module: `free/ai/tool_registry`
+- Primary purpose: Tool registry, schemas, permissions, and audit-safe invocation policy for AI products.
+- Key capabilities: Defines tool schemas and invocation policy behind a stable registry., Separates tool discovery from authorization and execution., Captures audit context for tool calls made by users or agents.
+- Runtime environment keys: RAPIDKIT_TOOL_REGISTRY_ENABLED, RAPIDKIT_TOOL_REGISTRY_DEFAULT_POLICY, RAPIDKIT_TOOL_REGISTRY_SCHEMA_STRICT
+
+Use this snippet near the owning service/module registration point so generated projects keep module intent, operational boundaries, and security expectations visible to maintainers.

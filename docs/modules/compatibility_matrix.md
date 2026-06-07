@@ -1,35 +1,46 @@
-# Module ↔ Kit Compatibility Matrix
+# Module and Kit Compatibility
 
-This matrix summarizes the declared compatibility between free RapidKit modules and the officially
-shipped kit profiles. Compatibility data is sourced from `src/modules/free/modules.yaml` under the
-`kit_support` section and is surfaced by the `rapidkit add module` command during installation.
+Last updated: 2026-06-04
 
-Note: Dependency resolution and install ordering are driven by each module's `module.yaml`
-(`depends_on`), not by the tier catalog.
+RapidKit currently ships 52 stable free modules and three release kit profiles:
 
-## Status Legend
+- `fastapi.standard`
+- `fastapi.ddd`
+- `nestjs.standard`
 
-- **supported** – Full support with automated overrides and tests.
-- **experimental** – Works in internal testing, but expect rough edges; manual validation
-  recommended.
-- **planned** – Support is on the roadmap but not yet implemented.
-- **unsupported** – No current plans or the module depends on features missing from the kit.
+Compatibility is not a static promise written by hand. It is release evidence produced by
+stabilization gates and stored under `dev-engine/audit-history/`.
 
-## Free Modules
+## Current Compatibility Policy
 
-| Module           | fastapi.standard | nestjs.standard | Notes                                                                     |
-| ---------------- | ---------------- | --------------- | ------------------------------------------------------------------------- |
-| settings         | ✅ supported     | ⚠️ experimental | Validated overrides for FastAPI; NestJS scaffolding undergoing hardening. |
-| logging          | ✅ supported     | 🗓️ planned      | Logging pipeline will be ported after NestJS middleware audit.            |
-| security_headers | ✅ supported     | ✅ supported    | FastAPI middleware and NestJS service share the same hardened defaults.   |
-| db_postgres      | ✅ supported     | ✅ supported    | Ships async SQLAlchemy runtime plus NestJS pool service and health APIs.  |
-| db_sqlite        | ✅ supported     | ❌ unsupported  | Focused on FastAPI dev workflows.                                         |
-| redis            | ✅ supported     | ✅ supported    | Includes NestJS cache service, controller, and validation snippets.       |
-| monitoring       | ✅ supported     | 🗓️ planned      | NestJS health endpoints being finalized.                                  |
-| auth             | ✅ supported     | 🗓️ planned      | Requires NestJS passport integration.                                     |
-| users            | ✅ supported     | ❌ unsupported  | Relies on FastAPI-specific scaffolding.                                   |
-| billing          | ⚠️ experimental  | ❌ unsupported  | Stripe flow stable on FastAPI; NestJS implementation unscoped.            |
-| notifications    | ⚠️ experimental  | 🗓️ planned      | Multi-channel delivery slated for NestJS Q4 release.                      |
+| Evidence                                   | Meaning                                                               |
+| ------------------------------------------ | --------------------------------------------------------------------- |
+| `make stabilize-fast <category>` passes    | Each module in the category installs in isolated cached kit projects. |
+| `make stabilize-shared <category>` passes  | The category composes in a shared project per kit.                    |
+| `make stabilize-release <category>` passes | The category has both isolated and shared confidence.                 |
+| `make stabilize-release-all` passes        | Full catalog confidence for the current checkout.                     |
 
-> Keep compatibility notes in sync when updating `kit_support` metadata so the CLI and documentation
-> stay aligned.
+## Catalog Snapshot
+
+| Category        | Modules                                                                                                                                                                                                                  |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `ai`            | `agent_runtime`, `ai_assistant`, `ai_guardrails`, `llm_gateway`, `prompt_ops`, `rag_pipeline`, `tool_registry`, `vector_store`                                                                                           |
+| `auth`          | `api_keys`, `core`, `oauth`, `passwordless`, `session`                                                                                                                                                                   |
+| `billing`       | `cart`, `inventory`, `stripe_payment`, `usage_billing`                                                                                                                                                                   |
+| `business`      | `admin_console`, `approval_engine`, `connector_hub`, `connector_pack_library`, `document_pipeline`, `feature_flags`, `forms_engine`, `media_pipeline`, `multi_tenancy`, `org_admin_console`, `storage`, `support_center` |
+| `cache`         | `redis`                                                                                                                                                                                                                  |
+| `communication` | `email`, `notifications`, `webhook_platform`                                                                                                                                                                             |
+| `database`      | `db_mongo`, `db_postgres`, `db_sqlite`                                                                                                                                                                                   |
+| `essentials`    | `deployment`, `logging`, `middleware`, `settings`                                                                                                                                                                        |
+| `observability` | `analytics_dashboard`, `core`                                                                                                                                                                                            |
+| `security`      | `audit_policy`, `cors`, `rate_limiting`, `security_headers`                                                                                                                                                              |
+| `tasks`         | `celery`, `event_bus`, `queue_platform`, `workflow_engine`                                                                                                                                                               |
+| `users`         | `users_core`, `users_profiles`                                                                                                                                                                                           |
+
+## Updating This Matrix
+
+1. Run the relevant stabilization command.
+1. Keep the generated report under `dev-engine/audit-history/`.
+1. Update this file only if the module catalog or release kit list changes.
+
+Do not list a module as supported for a kit unless current audit evidence exists.

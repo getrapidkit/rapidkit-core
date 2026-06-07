@@ -1,0 +1,243 @@
+from __future__ import annotations
+
+import heapq
+import time
+from dataclasses import dataclass, field
+from enum import Enum
+from threading import RLock
+from typing import Any, Callable, Mapping
+from uuid import uuid4
+
+
+@dataclass
+class {{ module_class_name }}Config:
+    enabled: bool = True
+    max_attempts: int = 3
+    default_timeout_seconds: int = 30
+    default_delay_seconds: float = 0
+    dead_letter_enabled: bool = True
+    metadata: dict[str, Any] | None = None
+
+
+class QueueMessageStatus(str, Enum):
+    QUEUED = "queued"
+    LEASED = "leased"
+    ACKED = "acked"
+    RETRYING = "retrying"
+    DEAD_LETTERED = "dead_lettered"
+
+
+@dataclass(order=True)
+class _QueueEntry:
+    available_at: float
+    sequence: int
+    message_id: str = field(compare=False)
+
+
+@dataclass
+class QueueMessage:
+    message_id: str
+    queue: str
+    payload: Mapping[str, Any]
+    tenant_id: str | None = None
+    status: QueueMessageStatus = QueueMessageStatus.QUEUED
+    attempts: int = 0
+    max_attempts: int = 3
+    available_at: float = field(default_factory=time.time)
+    lease_expires_at: float | None = None
+    error: str | None = None
+    metadata: dict[str, Any] = field(default_factory=dict)
+    created_at: float = field(default_factory=time.time)
+    updated_at: float = field(default_factory=time.time)
+
+
+MessageHandler = Callable[[QueueMessage], None]
+
+
+class QueuePlatformError(RuntimeError):
+    """Raised when queue policy or processing fails."""
+
+
+def build_default_config() -> {{ module_class_name }}Config:
+    return {{ module_class_name }}Config()
+
+
+class {{ module_class_name }}:
+    """Tenant-aware in-memory queue with delay, leasing, retries, and DLQ."""
+
+    def __init__(self, config: {{ module_class_name }}Config | None = None) -> None:
+        self.config = config or build_default_config()
+        self._messages: dict[str, QueueMessage] = {}
+        self._queues: dict[str, list[_QueueEntry]] = {}
+        self._dead_letters: list[str] = []
+        self._audit: list[dict[str, Any]] = []
+        self._sequence = 0
+        self._lock = RLock()
+
+    def enqueue(
+        self,
+        queue: str,
+        payload: Mapping[str, Any],
+        *,
+        tenant_id: str | None = None,
+        delay_seconds: float | None = None,
+        metadata: Mapping[str, Any] | None = None,
+    ) -> QueueMessage:
+        if not self.config.enabled:
+            raise QueuePlatformError("queue platform is disabled")
+        if not queue.strip():
+            raise QueuePlatformError("queue name is required")
+        if not isinstance(payload, Mapping):
+            raise QueuePlatformError("payload must be a mapping")
+        available_at = time.time() + (self.config.default_delay_seconds if delay_seconds is None else delay_seconds)
+        message = QueueMessage(
+            message_id=str(uuid4()),
+            queue=queue,
+            payload=dict(payload),
+            tenant_id=tenant_id,
+            max_attempts=max(1, self.config.max_attempts),
+            available_at=available_at,
+            metadata=dict(metadata or {}),
+        )
+        with self._lock:
+            self._messages[message.message_id] = message
+            self._push(message)
+            self._audit.append({"event": "queue.enqueued", "queue": queue, "message_id": message.message_id})
+        return message
+
+    def lease(
+        self,
+        queue: str,
+        *,
+        tenant_id: str | None = None,
+        now: float | None = None,
+        timeout_seconds: int | None = None,
+    ) -> QueueMessage | None:
+        current_time = time.time() if now is None else now
+        with self._lock:
+            heap = self._queues.setdefault(queue, [])
+            deferred: list[_QueueEntry] = []
+            leased: QueueMessage | None = None
+            while heap:
+                entry = heapq.heappop(heap)
+                message = self._messages.get(entry.message_id)
+                if message is None or message.status not in {QueueMessageStatus.QUEUED, QueueMessageStatus.RETRYING}:
+                    continue
+                if entry.available_at > current_time:
+                    deferred.append(entry)
+                    break
+                if tenant_id is not None and message.tenant_id != tenant_id:
+                    deferred.append(entry)
+                    continue
+                message.status = QueueMessageStatus.LEASED
+                message.attempts += 1
+                message.lease_expires_at = current_time + (timeout_seconds or self.config.default_timeout_seconds)
+                message.updated_at = current_time
+                leased = message
+                self._audit.append({"event": "queue.leased", "queue": queue, "message_id": message.message_id})
+                break
+            for entry in deferred:
+                heapq.heappush(heap, entry)
+            return leased
+
+    def ack(self, message_id: str) -> QueueMessage:
+        with self._lock:
+            message = self._require(message_id)
+            if message.status != QueueMessageStatus.LEASED:
+                raise QueuePlatformError("only leased messages can be acknowledged")
+            message.status = QueueMessageStatus.ACKED
+            message.lease_expires_at = None
+            message.updated_at = time.time()
+            self._audit.append({"event": "queue.acked", "queue": message.queue, "message_id": message.message_id})
+            return message
+
+    def retry(self, message_id: str, *, error: str, delay_seconds: float = 0) -> QueueMessage:
+        with self._lock:
+            message = self._require(message_id)
+            message.error = error
+            message.lease_expires_at = None
+            message.updated_at = time.time()
+            if message.attempts >= message.max_attempts:
+                message.status = QueueMessageStatus.DEAD_LETTERED
+                if self.config.dead_letter_enabled and message.message_id not in self._dead_letters:
+                    self._dead_letters.append(message.message_id)
+                self._audit.append({"event": "queue.dead_lettered", "queue": message.queue, "message_id": message.message_id})
+                return message
+            message.status = QueueMessageStatus.RETRYING
+            message.available_at = time.time() + delay_seconds
+            self._push(message)
+            self._audit.append({"event": "queue.retrying", "queue": message.queue, "message_id": message.message_id})
+            return message
+
+    def process_once(
+        self,
+        queue: str,
+        handler: MessageHandler,
+        *,
+        tenant_id: str | None = None,
+        now: float | None = None,
+    ) -> QueueMessage | None:
+        message = self.lease(queue, tenant_id=tenant_id, now=now)
+        if message is None:
+            return None
+        try:
+            handler(message)
+            return self.ack(message.message_id)
+        except Exception as exc:
+            return self.retry(message.message_id, error=str(exc))
+
+    def list_messages(
+        self,
+        *,
+        queue: str | None = None,
+        tenant_id: str | None = None,
+        status: QueueMessageStatus | None = None,
+    ) -> list[QueueMessage]:
+        with self._lock:
+            messages = list(self._messages.values())
+        if queue is not None:
+            messages = [message for message in messages if message.queue == queue]
+        if tenant_id is not None:
+            messages = [message for message in messages if message.tenant_id == tenant_id]
+        if status is not None:
+            messages = [message for message in messages if message.status == status]
+        return sorted(messages, key=lambda message: message.created_at)
+
+    def dead_letters(self) -> list[QueueMessage]:
+        with self._lock:
+            return [self._messages[message_id] for message_id in self._dead_letters]
+
+    def audit_log(self) -> list[dict[str, Any]]:
+        with self._lock:
+            return [dict(event) for event in self._audit]
+
+    def health_check(self) -> dict[str, Any]:
+        with self._lock:
+            messages = tuple(self._messages.values())
+            dead_letters = len(self._dead_letters)
+        return {
+            "module": "{{ module_name }}",
+            "status": "ok" if self.config.enabled else "disabled",
+            "enabled": self.config.enabled,
+            "messages": len(messages),
+            "dead_letters": dead_letters,
+            "queued": sum(
+                1
+                for message in messages
+                if message.status in {QueueMessageStatus.QUEUED, QueueMessageStatus.RETRYING}
+            ),
+            "leased": sum(1 for message in messages if message.status == QueueMessageStatus.LEASED),
+        }
+
+    def _push(self, message: QueueMessage) -> None:
+        self._sequence += 1
+        heapq.heappush(
+            self._queues.setdefault(message.queue, []),
+            _QueueEntry(message.available_at, self._sequence, message.message_id),
+        )
+
+    def _require(self, message_id: str) -> QueueMessage:
+        try:
+            return self._messages[message_id]
+        except KeyError as exc:
+            raise KeyError(f"queue message {message_id!r} not found") from exc

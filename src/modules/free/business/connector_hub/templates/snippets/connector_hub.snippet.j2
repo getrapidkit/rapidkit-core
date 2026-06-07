@@ -1,0 +1,12 @@
+{# Shared snippet for the RapidKit Connector Hub module. #}
+{% set module_name = "connector_hub" %}
+{% set module_title = "Connector Hub" %}
+
+# {{ module_title }} integration notes
+
+- Canonical module: `free/business/connector_hub`
+- Primary purpose: External app connector scaffolding for OAuth credentials, provider adapters, sync jobs, and health checks.
+- Key capabilities: Defines provider adapters behind a stable connector interface., Stores credential profiles separately from sync state., Schedules sync jobs through the workflow/task layer.
+- Runtime environment keys: RAPIDKIT_CONNECTOR_HUB_ENABLED, RAPIDKIT_CONNECTOR_HUB_SYNC_MODE, RAPIDKIT_CONNECTOR_HUB_SECRET_SCOPE
+
+Use this snippet near the owning service/module registration point so generated projects keep module intent, operational boundaries, and security expectations visible to maintainers.

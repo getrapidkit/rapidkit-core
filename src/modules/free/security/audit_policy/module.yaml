@@ -1,0 +1,175 @@
+name: audit_policy
+display_name: Audit Policy
+description: Immutable audit event, admin policy, reason capture, and compliance export scaffolding
+version: 0.1.5
+access: free
+status: stable
+tier: free
+category: security
+tags:
+- audit
+- policy
+- compliance
+- admin
+- security
+generated_from_config: true
+profile_inherits:
+  fastapi.standard: fastapi
+  fastapi.ddd: fastapi
+  nestjs.standard: nestjs
+config_sources:
+- config/base.yaml
+- config/snippets.yaml
+generation:
+  vendor:
+    root: .rapidkit/vendor
+    files:
+    - template: templates/base/audit_policy.py.j2
+      relative: src/security/audit_policy.py
+    - template: templates/base/audit_policy_types.py.j2
+      relative: src/security/audit_policy_types.py
+    - template: templates/base/audit_policy_health.py.j2
+      relative: src/health/security/audit_policy.py
+    - template: templates/vendor/nestjs/configuration.js.j2
+      relative: nestjs/configuration.js
+  variants:
+    fastapi: &fastapi_variant
+      root: .
+      context:
+        framework: fastapi
+        module_class_name: AuditPolicy
+      files:
+      - template: templates/variants/fastapi/audit_policy.py.j2
+        output: src/security/audit_policy.py
+      - template: templates/variants/fastapi/audit_policy_routes.py.j2
+        output: src/routers/security/audit_policy.py
+      - template: templates/variants/fastapi/audit_policy_health.py.j2
+        output: src/health/security/audit_policy.py
+      - template: templates/tests/integration/test_audit_policy_integration.j2
+        output: tests/modules/free/integration/security/audit_policy/test_audit_policy_integration.py
+      - template: templates/variants/fastapi/tests/test_audit_policy_e2e.py
+        output: tests/modules/e2e/free/security/audit_policy/test_audit_policy_e2e.py
+    fastapi.standard: *fastapi_variant
+    fastapi.ddd: *fastapi_variant
+    nestjs: &nestjs_variant
+      root: .
+      context:
+        framework: nestjs
+        vendor_configuration_relative: nestjs/configuration.js
+        module_class_name: AuditPolicy
+        module_kebab: audit-policy
+      files:
+      - template: templates/variants/nestjs/audit_policy.service.ts.j2
+        output: src/audit-policy/audit_policy.service.ts
+      - template: templates/variants/nestjs/audit_policy.controller.ts.j2
+        output: src/audit-policy/audit_policy.controller.ts
+      - template: templates/variants/nestjs/audit_policy.module.ts.j2
+        output: src/audit-policy/audit_policy.module.ts
+      - template: templates/variants/nestjs/audit_policy.health.ts.j2
+        output: src/audit-policy/audit_policy.health.ts
+      - template: templates/variants/nestjs/audit_policy.validation.ts.j2
+        output: src/audit-policy/audit_policy.validation.ts
+      - template: templates/variants/nestjs/audit_policy.index.ts.j2
+        output: src/audit-policy/index.ts
+      - template: templates/variants/nestjs/audit_policy.configuration.ts.j2
+        output: src/audit-policy/configuration.ts
+      - template: templates/variants/nestjs/tests/audit_policy.e2e-spec.ts
+        output: tests/modules/e2e/security/audit_policy/audit_policy.e2e-spec.ts
+    nestjs.standard: *nestjs_variant
+  snippets:
+    enabled: true
+    config: config/snippets.yaml
+    default: []
+compatibility:
+  python: '>=3.9,<4.0'
+  frameworks:
+  - fastapi
+  - nestjs
+  os:
+  - linux
+  - darwin
+  - windows
+testing:
+  coverage_min: 85
+  integration_tests: true
+  e2e_tests: false
+  unit_tests:
+  - tests/modules/free/security/audit_policy/test_audit_policy_generator.py
+  - tests/modules/free/security/audit_policy/test_audit_policy_overrides.py
+  - tests/modules/free/security/audit_policy/test_audit_policy_runtime.py
+  - tests/modules/free/security/audit_policy/test_audit_policy_adapters.py
+  - tests/modules/free/security/audit_policy/test_audit_policy_validation.py
+  - tests/modules/free/security/audit_policy/test_audit_policy_error_handling.py
+  - tests/modules/free/security/audit_policy/test_audit_policy_health_check.py
+  - tests/modules/free/security/audit_policy/test_audit_policy_framework_variants.py
+  - tests/modules/free/security/audit_policy/test_audit_policy_vendor_layer.py
+  - tests/modules/free/security/audit_policy/test_audit_policy_configuration.py
+  - tests/modules/free/security/audit_policy/test_audit_policy_versioning.py
+  - tests/modules/free/security/audit_policy/test_audit_policy_standard_module.py
+  integration_test_files:
+  - tests/modules/free/integration/security/audit_policy/test_audit_policy_integration.py
+  fixtures: []
+documentation:
+  changelog: docs/changelog.md
+  readme: README.md
+  overview: docs/overview.md
+  usage: docs/usage.md
+  advanced: docs/advanced.md
+  migration: docs/migration.md
+  troubleshooting: docs/troubleshooting.md
+  api_docs: docs/api-reference.md
+  examples: []
+support:
+  issues: https://github.com/rapidkitlabs/rapidkit-core/issues
+  discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+  documentation: https://docs.rapidkit.top/modules/audit_policy
+changelog:
+  - version: "0.1.5"
+    date: "2026-06-02"
+    notes: "See docs/changelog.md"
+validation:
+  pre_install:
+  - check_python_version
+  post_install:
+  - validate_generated_code
+rollback:
+  strategy: uninstall
+  backup_path: .rapidkit/backups/
+  max_backups: 3
+performance:
+  lazy_loading: true
+  caching:
+    templates: true
+    ttl: 300
+capabilities:
+- immutable_audit_events
+- reason_capture
+- admin_policy
+- compliance_export
+- tamper_evidence
+signature: null
+signer_id: null
+signature_version: null
+file_hashes:
+  README.md: sha256:d530d919966ebe4c50e4fe9d4692097c574fc5a98b21f442969bb4892f63dd53
+  __init__.py: sha256:782563b60a28e7c2f79747fe0e63a465dddf470abde105278c40f1df79dec764
+  config/base.yaml: sha256:b5a8d8367f3f7ba5250d75251fcb039f3e3877da892671fd93de7ebf0debbbfc
+  config/snippets.yaml: sha256:831a6b4d28f41b1b0982b409b718e8f9d44b2e4ed4efb0809d0f0fed33e42200
+  docs/README.md: sha256:ab4e921bc2b11b0d5bb2b6ad95d371ac56f2e60d604c29599746e497418ad367
+  docs/advanced.md: sha256:7266b266e43292f8eb7ee381d362c127088616e9d370b99dc89e077ce42613a0
+  docs/api-reference.md: sha256:de92e1fbd00cfd3876ffeb64fcd82907edbd77d63f050f45e697a890d4ba11b0
+  docs/changelog.md: sha256:ce9a9b267a910fed9840219149e1eb7a69bf92a40ea9427549e7f0a12fdf82fa
+  docs/migration.md: sha256:41e179c2fc00c3d8372ab7257e8bbb5509e8d445ff61832b54969e6b7e52bd92
+  docs/overview.md: sha256:5cb60a169a3c7c2c3b0dec1043641fe3cf7b6070533d8fb7afcb0408b33f9000
+  docs/troubleshooting.md: sha256:a3a7dd415633ddf80f6f15077f963fd99da7c341f6a2b28182810c14f1379077
+  docs/usage.md: sha256:cfb5b819bef63b3498f648e44a9335c3db917cce4d39c0c3e6edb5736d259368
+  templates/vendor/nestjs/configuration.js.j2: sha256:70677651063fd340c26bd1fbef7d10e3bb835fb08f7af54be69597738446c391
+  module.verify.json: sha256:a02a06742ae3dace9031b307b2e1fd97d84ff4064115abf1c1396fd2bf2edcdc
+depends_on:
+- free/essentials/logging
+- free/database/db_postgres
+- free/users/users_core
+metadata:
+  enterprise_ready: true
+  free_marketplace_module: true
+  product_factory_priority: high

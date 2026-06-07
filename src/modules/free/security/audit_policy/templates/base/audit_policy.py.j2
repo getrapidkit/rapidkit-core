@@ -1,0 +1,207 @@
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from hashlib import sha256
+from threading import RLock
+from typing import Any, Mapping
+from uuid import uuid4
+
+
+class {{ module_class_name }}Error(ValueError):
+    """Raised when audit policy checks or event integrity fail."""
+
+
+@dataclass(frozen=True)
+class AuditEvent:
+    id: str
+    action: str
+    actor_id: str
+    resource: str
+    reason: str
+    tenant_id: str | None = None
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+    previous_hash: str = ""
+    event_hash: str = ""
+    timestamp: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds")
+    )
+
+
+@dataclass(frozen=True)
+class PolicyRule:
+    action: str
+    require_reason: bool = True
+    allowed_roles: tuple[str, ...] = ()
+    denied_roles: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class PolicyDecision:
+    allowed: bool
+    reason: str
+    rule: PolicyRule | None = None
+
+
+@dataclass(frozen=True)
+class {{ module_class_name }}Config:
+    """Runtime configuration for {{ module_title }}."""
+
+    enabled: bool = True
+    require_reason_by_default: bool = True
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+
+def build_default_config() -> {{ module_class_name }}Config:
+    """Return default configuration payload."""
+
+    return {{ module_class_name }}Config()
+
+
+def _utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+def _event_digest(event: AuditEvent) -> str:
+    payload = "|".join(
+        [
+            event.id,
+            event.action,
+            event.actor_id,
+            event.resource,
+            event.reason,
+            event.tenant_id or "",
+            event.previous_hash,
+            event.timestamp,
+            repr(sorted(event.metadata.items())),
+        ]
+    )
+    return sha256(payload.encode("utf-8")).hexdigest()
+
+
+class {{ module_class_name }}:
+    """Append-only audit trail and lightweight policy evaluator."""
+
+    def __init__(
+        self,
+        config: {{ module_class_name }}Config | None = None,
+        *,
+        rules: tuple[PolicyRule, ...] | list[PolicyRule] = (),
+    ) -> None:
+        self.config = config or build_default_config()
+        self._rules: dict[str, PolicyRule] = {rule.action: rule for rule in rules}
+        self._events: list[AuditEvent] = []
+        self._lock = RLock()
+
+    def add_rule(self, rule: PolicyRule) -> PolicyRule:
+        with self._lock:
+            self._rules[rule.action] = rule
+        return rule
+
+    def decide(self, *, action: str, role: str | None = None, reason: str = "") -> PolicyDecision:
+        if not self.config.enabled:
+            return PolicyDecision(False, "audit policy is disabled")
+        rule = self._rules.get(action)
+        require_reason = rule.require_reason if rule else self.config.require_reason_by_default
+        if require_reason and not reason.strip():
+            return PolicyDecision(False, "reason is required", rule)
+        if rule and role in rule.denied_roles:
+            return PolicyDecision(False, "role is denied", rule)
+        if rule and rule.allowed_roles and role not in rule.allowed_roles:
+            return PolicyDecision(False, "role is not allowed", rule)
+        return PolicyDecision(True, "allowed", rule)
+
+    def record(
+        self,
+        *,
+        action: str,
+        actor_id: str,
+        resource: str,
+        reason: str,
+        tenant_id: str | None = None,
+        role: str | None = None,
+        metadata: Mapping[str, Any] | None = None,
+    ) -> AuditEvent:
+        decision = self.decide(action=action, role=role, reason=reason)
+        if not decision.allowed:
+            raise {{ module_class_name }}Error(decision.reason)
+        if not actor_id.strip():
+            raise {{ module_class_name }}Error("actor_id must not be empty")
+        if not resource.strip():
+            raise {{ module_class_name }}Error("resource must not be empty")
+        with self._lock:
+            previous_hash = self._events[-1].event_hash if self._events else ""
+            event = AuditEvent(
+                id=str(uuid4()),
+                action=action,
+                actor_id=actor_id,
+                resource=resource,
+                reason=reason.strip(),
+                tenant_id=tenant_id,
+                metadata=dict(metadata or {}),
+                previous_hash=previous_hash,
+                timestamp=_utc_now(),
+            )
+            event = AuditEvent(
+                id=event.id,
+                action=event.action,
+                actor_id=event.actor_id,
+                resource=event.resource,
+                reason=event.reason,
+                tenant_id=event.tenant_id,
+                metadata=event.metadata,
+                previous_hash=event.previous_hash,
+                event_hash=_event_digest(event),
+                timestamp=event.timestamp,
+            )
+            self._events.append(event)
+            return event
+
+    def list_events(
+        self,
+        *,
+        action: str | None = None,
+        actor_id: str | None = None,
+        tenant_id: str | None = None,
+    ) -> tuple[AuditEvent, ...]:
+        with self._lock:
+            events = tuple(self._events)
+        if action is not None:
+            events = tuple(event for event in events if event.action == action)
+        if actor_id is not None:
+            events = tuple(event for event in events if event.actor_id == actor_id)
+        if tenant_id is not None:
+            events = tuple(event for event in events if event.tenant_id == tenant_id)
+        return events
+
+    def verify_chain(self) -> bool:
+        with self._lock:
+            previous = ""
+            for event in self._events:
+                if event.previous_hash != previous:
+                    return False
+                if _event_digest(event) != event.event_hash:
+                    return False
+                previous = event.event_hash
+        return True
+
+    def stats(self) -> dict[str, Any]:
+        with self._lock:
+            by_action: dict[str, int] = {}
+            for event in self._events:
+                by_action[event.action] = by_action.get(event.action, 0) + 1
+            return {
+                "enabled": self.config.enabled,
+                "events": len(self._events),
+                "rules": len(self._rules),
+                "chain_valid": self.verify_chain(),
+                "by_action": by_action,
+            }
+
+    def health(self) -> dict[str, Any]:
+        return {
+            "module": "{{ module_name }}",
+            "status": "ok" if self.config.enabled and self.verify_chain() else "degraded",
+            "timestamp": _utc_now(),
+            "stats": self.stats(),
+        }

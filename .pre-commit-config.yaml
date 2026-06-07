@@ -112,14 +112,16 @@ repos:
     types:
     - text
     exclude: \.j2$
-- repo: https://github.com/psf/black
-  rev: 24.8.0
+- repo: local
   hooks:
   - id: black
     name: black (double-check)
+    entry: poetry run black
+    language: system
+    types:
+    - python
     stages:
     - pre-commit
-    language_version: python3
     args:
     - --check
     - --diff

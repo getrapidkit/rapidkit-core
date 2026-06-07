@@ -29,6 +29,8 @@ class FastAPIPlugin(FrameworkPlugin):
     def get_template_mappings(self) -> Dict[str, str]:
         return {
             "runtime": "templates/variants/fastapi/api_keys.py.j2",
+            "types": "templates/base/api_keys_types.py.j2",
+            "health": "templates/base/api_keys_health.py.j2",
             "routes": "templates/variants/fastapi/api_keys_routes.py.j2",
             "config": "templates/variants/fastapi/api_keys_config.yaml.j2",
             "integration_test": "templates/tests/integration/test_api_keys_integration.j2",
@@ -37,6 +39,8 @@ class FastAPIPlugin(FrameworkPlugin):
     def get_output_paths(self) -> Dict[str, str]:
         return {
             "runtime": "src/modules/free/auth/api_keys/api_keys.py",
+            "types": "src/modules/free/auth/api_keys/api_keys_types.py",
+            "health": "src/modules/free/auth/api_keys/api_keys_health.py",
             "routes": "src/modules/free/auth/api_keys/routers/api_keys.py",
             "config": "config/api_keys.yaml",
             "integration_test": "tests/modules/integration/auth/api_keys/test_api_keys_integration.py",

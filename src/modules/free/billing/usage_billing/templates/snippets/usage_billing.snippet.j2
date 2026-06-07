@@ -1,0 +1,12 @@
+{# Shared snippet for the RapidKit Usage Billing module. #}
+{% set module_name = "usage_billing" %}
+{% set module_title = "Usage Billing" %}
+
+# {{ module_title }} integration notes
+
+- Canonical module: `free/billing/usage_billing`
+- Primary purpose: Usage metering, quota enforcement, plan limits, and overage hooks for SaaS products.
+- Key capabilities: Records metered product usage in a provider-neutral shape., Evaluates quotas and plan limits before expensive operations., Connects usage events to entitlements and billing providers.
+- Runtime environment keys: RAPIDKIT_USAGE_BILLING_ENABLED, RAPIDKIT_USAGE_BILLING_MODE, RAPIDKIT_USAGE_BILLING_FLUSH_INTERVAL
+
+Use this snippet near the owning service/module registration point so generated projects keep module intent, operational boundaries, and security expectations visible to maintainers.

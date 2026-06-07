@@ -1,0 +1,327 @@
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from math import sqrt
+from threading import RLock
+from typing import Any, Iterable, Mapping, Sequence
+from uuid import uuid4
+
+
+class {{ module_class_name }}Error(ValueError):
+    """Raised when vector store input or state is invalid."""
+
+
+@dataclass(frozen=True)
+class VectorDocument:
+    """A stored embedding with payload and searchable metadata."""
+
+    id: str
+    vector: tuple[float, ...]
+    text: str = ""
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+    namespace: str = "default"
+    created_at: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds")
+    )
+    updated_at: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds")
+    )
+
+
+@dataclass(frozen=True)
+class VectorSearchResult:
+    """A similarity search result with score and original document."""
+
+    document: VectorDocument
+    score: float
+
+
+@dataclass(frozen=True)
+class VectorStoreAuditEvent:
+    type: str
+    document_id: str | None = None
+    namespace: str | None = None
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+    timestamp: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds")
+    )
+
+
+@dataclass(frozen=True)
+class {{ module_class_name }}Config:
+    """Runtime configuration for {{ module_title }}."""
+
+    enabled: bool = True
+    dimensions: int = 0
+    default_namespace: str = "default"
+    max_top_k: int = 50
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+
+def build_default_config() -> {{ module_class_name }}Config:
+    """Return default configuration payload."""
+
+    return {{ module_class_name }}Config()
+
+
+def _utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+def _normalize_vector(vector: Sequence[float]) -> tuple[float, ...]:
+    if not vector:
+        raise {{ module_class_name }}Error("vector must contain at least one dimension")
+    try:
+        values = tuple(float(value) for value in vector)
+    except (TypeError, ValueError) as exc:
+        raise {{ module_class_name }}Error("vector must contain numeric values") from exc
+    if any(value != value for value in values):
+        raise {{ module_class_name }}Error("vector cannot contain NaN values")
+    return values
+
+
+def cosine_similarity(left: Sequence[float], right: Sequence[float]) -> float:
+    """Return cosine similarity for two vectors."""
+
+    if len(left) != len(right):
+        raise {{ module_class_name }}Error("vectors must have the same dimensions")
+    left_norm = sqrt(sum(value * value for value in left))
+    right_norm = sqrt(sum(value * value for value in right))
+    if left_norm == 0 or right_norm == 0:
+        return 0.0
+    return sum(a * b for a, b in zip(left, right)) / (left_norm * right_norm)
+
+
+class InMemory{{ module_class_name }}:
+    """Thread-safe vector store suitable for local dev, tests, and small workspaces."""
+
+    def __init__(self, config: {{ module_class_name }}Config | None = None) -> None:
+        self.config = config or build_default_config()
+        self._documents: dict[tuple[str, str], VectorDocument] = {}
+        self._idempotency_index: dict[tuple[str, str], str] = {}
+        self._audit: list[VectorStoreAuditEvent] = []
+        self._lock = RLock()
+
+    @property
+    def dimensions(self) -> int:
+        return self.config.dimensions
+
+    def upsert(
+        self,
+        *,
+        vector: Sequence[float],
+        id: str | None = None,
+        text: str = "",
+        metadata: Mapping[str, Any] | None = None,
+        namespace: str | None = None,
+        idempotency_key: str | None = None,
+    ) -> VectorDocument:
+        """Create or replace a vector document."""
+
+        if not self.config.enabled:
+            raise {{ module_class_name }}Error("vector store is disabled")
+        normalized = _normalize_vector(vector)
+        self._validate_dimensions(normalized)
+        resolved_namespace = namespace or self.config.default_namespace
+        if idempotency_key is not None:
+            normalized_key = idempotency_key.strip()
+            if not normalized_key:
+                raise {{ module_class_name }}Error("idempotency_key must not be empty")
+            existing_id = self._idempotency_index.get((resolved_namespace, normalized_key))
+            if existing_id is not None:
+                existing = self.get(existing_id, namespace=resolved_namespace)
+                if existing is not None:
+                    return existing
+        else:
+            normalized_key = None
+        document_id = id or str(uuid4())
+        key = (resolved_namespace, document_id)
+        with self._lock:
+            existing = self._documents.get(key)
+            created_at = existing.created_at if existing else _utc_now()
+            document = VectorDocument(
+                id=document_id,
+                vector=normalized,
+                text=text,
+                metadata=dict(metadata or {}),
+                namespace=resolved_namespace,
+                created_at=created_at,
+                updated_at=_utc_now(),
+            )
+            self._documents[key] = document
+            if normalized_key is not None:
+                self._idempotency_index[(resolved_namespace, normalized_key)] = document.id
+            self._record_audit(
+                "document.upserted",
+                document_id=document.id,
+                namespace=resolved_namespace,
+                metadata={"idempotency_key": normalized_key} if normalized_key else {},
+            )
+            return document
+
+    def bulk_upsert(self, documents: Iterable[Mapping[str, Any]]) -> list[VectorDocument]:
+        """Insert or replace multiple documents."""
+
+        return [
+            self.upsert(
+                id=str(item["id"]) if item.get("id") else None,
+                vector=item["vector"],
+                text=str(item.get("text", "")),
+                metadata=item.get("metadata") or {},
+                namespace=str(item.get("namespace") or self.config.default_namespace),
+            )
+            for item in documents
+        ]
+
+    def get(self, id: str, *, namespace: str | None = None) -> VectorDocument | None:
+        resolved_namespace = namespace or self.config.default_namespace
+        with self._lock:
+            return self._documents.get((resolved_namespace, id))
+
+    def delete(self, id: str, *, namespace: str | None = None) -> bool:
+        resolved_namespace = namespace or self.config.default_namespace
+        with self._lock:
+            deleted = self._documents.pop((resolved_namespace, id), None) is not None
+            if deleted:
+                self._record_audit("document.deleted", document_id=id, namespace=resolved_namespace)
+            return deleted
+
+    def query(
+        self,
+        *,
+        vector: Sequence[float],
+        top_k: int = 5,
+        namespace: str | None = None,
+        metadata_filter: Mapping[str, Any] | None = None,
+    ) -> list[VectorSearchResult]:
+        """Search documents by cosine similarity and metadata filters."""
+
+        if not self.config.enabled:
+            raise {{ module_class_name }}Error("vector store is disabled")
+        if top_k < 1:
+            raise {{ module_class_name }}Error("top_k must be greater than zero")
+        if top_k > self.config.max_top_k:
+            raise {{ module_class_name }}Error(
+                f"top_k cannot exceed configured max_top_k={self.config.max_top_k}"
+            )
+        normalized = _normalize_vector(vector)
+        self._validate_dimensions(normalized)
+        resolved_namespace = namespace or self.config.default_namespace
+        with self._lock:
+            candidates = [
+                document
+                for (doc_namespace, _), document in self._documents.items()
+                if doc_namespace == resolved_namespace
+                and self._matches_filter(document.metadata, metadata_filter or {})
+            ]
+        results = [
+            VectorSearchResult(
+                document=document,
+                score=cosine_similarity(normalized, document.vector),
+            )
+            for document in candidates
+        ]
+        results.sort(key=lambda result: (result.score, result.document.updated_at), reverse=True)
+        self._record_audit(
+            "query.executed",
+            namespace=resolved_namespace,
+            metadata={
+                "top_k": top_k,
+                "returned": len(results[:top_k]),
+                "metadata_filter_keys": sorted((metadata_filter or {}).keys()),
+            },
+        )
+        return results[:top_k]
+
+    def clear(self, *, namespace: str | None = None) -> int:
+        """Delete all documents in one namespace, or every namespace when omitted."""
+
+        with self._lock:
+            if namespace is None:
+                count = len(self._documents)
+                self._documents.clear()
+                self._record_audit("documents.cleared", metadata={"scope": "all", "count": count})
+                return count
+            keys = [key for key in self._documents if key[0] == namespace]
+            for key in keys:
+                self._documents.pop(key, None)
+            self._record_audit(
+                "documents.cleared",
+                namespace=namespace,
+                metadata={"scope": "namespace", "count": len(keys)},
+            )
+            return len(keys)
+
+    def stats(self) -> dict[str, Any]:
+        with self._lock:
+            namespaces: dict[str, int] = {}
+            for namespace, _ in self._documents:
+                namespaces[namespace] = namespaces.get(namespace, 0) + 1
+            return {
+                "enabled": self.config.enabled,
+                "documents": len(self._documents),
+                "dimensions": self.config.dimensions,
+                "namespaces": namespaces,
+                "max_top_k": self.config.max_top_k,
+                "audit_events": len(self._audit),
+            }
+
+    def health(self) -> dict[str, Any]:
+        status = "ok" if self.config.enabled else "disabled"
+        return {
+            "module": "{{ module_name }}",
+            "status": status,
+            "timestamp": _utc_now(),
+            "stats": self.stats(),
+        }
+
+    def audit_events(
+        self,
+        *,
+        namespace: str | None = None,
+        document_id: str | None = None,
+    ) -> tuple[VectorStoreAuditEvent, ...]:
+        events = tuple(self._audit)
+        if namespace is not None:
+            events = tuple(event for event in events if event.namespace == namespace)
+        if document_id is not None:
+            events = tuple(event for event in events if event.document_id == document_id)
+        return events
+
+    def _validate_dimensions(self, vector: Sequence[float]) -> None:
+        if self.config.dimensions and len(vector) != self.config.dimensions:
+            raise {{ module_class_name }}Error(
+                f"vector dimensions must be {self.config.dimensions}, got {len(vector)}"
+            )
+
+    @staticmethod
+    def _matches_filter(metadata: Mapping[str, Any], filters: Mapping[str, Any]) -> bool:
+        for key, expected in filters.items():
+            actual = metadata.get(key)
+            if isinstance(expected, (list, tuple, set, frozenset)):
+                if actual not in expected:
+                    return False
+            elif actual != expected:
+                return False
+        return True
+
+    def _record_audit(
+        self,
+        event_type: str,
+        *,
+        document_id: str | None = None,
+        namespace: str | None = None,
+        metadata: Mapping[str, Any] | None = None,
+    ) -> None:
+        self._audit.append(
+            VectorStoreAuditEvent(
+                type=event_type,
+                document_id=document_id,
+                namespace=namespace,
+                metadata=dict(metadata or {}),
+            )
+        )
+
+
+{{ module_class_name }} = InMemory{{ module_class_name }}

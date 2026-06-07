@@ -1,0 +1,7 @@
+# Register snippet bundles for Media Pipeline
+
+snippets:
+  -
+    name: "media_pipeline_usage_example"
+    template: "templates/snippets/media_pipeline.snippet.j2"
+    description: "Injects an opinionated usage example for Media Pipeline."

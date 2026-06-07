@@ -6,7 +6,7 @@ from fastapi.responses import RedirectResponse
 _runtime: Optional[OAuthRuntime] = None
 
 
-def get_runtime() -> OAuthRuntime:
+async def get_runtime() -> OAuthRuntime:
 	global _runtime
 	if _runtime is None:
 		_runtime = OAuthRuntime(load_oauth_settings())
@@ -19,15 +19,15 @@ def create_router() -> APIRouter:
 	router = APIRouter(prefix="/oauth", tags=["oauth"])
 
 	@router.get("/metadata", response_model=Dict[str, Any])
-	def get_metadata() -> Dict[str, Any]:
+	async def get_metadata() -> Dict[str, Any]:
 		return describe_oauth()
 
 	@router.get("/features", response_model=Dict[str, Any])
-	def get_features() -> Dict[str, Any]:
+	async def get_features() -> Dict[str, Any]:
 		return {"features": list_oauth_features()}
 
 	@router.get("/providers", response_model=Dict[str, Dict[str, Any]])
-	def list_providers(runtime: OAuthRuntime = Depends(get_runtime)) -> Dict[str, Dict[str, Any]]:
+	async def list_providers(runtime: OAuthRuntime = Depends(get_runtime)) -> Dict[str, Dict[str, Any]]:
 		metadata = describe_oauth(runtime.settings)
 		providers = metadata.get("providers", {})
 		return {str(name): dict(payload) for name, payload in providers.items()}

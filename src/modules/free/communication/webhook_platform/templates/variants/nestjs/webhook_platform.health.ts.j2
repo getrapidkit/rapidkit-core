@@ -1,0 +1,13 @@
+export interface {{ module_class_name }}Health {
+    module: string;
+    status: string;
+    checkedAt: string;
+}
+
+export function runtimeHealth(): {{ module_class_name }}Health {
+    return {
+        module: "{{ module_name }}",
+        status: "ok",
+        checkedAt: new Date().toISOString(),
+    };
+}

@@ -104,8 +104,10 @@ jobs:
                   poetry run mypy src
                   poetry run pytest -q --maxfail=1 --disable-warnings
 
-                  if [[ -f scripts/run_distribution_tests.py ]]; then
+                  if [[ -f scripts/run_distribution_tests.py && -f tests/tests_map.yml ]]; then
                       poetry run python scripts/run_distribution_tests.py --tier community --no-cov
+                  else
+                      echo "Skipping distribution tests: missing scripts/run_distribution_tests.py or tests/tests_map.yml"
                   fi
 
             - name: Configure git identity
@@ -419,10 +421,10 @@ jobs:
                               scope = (m.group("s") or "").strip()
                               desc = (m.group("d") or "").strip()
                               prefix = f"**{scope}:** " if scope else ""
-                              line = f"- {prefix}{desc} ([{short}](https://github.com/getrapidkit/rapidkit-core/commit/{sha}))"
+                              line = f"- {prefix}{desc} ([{short}](https://github.com/rapidkitlabs/rapidkit-core/commit/{sha}))"
                           else:
                               section = "Other"
-                              line = f"- {subject.strip()} ([{short}](https://github.com/getrapidkit/rapidkit-core/commit/{sha}))"
+                              line = f"- {subject.strip()} ([{short}](https://github.com/rapidkitlabs/rapidkit-core/commit/{sha}))"
                           sections.setdefault(section, []).append(line)
                       return sections
 

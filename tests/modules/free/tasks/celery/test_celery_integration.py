@@ -86,3 +86,19 @@ def test_runtime_exposes_celery_primitives(tmp_path: Path) -> None:
 
     assert hasattr(module, "CeleryAppConfig")
     assert hasattr(module, "create_celery_app")
+    assert hasattr(module, "CeleryRetryPolicy")
+    assert hasattr(module, "CeleryWorkerProfile")
+
+    retry_policy = module.CeleryRetryPolicy(base_delay_seconds=2, backoff_multiplier=3)
+    worker_profile = module.CeleryWorkerProfile(queue="critical", concurrency=4)
+    config = module.CeleryAppConfig(
+        settings=module.CelerySettings(
+            retry_policy=retry_policy,
+            worker_profile=worker_profile,
+        )
+    )
+    metadata = module.describe_celery(config)
+
+    assert retry_policy.delay_for_attempt(2) == 6
+    assert metadata["retry_policy"]["max_retries"] == 3
+    assert metadata["worker_profile"]["worker_concurrency"] == 4

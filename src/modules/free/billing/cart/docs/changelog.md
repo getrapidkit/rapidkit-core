@@ -1,5 +1,45 @@
 # Changelog — free/billing/cart
 
+## 0.1.15 — Automated patch release triggered by content hash change (2026-06-07)
+
+- chore: Automated patch release triggered by content hash change
+
+## 0.1.14 — Automated patch release triggered by content hash change (2026-06-02)
+
+- chore: Automated patch release triggered by content hash change
+
+## 0.1.13 — Automated patch release triggered by content hash change (2026-06-02)
+
+- chore: Automated patch release triggered by content hash change
+
+## 0.1.12 — Automated patch release triggered by content hash change (2026-05-31)
+
+- chore: Automated patch release triggered by content hash change
+
+## 0.1.11 — Automated patch release triggered by content hash change (2026-05-31)
+
+- chore: Automated patch release triggered by content hash change
+
+## 0.1.10 — Automated patch release triggered by content hash change (2026-05-31)
+
+- chore: Automated patch release triggered by content hash change
+
+## 0.1.9 — Automated patch release triggered by content hash change (2026-05-31)
+
+- chore: Automated patch release triggered by content hash change
+
+## 0.1.8 — Automated patch release triggered by content hash change (2026-05-31)
+
+- chore: Automated patch release triggered by content hash change
+
+## 0.1.7 — Automated patch release triggered by content hash change (2026-05-31)
+
+- chore: Automated patch release triggered by content hash change
+
+## 0.1.6 — Automated patch release triggered by content hash change (2026-05-31)
+
+- chore: Automated patch release triggered by content hash change
+
 ## 0.1.5 — Automated patch release triggered by content hash change (2026-02-11)
 
 - chore: Automated patch release triggered by content hash change

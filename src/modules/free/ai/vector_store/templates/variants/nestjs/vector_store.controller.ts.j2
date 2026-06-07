@@ -1,0 +1,46 @@
+import { Body, Controller, Delete, Get, Param, Post, Query } from "@nestjs/common";
+import {
+    {{ module_class_name }}Service,
+    QueryVectorDocuments,
+    UpsertVectorDocument,
+    VectorDocument,
+    VectorSearchResult,
+} from "./{{ module_name }}.service";
+
+@Controller("{{ module_kebab }}")
+export class {{ module_class_name }}Controller {
+    constructor(private readonly service: {{ module_class_name }}Service) {}
+
+    @Get("health")
+    getHealth(): Record<string, unknown> {
+        return this.service.getStatus();
+    }
+
+    @Get("stats")
+    getStats(): Record<string, unknown> {
+        return this.service.stats();
+    }
+
+    @Post("documents")
+    upsert(@Body() payload: UpsertVectorDocument): VectorDocument {
+        return this.service.upsert(payload);
+    }
+
+    @Post("query")
+    queryDocuments(@Body() payload: QueryVectorDocuments): { results: VectorSearchResult[] } {
+        return { results: this.service.query(payload) };
+    }
+
+    @Get("documents/:id")
+    getDocument(@Param("id") id: string, @Query("namespace") namespace?: string): VectorDocument {
+        return this.service.getDocument(id, namespace);
+    }
+
+    @Delete("documents/:id")
+    deleteDocument(
+        @Param("id") id: string,
+        @Query("namespace") namespace?: string,
+    ): { deleted: boolean } {
+        return this.service.deleteDocument(id, namespace);
+    }
+}

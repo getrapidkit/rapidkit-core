@@ -459,4 +459,4 @@ def apply_parity_to_verification(
     payload["valid"] = fully_valid
     payload["tree_hash"] = structure_tree_hash if fully_valid else None
 
-    manifest_path.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+    manifest_path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")

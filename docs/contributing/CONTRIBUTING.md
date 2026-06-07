@@ -10,7 +10,7 @@ platform. This guide will help you get started with contributing effectively.
 1. **📚 Read the docs**: Start with the [Developer Guide](../developer-guide/) and
    [Getting Started](../getting-started/).
 1. **🔧 Set up your environment**: Follow the [Getting Started guide](../getting-started/).
-1. **💡 Find an issue**: Check [GitHub Issues](https://github.com/getrapidkit/rapidkit-core/issues)
+1. **💡 Find an issue**: Check [GitHub Issues](https://github.com/rapidkitlabs/rapidkit-core/issues)
    for “good first issue”.
 1. **🚀 Make changes**: Follow the development workflow below.
 
@@ -183,7 +183,7 @@ For changes to the core engine (`community`):
 
 ```bash
 # For pro features
-git clone https://github.com/getrapidkit/rapidkit-core.git
+git clone https://github.com/rapidkitlabs/rapidkit-core.git
 cd pro
 git checkout -b feature/commercial-feature
 ```
@@ -192,7 +192,7 @@ git checkout -b feature/commercial-feature
 
 ```bash
 # RapidKit ships from the rapidkit-core repository.
-git clone https://github.com/getrapidkit/rapidkit-core.git
+git clone https://github.com/rapidkitlabs/rapidkit-core.git
 cd rapidkit-core
 git checkout -b feature/engine-enhancement
 ```
@@ -203,49 +203,29 @@ ______________________________________________________________________
 
 ### Automatic Sync Process
 
-RapidKit uses automated workflows to sync changes between repositories:
-
-```yaml
-# .github/workflows/sync-distribution.yml
-name: Sync Distribution
-on:
-    push:
-        branches: [main]
-jobs:
-    sync:
-        runs-on: ubuntu-latest
-        steps:
-            - name: Sync to Pro
-              run: ./scripts/sync-to-pro.sh
-            - name: Sync to Enterprise
-              run: ./scripts/sync-to-enterprise.sh
-```
+RapidKit uses maintainer-run workflows to publish the community distribution. Public contributors do
+not need distribution tokens or private repository access. A maintainer will run release and
+distribution gates after review.
 
 ### Manual Sync (When Needed)
 
 ```bash
-# Force sync all repositories
-gh workflow run sync-distribution.yml -R getrapidkit/core
-
-# Or run sync script directly
-./scripts/sync-distribution.sh
+# Maintainers can verify the public package locally before release.
+make community-dist-install
 ```
 
 > ℹ️ New to the automation stack? Read the
-> [GitHub Actions Overview](../developer-guide/github-actions-overview.md) for a diagram of every
-> workflow plus the composite actions that power distribution and promotions.
+> [Package Distribution Guide](../deployment/PACKAGE_DISTRIBUTION_GUIDE.md) for the public release
+> verification flow.
 
 ### Workflow Deployment
 
-Due to GitHub token permissions, CI/CD workflows deploy separately:
+Workflow deployment is maintainer-only. Contributors should focus on code, tests, docs, and
+reproducible evidence in the PR.
 
 ```bash
-# Deploy workflows to all repositories
-export GITHUB_TOKEN=your_workflow_token_here
-./scripts/deploy-workflows.sh
-
-# Verify deployment
-gh workflow list -R getrapidkit/core
+poetry run pytest -q
+make community-dist-install
 ```
 
 ______________________________________________________________________
@@ -315,11 +295,10 @@ ______________________________________________________________________
 
 ### Communication Channels
 
-- **🐛 Bug Reports**: [GitHub Issues](https://github.com/getrapidkit/rapidkit-core/issues)
+- **🐛 Bug Reports**: [GitHub Issues](https://github.com/rapidkitlabs/rapidkit-core/issues)
 - **💡 Feature Requests**:
-  [GitHub Discussions](https://github.com/getrapidkit/rapidkit-core/discussions)
+  [GitHub Discussions](https://github.com/rapidkitlabs/rapidkit-core/discussions)
 - **💬 General Discussion**: [Discord Community](https://discord.gg/rapidkit)
-- **📧 Enterprise Support**: [enterprise@rapidkit.com](mailto:enterprise@rapidkit.com)
 
 ### Documentation Resources
 
@@ -345,7 +324,7 @@ ______________________________________________________________________
 
 ## 📜 License
 
-By contributing to RapidKit, you agree that your contributions will be licensed under the same
-license as the project (MIT for core, commercial licenses for pro/enterprise).
+By contributing to RapidKit Core, you agree that your contributions will be licensed under the same
+license as the public project.
 
 Thank you for contributing to RapidKit! 🚀

@@ -1,0 +1,143 @@
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { randomUUID } from "crypto";
+
+export type VectorMetadata = Record<string, unknown>;
+
+export interface VectorDocument {
+    id: string;
+    vector: number[];
+    text: string;
+    metadata: VectorMetadata;
+    namespace: string;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface VectorSearchResult {
+    document: VectorDocument;
+    score: number;
+}
+
+export interface UpsertVectorDocument {
+    id?: string;
+    vector: number[];
+    text?: string;
+    metadata?: VectorMetadata;
+    namespace?: string;
+}
+
+export interface QueryVectorDocuments {
+    vector: number[];
+    topK?: number;
+    metadataFilter?: VectorMetadata;
+    namespace?: string;
+}
+
+@Injectable()
+export class {{ module_class_name }}Service {
+    private readonly documents = new Map<string, VectorDocument>();
+    private readonly defaultNamespace = "default";
+    private readonly maxTopK = 50;
+
+    getStatus(): Record<string, unknown> {
+        return {
+            module: "{{ module_name }}",
+            status: "ok",
+            stats: this.stats(),
+        };
+    }
+
+    upsert(payload: UpsertVectorDocument): VectorDocument {
+        const namespace = payload.namespace ?? this.defaultNamespace;
+        const vector = this.normalizeVector(payload.vector);
+        const id = payload.id ?? randomUUID();
+        const key = this.key(namespace, id);
+        const existing = this.documents.get(key);
+        const now = new Date().toISOString();
+        const document: VectorDocument = {
+            id,
+            vector,
+            text: payload.text ?? "",
+            metadata: payload.metadata ?? {},
+            namespace,
+            createdAt: existing?.createdAt ?? now,
+            updatedAt: now,
+        };
+        this.documents.set(key, document);
+        return document;
+    }
+
+    query(payload: QueryVectorDocuments): VectorSearchResult[] {
+        const vector = this.normalizeVector(payload.vector);
+        const topK = payload.topK ?? 5;
+        if (topK < 1 || topK > this.maxTopK) {
+            throw new BadRequestException(`topK must be between 1 and ${this.maxTopK}`);
+        }
+        const namespace = payload.namespace ?? this.defaultNamespace;
+        const metadataFilter = payload.metadataFilter ?? {};
+        return Array.from(this.documents.values())
+            .filter((document) => document.namespace === namespace)
+            .filter((document) => this.matchesFilter(document.metadata, metadataFilter))
+            .map((document) => ({ document, score: this.cosineSimilarity(vector, document.vector) }))
+            .sort((left, right) => right.score - left.score)
+            .slice(0, topK);
+    }
+
+    getDocument(id: string, namespace = this.defaultNamespace): VectorDocument {
+        const document = this.documents.get(this.key(namespace, id));
+        if (!document) {
+            throw new NotFoundException("document not found");
+        }
+        return document;
+    }
+
+    deleteDocument(id: string, namespace = this.defaultNamespace): { deleted: boolean } {
+        return { deleted: this.documents.delete(this.key(namespace, id)) };
+    }
+
+    stats(): Record<string, unknown> {
+        const namespaces: Record<string, number> = {};
+        for (const document of this.documents.values()) {
+            namespaces[document.namespace] = (namespaces[document.namespace] ?? 0) + 1;
+        }
+        return {
+            documents: this.documents.size,
+            namespaces,
+            maxTopK: this.maxTopK,
+        };
+    }
+
+    private key(namespace: string, id: string): string {
+        return `${namespace}:${id}`;
+    }
+
+    private normalizeVector(vector: number[]): number[] {
+        if (!Array.isArray(vector) || vector.length === 0) {
+            throw new BadRequestException("vector must contain at least one dimension");
+        }
+        if (vector.some((value) => typeof value !== "number" || Number.isNaN(value))) {
+            throw new BadRequestException("vector must contain numeric values");
+        }
+        return vector;
+    }
+
+    private cosineSimilarity(left: number[], right: number[]): number {
+        if (left.length !== right.length) {
+            throw new BadRequestException("vectors must have the same dimensions");
+        }
+        const leftNorm = Math.sqrt(left.reduce((sum, value) => sum + value * value, 0));
+        const rightNorm = Math.sqrt(right.reduce((sum, value) => sum + value * value, 0));
+        if (leftNorm === 0 || rightNorm === 0) {
+            return 0;
+        }
+        const dot = left.reduce((sum, value, index) => sum + value * right[index], 0);
+        return dot / (leftNorm * rightNorm);
+    }
+
+    private matchesFilter(metadata: VectorMetadata, metadataFilter: VectorMetadata): boolean {
+        return Object.entries(metadataFilter).every(([key, expected]) => {
+            const actual = metadata[key];
+            return Array.isArray(expected) ? expected.includes(actual) : actual === expected;
+        });
+    }
+}

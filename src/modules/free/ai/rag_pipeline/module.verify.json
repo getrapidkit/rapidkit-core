@@ -1,0 +1,43 @@
+{
+  "checked_at": "2026-05-31T16:12:15.317429+00:00",
+  "description": "Lean module layout blueprint (v3)",
+  "extra_directories": [
+    "scripts"
+  ],
+  "extra_files": [
+    "scripts/run_demo.py",
+    "templates/base/rag_pipeline_health.py.j2"
+  ],
+  "missing_directories": [],
+  "missing_files": [],
+  "module": "free/ai/rag_pipeline",
+  "parity": {
+    "fastapi": {
+      "declared": true,
+      "has_config": true,
+      "has_health": true,
+      "has_metadata": true,
+      "has_tests": true,
+      "issues": [],
+      "plugin": true,
+      "status": "ok"
+    },
+    "nestjs": {
+      "declared": true,
+      "has_config": true,
+      "has_health": true,
+      "has_metadata": true,
+      "has_tests": true,
+      "issues": [],
+      "plugin": true,
+      "status": "ok"
+    }
+  },
+  "parity_checked_at": "2026-06-06T22:22:38.711507+00:00",
+  "parity_valid": true,
+  "spec_version": 4,
+  "structure_tree_hash": "dd684bcd26c3493cc7fc827277e2e1b3ac642f64d654c2e9d68741d909a7df32",
+  "structure_valid": true,
+  "tree_hash": "dd684bcd26c3493cc7fc827277e2e1b3ac642f64d654c2e9d68741d909a7df32",
+  "valid": true
+}

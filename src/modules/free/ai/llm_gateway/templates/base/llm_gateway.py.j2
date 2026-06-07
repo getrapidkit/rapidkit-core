@@ -1,0 +1,267 @@
+from __future__ import annotations
+
+import time
+from dataclasses import dataclass, field
+from threading import RLock
+from typing import Any, Callable, Dict, Mapping, Sequence
+
+
+@dataclass(frozen=True)
+class LlmGatewayRequest:
+    """Provider-neutral completion request."""
+
+    prompt: str
+    model: str = "default"
+    provider: str | None = None
+    tenant_id: str | None = None
+    user_id: str | None = None
+    max_tokens: int = 512
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class LlmGatewayResponse:
+    """Normalized provider response."""
+
+    text: str
+    provider: str
+    model: str
+    input_chars: int
+    estimated_tokens: int
+    fallback_used: bool = False
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class LlmGatewayUsage:
+    """Immutable usage event emitted after a successful request."""
+
+    provider: str
+    model: str
+    tenant_id: str | None
+    user_id: str | None
+    input_chars: int
+    estimated_tokens: int
+    fallback_used: bool
+    created_at: float
+
+
+@dataclass
+class {{ module_class_name }}Config:
+    """Runtime configuration for {{ module_title }}."""
+
+    enabled: bool = True
+    default_provider: str = "local"
+    fallback_providers: Sequence[str] = ("local",)
+    max_prompt_chars: int = 32_000
+    max_estimated_tokens: int = 8_000
+    redact_prompts: bool = True
+    metadata: Dict[str, Any] | None = None
+
+
+Provider = Callable[[LlmGatewayRequest], LlmGatewayResponse | str]
+
+
+class LocalEchoProvider:
+    """Deterministic provider used for development, tests, and offline smoke checks."""
+
+    name = "local"
+
+    def __call__(self, request: LlmGatewayRequest) -> LlmGatewayResponse:
+        text = request.prompt.strip()
+        if not text:
+            text = "empty prompt"
+        return LlmGatewayResponse(
+            text=f"[local:{request.model}] {text}",
+            provider=self.name,
+            model=request.model,
+            input_chars=len(request.prompt),
+            estimated_tokens=estimate_tokens(request.prompt, request.max_tokens),
+            metadata={"offline": True},
+        )
+
+
+class LlmGatewayError(RuntimeError):
+    """Raised when gateway policy or provider execution fails."""
+
+
+def estimate_tokens(prompt: str, max_tokens: int = 0) -> int:
+    """Return a conservative token estimate without provider dependencies."""
+
+    prompt_tokens = max(1, (len(prompt) + 3) // 4)
+    return prompt_tokens + max(0, int(max_tokens))
+
+
+def build_default_config() -> {{ module_class_name }}Config:
+    """Return default configuration payload."""
+
+    return {{ module_class_name }}Config()
+
+
+class {{ module_class_name }}:
+    """Provider-neutral LLM gateway with fallback, budget guard, and telemetry."""
+
+    def __init__(
+        self,
+        config: {{ module_class_name }}Config | None = None,
+        providers: Mapping[str, Provider] | None = None,
+    ) -> None:
+        self.config = config or build_default_config()
+        self._providers: dict[str, Provider] = {"local": LocalEchoProvider()}
+        self._usage: list[LlmGatewayUsage] = []
+        self._lock = RLock()
+        if providers:
+            for name, provider in providers.items():
+                self.register_provider(name, provider)
+
+    def register_provider(self, name: str, provider: Provider) -> None:
+        """Register or replace a provider adapter."""
+
+        normalized = name.strip().lower()
+        if not normalized:
+            raise LlmGatewayError("provider name is required")
+        with self._lock:
+            self._providers[normalized] = provider
+
+    def providers(self) -> tuple[str, ...]:
+        """Return registered provider names."""
+
+        with self._lock:
+            return tuple(sorted(self._providers))
+
+    def complete(self, request: LlmGatewayRequest) -> LlmGatewayResponse:
+        """Execute a completion request through the configured provider policy."""
+
+        self._validate_request(request)
+        provider_names = self._provider_plan(request.provider)
+        errors: list[str] = []
+        for index, provider_name in enumerate(provider_names):
+            with self._lock:
+                provider = self._providers.get(provider_name)
+            if provider is None:
+                errors.append(f"{provider_name}: provider is not registered")
+                continue
+            try:
+                response = self._coerce_response(
+                    provider(request),
+                    provider_name=provider_name,
+                    request=request,
+                    fallback_used=index > 0,
+                )
+            except Exception as exc:  # pragma: no cover - provider-specific failure
+                errors.append(f"{provider_name}: {exc}")
+                continue
+            with self._lock:
+                self._usage.append(
+                    LlmGatewayUsage(
+                        provider=response.provider,
+                        model=response.model,
+                        tenant_id=request.tenant_id,
+                        user_id=request.user_id,
+                        input_chars=response.input_chars,
+                        estimated_tokens=response.estimated_tokens,
+                        fallback_used=response.fallback_used,
+                        created_at=time.time(),
+                    )
+                )
+            return response
+        raise LlmGatewayError("all providers failed: " + "; ".join(errors))
+
+    def complete_text(self, prompt: str, **kwargs: Any) -> str:
+        """Convenience wrapper returning only the generated text."""
+
+        return self.complete(LlmGatewayRequest(prompt=prompt, **kwargs)).text
+
+    def usage_snapshot(self) -> dict[str, Any]:
+        """Return aggregate usage suitable for billing and observability hooks."""
+
+        by_provider: dict[str, dict[str, int]] = {}
+        with self._lock:
+            usage = tuple(self._usage)
+        for event in usage:
+            bucket = by_provider.setdefault(event.provider, {"requests": 0, "estimated_tokens": 0})
+            bucket["requests"] += 1
+            bucket["estimated_tokens"] += event.estimated_tokens
+        return {
+            "requests": len(usage),
+            "estimated_tokens": sum(event.estimated_tokens for event in usage),
+            "by_provider": by_provider,
+        }
+
+    def health_check(self) -> dict[str, Any]:
+        """Return an operational health payload."""
+
+        return {
+            "module": "{{ module_name }}",
+            "status": "ok" if self.config.enabled and self.providers() else "disabled",
+            "enabled": self.config.enabled,
+            "providers": self.providers(),
+            "usage": self.usage_snapshot(),
+            "redact_prompts": self.config.redact_prompts,
+        }
+
+    def metadata(self) -> dict[str, Any]:
+        """Return static runtime metadata for diagnostics."""
+
+        return {
+            "module": "{{ module_name }}",
+            "default_provider": self.config.default_provider,
+            "fallback_providers": tuple(self.config.fallback_providers),
+            "max_prompt_chars": self.config.max_prompt_chars,
+            "max_estimated_tokens": self.config.max_estimated_tokens,
+            "custom_metadata": dict(self.config.metadata or {}),
+        }
+
+    def _validate_request(self, request: LlmGatewayRequest) -> None:
+        if not self.config.enabled:
+            raise LlmGatewayError("llm gateway is disabled")
+        if not request.prompt or not request.prompt.strip():
+            raise LlmGatewayError("prompt is required")
+        if len(request.prompt) > self.config.max_prompt_chars:
+            raise LlmGatewayError("prompt exceeds max_prompt_chars")
+        estimated = estimate_tokens(request.prompt, request.max_tokens)
+        if estimated > self.config.max_estimated_tokens:
+            raise LlmGatewayError("request exceeds max_estimated_tokens")
+
+    def _provider_plan(self, requested_provider: str | None) -> tuple[str, ...]:
+        ordered: list[str] = []
+        for name in (
+            requested_provider,
+            self.config.default_provider,
+            *tuple(self.config.fallback_providers),
+        ):
+            if not name:
+                continue
+            normalized = str(name).strip().lower()
+            if normalized and normalized not in ordered:
+                ordered.append(normalized)
+        return tuple(ordered or ("local",))
+
+    def _coerce_response(
+        self,
+        result: LlmGatewayResponse | str,
+        *,
+        provider_name: str,
+        request: LlmGatewayRequest,
+        fallback_used: bool,
+    ) -> LlmGatewayResponse:
+        if isinstance(result, LlmGatewayResponse):
+            if result.fallback_used == fallback_used:
+                return result
+            return LlmGatewayResponse(
+                text=result.text,
+                provider=result.provider,
+                model=result.model,
+                input_chars=result.input_chars,
+                estimated_tokens=result.estimated_tokens,
+                fallback_used=fallback_used,
+                metadata=result.metadata,
+            )
+        return LlmGatewayResponse(
+            text=str(result),
+            provider=provider_name,
+            model=request.model,
+            input_chars=len(request.prompt),
+            estimated_tokens=estimate_tokens(request.prompt, request.max_tokens),
+            fallback_used=fallback_used,
+        )

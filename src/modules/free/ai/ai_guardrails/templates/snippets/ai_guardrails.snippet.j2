@@ -1,0 +1,12 @@
+{# Shared snippet for the RapidKit AI Guardrails module. #}
+{% set module_name = "ai_guardrails" %}
+{% set module_title = "AI Guardrails" %}
+
+# {{ module_title }} integration notes
+
+- Canonical module: `free/ai/ai_guardrails`
+- Primary purpose: AI input/output safety policy, PII redaction hooks, and model boundary checks.
+- Key capabilities: Applies input and output policy checks around model calls., Provides PII redaction and sensitive-content boundary hooks., Keeps safety decisions auditable for support and compliance review.
+- Runtime environment keys: RAPIDKIT_AI_GUARDRAILS_ENABLED, RAPIDKIT_AI_GUARDRAILS_MODE, RAPIDKIT_AI_GUARDRAILS_REDACTION_MODE
+
+Use this snippet near the owning service/module registration point so generated projects keep module intent, operational boundaries, and security expectations visible to maintainers.

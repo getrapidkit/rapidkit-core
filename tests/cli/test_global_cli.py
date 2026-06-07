@@ -47,6 +47,49 @@ def test_commands_json(monkeypatch: MonkeyPatch, capsys: CaptureFixture[str]) ->
     assert "create" in payload["commands"]
 
 
+def test_public_engine_command_surface_matches_contract() -> None:
+    assert set(global_cli._get_engine_commands()) == {
+        "version",
+        "project",
+        "create",
+        "add",
+        "list",
+        "info",
+        "commands",
+        "upgrade",
+        "diff",
+        "doctor",
+        "license",
+        "reconcile",
+        "rollback",
+        "uninstall",
+        "checkpoint",
+        "optimize",
+        "snapshot",
+        "frameworks",
+        "modules",
+        "merge",
+    }
+
+
+def test_public_project_command_surface_matches_contract() -> None:
+    assert set(global_cli._get_project_commands()) == {
+        "init",
+        "dev",
+        "start",
+        "build",
+        "test",
+        "lint",
+        "format",
+        "help",
+    }
+
+
+def test_core_owned_project_detect_not_shadowed_by_npm_top_level_guard() -> None:
+    assert "project" not in global_cli.NPM_OWNED_TOP_LEVEL_COMMANDS
+    assert ("project", "archive") in global_cli.NPM_OWNED_SCOPED_COMMANDS
+
+
 def test_show_help_outside_project_lists_global_first(
     monkeypatch: MonkeyPatch, capsys: CaptureFixture[str]
 ) -> None:
@@ -115,6 +158,36 @@ def test_project_command_delegates_with_poetry(tmp_path: Path, monkeypatch: Monk
     assert pythonpath_entries[0] == str(project_root / "src")
 
 
+def test_init_command_delegates_with_poetry(tmp_path: Path, monkeypatch: MonkeyPatch) -> None:
+    project_root = _make_project_root(tmp_path)
+    run_calls: list[tuple[list[str], Path, dict[str, str], bool]] = []
+
+    def _fake_run(cmd: list[str], cwd: Path, env: dict[str, str], check: bool) -> SimpleNamespace:
+        run_calls.append((cmd, cwd, env, check))
+        return SimpleNamespace(returncode=0)
+
+    wrote_activate_for: list[Path] = []
+
+    monkeypatch.setattr(sys, "argv", ["rapidkit", "init"])
+    monkeypatch.setattr(global_cli, "_find_project_root", lambda: project_root)
+    monkeypatch.setattr("cli.global_cli.subprocess.run", _fake_run)
+    monkeypatch.setattr(
+        global_cli, "_write_activate_file", lambda root: wrote_activate_for.append(root)
+    )
+
+    with pytest.raises(SystemExit) as exc:
+        global_cli.main()
+
+    assert exc.value.code == 0
+    assert run_calls, "Expected subprocess.run to be invoked"
+    cmd, cwd, _env, check = run_calls[0]
+    assert cmd[:4] == [sys.executable, "-m", "poetry", "run"]
+    assert cmd[4:] == ["init"]
+    assert cwd == project_root
+    assert check is False
+    assert wrote_activate_for == [project_root]
+
+
 def test_global_command_invokes_engine_cli(monkeypatch: MonkeyPatch) -> None:
     called = False
 
@@ -160,7 +233,88 @@ def test_unknown_command_exits_with_message(
     assert "Unknown command" in captured.out
 
 
+@pytest.mark.parametrize(
+    "argv",
+    [
+        ["rapidkit", "workspace", "run", "init"],
+        ["rapidkit", "product", "plan"],
+        ["rapidkit", "project", "archive", "api"],
+        ["rapidkit", "bootstrap", "--profile", "polyglot"],
+        ["rapidkit", "doctor", "workspace"],
+        ["rapidkit", "snapshot", "create", "--include-projects"],
+    ],
+)
+def test_npm_owned_commands_return_routing_notice(
+    argv: list[str], monkeypatch: MonkeyPatch, capsys: CaptureFixture[str]
+) -> None:
+    monkeypatch.setattr(sys, "argv", argv)
+
+    with pytest.raises(SystemExit) as exc:
+        global_cli.main()
+
+    assert exc.value.code == 2
+    captured = capsys.readouterr()
+    assert "belongs to the RapidKit npm workspace CLI" in captured.err
+    assert "npx --yes --package rapidkit rapidkit" in captured.err
+
+
+def test_project_detect_remains_core_owned(monkeypatch: MonkeyPatch) -> None:
+    called = False
+
+    def _fake_cli_main() -> None:
+        nonlocal called
+        called = True
+
+    dummy_module = ModuleType("cli.main")
+    dummy_module.main = _fake_cli_main  # type: ignore[attr-defined]
+
+    monkeypatch.setattr(sys, "argv", ["rapidkit", "project", "detect", "--json"])
+    monkeypatch.setitem(sys.modules, "cli.main", dummy_module)
+    if "cli" in sys.modules:
+        monkeypatch.setattr(sys.modules["cli"], "main", dummy_module, raising=False)
+
+    global_cli.main()
+
+    assert called
+
+
+def test_npm_owned_commands_can_opt_into_npx_passthrough(monkeypatch: MonkeyPatch) -> None:
+    run_calls: list[list[str]] = []
+
+    def _fake_run(cmd: list[str], check: bool) -> SimpleNamespace:
+        run_calls.append(cmd)
+        return SimpleNamespace(returncode=9)
+
+    monkeypatch.setenv("RAPIDKIT_CORE_PASS_THROUGH_NPM", "1")
+    monkeypatch.setattr(sys, "argv", ["rapidkit", "workspace", "run", "init"])
+    monkeypatch.setattr("cli.global_cli.subprocess.run", _fake_run)
+
+    with pytest.raises(SystemExit) as exc:
+        global_cli.main()
+
+    assert exc.value.code == 9
+    assert run_calls == [
+        ["npx", "--yes", "--package", "rapidkit", "rapidkit", "workspace", "run", "init"]
+    ]
+
+
+def test_launch_tui_requires_interactive_terminal(
+    monkeypatch: MonkeyPatch, capsys: CaptureFixture[str]
+) -> None:
+    monkeypatch.setattr(sys.stdin, "isatty", lambda: False)
+    monkeypatch.setattr(sys.stdout, "isatty", lambda: False)
+
+    with pytest.raises(SystemExit) as exc:
+        global_cli._launch_tui()
+
+    assert exc.value.code == 1
+    captured = capsys.readouterr()
+    assert "Interactive TUI requires a real terminal" in captured.out
+
+
 def test_launch_tui_import_error(monkeypatch: MonkeyPatch, capsys: CaptureFixture[str]) -> None:
+    monkeypatch.setattr(sys.stdin, "isatty", lambda: True)
+    monkeypatch.setattr(sys.stdout, "isatty", lambda: True)
     monkeypatch.setitem(sys.modules, "core.tui", ModuleType("core.tui"))
     monkeypatch.setitem(sys.modules, "core.tui.main_tui", ModuleType("core.tui.main_tui"))
 

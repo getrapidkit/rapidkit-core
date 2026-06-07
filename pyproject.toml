@@ -1,6 +1,6 @@
 [project]
 name = "rapidkit-core"
-version = "0.4.0"
+version = "0.5.0"
 description = "Community-built rapid automation toolkit for makers who ship with heart"
 readme = "README.md"
 requires-python = ">=3.10,<4.0"
@@ -34,8 +34,8 @@ dependencies = [
     "black>=26.3.1,<27.0.0",
     "libcst>=1.6.0,<2.0.0",
     "yamllint>=1.37.1,<2.0.0",
-    "fastapi>=0.119.0,<1.0.0",
-    "starlette>=0.49.1,<0.50",
+    "fastapi>=0.136.3,<1.0.0",
+    "starlette>=1.2.1,<2.0.0",
     "uvicorn[standard]>=0.37.0",
     "poetry-plugin-export>=1.10.0,<2.0.0",
     "poetry>=2.3.4",
@@ -57,7 +57,8 @@ dev = [
     "types-requests>=2.32.4,<3.0.0",
     "cryptography>=46.0.2,<47.0.0",
     "httpx>=0.28.0,<0.29.0",
-    "pip>=26",
+    "pip>=26.1.2",
+    "pyjwt[crypto]>=2.13.0,<3.0.0",
     "tox>=4.23.0,<5.0.0",
     "types-psutil>=7.0.0,<8.0.0",
 ]
@@ -67,12 +68,12 @@ rapidkit = "cli.global_cli:main"
 
 [project.urls]
 Homepage = "https://www.getrapidkit.com/"
-Repository = "https://github.com/getrapidkit/rapidkit-core"
+Repository = "https://github.com/rapidkitlabs/rapidkit-core"
 Documentation = "https://www.getrapidkit.com/docs"
 
 [tool.poetry]
 name = "rapidkit-core"
-version = "0.4.0"
+version = "0.5.0"
 description = "Community-built rapid automation toolkit for makers who ship with heart"
 authors = ["Baziar <baziar@live.com>"]
 readme = "README.md"
@@ -84,13 +85,14 @@ packages = [
     { include = "modules", from = "src" },
 ]
 
+
 [tool.poetry.dependencies]
 python = ">=3.10,<4.0"
 black = ">=26.3.1,<27.0.0"
 click = ">=8.3,<8.4"
 cryptography = "^46.0.2"
 email-validator = ">=2.1,<3.0"
-fastapi = ">=0.119.0,<1.0.0"
+fastapi = ">=0.136.3,<1.0.0"
 jinja2 = "^3.1.6"
 jsonschema = "^4.25.1"
 libcst = ">=1.6.0,<2.0.0"
@@ -105,7 +107,7 @@ pynacl = "^1.6.2"
 pyyaml = "^6.0.3"
 requests = "^2.32.5"
 rich = "^14.2.0"
-starlette = ">=0.49.1,<0.50"
+starlette = ">=1.2.1,<2.0.0"
 tabulate = "^0.9.0"
 typer = ">=0.19,<0.20"
 types-requests = "^2.32.4.20250913"
@@ -118,9 +120,10 @@ black = ">=26.3.1,<27.0.0"
 cryptography = "^46.0.2"
 httpx = "^0.28.0"
 mypy = "^1.18.2"
-pip = ">=26"
+pip = ">=26.1.2"
 pip-audit = "^2.9.0"
 pre-commit = "^4.3.0"
+pyjwt = { version = ">=2.13.0,<3.0.0", extras = ["crypto"] }
 pytest = ">=9.0.3,<10.0.0"
 pytest-asyncio = ">=1.3.0,<2.0.0"
 pytest-cov = "^7.0.0"

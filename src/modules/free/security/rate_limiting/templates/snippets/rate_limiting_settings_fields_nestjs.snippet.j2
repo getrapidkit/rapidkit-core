@@ -1,19 +1,26 @@
-  RATE_LIMIT_ENABLED?: boolean;
-  RATE_LIMIT_BACKEND?: string;
-  RATE_LIMIT_REDIS_URL?: string | null;
-  RATE_LIMIT_REDIS_PREFIX?: string;
-  RATE_LIMIT_TRUST_FORWARDED_FOR?: boolean;
-  RATE_LIMIT_FORWARDED_FOR_HEADER?: string;
-  RATE_LIMIT_IDENTITY_HEADER?: string | null;
-  RATE_LIMIT_DEFAULT_RULE_NAME?: string;
-  RATE_LIMIT_DEFAULT_LIMIT?: number;
-  RATE_LIMIT_DEFAULT_WINDOW?: number;
-  RATE_LIMIT_DEFAULT_SCOPE?: string;
-  RATE_LIMIT_DEFAULT_PRIORITY?: number;
-  RATE_LIMIT_DEFAULT_BLOCK_SECONDS?: number | null;
-  RATE_LIMIT_HEADER_LIMIT?: string;
-  RATE_LIMIT_HEADER_REMAINING?: string;
-  RATE_LIMIT_HEADER_RESET?: string;
-  RATE_LIMIT_HEADER_RETRY_AFTER?: string;
-  RATE_LIMIT_HEADER_RULE?: string;
-  RATE_LIMIT_RULES_JSON?: string;
+  rateLimiting: {
+    enabled: process.env.RATE_LIMIT_ENABLED === '1' || process.env.RATE_LIMIT_ENABLED?.toLowerCase() === 'true',
+    backend: process.env.RATE_LIMIT_BACKEND ?? 'memory',
+    redisUrl: process.env.RATE_LIMIT_REDIS_URL ?? null,
+    redisPrefix: process.env.RATE_LIMIT_REDIS_PREFIX ?? 'rate-limit',
+    trustForwardedFor:
+      process.env.RATE_LIMIT_TRUST_FORWARDED_FOR === '1' ||
+      process.env.RATE_LIMIT_TRUST_FORWARDED_FOR?.toLowerCase() === 'true',
+    forwardedForHeader: process.env.RATE_LIMIT_FORWARDED_FOR_HEADER ?? 'X-Forwarded-For',
+    identityHeader: process.env.RATE_LIMIT_IDENTITY_HEADER ?? 'X-RateLimit-Identity',
+    defaultRuleName: process.env.RATE_LIMIT_DEFAULT_RULE_NAME ?? 'default',
+    defaultLimit: Number.parseInt(process.env.RATE_LIMIT_DEFAULT_LIMIT ?? '120', 10),
+    defaultWindow: Number.parseInt(process.env.RATE_LIMIT_DEFAULT_WINDOW ?? '60', 10),
+    defaultScope: process.env.RATE_LIMIT_DEFAULT_SCOPE ?? 'identity',
+    defaultPriority: Number.parseInt(process.env.RATE_LIMIT_DEFAULT_PRIORITY ?? '100', 10),
+    defaultBlockSeconds:
+      process.env.RATE_LIMIT_DEFAULT_BLOCK_SECONDS === undefined
+        ? null
+        : Number.parseInt(process.env.RATE_LIMIT_DEFAULT_BLOCK_SECONDS, 10),
+    headerLimit: process.env.RATE_LIMIT_HEADER_LIMIT ?? 'X-RateLimit-Limit',
+    headerRemaining: process.env.RATE_LIMIT_HEADER_REMAINING ?? 'X-RateLimit-Remaining',
+    headerReset: process.env.RATE_LIMIT_HEADER_RESET ?? 'X-RateLimit-Reset',
+    headerRetryAfter: process.env.RATE_LIMIT_HEADER_RETRY_AFTER ?? 'Retry-After',
+    headerRule: process.env.RATE_LIMIT_HEADER_RULE ?? 'X-RateLimit-Rule',
+    rulesJson: process.env.RATE_LIMIT_RULES_JSON ?? '',
+  },

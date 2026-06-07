@@ -1,5 +1,9 @@
 # Changelog — free/core/logging
 
+## 0.1.10 — Automated patch release triggered by content hash change (2026-06-02)
+
+- chore: Automated patch release triggered by content hash change
+
 ## 0.1.9 — Automated patch release triggered by content hash change (2026-02-14)
 
 - chore: Automated patch release triggered by content hash change

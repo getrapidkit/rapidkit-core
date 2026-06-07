@@ -1,0 +1,7 @@
+# Register snippet bundles for Connector Hub
+
+snippets:
+  -
+    name: "connector_hub_usage_example"
+    template: "templates/snippets/connector_hub.snippet.j2"
+    description: "Injects an opinionated usage example for Connector Hub."

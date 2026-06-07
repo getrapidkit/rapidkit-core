@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, Request, Response, status
 from ..{{ module_name }} import get_runtime as _get_runtime
 
 
-def get_runtime(request: Request) -> Any:
+async def get_runtime(request: Request) -> Any:
     """Prefer the runtime instance attached by `register_fastapi`.
 
     This keeps route behavior stable even if the test harness (or another test)

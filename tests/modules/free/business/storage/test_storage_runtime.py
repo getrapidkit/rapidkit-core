@@ -36,3 +36,30 @@ async def test_health_check_reports_local_status(storage_facade, tmp_path):
     adapter = health["adapter"]
     assert adapter["adapter"] == "local"
     assert adapter["path"] == str(tmp_path)
+
+
+@pytest.mark.asyncio
+async def test_signed_download_token_and_checksum(storage_facade):
+    payload = b"receipt artifact"
+    result = await storage_facade.upload_file("receipt.pdf", payload)
+
+    assert result.file_id is not None
+    assert await storage_facade.verify_checksum(result.file_id, result.metadata.checksum)
+
+    token = storage_facade.create_download_token(result.file_id)
+    resolved_file_id = storage_facade.verify_download_token(token)
+
+    assert resolved_file_id == result.file_id
+
+
+@pytest.mark.asyncio
+async def test_malware_scan_hook_blocks_payload(rendered_storage_runtime, tmp_path):
+    StorageConfig = rendered_storage_runtime.StorageConfig
+    Storage = getattr(rendered_storage_runtime, generate.MODULE_CLASS)
+    FileValidationError = rendered_storage_runtime.FileValidationError
+
+    config = StorageConfig(base_path=tmp_path, malware_scan_hook=lambda _name, _body: False)
+    storage = Storage(config)
+
+    with pytest.raises(FileValidationError, match="malware scan"):
+        await storage.upload_file("blocked.txt", b"bad")

@@ -30,8 +30,8 @@ MODULE_SLUG = "free/auth/api_keys"
 MODULE_BASE = "src/modules/free/auth/api_keys"
 
 PYTHON_RUNTIME_REL = f"{MODULE_BASE}/api_keys.py"
-PYTHON_TYPES_REL = f"{MODULE_BASE}/types/api_keys.py"
-PYTHON_HEALTH_REL = "src/health/api_keys.py"
+PYTHON_TYPES_REL = f"{MODULE_BASE}/api_keys_types.py"
+PYTHON_HEALTH_REL = f"{MODULE_BASE}/api_keys_health.py"
 FASTAPI_ROUTER_REL = f"{MODULE_BASE}/routers/api_keys.py"
 
 NEST_SERVICE_REL = f"{MODULE_BASE}/api-keys.service.ts"

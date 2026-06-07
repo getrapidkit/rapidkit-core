@@ -4,8 +4,8 @@ snippets:
     target: .env,.env.dev,.env.prod,.env.example
     anchor: "# <<<inject:module-env>>>"
     template: db_mongo_env.snippet.j2
-    features: [mongo, database]
-    profiles: [fastapi/standard, nestjs/standard]
+    features: [db_mongo, mongo, database]
+    profiles: [fastapi/standard, fastapi/ddd, nestjs/standard]
     description: Injects Db Mongo environment variable defaults
     version: "1.0.0"
     priority: 12
@@ -19,13 +19,36 @@ snippets:
       created_at: "2025-11-04"
       last_modified: "2025-11-04"
     conflict_resolution: merge
+    context:
+      mongo_defaults:
+        connection_uri: "mongodb://localhost:27017"
+        database: "rapidkit"
+        username: null
+        password: null
+        auth_source: "admin"
+        replica_set: null
+        app_name: "rapidkit-db-mongo"
+        read_preference: "primary"
+        retry_reads: true
+        retry_writes: true
+        compressors: []
+        min_pool_size: 0
+        max_pool_size: 20
+        connect_timeout_ms: 5000
+        server_selection_timeout_ms: 8000
+        max_idle_time_ms: 120000
+        tls: false
+        tls_allow_invalid_certificates: false
+      health_defaults:
+        ping_timeout_ms: 1500
+        metrics: true
 
   - id: db_mongo_settings_fields
     target: src/modules/free/essentials/settings/settings.py
     anchor: "# <<<inject:settings-fields>>>"
     template: db_mongo_settings_fields.snippet.j2
-    features: [mongo, database, extendable_settings]
-    profiles: [fastapi/standard]
+    features: [extendable_settings]
+    profiles: [fastapi/standard, fastapi/ddd]
     description: Injects Db Mongo configuration fields into the Python settings module
     version: "1.0.0"
     priority: 18
@@ -39,12 +62,35 @@ snippets:
       created_at: "2025-11-04"
       last_modified: "2025-11-04"
     conflict_resolution: merge
+    context:
+      mongo_defaults:
+        connection_uri: "mongodb://localhost:27017"
+        database: "rapidkit"
+        username: null
+        password: null
+        auth_source: "admin"
+        replica_set: null
+        app_name: "rapidkit-db-mongo"
+        read_preference: "primary"
+        retry_reads: true
+        retry_writes: true
+        compressors: []
+        min_pool_size: 0
+        max_pool_size: 20
+        connect_timeout_ms: 5000
+        server_selection_timeout_ms: 8000
+        max_idle_time_ms: 120000
+        tls: false
+        tls_allow_invalid_certificates: false
+      health_defaults:
+        ping_timeout_ms: 1500
+        metrics: true
 
   - id: db_mongo_settings_fields_nestjs
     target: src/config/configuration.ts
     anchor: "// <<<inject:configuration>>>"
     template: db_mongo_settings_fields_nestjs.snippet.j2
-    features: [mongo, database]
+    features: [db_mongo, mongo, database]
     profiles: [nestjs/standard]
     description: Adds Db Mongo configuration typings for NestJS configuration modules
     version: "1.0.0"
@@ -59,3 +105,23 @@ snippets:
       created_at: "2025-11-04"
       last_modified: "2025-11-04"
     conflict_resolution: merge
+    context:
+      mongo_defaults:
+        connection_uri: "mongodb://localhost:27017"
+        database: "rapidkit"
+        app_name: "rapidkit-db-mongo"
+        auth_source: "admin"
+        read_preference: "primary"
+        retry_reads: true
+        retry_writes: true
+        compressors: []
+        min_pool_size: 0
+        max_pool_size: 20
+        connect_timeout_ms: 5000
+        server_selection_timeout_ms: 8000
+        max_idle_time_ms: 120000
+        tls: false
+        tls_allow_invalid_certificates: false
+      health_defaults:
+        ping_timeout_ms: 1500
+        metrics: true

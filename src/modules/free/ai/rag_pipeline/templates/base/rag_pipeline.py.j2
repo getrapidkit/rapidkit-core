@@ -1,0 +1,459 @@
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from hashlib import sha256
+from math import sqrt
+from threading import RLock
+from typing import Any, Callable, Iterable, Mapping, Protocol, Sequence
+from uuid import uuid4
+
+
+class {{ module_class_name }}Error(ValueError):
+    """Raised when RAG pipeline input or state is invalid."""
+
+
+class TextGenerator(Protocol):
+    def __call__(self, prompt: str, context: Mapping[str, Any]) -> str:
+        """Generate an answer for a grounded prompt."""
+
+
+@dataclass(frozen=True)
+class RagDocument:
+    """A source document ready for retrieval."""
+
+    id: str
+    text: str
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+    namespace: str = "default"
+    created_at: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds")
+    )
+
+
+@dataclass(frozen=True)
+class RagChunk:
+    """A retrievable chunk produced from a document."""
+
+    id: str
+    document_id: str
+    text: str
+    vector: tuple[float, ...]
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+    namespace: str = "default"
+
+
+@dataclass(frozen=True)
+class RagCitation:
+    """Citation returned with a generated answer."""
+
+    document_id: str
+    chunk_id: str
+    text: str
+    score: float
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class RagQuery:
+    """Portable query contract for RAG adapters."""
+
+    question: str
+    namespace: str = "default"
+    top_k: int = 4
+    metadata_filter: Mapping[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class RagAnswer:
+    """Grounded answer and citations produced by the pipeline."""
+
+    answer: str
+    citations: tuple[RagCitation, ...]
+    prompt: str
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class RagAuditEvent:
+    type: str
+    query: str | None = None
+    namespace: str | None = None
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+    timestamp: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds")
+    )
+
+
+@dataclass(frozen=True)
+class {{ module_class_name }}Config:
+    """Runtime configuration for {{ module_title }}."""
+
+    enabled: bool = True
+    default_namespace: str = "default"
+    chunk_size: int = 800
+    chunk_overlap: int = 120
+    embedding_dimensions: int = 32
+    max_top_k: int = 10
+    max_context_chars: int = 12_000
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+
+def build_default_config() -> {{ module_class_name }}Config:
+    """Return default configuration payload."""
+
+    return {{ module_class_name }}Config()
+
+
+def _utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+def _cosine_similarity(left: Sequence[float], right: Sequence[float]) -> float:
+    if len(left) != len(right):
+        raise {{ module_class_name }}Error("vectors must have the same dimensions")
+    left_norm = sqrt(sum(value * value for value in left))
+    right_norm = sqrt(sum(value * value for value in right))
+    if left_norm == 0 or right_norm == 0:
+        return 0.0
+    return sum(a * b for a, b in zip(left, right)) / (left_norm * right_norm)
+
+
+def deterministic_embed(text: str, dimensions: int = 32) -> tuple[float, ...]:
+    """Return a deterministic local embedding for tests and offline development."""
+
+    if dimensions < 1:
+        raise {{ module_class_name }}Error("embedding_dimensions must be positive")
+    vector = [0.0] * dimensions
+    tokens = [token.strip().lower() for token in text.split() if token.strip()]
+    for token in tokens or [text]:
+        digest = sha256(token.encode("utf-8")).digest()
+        index = int.from_bytes(digest[:2], "big") % dimensions
+        vector[index] += 1.0
+    norm = sqrt(sum(value * value for value in vector))
+    if norm == 0:
+        return tuple(vector)
+    return tuple(value / norm for value in vector)
+
+
+def default_generator(prompt: str, context: Mapping[str, Any]) -> str:
+    """Return a deterministic grounded answer when no LLM provider is configured."""
+
+    citations = context.get("citations", [])
+    if not citations:
+        return "I do not have enough grounded context to answer."
+    first = citations[0]
+    question = context.get("question", "the question")
+    snippet = str(first.get("text", "")).strip()
+    return f"Grounded answer for '{question}': {snippet}"
+
+
+class {{ module_class_name }}:
+    """Small, dependency-free RAG pipeline for generated workspaces."""
+
+    def __init__(
+        self,
+        config: {{ module_class_name }}Config | None = None,
+        *,
+        embedder: Callable[[str, int], Sequence[float]] | None = None,
+        generator: TextGenerator | None = None,
+    ) -> None:
+        self.config = config or build_default_config()
+        if self.config.chunk_overlap >= self.config.chunk_size:
+            raise {{ module_class_name }}Error("chunk_overlap must be smaller than chunk_size")
+        self._embedder = embedder or deterministic_embed
+        self._generator = generator or default_generator
+        self._documents: dict[tuple[str, str], RagDocument] = {}
+        self._chunks: dict[tuple[str, str], RagChunk] = {}
+        self._idempotency_index: dict[tuple[str, str], str] = {}
+        self._audit: list[RagAuditEvent] = []
+        self._lock = RLock()
+
+    def ingest(
+        self,
+        *,
+        text: str,
+        id: str | None = None,
+        metadata: Mapping[str, Any] | None = None,
+        namespace: str | None = None,
+        idempotency_key: str | None = None,
+    ) -> RagDocument:
+        """Store a document and index retrievable chunks."""
+
+        if not self.config.enabled:
+            raise {{ module_class_name }}Error("rag pipeline is disabled")
+        if not text.strip():
+            raise {{ module_class_name }}Error("text must not be empty")
+        resolved_namespace = namespace or self.config.default_namespace
+        if idempotency_key is not None:
+            normalized_key = idempotency_key.strip()
+            if not normalized_key:
+                raise {{ module_class_name }}Error("idempotency_key must not be empty")
+            existing_id = self._idempotency_index.get((resolved_namespace, normalized_key))
+            if existing_id is not None:
+                existing = self._documents.get((resolved_namespace, existing_id))
+                if existing is not None:
+                    return existing
+        else:
+            normalized_key = None
+        document = RagDocument(
+            id=id or str(uuid4()),
+            text=text,
+            metadata=dict(metadata or {}),
+            namespace=resolved_namespace,
+            created_at=_utc_now(),
+        )
+        chunks = self._chunk_document(document)
+        with self._lock:
+            self._documents[(resolved_namespace, document.id)] = document
+            for key in [
+                key
+                for key, chunk in self._chunks.items()
+                if chunk.namespace == resolved_namespace and chunk.document_id == document.id
+            ]:
+                self._chunks.pop(key, None)
+            for chunk in chunks:
+                self._chunks[(resolved_namespace, chunk.id)] = chunk
+            if normalized_key is not None:
+                self._idempotency_index[(resolved_namespace, normalized_key)] = document.id
+            self._record_audit(
+                "document.ingested",
+                namespace=resolved_namespace,
+                metadata={"document_id": document.id, "chunks": len(chunks)},
+            )
+        return document
+
+    def bulk_ingest(self, documents: Iterable[Mapping[str, Any]]) -> list[RagDocument]:
+        return [
+            self.ingest(
+                id=str(item["id"]) if item.get("id") else None,
+                text=str(item["text"]),
+                metadata=item.get("metadata") or {},
+                namespace=str(item.get("namespace") or self.config.default_namespace),
+            )
+            for item in documents
+        ]
+
+    def retrieve(
+        self,
+        query: RagQuery | str,
+        *,
+        namespace: str | None = None,
+        top_k: int | None = None,
+        metadata_filter: Mapping[str, Any] | None = None,
+        tenant_id: str | None = None,
+    ) -> tuple[RagCitation, ...]:
+        """Retrieve grounded citations for a question."""
+
+        rag_query = self._coerce_query(query, namespace, top_k, metadata_filter)
+        if rag_query.top_k < 1 or rag_query.top_k > self.config.max_top_k:
+            raise {{ module_class_name }}Error(
+                f"top_k must be between 1 and {self.config.max_top_k}"
+            )
+        question_vector = tuple(self._embedder(rag_query.question, self.config.embedding_dimensions))
+        with self._lock:
+            candidates = [
+                chunk
+                for chunk in self._chunks.values()
+                if chunk.namespace == rag_query.namespace
+                and self._matches_filter(chunk.metadata, rag_query.metadata_filter)
+                and self._matches_tenant(chunk.metadata, tenant_id)
+            ]
+        citations = [
+            RagCitation(
+                document_id=chunk.document_id,
+                chunk_id=chunk.id,
+                text=chunk.text,
+                score=_cosine_similarity(question_vector, chunk.vector),
+                metadata=dict(chunk.metadata),
+            )
+            for chunk in candidates
+        ]
+        citations.sort(key=lambda citation: citation.score, reverse=True)
+        self._record_audit(
+            "query.retrieved",
+            query=rag_query.question,
+            namespace=rag_query.namespace,
+            metadata={"top_k": rag_query.top_k, "returned": len(citations[: rag_query.top_k])},
+        )
+        return tuple(citations[: rag_query.top_k])
+
+    def answer(self, query: RagQuery | str, **overrides: Any) -> RagAnswer:
+        """Retrieve context and generate a grounded answer."""
+
+        rag_query = self._coerce_query(
+            query,
+            overrides.get("namespace"),
+            overrides.get("top_k"),
+            overrides.get("metadata_filter"),
+        )
+        citations = self.retrieve(rag_query, tenant_id=overrides.get("tenant_id"))
+        prompt = self._build_prompt(rag_query.question, citations)
+        answer = self._generator(
+            prompt,
+            {
+                "question": rag_query.question,
+                "citations": [citation.__dict__ for citation in citations],
+                "metadata": dict(self.config.metadata),
+            },
+        )
+        answer = RagAnswer(
+            answer=answer,
+            citations=citations,
+            prompt=prompt,
+            metadata={"citation_count": len(citations), "namespace": rag_query.namespace},
+        )
+        self._record_audit(
+            "answer.generated",
+            query=rag_query.question,
+            namespace=rag_query.namespace,
+            metadata={"citation_count": len(citations)},
+        )
+        return answer
+
+    def stats(self) -> dict[str, Any]:
+        with self._lock:
+            namespaces: dict[str, int] = {}
+            for document in self._documents.values():
+                namespaces[document.namespace] = namespaces.get(document.namespace, 0) + 1
+            return {
+                "enabled": self.config.enabled,
+                "documents": len(self._documents),
+                "chunks": len(self._chunks),
+                "namespaces": namespaces,
+                "embedding_dimensions": self.config.embedding_dimensions,
+                "max_top_k": self.config.max_top_k,
+                "audit_events": len(self._audit),
+            }
+
+    def health(self) -> dict[str, Any]:
+        return {
+            "module": "{{ module_name }}",
+            "status": "ok" if self.config.enabled else "disabled",
+            "timestamp": _utc_now(),
+            "stats": self.stats(),
+        }
+
+    def clear(self, *, namespace: str | None = None) -> int:
+        with self._lock:
+            if namespace is None:
+                count = len(self._documents)
+                self._documents.clear()
+                self._chunks.clear()
+                self._record_audit("documents.cleared", metadata={"scope": "all", "count": count})
+                return count
+            doc_keys = [key for key, document in self._documents.items() if document.namespace == namespace]
+            chunk_keys = [key for key, chunk in self._chunks.items() if chunk.namespace == namespace]
+            for key in doc_keys:
+                self._documents.pop(key, None)
+            for key in chunk_keys:
+                self._chunks.pop(key, None)
+            self._record_audit(
+                "documents.cleared",
+                namespace=namespace,
+                metadata={"scope": "namespace", "count": len(doc_keys)},
+            )
+            return len(doc_keys)
+
+    def audit_events(
+        self,
+        *,
+        namespace: str | None = None,
+        event_type: str | None = None,
+    ) -> tuple[RagAuditEvent, ...]:
+        events = tuple(self._audit)
+        if namespace is not None:
+            events = tuple(event for event in events if event.namespace == namespace)
+        if event_type is not None:
+            events = tuple(event for event in events if event.type == event_type)
+        return events
+
+    def _chunk_document(self, document: RagDocument) -> tuple[RagChunk, ...]:
+        chunks: list[RagChunk] = []
+        step = self.config.chunk_size - self.config.chunk_overlap
+        text = document.text.strip()
+        for index, start in enumerate(range(0, len(text), step)):
+            chunk_text = text[start : start + self.config.chunk_size].strip()
+            if not chunk_text:
+                continue
+            chunk_id = f"{document.id}:{index}"
+            vector = tuple(self._embedder(chunk_text, self.config.embedding_dimensions))
+            chunks.append(
+                RagChunk(
+                    id=chunk_id,
+                    document_id=document.id,
+                    text=chunk_text,
+                    vector=vector,
+                    metadata=dict(document.metadata),
+                    namespace=document.namespace,
+                )
+            )
+        return tuple(chunks)
+
+    def _build_prompt(self, question: str, citations: Sequence[RagCitation]) -> str:
+        context_parts: list[str] = []
+        budget = self.config.max_context_chars
+        for citation in citations:
+            part = f"[{citation.document_id}] {citation.text}"
+            if len("\n\n".join(context_parts + [part])) > budget:
+                break
+            context_parts.append(part)
+        context = "\n\n".join(context_parts) or "No grounded context."
+        return f"Answer using only the grounded context.\n\nContext:\n{context}\n\nQuestion:\n{question}"
+
+    def _coerce_query(
+        self,
+        query: RagQuery | str,
+        namespace: str | None,
+        top_k: int | None,
+        metadata_filter: Mapping[str, Any] | None,
+    ) -> RagQuery:
+        if isinstance(query, RagQuery):
+            return RagQuery(
+                question=query.question,
+                namespace=namespace or query.namespace,
+                top_k=top_k or query.top_k,
+                metadata_filter=metadata_filter or query.metadata_filter,
+            )
+        if not str(query).strip():
+            raise {{ module_class_name }}Error("question must not be empty")
+        return RagQuery(
+            question=str(query),
+            namespace=namespace or self.config.default_namespace,
+            top_k=top_k or 4,
+            metadata_filter=metadata_filter or {},
+        )
+
+    @staticmethod
+    def _matches_filter(metadata: Mapping[str, Any], filters: Mapping[str, Any]) -> bool:
+        for key, expected in filters.items():
+            actual = metadata.get(key)
+            if isinstance(expected, (list, tuple, set, frozenset)):
+                if actual not in expected:
+                    return False
+            elif actual != expected:
+                return False
+        return True
+
+    @staticmethod
+    def _matches_tenant(metadata: Mapping[str, Any], tenant_id: str | None) -> bool:
+        if tenant_id is None:
+            return True
+        return metadata.get("tenant_id") == tenant_id
+
+    def _record_audit(
+        self,
+        event_type: str,
+        *,
+        query: str | None = None,
+        namespace: str | None = None,
+        metadata: Mapping[str, Any] | None = None,
+    ) -> None:
+        self._audit.append(
+            RagAuditEvent(
+                type=event_type,
+                query=query,
+                namespace=namespace,
+                metadata=dict(metadata or {}),
+            )
+        )

@@ -8,12 +8,12 @@ from uuid import uuid4
 import pytest
 
 pytest.importorskip("fastapi")
+httpx = pytest.importorskip("httpx")
 
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
+from fastapi import FastAPI  # noqa: E402
 
-from modules.free.ai.ai_assistant import generate
-from modules.shared.generator import TemplateRenderer
+from modules.free.ai.ai_assistant import generate  # noqa: E402
+from modules.shared.generator import TemplateRenderer  # noqa: E402
 
 
 def _load_module(module_name: str, module_path: Path) -> None:
@@ -128,30 +128,38 @@ def _cleanup_modules(package_root: Path, handle: str, removed: dict[str, object]
         sys.path.remove(package_root_str)
 
 
-def test_fastapi_router_handles_completion(tmp_path: Path) -> None:
+@pytest.mark.asyncio
+async def test_fastapi_router_handles_completion(tmp_path: Path) -> None:
     module, handle, package_root, removed = _load_router_module(tmp_path)
-    app = FastAPI()
-    module.register_ai_assistant(app)
-    client = TestClient(app)
+    try:
+        app = FastAPI()
+        module.register_ai_assistant(app)
+        transport = httpx.ASGITransport(app=app)
 
-    response = client.post("/ai/assistant/completions", json={"prompt": "hello"})
-    assert response.status_code == 200
-    payload = response.json()
-    assert payload["provider"]
-    assert payload["content"]
+        async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as client:
+            response = await client.post("/ai/assistant/completions", json={"prompt": "hello"})
 
-    _cleanup_modules(package_root, handle, removed)
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["provider"]
+        assert payload["content"]
+    finally:
+        _cleanup_modules(package_root, handle, removed)
 
 
-def test_fastapi_router_reports_health(tmp_path: Path) -> None:
+@pytest.mark.asyncio
+async def test_fastapi_router_reports_health(tmp_path: Path) -> None:
     module, handle, package_root, removed = _load_router_module(tmp_path)
-    app = FastAPI()
-    module.register_ai_assistant(app)
-    client = TestClient(app)
+    try:
+        app = FastAPI()
+        module.register_ai_assistant(app)
+        transport = httpx.ASGITransport(app=app)
 
-    response = client.get("/ai/assistant/health")
-    assert response.status_code == 200
-    payload = response.json()
-    assert payload["runtime"]["module"] == "ai_assistant"
+        async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as client:
+            response = await client.get("/ai/assistant/health")
 
-    _cleanup_modules(package_root, handle, removed)
+        assert response.status_code == 200
+        payload = response.json()
+        assert payload["runtime"]["module"] == "ai_assistant"
+    finally:
+        _cleanup_modules(package_root, handle, removed)

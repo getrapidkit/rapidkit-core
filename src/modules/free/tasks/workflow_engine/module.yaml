@@ -1,0 +1,177 @@
+name: workflow_engine
+display_name: Workflow Engine
+description: Workflow engine scaffolding for triggers, actions, conditions, approvals, schedules, and
+  durable runs
+version: 0.1.8
+access: free
+status: stable
+tier: free
+category: tasks
+tags:
+- workflow
+- automation
+- triggers
+- approvals
+- scheduler
+generated_from_config: true
+profile_inherits:
+  fastapi.standard: fastapi
+  fastapi.ddd: fastapi
+  nestjs.standard: nestjs
+config_sources:
+- config/base.yaml
+- config/snippets.yaml
+generation:
+  vendor:
+    root: .rapidkit/vendor
+    files:
+    - template: templates/base/workflow_engine.py.j2
+      relative: src/tasks/workflow_engine.py
+    - template: templates/base/workflow_engine_types.py.j2
+      relative: src/tasks/workflow_engine_types.py
+    - template: templates/base/workflow_engine_health.py.j2
+      relative: src/health/tasks/workflow_engine.py
+    - template: templates/vendor/nestjs/configuration.js.j2
+      relative: nestjs/configuration.js
+  variants:
+    fastapi: &fastapi_variant
+      root: .
+      context:
+        framework: fastapi
+        module_class_name: WorkflowEngine
+      files:
+      - template: templates/variants/fastapi/workflow_engine.py.j2
+        output: src/tasks/workflow_engine.py
+      - template: templates/variants/fastapi/workflow_engine_routes.py.j2
+        output: src/routers/tasks/workflow_engine.py
+      - template: templates/variants/fastapi/workflow_engine_health.py.j2
+        output: src/health/tasks/workflow_engine.py
+      - template: templates/tests/integration/test_workflow_engine_integration.j2
+        output: tests/modules/free/integration/tasks/workflow_engine/test_workflow_engine_integration.py
+      - template: templates/variants/fastapi/tests/test_workflow_engine_e2e.py
+        output: tests/modules/e2e/free/tasks/workflow_engine/test_workflow_engine_e2e.py
+    fastapi.standard: *fastapi_variant
+    fastapi.ddd: *fastapi_variant
+    nestjs: &nestjs_variant
+      root: .
+      context:
+        framework: nestjs
+        vendor_configuration_relative: nestjs/configuration.js
+        module_class_name: WorkflowEngine
+        module_kebab: workflow-engine
+      files:
+      - template: templates/variants/nestjs/workflow_engine.service.ts.j2
+        output: src/workflow-engine/workflow_engine.service.ts
+      - template: templates/variants/nestjs/workflow_engine.controller.ts.j2
+        output: src/workflow-engine/workflow_engine.controller.ts
+      - template: templates/variants/nestjs/workflow_engine.module.ts.j2
+        output: src/workflow-engine/workflow_engine.module.ts
+      - template: templates/variants/nestjs/workflow_engine.health.ts.j2
+        output: src/workflow-engine/workflow_engine.health.ts
+      - template: templates/variants/nestjs/workflow_engine.validation.ts.j2
+        output: src/workflow-engine/workflow_engine.validation.ts
+      - template: templates/variants/nestjs/workflow_engine.index.ts.j2
+        output: src/workflow-engine/index.ts
+      - template: templates/variants/nestjs/workflow_engine.configuration.ts.j2
+        output: src/workflow-engine/configuration.ts
+      - template: templates/variants/nestjs/tests/workflow_engine.e2e-spec.ts
+        output: tests/modules/e2e/tasks/workflow_engine/workflow_engine.e2e-spec.ts
+    nestjs.standard: *nestjs_variant
+  snippets:
+    enabled: true
+    config: config/snippets.yaml
+    default: []
+compatibility:
+  python: '>=3.9,<4.0'
+  frameworks:
+  - fastapi
+  - nestjs
+  os:
+  - linux
+  - darwin
+  - windows
+testing:
+  coverage_min: 85
+  integration_tests: true
+  e2e_tests: false
+  unit_tests:
+  - tests/modules/free/tasks/workflow_engine/test_workflow_engine_generator.py
+  - tests/modules/free/tasks/workflow_engine/test_workflow_engine_overrides.py
+  - tests/modules/free/tasks/workflow_engine/test_workflow_engine_runtime.py
+  - tests/modules/free/tasks/workflow_engine/test_workflow_engine_adapters.py
+  - tests/modules/free/tasks/workflow_engine/test_workflow_engine_validation.py
+  - tests/modules/free/tasks/workflow_engine/test_workflow_engine_error_handling.py
+  - tests/modules/free/tasks/workflow_engine/test_workflow_engine_health_check.py
+  - tests/modules/free/tasks/workflow_engine/test_workflow_engine_framework_variants.py
+  - tests/modules/free/tasks/workflow_engine/test_workflow_engine_vendor_layer.py
+  - tests/modules/free/tasks/workflow_engine/test_workflow_engine_configuration.py
+  - tests/modules/free/tasks/workflow_engine/test_workflow_engine_versioning.py
+  - tests/modules/free/tasks/workflow_engine/test_workflow_engine_standard_module.py
+  integration_test_files:
+  - tests/modules/free/integration/tasks/workflow_engine/test_workflow_engine_integration.py
+  fixtures: []
+documentation:
+  changelog: docs/changelog.md
+  readme: README.md
+  overview: docs/overview.md
+  usage: docs/usage.md
+  advanced: docs/advanced.md
+  migration: docs/migration.md
+  troubleshooting: docs/troubleshooting.md
+  api_docs: docs/api-reference.md
+  examples: []
+support:
+  issues: https://github.com/rapidkitlabs/rapidkit-core/issues
+  discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+  documentation: https://docs.rapidkit.top/modules/workflow_engine
+changelog:
+  - version: "0.1.8"
+    date: "2026-06-02"
+    notes: "See docs/changelog.md"
+validation:
+  pre_install:
+  - check_python_version
+  post_install:
+  - validate_generated_code
+rollback:
+  strategy: uninstall
+  backup_path: .rapidkit/backups/
+  max_backups: 3
+performance:
+  lazy_loading: true
+  caching:
+    templates: true
+    ttl: 300
+capabilities:
+- workflow_runs
+- triggers
+- actions
+- conditions
+- approvals
+- scheduled_execution
+signature: null
+signer_id: null
+signature_version: null
+file_hashes:
+  README.md: sha256:f84484a6bea38eebfe8d03e72f871a2f215ed10e9b726263e0907d3fdb6ee3f7
+  __init__.py: sha256:dcdeb7120d5673af64cdd87f1554f4833df8e1928e2494652acad290c87ff3ae
+  config/base.yaml: sha256:a8f4e6ecb5a95d19e98a4aecccb887b5a232a3c1e0bb9df3fa2eb5ec74c10c5b
+  config/snippets.yaml: sha256:e98519d56f77149fcc9919d10c5789b7af760dc1692bca952757189913c2c8de
+  docs/README.md: sha256:5cc07875b3a4d774dcc677bedd2bf782d25d4bf61dc23d8b82631f93bf0cede0
+  docs/advanced.md: sha256:2dd477b7d440caca2f4b0053c86e662dcb7e70e8dfa43929a291c9b86c133a42
+  docs/api-reference.md: sha256:5aa968d03b13aaf1d37c2838a2f9c601b84004b378bd33f694327db9d9e3043a
+  docs/changelog.md: sha256:a26abb4ef31382d00539e30f496472bf64ec0fef2c858a95a3a8cbafd5b9a436
+  docs/migration.md: sha256:5bb184de197deba10e90762a1065cf05da83770078fd2a66515176fe288ccc0f
+  docs/overview.md: sha256:f994686e3693e23583e7041ffb76e5cc20cd1be0952a25b7c1671db9c59576e7
+  docs/troubleshooting.md: sha256:bfa2d6895df6e5cbc7f1e1e3f3f62a31b95e1eeb83b7d878f2d81e3216c02266
+  docs/usage.md: sha256:33931ec20491e6b27308b21ea1b5224fab8431f3111bedace0ddcc6f6358fa3d
+  templates/vendor/nestjs/configuration.js.j2: sha256:012feb4628593b30f2c2b22c0a09a3cb6af50d8a81468c6083135aca83d3a425
+  module.verify.json: sha256:d586c918b556826949a6cb57f05ae237c92d5990158b05dfba5db9a3799265bd
+depends_on:
+- free/tasks/celery
+- free/cache/redis
+- free/database/db_postgres
+metadata:
+  enterprise_ready: true
+  free_marketplace_module: true
+  product_factory_priority: high

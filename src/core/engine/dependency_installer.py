@@ -18,6 +18,15 @@ from core.services.snippet_injector import (
 )
 
 
+def _skip_lock_sync_enabled() -> bool:
+    return str(os.environ.get("RAPIDKIT_SKIP_LOCK_SYNC", "")).lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+    }
+
+
 def _sync_poetry_lockfile(project_root: Path) -> None:
     """Sync poetry.lock with pyproject.toml.
 
@@ -33,6 +42,13 @@ def _sync_poetry_lockfile(project_root: Path) -> None:
 
     lock_path = project_root / "poetry.lock"
     if not lock_path.exists():
+        return
+
+    if _skip_lock_sync_enabled():
+        print_warning(
+            "⚠️ Lock sync skipped (RAPIDKIT_SKIP_LOCK_SYNC=1). "
+            "poetry.lock may be stale; use only for diagnostic or offline development runs."
+        )
         return
 
     # Poetry 2.x defaults to preserving already-locked versions.
@@ -88,6 +104,13 @@ def _sync_npm_lockfile(project_root: Path) -> None:
     if not package_lock_path.exists() and (yarn_lock_path.exists() or pnpm_lock_path.exists()):
         print_warning(
             "⚠️ Detected yarn/pnpm lockfile without package-lock.json; skipping npm lockfile sync."
+        )
+        return
+
+    if _skip_lock_sync_enabled():
+        print_warning(
+            "⚠️ Lock sync skipped (RAPIDKIT_SKIP_LOCK_SYNC=1). "
+            "package-lock.json may be stale; use only for diagnostic or offline development runs."
         )
         return
 

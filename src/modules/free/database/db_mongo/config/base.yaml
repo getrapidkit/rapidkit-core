@@ -1,4 +1,13 @@
 # Default configuration scaffold for Db Mongo
+profiles:
+  fastapi/standard:
+    description: Standard FastAPI project support for this module.
+  fastapi/ddd:
+    inherits: fastapi/standard
+    description: FastAPI DDD project support with the same runtime contract.
+  nestjs/standard:
+    description: NestJS project support for this module.
+
 defaults:
     enabled: true
     connection:

@@ -1,0 +1,182 @@
+name: document_pipeline
+display_name: "Document Pipeline"
+description: "Document ingestion, extraction, chunking, classification, and audit-safe processing pipeline for AI/workflow products"
+version: 0.1.4
+access: free
+status: stable
+tier: free
+category: business
+tags:
+  - business
+  - documents
+  - ingestion
+  - extraction
+  - chunking
+  - classification
+depends_on:
+  - free/business/storage
+  - free/security/audit_policy
+  - free/observability/core
+generated_from_config: true
+profile_inherits:
+  fastapi.standard: fastapi
+  fastapi.ddd: fastapi
+  nestjs.standard: nestjs
+config_sources:
+  - config/base.yaml
+  - config/snippets.yaml
+generation:
+  vendor:
+    root: .rapidkit/vendor
+    files:
+      - template: templates/base/document_pipeline.py.j2
+        relative: src/business/document_pipeline.py
+      - template: templates/base/document_pipeline_types.py.j2
+        relative: src/business/document_pipeline_types.py
+      - template: templates/base/document_pipeline_health.py.j2
+        relative: src/health/business/document_pipeline.py
+      - template: templates/vendor/nestjs/configuration.js.j2
+        relative: nestjs/configuration.js
+  variants:
+    fastapi: &fastapi_variant
+      root: .
+      context:
+        framework: fastapi
+        module_class_name: DocumentPipeline
+      files:
+        - template: templates/variants/fastapi/document_pipeline.py.j2
+          output: src/business/document_pipeline.py
+        - template: templates/variants/fastapi/document_pipeline_routes.py.j2
+          output: src/routers/business/document_pipeline.py
+        - template: templates/variants/fastapi/document_pipeline_health.py.j2
+          output: src/health/business/document_pipeline.py
+        - template: templates/tests/integration/test_document_pipeline_integration.j2
+          output: tests/modules/free/integration/business/document_pipeline/test_document_pipeline_integration.py
+        - template: templates/variants/fastapi/tests/test_document_pipeline_e2e.py
+          output: tests/modules/e2e/free/business/document_pipeline/test_document_pipeline_e2e.py
+
+    # Compatibility aliases: the installer uses kit profile names.
+    fastapi.standard: *fastapi_variant
+    fastapi.ddd: *fastapi_variant
+
+    nestjs: &nestjs_variant
+      root: .
+      context:
+        framework: nestjs
+        vendor_configuration_relative: nestjs/configuration.js
+        module_class_name: DocumentPipeline
+        module_kebab: document-pipeline
+      files:
+        - template: templates/variants/nestjs/document_pipeline.service.ts.j2
+          output: src/document-pipeline/document_pipeline.service.ts
+        - template: templates/variants/nestjs/document_pipeline.controller.ts.j2
+          output: src/document-pipeline/document_pipeline.controller.ts
+        - template: templates/variants/nestjs/document_pipeline.module.ts.j2
+          output: src/document-pipeline/document_pipeline.module.ts
+        - template: templates/variants/nestjs/document_pipeline.health.ts.j2
+          output: src/document-pipeline/document_pipeline.health.ts
+        - template: templates/variants/nestjs/document_pipeline.validation.ts.j2
+          output: src/document-pipeline/document_pipeline.validation.ts
+        - template: templates/variants/nestjs/document_pipeline.index.ts.j2
+          output: src/document-pipeline/index.ts
+        - template: templates/variants/nestjs/document_pipeline.configuration.ts.j2
+          output: src/document-pipeline/configuration.ts
+        - template: templates/variants/nestjs/tests/document_pipeline.e2e-spec.ts
+          output: tests/modules/e2e/business/document_pipeline/document_pipeline.e2e-spec.ts
+
+    nestjs.standard: *nestjs_variant
+  snippets:
+    enabled: true
+    config: config/snippets.yaml
+    default: []
+compatibility:
+  python: ">=3.9,<4.0"
+  frameworks:
+    - fastapi
+    - nestjs
+  os:
+    - linux
+    - darwin
+    - windows
+testing:
+  coverage_min: 85
+  integration_tests: true
+  e2e_tests: false
+  unit_tests:
+    - tests/modules/free/business/document_pipeline/test_document_pipeline_generator.py
+    - tests/modules/free/business/document_pipeline/test_document_pipeline_overrides.py
+    - tests/modules/free/business/document_pipeline/test_document_pipeline_runtime.py
+    - tests/modules/free/business/document_pipeline/test_document_pipeline_adapters.py
+    - tests/modules/free/business/document_pipeline/test_document_pipeline_validation.py
+    - tests/modules/free/business/document_pipeline/test_document_pipeline_error_handling.py
+    - tests/modules/free/business/document_pipeline/test_document_pipeline_health_check.py
+    - tests/modules/free/business/document_pipeline/test_document_pipeline_framework_variants.py
+    - tests/modules/free/business/document_pipeline/test_document_pipeline_vendor_layer.py
+    - tests/modules/free/business/document_pipeline/test_document_pipeline_configuration.py
+    - tests/modules/free/business/document_pipeline/test_document_pipeline_versioning.py
+    - tests/modules/free/business/document_pipeline/test_document_pipeline_standard_module.py
+  integration_test_files:
+    - tests/modules/free/integration/business/document_pipeline/test_document_pipeline_integration.py
+  fixtures: []
+documentation:
+  changelog: "docs/changelog.md"
+  readme: "README.md"
+  overview: "docs/overview.md"
+  usage: "docs/usage.md"
+  advanced: "docs/advanced.md"
+  migration: "docs/migration.md"
+  troubleshooting: "docs/troubleshooting.md"
+  api_docs: "docs/api-reference.md"
+  examples: []
+support:
+  issues: https://github.com/rapidkitlabs/rapidkit-core/issues
+  discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+  documentation: https://docs.rapidkit.top/modules/document_pipeline
+changelog:
+  - version: "0.1.4"
+    date: "2026-06-02"
+    notes: "See docs/changelog.md"
+validation:
+  pre_install:
+    - check_python_version
+  post_install:
+    - validate_generated_code
+rollback:
+  strategy: uninstall
+  backup_path: .rapidkit/backups/
+  max_backups: 3
+performance:
+  lazy_loading: true
+  caching:
+    templates: true
+    ttl: 300
+capabilities:
+  - document_ingestion
+  - text_extraction
+  - chunking
+  - classification
+  - processing_audit
+  - health_checks
+metadata:
+  enterprise_ready: true
+  free_marketplace_module: true
+  product_factory_priority: high
+signature: null
+signer_id: null
+signature_version: null
+
+file_hashes:
+  README.md: sha256:0e5f6542473134176a7aa72cd58c18074ccbd847696e30e25a358bc841417f05
+  __init__.py: sha256:8d34ae403011a6ff5034222207320ea9ebb3a7c3179ec7be5e188d1a92163439
+  config/base.yaml: sha256:44c6e7f9562e174c721215639670db80eaffa572a280903fba770052d116fcf1
+  config/snippets.yaml: sha256:1275c5011d081d1534733be9b74478a107379aa6e745e43dcf65416c103e5d9e
+  docs/README.md: sha256:1fc73f6f5c152f80c48a1a12860bb23cc5baf9a69feb64168624ca4df7cd371c
+  docs/advanced.md: sha256:33b649bd7bc0c108e7a31663e6f6f1877dabe5dd807ebf7e025f7523ade575f9
+  docs/api-reference.md: sha256:087e3723aff2905964237e2dbfbec595693421bbc1f0625cf04a7cd0e81b7f67
+  docs/changelog.md: sha256:f9f449536d9dc144d4d42c45dcb21e2fa63415cb8ebfc1e16825395a837592d3
+  docs/migration.md: sha256:8c05698256025d2d86b8c33744774df3fc3858bc5ccae4ee98da991c0bd35524
+  docs/overview.md: sha256:2cf4016909499ca7b22a820367de0f62c480705270ab1df6aec95e70a4815a44
+  docs/troubleshooting.md: sha256:2330b323561930350e08fc0e8900d2a2e971fffa76c08357e452a4686155d38d
+  docs/usage.md: sha256:34c96f23fe5ea02734291274c946f84621b89314a7347b334ab58154c8c0c556
+  templates/vendor/nestjs/configuration.js.j2: sha256:6c4da9be0fea3a2bd0a8f0ef85579c6bf1d4f1ac437064071487f4ce22f6e2ed
+  module.verify.json: sha256:21a030fcefadf601fc39aa6c810d5d4cfa3e32099708d6f9d113e06d0589e8b2

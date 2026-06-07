@@ -386,8 +386,18 @@ def lint() -> None:
     if _project_type(root) == "python":
         targets = _python_code_targets(root)
         rc = _python_module("ruff", "check", *targets)
-        if rc == 0:
-            rc = _python_module("black", "--check", *targets)
+    else:
+        rc = _call_launcher("lint")
+    if rc != 0:
+        sys.exit(rc)
+
+
+def format_check() -> None:
+    _print_banner("🔎", "Checking formatting")
+    root = Path.cwd()
+    if _project_type(root) == "python":
+        targets = _python_code_targets(root)
+        rc = _python_module("black", "--check", *targets)
     else:
         rc = _call_launcher("lint")
     if rc != 0:
@@ -408,6 +418,23 @@ def format() -> None:
         sys.exit(rc)
 
 
+def typecheck() -> None:
+    _print_banner("🧭", "Running type checks")
+    root = Path.cwd()
+    if _project_type(root) == "python":
+        rc = _python_module("mypy", "src")
+    else:
+        rc = _call_launcher("lint")
+    if rc != 0:
+        sys.exit(rc)
+
+
+def ci() -> None:
+    _print_banner("🧪", "Running CI pipeline")
+    for step in (lint, format_check, typecheck, test):
+        step()
+
+
 def help_cmd() -> None:
     _print_banner("📚", "Project Commands (callable)")
     # Include a Usage header to make automated checks and scripts detect help output
@@ -418,7 +445,10 @@ def help_cmd() -> None:
     print("  build    📦 Build for production")
     print("  test     🧪 Run tests")
     print("  lint     🔧 Lint code")
+    print("  format-check 🔎 Check formatting")
     print("  format   ✨ Format code")
+    print("  typecheck 🧭 Run type checks")
+    print("  ci       🧪 Run lint, format-check, typecheck, and tests")
     print("  help     📚 Show help")
 
 
@@ -442,7 +472,10 @@ def main():
         "build": build,
         "test": test,
         "lint": lint,
+        "format-check": format_check,
         "format": format,
+        "typecheck": typecheck,
+        "ci": ci,
         "help": help_cmd,
     }
 

@@ -1,7 +1,7 @@
 name: inventory
 display_name: Inventory
 description: Inventory and pricing service backing Cart + Stripe
-version: 0.1.6
+version: 0.1.8
 access: free
 status: stable
 tier: free
@@ -123,12 +123,12 @@ documentation:
     api_docs: docs/api-reference.md
     examples: []
 support:
-    issues: https://github.com/getrapidkit/rapidkit-core/issues
-    discussions: https://github.com/getrapidkit/rapidkit-core/discussions
+    issues: https://github.com/rapidkitlabs/rapidkit-core/issues
+    discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
     documentation: https://docs.rapidkit.top/modules/billing/inventory
 changelog:
-  - version: "0.1.6"
-    date: "2026-02-11"
+  - version: "0.1.8"
+    date: "2026-06-07"
     notes: "See docs/changelog.md"
 validation:
     pre_install:
@@ -171,7 +171,7 @@ file_hashes:
     frameworks/fastapi.py: sha256:b9310865a0d7f56aae9f5720ecfaa93072bd2e7eee2107e78923e2eca419716e
     frameworks/nestjs.py: sha256:e5ab7dbe0ade5335966af2ea4debae4cebb386243eedaaab02a5b0aaf9c3b0aa
     generate.py: sha256:cbb36b0c1ba983035de47569575c831666650a97924c375643645f55a33ffd87
-    module.verify.json: sha256:9ba7fc73b224b7ae225a1103e171370eb0fda1f84a084b2684f37e9a1509a5c7
+    module.verify.json: sha256:0129a87d9ed4b31ae95861b38335c5625e88097b163505d0adc595932ea1195f
     overrides.py: sha256:635cf4fe35b3d689bf0c7a10d01b012eaa8295be4942fa4e25265e51d6511ca3
     templates/base/inventory.py.j2: sha256:933b2bc6a3ea47279a4b911fa7695422b9764a87722191cf5ffd5ccac0ed4beb
     templates/base/inventory_health.py.j2: sha256:1a26b51d3636983098cbbb3fdf7c9470de064ff238d0dafd301458be996b46ba

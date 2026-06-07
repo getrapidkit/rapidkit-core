@@ -170,11 +170,17 @@ export type CeleryHealthSummary = {
 export async function createCeleryHealthCheck(
   service: {{ module_class_name }}Service,
 ): Promise<Record<string, CeleryHealthSummary>> {
-  const status = (await service.ping()) ? 'up' : 'down';
+  const shouldProbeBroker =
+    process.env.CELERY_HEALTH_PROBE_BROKER === '1' ||
+    process.env.CELERY_HEALTH_PROBE_BROKER?.toLowerCase() === 'true';
+  const status = shouldProbeBroker ? ((await service.ping()) ? 'up' : 'down') : 'up';
   return {
     celery: {
       status,
-      details: service.status(),
+      details: {
+        ...service.status(),
+        brokerProbe: shouldProbeBroker ? 'enabled' : 'disabled',
+      },
     },
   };
 }

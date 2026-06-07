@@ -1,0 +1,256 @@
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from enum import Enum
+from hashlib import sha256
+from threading import RLock
+from typing import Any, Mapping
+
+
+class {{ module_class_name }}Error(ValueError):
+    """Raised when feature flag configuration or evaluation is invalid."""
+
+
+class FlagStatus(str, Enum):
+    ACTIVE = "active"
+    DISABLED = "disabled"
+    ARCHIVED = "archived"
+
+
+@dataclass(frozen=True)
+class EvaluationContext:
+    user_id: str | None = None
+    tenant_id: str | None = None
+    attributes: Mapping[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class FlagRule:
+    attribute: str
+    operator: str
+    values: tuple[Any, ...]
+    variation: Any
+
+
+@dataclass(frozen=True)
+class FeatureFlag:
+    key: str
+    default: Any
+    description: str = ""
+    status: FlagStatus = FlagStatus.ACTIVE
+    rollout_percentage: int = 100
+    rules: tuple[FlagRule, ...] = ()
+    tenant_overrides: Mapping[str, Any] = field(default_factory=dict)
+    user_overrides: Mapping[str, Any] = field(default_factory=dict)
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+    updated_at: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds")
+    )
+
+
+@dataclass(frozen=True)
+class FlagEvaluation:
+    key: str
+    value: Any
+    reason: str
+    default_used: bool = False
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class FlagEvent:
+    type: str
+    key: str
+    actor_id: str | None = None
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+    timestamp: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds")
+    )
+
+
+@dataclass(frozen=True)
+class {{ module_class_name }}Config:
+    """Runtime configuration for {{ module_title }}."""
+
+    enabled: bool = True
+    fail_closed: bool = False
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+
+def build_default_config() -> {{ module_class_name }}Config:
+    """Return default configuration payload."""
+
+    return {{ module_class_name }}Config()
+
+
+def _utc_now() -> str:
+    return datetime.now(timezone.utc).isoformat(timespec="seconds")
+
+
+def _validate_key(key: str) -> str:
+    normalized = key.strip()
+    if not normalized:
+        raise {{ module_class_name }}Error("flag key must not be empty")
+    return normalized
+
+
+def _bucket(key: str, context: EvaluationContext) -> int:
+    subject = context.user_id or context.tenant_id or "anonymous"
+    digest = sha256(f"{key}:{subject}".encode("utf-8")).hexdigest()
+    return int(digest[:8], 16) % 100
+
+
+class {{ module_class_name }}:
+    """Thread-safe feature flag registry and evaluator."""
+
+    def __init__(self, config: {{ module_class_name }}Config | None = None) -> None:
+        self.config = config or build_default_config()
+        self._flags: dict[str, FeatureFlag] = {}
+        self._events: list[FlagEvent] = []
+        self._lock = RLock()
+
+    def upsert_flag(
+        self,
+        *,
+        key: str,
+        default: Any,
+        description: str = "",
+        status: FlagStatus | str = FlagStatus.ACTIVE,
+        rollout_percentage: int = 100,
+        rules: tuple[FlagRule, ...] | list[FlagRule] = (),
+        tenant_overrides: Mapping[str, Any] | None = None,
+        user_overrides: Mapping[str, Any] | None = None,
+        metadata: Mapping[str, Any] | None = None,
+        actor_id: str | None = None,
+    ) -> FeatureFlag:
+        if not self.config.enabled:
+            raise {{ module_class_name }}Error("feature flags are disabled")
+        if rollout_percentage < 0 or rollout_percentage > 100:
+            raise {{ module_class_name }}Error("rollout_percentage must be between 0 and 100")
+        flag = FeatureFlag(
+            key=_validate_key(key),
+            default=default,
+            description=description,
+            status=FlagStatus(status),
+            rollout_percentage=rollout_percentage,
+            rules=tuple(rules),
+            tenant_overrides=dict(tenant_overrides or {}),
+            user_overrides=dict(user_overrides or {}),
+            metadata=dict(metadata or {}),
+            updated_at=_utc_now(),
+        )
+        with self._lock:
+            event_type = "flag.updated" if flag.key in self._flags else "flag.created"
+            self._flags[flag.key] = flag
+            self._record(event_type, flag.key, actor_id=actor_id)
+        return flag
+
+    def get_flag(self, key: str) -> FeatureFlag:
+        with self._lock:
+            flag = self._flags.get(_validate_key(key))
+        if flag is None:
+            raise {{ module_class_name }}Error("flag not found")
+        return flag
+
+    def evaluate(
+        self,
+        key: str,
+        *,
+        context: EvaluationContext | None = None,
+        default: Any = None,
+    ) -> FlagEvaluation:
+        if not self.config.enabled:
+            if self.config.fail_closed:
+                raise {{ module_class_name }}Error("feature flags are disabled")
+            return FlagEvaluation(key=key, value=default, reason="disabled", default_used=True)
+        resolved_context = context or EvaluationContext()
+        with self._lock:
+            flag = self._flags.get(_validate_key(key))
+        if flag is None:
+            return FlagEvaluation(key=key, value=default, reason="missing", default_used=True)
+        if flag.status != FlagStatus.ACTIVE:
+            return FlagEvaluation(key=key, value=flag.default, reason=flag.status.value, default_used=True)
+        if resolved_context.user_id and resolved_context.user_id in flag.user_overrides:
+            return FlagEvaluation(
+                key=key,
+                value=flag.user_overrides[resolved_context.user_id],
+                reason="user_override",
+            )
+        if resolved_context.tenant_id and resolved_context.tenant_id in flag.tenant_overrides:
+            return FlagEvaluation(
+                key=key,
+                value=flag.tenant_overrides[resolved_context.tenant_id],
+                reason="tenant_override",
+            )
+        for rule in flag.rules:
+            if self._matches_rule(rule, resolved_context):
+                return FlagEvaluation(key=key, value=rule.variation, reason="rule")
+        if _bucket(flag.key, resolved_context) >= flag.rollout_percentage:
+            return FlagEvaluation(key=key, value=flag.default, reason="rollout_miss", default_used=True)
+        return FlagEvaluation(key=key, value=flag.default, reason="default", default_used=True)
+
+    def is_enabled(self, key: str, *, context: EvaluationContext | None = None) -> bool:
+        return bool(self.evaluate(key, context=context, default=False).value)
+
+    def archive(self, key: str, *, actor_id: str | None = None) -> FeatureFlag:
+        flag = self.get_flag(key)
+        updated = self.upsert_flag(
+            key=flag.key,
+            default=flag.default,
+            description=flag.description,
+            status=FlagStatus.ARCHIVED,
+            rollout_percentage=flag.rollout_percentage,
+            rules=flag.rules,
+            tenant_overrides=flag.tenant_overrides,
+            user_overrides=flag.user_overrides,
+            metadata=flag.metadata,
+            actor_id=actor_id,
+        )
+        self._record("flag.archived", updated.key, actor_id=actor_id)
+        return updated
+
+    def list_flags(self) -> tuple[FeatureFlag, ...]:
+        with self._lock:
+            return tuple(sorted(self._flags.values(), key=lambda flag: flag.key))
+
+    def events(self, key: str | None = None) -> tuple[FlagEvent, ...]:
+        with self._lock:
+            events = tuple(self._events)
+        if key is None:
+            return events
+        return tuple(event for event in events if event.key == key)
+
+    def stats(self) -> dict[str, Any]:
+        with self._lock:
+            by_status: dict[str, int] = {}
+            for flag in self._flags.values():
+                by_status[flag.status.value] = by_status.get(flag.status.value, 0) + 1
+            return {
+                "enabled": self.config.enabled,
+                "flags": len(self._flags),
+                "events": len(self._events),
+                "by_status": by_status,
+            }
+
+    def health(self) -> dict[str, Any]:
+        return {
+            "module": "{{ module_name }}",
+            "status": "ok" if self.config.enabled else "disabled",
+            "timestamp": _utc_now(),
+            "stats": self.stats(),
+        }
+
+    def _record(self, event_type: str, key: str, *, actor_id: str | None = None) -> None:
+        self._events.append(FlagEvent(type=event_type, key=key, actor_id=actor_id))
+
+    @staticmethod
+    def _matches_rule(rule: FlagRule, context: EvaluationContext) -> bool:
+        actual = context.attributes.get(rule.attribute)
+        if rule.operator == "equals":
+            return actual in rule.values
+        if rule.operator == "not_equals":
+            return actual not in rule.values
+        if rule.operator == "in":
+            return actual in rule.values
+        raise {{ module_class_name }}Error(f"unsupported rule operator: {rule.operator}")

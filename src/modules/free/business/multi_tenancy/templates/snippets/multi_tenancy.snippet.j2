@@ -1,0 +1,12 @@
+{# Shared snippet for the RapidKit Multi Tenancy module. #}
+{% set module_name = "multi_tenancy" %}
+{% set module_title = "Multi Tenancy" %}
+
+# {{ module_title }} integration notes
+
+- Canonical module: `free/business/multi_tenancy`
+- Primary purpose: Organization, team, membership, tenant context, and isolation scaffolding for SaaS products.
+- Key capabilities: Introduces tenant-aware request context., Models organizations, teams, and memberships., Provides hooks for tenant-scoped persistence and authorization.
+- Runtime environment keys: RAPIDKIT_MULTI_TENANCY_ENABLED, RAPIDKIT_MULTI_TENANCY_HEADER, RAPIDKIT_MULTI_TENANCY_STRICT
+
+Use this snippet near the owning service/module registration point so generated projects keep module intent, operational boundaries, and security expectations visible to maintainers.

@@ -113,7 +113,7 @@ def register_ai_assistant(
 _assistant_instance: AiAssistant | None = None
 
 
-def _get_assistant() -> AiAssistant:
+async def _get_assistant() -> AiAssistant:
     """Dependency to retrieve the assistant instance."""
     global _assistant_instance
     if _assistant_instance is None:

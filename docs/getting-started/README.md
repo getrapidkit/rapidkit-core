@@ -10,16 +10,23 @@ ecosystem. Everything here applies to the single RapidKit Community edition.
 
 ## 🎯 Install the CLI
 
-RapidKit is published to PyPI. Install it into a virtual environment or your preferred toolchain.
+For workspace users, install the npm CLI:
+
+```bash
+npm install -g rapidkit
+rapidkit --version
+```
+
+For direct Python engine work, install the core package:
 
 ```bash
 pip install rapidkit-core
 
 # Verify install
-rapidkit --version
+rkc --version
 ```
 
-> Prefer a local checkout? Clone `https://github.com/getrapidkit/rapidkit-core` and run
+> Prefer a local checkout? Clone `https://github.com/rapidkitlabs/rapidkit-core` and run
 > `poetry install` from the repository root.
 
 ## 🛠️ Create Your First Project
@@ -30,6 +37,9 @@ rapidkit create
 
 # Prefer non-interactive scaffolding?
 rapidkit create project fastapi.standard MyProject
+# or
+rapidkit create project fastapi.ddd MyDomainProject
+rapidkit create project nestjs.standard MyNodeService
 
 cd MyProject
 
@@ -84,30 +94,29 @@ MyProject/
 
 Key characteristics:
 
-- Clean Architecture layout with domain/application separation
+- Kit-specific architecture layout
 - Environment-aware settings powered by Pydantic
 - Ready-to-run Docker assets (`docker-compose.yml` + overrides)
 - Quality gates preconfigured (pytest, Ruff, MyPy, coverage)
 
 ## 🧩 Add Modules
 
-RapidKit ships a catalog of community modules. Install them right after project scaffolding:
+RapidKit ships 52 stable free modules. Install them right after project scaffolding:
 
 ```bash
 # Add authentication scaffolding
-rapidkit add module auth
+rapidkit add module free/auth/session
 
-# Swap SQLite for PostgreSQL
-rapidkit add module database
+# Add PostgreSQL
+rapidkit add module free/database/db_postgres
 
 # Enable structured logging
-rapidkit add module logging
+rapidkit add module free/essentials/logging
 ```
 
-Marketplace modules follow the same structure used by the community settings module: declarative
-configuration, schema validation, and idempotent installers. License tools
-(`rapidkit license status`, `rapidkit license activate`) are built into the CLI so premium modules
-follow the identical workflow when they ship.
+Free modules follow the same core contract: declarative manifests, generated templates, snippet
+registries, and idempotent installers. Product workspaces may add separate delivery/licensing terms,
+but foundational modules remain free-first.
 
 ## 🐳 Docker & Local Ops
 
@@ -159,9 +168,9 @@ you prefer a Makefile-driven workflow.
 ## 🤝 Need Help?
 
 - Join the conversation in
-  [GitHub Discussions](https://github.com/getrapidkit/rapidkit-core/discussions)
+  [GitHub Discussions](https://github.com/rapidkitlabs/rapidkit-core/discussions)
 - Report bugs or request features via
-  [GitHub Issues](https://github.com/getrapidkit/rapidkit-core/issues)
+  [GitHub Issues](https://github.com/rapidkitlabs/rapidkit-core/issues)
 - Improve the docs by opening a pull request in this repository
 
 ______________________________________________________________________

@@ -1,0 +1,7 @@
+# Register snippet bundles for Vector Store
+
+snippets:
+  -
+    name: "vector_store_usage_example"
+    template: "templates/snippets/vector_store.snippet.j2"
+    description: "Injects an opinionated usage example for Vector Store."

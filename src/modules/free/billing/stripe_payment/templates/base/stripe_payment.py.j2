@@ -2,10 +2,14 @@
 
 from __future__ import annotations
 
+import hashlib
+import hmac
 import json
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
-from typing import Any, Dict
+from decimal import Decimal, ROUND_HALF_UP
+from typing import Any, Dict, Mapping
+from uuid import uuid4
 
 MODULE_NAME = "{{ module_name }}"
 MODULE_TITLE = "{{ module_title }}"
@@ -62,11 +66,143 @@ class {{ module_class_name }}Config:
     )
 
 
+@dataclass(frozen=True)
+class PaymentIntent:
+    id: str
+    account_id: str
+    amount: Decimal
+    currency: str
+    status: str
+    idempotency_key: str
+    metadata: Dict[str, Any] = field(default_factory=dict)
+    created_at: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds")
+    )
+    updated_at: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds")
+    )
+
+
+@dataclass(frozen=True)
+class StripeAuditEvent:
+    type: str
+    intent_id: str | None = None
+    metadata: Dict[str, Any] = field(default_factory=dict)
+    timestamp: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds")
+    )
+
+
+class {{ module_class_name }}Error(ValueError):
+    """Raised for Stripe runtime validation and lifecycle errors."""
+
+
 class {{ module_class_name }}:
-    """Primary facade exposing {{ module_title }} capabilities."""
+    """Operational Stripe payment facade with intent lifecycle and audit events."""
 
     def __init__(self, config: {{ module_class_name }}Config | None = None) -> None:
         self.config = config or {{ module_class_name }}Config()
+        self._intents: dict[str, PaymentIntent] = {}
+        self._idempotency_index: dict[str, str] = {}
+        self._audit: list[StripeAuditEvent] = []
+
+    def create_payment_intent(
+        self,
+        *,
+        account_id: str,
+        amount: Decimal | int | float | str,
+        currency: str | None = None,
+        idempotency_key: str,
+        metadata: Mapping[str, Any] | None = None,
+    ) -> PaymentIntent:
+        self._ensure_enabled()
+        if not account_id.strip():
+            raise {{ module_class_name }}Error("account_id is required")
+        key = idempotency_key.strip()
+        if not key:
+            raise {{ module_class_name }}Error("idempotency_key is required")
+        if key in self._idempotency_index:
+            return self._intents[self._idempotency_index[key]]
+        resolved_currency = (currency or str(DEFAULTS.get("default_currency", "usd"))).lower()
+        if resolved_currency not in self.allowed_currencies():
+            raise {{ module_class_name }}Error(f"currency {resolved_currency!r} is not allowed")
+        normalized_amount = self._money(self._decimal(amount))
+        if normalized_amount <= Decimal("0"):
+            raise {{ module_class_name }}Error("amount must be positive")
+        intent = PaymentIntent(
+            id=f"pi_{uuid4().hex[:24]}",
+            account_id=account_id,
+            amount=normalized_amount,
+            currency=resolved_currency,
+            status="requires_confirmation",
+            idempotency_key=key,
+            metadata=dict(metadata or {}),
+        )
+        self._intents[intent.id] = intent
+        self._idempotency_index[key] = intent.id
+        self._record_audit("intent.created", intent_id=intent.id, metadata={"account_id": account_id})
+        return intent
+
+    def confirm_payment_intent(self, intent_id: str) -> PaymentIntent:
+        intent = self._require_intent(intent_id)
+        if intent.status in {"succeeded", "canceled"}:
+            return intent
+        updated = self._replace_intent(intent, status="succeeded")
+        self._record_audit("intent.confirmed", intent_id=updated.id)
+        return updated
+
+    def cancel_payment_intent(self, intent_id: str) -> PaymentIntent:
+        intent = self._require_intent(intent_id)
+        if intent.status == "succeeded":
+            raise {{ module_class_name }}Error("succeeded intent cannot be canceled")
+        updated = self._replace_intent(intent, status="canceled")
+        self._record_audit("intent.canceled", intent_id=updated.id)
+        return updated
+
+    def handle_webhook(self, *, payload: Mapping[str, Any], signature: str) -> Dict[str, Any]:
+        if not self.verify_webhook_signature(payload, signature):
+            raise {{ module_class_name }}Error("invalid webhook signature")
+        event_type = str(payload.get("type", "")).strip()
+        intent_id = str(payload.get("data", {}).get("object", {}).get("id", "")).strip()
+        if event_type == "payment_intent.succeeded" and intent_id:
+            self.confirm_payment_intent(intent_id)
+        elif event_type == "payment_intent.canceled" and intent_id:
+            self.cancel_payment_intent(intent_id)
+        self._record_audit("webhook.received", intent_id=intent_id or None, metadata={"type": event_type})
+        return {"accepted": True, "type": event_type, "intent_id": intent_id}
+
+    def verify_webhook_signature(self, payload: Mapping[str, Any], signature: str) -> bool:
+        secret = str(_ENV_OVERRIDES.get("webhook_secret") or "local-dev-webhook-secret")
+        body = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        digest = hmac.new(secret.encode("utf-8"), body, hashlib.sha256).hexdigest()
+        return hmac.compare_digest(digest, signature)
+
+    def reconcile(self) -> Dict[str, Any]:
+        by_status: Dict[str, int] = {}
+        amount_by_currency: Dict[str, str] = {}
+        for intent in self._intents.values():
+            by_status[intent.status] = by_status.get(intent.status, 0) + 1
+            current = self._decimal(amount_by_currency.get(intent.currency, "0"))
+            amount_by_currency[intent.currency] = str(self._money(current + intent.amount))
+        return {
+            "intents": len(self._intents),
+            "by_status": by_status,
+            "amount_by_currency": amount_by_currency,
+        }
+
+    def list_payment_intents(self, *, account_id: str | None = None, status: str | None = None) -> list[PaymentIntent]:
+        intents = list(self._intents.values())
+        if account_id is not None:
+            intents = [intent for intent in intents if intent.account_id == account_id]
+        if status is not None:
+            intents = [intent for intent in intents if intent.status == status]
+        return sorted(intents, key=lambda item: item.created_at)
+
+    def audit_events(self, *, intent_id: str | None = None) -> list[StripeAuditEvent]:
+        events = list(self._audit)
+        if intent_id is not None:
+            events = [event for event in events if event.intent_id == intent_id]
+        return events
 
     def health_check(self) -> Dict[str, Any]:
         """Return module health metadata with Stripe-focused diagnostics."""
@@ -85,6 +221,10 @@ class {{ module_class_name }}:
             "manual_capture_available": _resolve_bool(
                 FEATURE_FLAGS.get("allow_manual_capture"), True
             ),
+            "stats": {
+                "payment_intents": len(self._intents),
+                "audit_events": len(self._audit),
+            },
         }
 
     def metadata(self) -> Dict[str, Any]:
@@ -138,6 +278,49 @@ class {{ module_class_name }}:
 
         return dict(ENVIRONMENT_SNAPSHOT)
 
+    def _require_intent(self, intent_id: str) -> PaymentIntent:
+        intent = self._intents.get(intent_id)
+        if intent is None:
+            raise {{ module_class_name }}Error("payment intent not found")
+        return intent
+
+    def _replace_intent(self, intent: PaymentIntent, *, status: str) -> PaymentIntent:
+        updated = PaymentIntent(
+            id=intent.id,
+            account_id=intent.account_id,
+            amount=intent.amount,
+            currency=intent.currency,
+            status=status,
+            idempotency_key=intent.idempotency_key,
+            metadata=dict(intent.metadata),
+            created_at=intent.created_at,
+            updated_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        )
+        self._intents[updated.id] = updated
+        return updated
+
+    def _record_audit(self, event_type: str, *, intent_id: str | None = None, metadata: Mapping[str, Any] | None = None) -> None:
+        self._audit.append(
+            StripeAuditEvent(
+                type=event_type,
+                intent_id=intent_id,
+                metadata=dict(metadata or {}),
+            )
+        )
+
+    def _ensure_enabled(self) -> None:
+        if not self.config.enabled:
+            raise {{ module_class_name }}Error("stripe payment is disabled")
+
+    @staticmethod
+    def _decimal(value: Decimal | int | float | str) -> Decimal:
+        parsed = value if isinstance(value, Decimal) else Decimal(str(value))
+        return parsed
+
+    @staticmethod
+    def _money(value: Decimal) -> Decimal:
+        return value.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
 
 def _clone(payload: Any) -> Any:
     return json.loads(json.dumps(payload))
@@ -182,6 +365,9 @@ def _resolve_bool(value: Any, fallback: bool) -> bool:
 __all__ = [
     "{{ module_class_name }}",
     "{{ module_class_name }}Config",
+    "PaymentIntent",
+    "StripeAuditEvent",
+    "{{ module_class_name }}Error",
     "ENVIRONMENT_SNAPSHOT",
     "MODULE_NAME",
     "MODULE_TITLE",

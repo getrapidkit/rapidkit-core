@@ -1,0 +1,139 @@
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from decimal import Decimal
+from statistics import mean
+from threading import RLock
+from typing import Any, Mapping
+from uuid import uuid4
+
+
+class {{ module_class_name }}Error(ValueError):
+    """Raised when dashboard metrics or widgets are invalid."""
+
+
+@dataclass(frozen=True)
+class MetricPoint:
+    name: str
+    value: Decimal
+    dimensions: Mapping[str, str] = field(default_factory=dict)
+    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds"))
+
+
+@dataclass(frozen=True)
+class DashboardWidget:
+    id: str
+    title: str
+    metric: str
+    visualization: str = "line"
+    filters: Mapping[str, str] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class DashboardSnapshot:
+    id: str
+    widget_count: int
+    metrics: Mapping[str, Any]
+    created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds"))
+
+
+@dataclass(frozen=True)
+class {{ module_class_name }}Config:
+    enabled: bool = True
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+
+def build_default_config() -> {{ module_class_name }}Config:
+    return {{ module_class_name }}Config()
+
+
+class {{ module_class_name }}:
+    """Analytics dashboard runtime for metrics, widgets, snapshots, and drilldowns."""
+
+    def __init__(self, config: {{ module_class_name }}Config | None = None) -> None:
+        self.config = config or build_default_config()
+        self._points: list[MetricPoint] = []
+        self._widgets: dict[str, DashboardWidget] = {}
+        self._snapshots: list[DashboardSnapshot] = []
+        self._lock = RLock()
+
+    def record_metric(
+        self,
+        name: str,
+        value: Decimal | int | float | str,
+        *,
+        dimensions: Mapping[str, str] | None = None,
+    ) -> MetricPoint:
+        if not self.config.enabled:
+            raise {{ module_class_name }}Error("analytics dashboard is disabled")
+        if not name.strip():
+            raise {{ module_class_name }}Error("metric name is required")
+        point = MetricPoint(name=name.strip(), value=Decimal(str(value)), dimensions=dict(dimensions or {}))
+        with self._lock:
+            self._points.append(point)
+        return point
+
+    def add_widget(
+        self,
+        *,
+        title: str,
+        metric: str,
+        visualization: str = "line",
+        filters: Mapping[str, str] | None = None,
+    ) -> DashboardWidget:
+        if not title.strip() or not metric.strip():
+            raise {{ module_class_name }}Error("widget title and metric are required")
+        widget = DashboardWidget(id=str(uuid4()), title=title.strip(), metric=metric.strip(), visualization=visualization, filters=dict(filters or {}))
+        with self._lock:
+            self._widgets[widget.id] = widget
+        return widget
+
+    def summarize_metric(self, name: str, *, filters: Mapping[str, str] | None = None) -> dict[str, Any]:
+        points = self.drilldown(name, filters=filters)
+        if not points:
+            return {"metric": name, "count": 0, "total": "0", "average": "0"}
+        values = [point.value for point in points]
+        return {
+            "metric": name,
+            "count": len(values),
+            "total": str(sum(values, Decimal("0"))),
+            "average": str(Decimal(str(mean(values)))),
+            "min": str(min(values)),
+            "max": str(max(values)),
+        }
+
+    def drilldown(self, name: str, *, filters: Mapping[str, str] | None = None) -> tuple[MetricPoint, ...]:
+        filters = dict(filters or {})
+        with self._lock:
+            points = [point for point in self._points if point.name == name]
+        for key, value in filters.items():
+            points = [point for point in points if point.dimensions.get(key) == value]
+        return tuple(points)
+
+    def snapshot(self) -> DashboardSnapshot:
+        with self._lock:
+            widgets = tuple(self._widgets.values())
+        metrics = {widget.title: self.summarize_metric(widget.metric, filters=widget.filters) for widget in widgets}
+        snapshot = DashboardSnapshot(id=str(uuid4()), widget_count=len(widgets), metrics=metrics)
+        with self._lock:
+            self._snapshots.append(snapshot)
+        return snapshot
+
+    def list_widgets(self) -> tuple[DashboardWidget, ...]:
+        with self._lock:
+            return tuple(self._widgets.values())
+
+    def health(self) -> dict[str, Any]:
+        with self._lock:
+            points = tuple(self._points)
+            widgets = tuple(self._widgets.values())
+            snapshots = tuple(self._snapshots)
+        return {
+            "module": "{{ module_name }}",
+            "status": "ok" if self.config.enabled else "disabled",
+            "metrics": len({point.name for point in points}),
+            "points": len(points),
+            "widgets": len(widgets),
+            "snapshots": len(snapshots),
+        }

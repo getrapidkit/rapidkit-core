@@ -1,0 +1,154 @@
+from __future__ import annotations
+
+import time
+from dataclasses import dataclass, field
+from enum import Enum
+from threading import RLock
+from typing import Any, Dict, Mapping, Sequence
+
+
+@dataclass
+class {{ module_class_name }}Config:
+    """Runtime configuration for {{ module_title }}."""
+
+    enabled: bool = True
+    strict_permissions: bool = True
+    default_timeout_seconds: float = 30.0
+    metadata: Dict[str, Any] | None = None
+
+
+class ToolRisk(str, Enum):
+    LOW = "low"
+    MEDIUM = "medium"
+    HIGH = "high"
+
+
+@dataclass(frozen=True)
+class ToolDefinition:
+    name: str
+    description: str
+    input_schema: Mapping[str, Any] = field(default_factory=dict)
+    output_schema: Mapping[str, Any] = field(default_factory=dict)
+    scopes: tuple[str, ...] = ()
+    roles: tuple[str, ...] = ()
+    risk: ToolRisk = ToolRisk.LOW
+    timeout_seconds: float | None = None
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+    created_at: float = field(default_factory=time.time)
+
+
+@dataclass(frozen=True)
+class ToolInvocationPolicy:
+    tenant_id: str | None = None
+    user_id: str | None = None
+    scopes: tuple[str, ...] = ()
+    roles: tuple[str, ...] = ()
+    allow_high_risk: bool = False
+
+
+@dataclass(frozen=True)
+class ToolDecision:
+    allowed: bool
+    tool: str
+    reason: str
+    required_scopes: tuple[str, ...] = ()
+    required_roles: tuple[str, ...] = ()
+    risk: ToolRisk = ToolRisk.LOW
+
+
+class ToolRegistryError(RuntimeError):
+    """Raised when a tool cannot be registered or evaluated."""
+
+
+def build_default_config() -> {{ module_class_name }}Config:
+    """Return default configuration payload."""
+
+    return {{ module_class_name }}Config()
+
+
+class {{ module_class_name }}:
+    """Registry for AI tools with schema, scope, role, and risk policy."""
+
+    def __init__(self, config: {{ module_class_name }}Config | None = None) -> None:
+        self.config = config or build_default_config()
+        self._tools: dict[str, ToolDefinition] = {}
+        self._audit: list[dict[str, Any]] = []
+        self._lock = RLock()
+
+    def register_tool(self, definition: ToolDefinition) -> ToolDefinition:
+        if not self.config.enabled:
+            raise ToolRegistryError("tool registry is disabled")
+        name = definition.name.strip()
+        if not name:
+            raise ToolRegistryError("tool name is required")
+        normalized = ToolDefinition(
+            name=name,
+            description=definition.description.strip(),
+            input_schema=dict(definition.input_schema),
+            output_schema=dict(definition.output_schema),
+            scopes=tuple(sorted(set(definition.scopes))),
+            roles=tuple(sorted(set(definition.roles))),
+            risk=definition.risk,
+            timeout_seconds=definition.timeout_seconds or self.config.default_timeout_seconds,
+            metadata=dict(definition.metadata),
+            created_at=definition.created_at,
+        )
+        with self._lock:
+            self._tools[name] = normalized
+            self._audit.append({"event": "tool.registered", "tool": name, "risk": normalized.risk.value})
+        return normalized
+
+    def get_tool(self, name: str) -> ToolDefinition:
+        with self._lock:
+            try:
+                return self._tools[name]
+            except KeyError as exc:
+                raise ToolRegistryError(f"tool {name!r} is not registered") from exc
+
+    def list_tools(self, *, risk: ToolRisk | None = None) -> list[ToolDefinition]:
+        with self._lock:
+            tools = list(self._tools.values())
+        if risk is not None:
+            tools = [tool for tool in tools if tool.risk == risk]
+        return sorted(tools, key=lambda tool: tool.name)
+
+    def evaluate(self, name: str, policy: ToolInvocationPolicy) -> ToolDecision:
+        tool = self.get_tool(name)
+        missing_scopes = tuple(scope for scope in tool.scopes if scope not in policy.scopes)
+        missing_roles = tuple(role for role in tool.roles if role not in policy.roles)
+        if tool.risk == ToolRisk.HIGH and not policy.allow_high_risk:
+            decision = ToolDecision(False, name, "high_risk_tool_requires_explicit_allow", tool.scopes, tool.roles, tool.risk)
+        elif self.config.strict_permissions and missing_scopes:
+            decision = ToolDecision(False, name, "missing_required_scope", tool.scopes, tool.roles, tool.risk)
+        elif self.config.strict_permissions and missing_roles:
+            decision = ToolDecision(False, name, "missing_required_role", tool.scopes, tool.roles, tool.risk)
+        else:
+            decision = ToolDecision(True, name, "allowed", tool.scopes, tool.roles, tool.risk)
+        with self._lock:
+            self._audit.append(
+                {
+                    "event": "tool.evaluated",
+                    "tool": name,
+                    "allowed": decision.allowed,
+                    "reason": decision.reason,
+                    "tenant_id": policy.tenant_id,
+                    "user_id": policy.user_id,
+                }
+            )
+        return decision
+
+    def audit_log(self) -> list[dict[str, Any]]:
+        with self._lock:
+            return [dict(event) for event in self._audit]
+
+    def health_check(self) -> dict[str, Any]:
+        with self._lock:
+            tools = tuple(self._tools.values())
+        return {
+            "module": "{{ module_name }}",
+            "status": "ok" if self.config.enabled else "disabled",
+            "enabled": self.config.enabled,
+            "tools": len(tools),
+            "high_risk_tools": sum(1 for tool in tools if tool.risk == ToolRisk.HIGH),
+            "strict_permissions": self.config.strict_permissions,
+        }

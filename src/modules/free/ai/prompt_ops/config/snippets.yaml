@@ -1,0 +1,7 @@
+# Register snippet bundles for Prompt Ops
+
+snippets:
+  -
+    name: "prompt_ops_usage_example"
+    template: "templates/snippets/prompt_ops.snippet.j2"
+    description: "Injects an opinionated usage example for Prompt Ops."

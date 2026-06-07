@@ -190,7 +190,7 @@ Access health status at `/api/health/module/logging`.
 - **Migration Guide**: Upgrading from Python logging
 
 For issues and questions, visit our
-[GitHub repository](https://github.com/getrapidkit/rapidkit-core).
+[GitHub repository](https://github.com/rapidkitlabs/rapidkit-core).
 
 ## Security considerations
 

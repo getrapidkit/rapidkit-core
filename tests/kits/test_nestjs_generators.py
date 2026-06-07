@@ -129,6 +129,14 @@ class TestNestJSStandardGenerator:
         assert context["rapidkit_vendor_version"] == vendor_meta["version"]
         assert context["rapidkit_vendor_root"] == vendor_meta["vendor_root"]
 
+    def test_extra_context_uses_lts_floor_node_version(
+        self, minimal_kit_dir: Path, minimal_nestjs_config: KitConfig
+    ) -> None:
+        generator = NestJSStandardGenerator(minimal_kit_dir, minimal_nestjs_config)
+        context = generator.extra_context()
+
+        assert context["node_version"] == "20.19.0"
+
     def test_extra_context_preserves_package_manager(
         self, minimal_kit_dir: Path, minimal_nestjs_config: KitConfig, tmp_path: Path
     ) -> None:

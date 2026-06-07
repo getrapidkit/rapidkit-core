@@ -1,0 +1,12 @@
+{# Shared snippet for the RapidKit Media Pipeline module. #}
+{% set module_name = "media_pipeline" %}
+{% set module_title = "Media Pipeline" %}
+
+# {{ module_title }} integration notes
+
+- Canonical module: `free/business/media_pipeline`
+- Primary purpose: Media ingestion and transformation pipeline with checksum, variant generation, and moderation hooks.
+- Key capabilities: Models media ingestion, validation, transformation, and variant generation., Tracks checksums, source metadata, and generated asset lineage., Provides hooks for moderation and policy enforcement.
+- Runtime environment keys: RAPIDKIT_MEDIA_PIPELINE_ENABLED, RAPIDKIT_MEDIA_PIPELINE_MAX_BYTES, RAPIDKIT_MEDIA_PIPELINE_MODERATION_MODE
+
+Use this snippet near the owning service/module registration point so generated projects keep module intent, operational boundaries, and security expectations visible to maintainers.

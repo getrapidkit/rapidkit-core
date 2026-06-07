@@ -1,0 +1,176 @@
+name: webhook_platform
+display_name: Webhook Platform
+description: Inbound and outbound webhook scaffolding with signatures, delivery attempts, replay, and
+  event history
+version: 0.1.6
+access: free
+status: stable
+tier: free
+category: communication
+tags:
+- webhooks
+- events
+- integrations
+- signatures
+- replay
+generated_from_config: true
+profile_inherits:
+  fastapi.standard: fastapi
+  fastapi.ddd: fastapi
+  nestjs.standard: nestjs
+config_sources:
+- config/base.yaml
+- config/snippets.yaml
+generation:
+  vendor:
+    root: .rapidkit/vendor
+    files:
+    - template: templates/base/webhook_platform.py.j2
+      relative: src/communication/webhook_platform.py
+    - template: templates/base/webhook_platform_types.py.j2
+      relative: src/communication/webhook_platform_types.py
+    - template: templates/base/webhook_platform_health.py.j2
+      relative: src/health/communication/webhook_platform.py
+    - template: templates/vendor/nestjs/configuration.js.j2
+      relative: nestjs/configuration.js
+  variants:
+    fastapi: &fastapi_variant
+      root: .
+      context:
+        framework: fastapi
+        module_class_name: WebhookPlatform
+      files:
+      - template: templates/variants/fastapi/webhook_platform.py.j2
+        output: src/communication/webhook_platform.py
+      - template: templates/variants/fastapi/webhook_platform_routes.py.j2
+        output: src/routers/communication/webhook_platform.py
+      - template: templates/variants/fastapi/webhook_platform_health.py.j2
+        output: src/health/communication/webhook_platform.py
+      - template: templates/tests/integration/test_webhook_platform_integration.j2
+        output: tests/modules/free/integration/communication/webhook_platform/test_webhook_platform_integration.py
+      - template: templates/variants/fastapi/tests/test_webhook_platform_e2e.py
+        output: tests/modules/e2e/free/communication/webhook_platform/test_webhook_platform_e2e.py
+    fastapi.standard: *fastapi_variant
+    fastapi.ddd: *fastapi_variant
+    nestjs: &nestjs_variant
+      root: .
+      context:
+        framework: nestjs
+        vendor_configuration_relative: nestjs/configuration.js
+        module_class_name: WebhookPlatform
+        module_kebab: webhook-platform
+      files:
+      - template: templates/variants/nestjs/webhook_platform.service.ts.j2
+        output: src/webhook-platform/webhook_platform.service.ts
+      - template: templates/variants/nestjs/webhook_platform.controller.ts.j2
+        output: src/webhook-platform/webhook_platform.controller.ts
+      - template: templates/variants/nestjs/webhook_platform.module.ts.j2
+        output: src/webhook-platform/webhook_platform.module.ts
+      - template: templates/variants/nestjs/webhook_platform.health.ts.j2
+        output: src/webhook-platform/webhook_platform.health.ts
+      - template: templates/variants/nestjs/webhook_platform.validation.ts.j2
+        output: src/webhook-platform/webhook_platform.validation.ts
+      - template: templates/variants/nestjs/webhook_platform.index.ts.j2
+        output: src/webhook-platform/index.ts
+      - template: templates/variants/nestjs/webhook_platform.configuration.ts.j2
+        output: src/webhook-platform/configuration.ts
+      - template: templates/variants/nestjs/tests/webhook_platform.e2e-spec.ts
+        output: tests/modules/e2e/communication/webhook_platform/webhook_platform.e2e-spec.ts
+    nestjs.standard: *nestjs_variant
+  snippets:
+    enabled: true
+    config: config/snippets.yaml
+    default: []
+compatibility:
+  python: '>=3.9,<4.0'
+  frameworks:
+  - fastapi
+  - nestjs
+  os:
+  - linux
+  - darwin
+  - windows
+testing:
+  coverage_min: 85
+  integration_tests: true
+  e2e_tests: false
+  unit_tests:
+  - tests/modules/free/communication/webhook_platform/test_webhook_platform_generator.py
+  - tests/modules/free/communication/webhook_platform/test_webhook_platform_overrides.py
+  - tests/modules/free/communication/webhook_platform/test_webhook_platform_runtime.py
+  - tests/modules/free/communication/webhook_platform/test_webhook_platform_adapters.py
+  - tests/modules/free/communication/webhook_platform/test_webhook_platform_validation.py
+  - tests/modules/free/communication/webhook_platform/test_webhook_platform_error_handling.py
+  - tests/modules/free/communication/webhook_platform/test_webhook_platform_health_check.py
+  - tests/modules/free/communication/webhook_platform/test_webhook_platform_framework_variants.py
+  - tests/modules/free/communication/webhook_platform/test_webhook_platform_vendor_layer.py
+  - tests/modules/free/communication/webhook_platform/test_webhook_platform_configuration.py
+  - tests/modules/free/communication/webhook_platform/test_webhook_platform_versioning.py
+  - tests/modules/free/communication/webhook_platform/test_webhook_platform_standard_module.py
+  integration_test_files:
+  - tests/modules/free/integration/communication/webhook_platform/test_webhook_platform_integration.py
+  fixtures: []
+documentation:
+  changelog: docs/changelog.md
+  readme: README.md
+  overview: docs/overview.md
+  usage: docs/usage.md
+  advanced: docs/advanced.md
+  migration: docs/migration.md
+  troubleshooting: docs/troubleshooting.md
+  api_docs: docs/api-reference.md
+  examples: []
+support:
+  issues: https://github.com/rapidkitlabs/rapidkit-core/issues
+  discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+  documentation: https://docs.rapidkit.top/modules/webhook_platform
+changelog:
+  - version: "0.1.6"
+    date: "2026-06-02"
+    notes: "See docs/changelog.md"
+validation:
+  pre_install:
+  - check_python_version
+  post_install:
+  - validate_generated_code
+rollback:
+  strategy: uninstall
+  backup_path: .rapidkit/backups/
+  max_backups: 3
+performance:
+  lazy_loading: true
+  caching:
+    templates: true
+    ttl: 300
+capabilities:
+- inbound_webhooks
+- outbound_delivery
+- signature_verification
+- delivery_attempts
+- replay
+signature: null
+signer_id: null
+signature_version: null
+file_hashes:
+  README.md: sha256:eea40236fcaaa1ad580eb15825f226f3826da5a622581901cf09bf625791a435
+  __init__.py: sha256:19bead9f97623dd42a9a615d4679eb76f259f1a3e2e946e5b3ce99c9222f7925
+  config/base.yaml: sha256:4220caa83bd356f5b918a82c8e870730e988972d936b163f8f404a09d3dd3682
+  config/snippets.yaml: sha256:d8cf752c879fa302768c4e1155a2a9ea071c31c8420de083c294531466d70f61
+  docs/README.md: sha256:85888cfa257b0fbb2b4b7dc4ba8342f6752e93f04cc7dd03450bf0ee225a3ef8
+  docs/advanced.md: sha256:4f91e40e1e94d0bd22b10d6be08d251d9cfbc87fd3e6c4c986c62da7f50cd1fb
+  docs/api-reference.md: sha256:35a281fb62cea0e17643193316809e0e5235c05a4c7afa709eb5bfee58a08d72
+  docs/changelog.md: sha256:f36780293d0da31de16f13fc55a21fe964ea43ef0ddc045690c1024744096fda
+  docs/migration.md: sha256:6c281fd8c7e7dc9bec324b25b962928e4ce95cf5beae205ce3271c29a6a84d14
+  docs/overview.md: sha256:742e1d608db3baeee39522af152b2557e5d89a846fe46b2bd0e4acc30bd288f0
+  docs/troubleshooting.md: sha256:2e85706ca6e61f418cde59a2cdddd0c537e15734967eb5a006e1035760f6b339
+  docs/usage.md: sha256:4c128422fdc42793f0dabc27025489c14964b5e09a0a5ea24ca3a2040be97ed5
+  templates/vendor/nestjs/configuration.js.j2: sha256:5b84397b2786a12a7f47272f0709d2713332ef941939d94d5ad97a90c5e4c012
+  module.verify.json: sha256:e28ca35f55781bb0f86932217747a7a656f2e4a0b3fd5817ce118edfeff22abe
+depends_on:
+- free/auth/api_keys
+- free/tasks/celery
+- free/database/db_postgres
+metadata:
+  enterprise_ready: true
+  free_marketplace_module: true
+  product_factory_priority: high

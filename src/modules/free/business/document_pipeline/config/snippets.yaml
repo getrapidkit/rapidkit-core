@@ -1,0 +1,7 @@
+# Register snippet bundles for Document Pipeline
+
+snippets:
+  -
+    name: "document_pipeline_usage_example"
+    template: "templates/snippets/document_pipeline.snippet.j2"
+    description: "Injects an opinionated usage example for Document Pipeline."

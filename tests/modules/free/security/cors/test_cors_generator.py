@@ -323,8 +323,9 @@ def test_generator_emits_framework_parity(
         )
         assert "@Get('metadata')" in controller_src or '@Get("metadata")' in controller_src
         assert "@Get('features')" in controller_src or '@Get("features")' in controller_src
-        assert "@Get('health')" not in controller_src
-        assert '@Get("health")' not in controller_src
+        assert "@Get('health')" in controller_src or '@Get("health")' in controller_src
+        assert "getHealth()" in controller_src
+        assert "CorsHealthPayload" in controller_src
         assert "CORS_FEATURES" in controller_src
 
         health_controller_src = health_controller_path.read_text(encoding="utf-8")

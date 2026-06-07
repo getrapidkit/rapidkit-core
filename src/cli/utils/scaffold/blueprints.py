@@ -297,7 +297,7 @@ _AUTH_CORE_BASE_CONFIG: Dict[str, object] = {
                 "name": "pyjwt[crypto]",
                 "source": "external",
                 "tool": "pip",
-                "version": ">=2.8.0,<3.0",
+                "version": ">=2.13.0,<3.0",
             },
         ],
         "nestjs/standard": [

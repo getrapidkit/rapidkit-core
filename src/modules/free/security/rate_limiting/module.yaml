@@ -1,6 +1,6 @@
 name: rate_limiting
 description: Request rate limiting and throttling protections for RapidKit services
-version: 0.1.9
+version: 0.1.13
 access: free
 status: stable
 category: security
@@ -120,12 +120,12 @@ documentation:
     api_docs: docs/api-reference.md
     examples: []
 support:
-    issues: https://github.com/getrapidkit/rapidkit-core/issues
-    discussions: https://github.com/getrapidkit/rapidkit-core/discussions
+    issues: https://github.com/rapidkitlabs/rapidkit-core/issues
+    discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
     documentation: https://docs.rapidkit.top/modules/rate_limiting
 changelog:
-  - version: "0.1.9"
-    date: "2026-02-15"
+  - version: "0.1.13"
+    date: "2026-06-07"
     notes: "See docs/changelog.md"
 validation:
     pre_install:
@@ -160,7 +160,7 @@ file_hashes:
     README.md: sha256:bdcf43cd44810b5d54a749f168823da4c9f6592ffa9b63f6a1aeac501644fc0d
     __init__.py: sha256:1c2c5d84d2b257b01a1a9caeb45a72e4e21dad5762dfea1ea8177ac2beac2c27
     config/base.yaml: sha256:edde3945588f05304409efa45e2282acca3299be13a5fcf4dd16ac5b7ecd5046
-    config/snippets.yaml: sha256:d55266cf2c730994a2218de2ed4ee2415a2e5c1edad8ea3bd897817b04e31f2a
+    config/snippets.yaml: sha256:fd0759faad765715a2220a8a57317748be8cf50b9ef851af07d98b6e22ebb2c4
     docs/README.md: sha256:00e31c214356488e129c3e0fdd092807d883ff341290c864d1e4a34e84fa879d
     docs/advanced.md: sha256:6ff4d90e5feb4431e434047c59245cc53d7abafdbe3a63c6935cb7864c806a7d
     docs/changelog.md: sha256:8a0e3e4b428864e1904998c2ce501a3e67f29829e8fe10bdaf479932e9f33093
@@ -172,7 +172,7 @@ file_hashes:
     frameworks/fastapi.py: sha256:4426259a125aa482964fc078c60ab8ba9b3eed015a66d86e3e0f91794f25a853
     frameworks/nestjs.py: sha256:70044ecec090d7a85be5d8edc1abd5bde04ed5f1e0ab6d05102a475f2b16663a
     generate.py: sha256:3acf1d0856e84eaf5e680a76ff3af81ce39da978ec1fdc2ac9bd135d5592a512
-    module.verify.json: sha256:4232003a26fa84d92fd617628bfe46e885fe916c556cce66cf2bb71e6928c6eb
+    module.verify.json: sha256:9e6796f91a3ae8071b6a1a1e1d65358734b940a3f0dc5526ac9a3e4b1581a2e9
     overrides.py: sha256:c9634aa95e739a4f6a21ae2c6a1863fa5fb2e3f1f876c2ca840755f2ea08a76f
     templates/base/rate_limiting.py.j2: sha256:a0344d0b559fa77cd7dfba9475801915b3bdb0c8d17baade33b39bad5f3fad2a
     templates/base/rate_limiting_health.py.j2: sha256:8fedcedcdfc8ccf19a9e66d9cd0a9a2b78b2edb7998ed318c59ec4f04aebf92f
@@ -180,7 +180,7 @@ file_hashes:
     templates/snippets/rate_limiting.snippet.j2: sha256:827cf13adb1788fb2502d090471c11ad8b320438db8a4ad678bd91a580e3867b
     templates/snippets/rate_limiting_env.snippet.j2: sha256:d8dc22d8d49f69d1c2513f34eab3432fb6721301757ceb0c1adcffed28413051
     templates/snippets/rate_limiting_settings_fields.snippet.j2: sha256:630ea9e348af7849c7fe98ed7ae77c768aff0b19bb3cf73139c0f8716ce4bd08
-    templates/snippets/rate_limiting_settings_fields_nestjs.snippet.j2: sha256:43d8d098b1bf5f9a23aac20db96bcd02136e03a704b5880c0d1de542d0a0a831
+    templates/snippets/rate_limiting_settings_fields_nestjs.snippet.j2: sha256:1bfb835df8cc820b55a83f3ca80283d33cf202680eb89509bc4e495aff739435
     templates/tests/__init__.py: sha256:a7ec682bf80931958f0b80f8dfe038195fd979690b196aa8a6bb68863064ecb2
     templates/tests/integration/rate_limiting.integration.spec.ts.j2: sha256:41739d6027489a4aae09800c83e206a952f06a23a0626e037f863640b6c3c317
     templates/tests/integration/test_rate_limiting_integration.j2: sha256:4f4eefa06f2a07c3a195ade308b7076e1abd701378b05118f136d141cce9fe91

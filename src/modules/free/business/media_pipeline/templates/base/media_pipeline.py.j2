@@ -1,0 +1,195 @@
+from __future__ import annotations
+
+import hashlib
+import time
+from dataclasses import dataclass, field
+from enum import Enum
+from threading import RLock
+from typing import Any, Callable, Mapping, Sequence
+from uuid import uuid4
+
+
+@dataclass
+class {{ module_class_name }}Config:
+    enabled: bool = True
+    allowed_mime_prefixes: Sequence[str] = ("image/", "video/", "audio/")
+    max_bytes: int = 50 * 1024 * 1024
+    required_variants: Sequence[str] = ("thumbnail", "preview")
+    metadata: dict[str, Any] | None = None
+
+
+class MediaStatus(str, Enum):
+    INGESTED = "ingested"
+    PROCESSED = "processed"
+    REJECTED = "rejected"
+
+
+@dataclass(frozen=True)
+class MediaSource:
+    filename: str
+    content: bytes
+    mime_type: str
+    tenant_id: str | None = None
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class MediaVariant:
+    name: str
+    checksum: str
+    bytes_size: int
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class MediaAsset:
+    asset_id: str
+    filename: str
+    mime_type: str
+    checksum: str
+    bytes_size: int
+    tenant_id: str | None = None
+    status: MediaStatus = MediaStatus.INGESTED
+    variants: list[MediaVariant] = field(default_factory=list)
+    moderation: dict[str, Any] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
+    error: str | None = None
+    created_at: float = field(default_factory=time.time)
+    updated_at: float = field(default_factory=time.time)
+
+
+ModerationHook = Callable[[MediaSource], Mapping[str, Any]]
+VariantBuilder = Callable[[MediaAsset, str], MediaVariant]
+
+
+class MediaPipelineError(RuntimeError):
+    """Raised when media policy or transformation fails."""
+
+
+def build_default_config() -> {{ module_class_name }}Config:
+    return {{ module_class_name }}Config()
+
+
+class {{ module_class_name }}:
+    """Media ingest/variant pipeline with checksum and moderation controls."""
+
+    def __init__(
+        self,
+        config: {{ module_class_name }}Config | None = None,
+        *,
+        moderation_hook: ModerationHook | None = None,
+        variant_builder: VariantBuilder | None = None,
+    ) -> None:
+        self.config = config or build_default_config()
+        self._moderation_hook = moderation_hook or self._default_moderation
+        self._variant_builder = variant_builder or self._default_variant
+        self._assets: dict[str, MediaAsset] = {}
+        self._audit: list[dict[str, Any]] = []
+        self._lock = RLock()
+
+    def ingest(self, source: MediaSource) -> MediaAsset:
+        if not self.config.enabled:
+            raise MediaPipelineError("media pipeline is disabled")
+        self._validate_source(source)
+        asset = MediaAsset(
+            asset_id=str(uuid4()),
+            filename=source.filename,
+            mime_type=source.mime_type,
+            checksum=self._checksum(source.content),
+            bytes_size=len(source.content),
+            tenant_id=source.tenant_id,
+            metadata=dict(source.metadata),
+        )
+        with self._lock:
+            self._assets[asset.asset_id] = asset
+            self._audit.append({"event": "media.ingested", "asset_id": asset.asset_id})
+        return asset
+
+    def process(self, asset_id: str, source: MediaSource) -> MediaAsset:
+        asset = self.get(asset_id)
+        try:
+            moderation = dict(self._moderation_hook(source))
+            if moderation.get("decision") == "reject":
+                asset.status = MediaStatus.REJECTED
+                asset.moderation = moderation
+                asset.error = str(moderation.get("reason", "media rejected by moderation policy"))
+                asset.updated_at = time.time()
+                with self._lock:
+                    self._audit.append({"event": "media.rejected", "asset_id": asset.asset_id, "reason": asset.error})
+                return asset
+            asset.variants = [self._variant_builder(asset, name) for name in self.config.required_variants]
+            asset.moderation = moderation
+            asset.status = MediaStatus.PROCESSED
+            asset.error = None
+            asset.updated_at = time.time()
+            with self._lock:
+                self._audit.append(
+                    {"event": "media.processed", "asset_id": asset.asset_id, "variants": len(asset.variants)}
+                )
+            return asset
+        except Exception as exc:
+            asset.status = MediaStatus.REJECTED
+            asset.error = str(exc)
+            asset.updated_at = time.time()
+            with self._lock:
+                self._audit.append({"event": "media.failed", "asset_id": asset.asset_id, "error": asset.error})
+            raise MediaPipelineError("media processing failed") from exc
+
+    def ingest_and_process(self, source: MediaSource) -> MediaAsset:
+        asset = self.ingest(source)
+        return self.process(asset.asset_id, source)
+
+    def get(self, asset_id: str) -> MediaAsset:
+        with self._lock:
+            try:
+                return self._assets[asset_id]
+            except KeyError as exc:
+                raise MediaPipelineError(f"media asset {asset_id!r} not found") from exc
+
+    def list_assets(self, *, tenant_id: str | None = None, status: MediaStatus | None = None) -> list[MediaAsset]:
+        with self._lock:
+            assets = list(self._assets.values())
+        if tenant_id is not None:
+            assets = [asset for asset in assets if asset.tenant_id == tenant_id]
+        if status is not None:
+            assets = [asset for asset in assets if asset.status == status]
+        return sorted(assets, key=lambda asset: asset.created_at)
+
+    def audit_log(self) -> list[dict[str, Any]]:
+        with self._lock:
+            return [dict(event) for event in self._audit]
+
+    def health_check(self) -> dict[str, Any]:
+        with self._lock:
+            assets = tuple(self._assets.values())
+        return {
+            "module": "{{ module_name }}",
+            "status": "ok" if self.config.enabled else "disabled",
+            "enabled": self.config.enabled,
+            "assets": len(assets),
+            "processed": sum(1 for asset in assets if asset.status == MediaStatus.PROCESSED),
+            "rejected": sum(1 for asset in assets if asset.status == MediaStatus.REJECTED),
+            "required_variants": list(self.config.required_variants),
+        }
+
+    def _validate_source(self, source: MediaSource) -> None:
+        if not source.filename.strip():
+            raise MediaPipelineError("filename is required")
+        if not source.content:
+            raise MediaPipelineError("media content is required")
+        if len(source.content) > self.config.max_bytes:
+            raise MediaPipelineError("media exceeds max_bytes policy")
+        if not any(source.mime_type.startswith(prefix) for prefix in self.config.allowed_mime_prefixes):
+            raise MediaPipelineError(f"mime type {source.mime_type!r} is not allowed")
+
+    def _default_moderation(self, source: MediaSource) -> Mapping[str, Any]:
+        if source.metadata.get("unsafe") is True:
+            return {"decision": "reject", "reason": "unsafe metadata flag"}
+        return {"decision": "allow", "provider": "local-policy"}
+
+    def _default_variant(self, asset: MediaAsset, name: str) -> MediaVariant:
+        digest = self._checksum(f"{asset.checksum}:{name}".encode("utf-8"))
+        return MediaVariant(name=name, checksum=digest, bytes_size=max(1, asset.bytes_size // 4))
+
+    def _checksum(self, payload: bytes) -> str:
+        return hashlib.sha256(payload).hexdigest()
