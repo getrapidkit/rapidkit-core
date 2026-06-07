@@ -15,6 +15,36 @@ from typing import Callable, Protocol, cast
 from core.config.version import get_version
 
 ENGINE_FLAG_MIN_ARGS = 2
+MIN_SCOPED_COMMAND_ARGS = 2
+NPM_CLI_PACKAGE = "rapidkit"
+
+NPM_OWNED_TOP_LEVEL_COMMANDS = {
+    "analyze",
+    "readiness",
+    "autopilot",
+    "import",
+    "workspace",
+    "bootstrap",
+    "setup",
+    "cache",
+    "mirror",
+    "ai",
+    "config",
+    "product",
+}
+
+NPM_OWNED_SCOPED_COMMANDS = {
+    ("doctor", "workspace"),
+    ("doctor", "project"),
+    ("project", "archives"),
+    ("project", "archive"),
+    ("project", "restore"),
+    ("project", "delete"),
+    ("snapshot", "create"),
+    ("snapshot", "list"),
+    ("snapshot", "inspect"),
+    ("snapshot", "restore"),
+}
 
 
 def _distribution_tier() -> str | None:
@@ -163,9 +193,47 @@ def _delegate_to_node_cli(argv: list[str]) -> None:
     sys.exit(result.returncode)
 
 
+def _is_npm_owned_invocation(argv: list[str]) -> bool:
+    """Return true when argv targets commands owned by the npm workspace CLI."""
+
+    if not argv:
+        return False
+    command = argv[0]
+    if command in NPM_OWNED_TOP_LEVEL_COMMANDS:
+        return True
+    if len(argv) >= MIN_SCOPED_COMMAND_ARGS and (command, argv[1]) in NPM_OWNED_SCOPED_COMMANDS:
+        return True
+    return False
+
+
+def _handle_npm_owned_invocation(argv: list[str]) -> None:
+    """Guide users when the Python/Core launcher receives an npm-owned command."""
+
+    if os.environ.get("RAPIDKIT_CORE_PASS_THROUGH_NPM") == "1":
+        cmd = ["npx", "--yes", "--package", NPM_CLI_PACKAGE, "rapidkit", *argv]
+        result = subprocess.run(cmd, check=False)  # nosec B603 - controlled command invocation
+        sys.exit(result.returncode)
+
+    rendered = " ".join(["rapidkit", *argv])
+    print("RapidKit command routing notice", file=sys.stderr)
+    print(f"`{rendered}` belongs to the RapidKit npm workspace CLI.", file=sys.stderr)
+    print("", file=sys.stderr)
+    print("Run one of:", file=sys.stderr)
+    print("  npm install -g rapidkit", file=sys.stderr)
+    print(f"  npx --yes --package {NPM_CLI_PACKAGE} rapidkit {' '.join(argv)}", file=sys.stderr)
+    print("", file=sys.stderr)
+    print(
+        "If this happened on Windows, Python's rapidkit.exe is probably earlier in PATH "
+        "than the npm global shim.",
+        file=sys.stderr,
+    )
+    print("Check with: where rapidkit", file=sys.stderr)
+    sys.exit(2)
+
+
 def _print_banner(emoji: str, message: str, color_code: str = "36") -> None:
     """Print colored banner message."""
-    print(f"\033[{color_code}m{emoji} {message}\033[0m")
+    print(f"\033[{color_code}m{emoji} {message}\033[0m", flush=True)
 
 
 def _get_engine_commands() -> dict[str, str]:
@@ -440,6 +508,11 @@ def _load_enterprise_tui() -> tuple[Callable[[], _RapidTUILike] | None, str | No
 def _launch_tui() -> None:
     """Launch the TUI interface if available, otherwise guide the user."""
 
+    if not sys.stdin.isatty() or not sys.stdout.isatty():
+        _print_banner("ℹ️", "Interactive TUI requires a real terminal", "34")
+        print("💡 Run `rapidkit --tui` from an interactive terminal session.")
+        sys.exit(1)
+
     rapid_tui_factory, error_message = _load_enterprise_tui()
     if rapid_tui_factory is None:
         _print_banner("ℹ️", "Interactive TUI unavailable", "34")
@@ -504,6 +577,9 @@ def _run_global_command(argv: list[str]) -> None:  # noqa: PLR0911
         _show_help()
         return
 
+    if _is_npm_owned_invocation(argv):
+        _handle_npm_owned_invocation(argv)
+
     if command == "shell":
         if _handle_shell_command(argv[1:]):
             return
@@ -536,7 +612,7 @@ def _run_global_command(argv: list[str]) -> None:  # noqa: PLR0911
         print("Error: No such command 'ui'.", file=sys.stderr)
         sys.exit(2)
 
-    project_commands = {"dev", "start", "build", "test", "lint", "format", "help"}
+    project_commands = {"init", "dev", "start", "build", "test", "lint", "format", "help"}
     if command in project_commands:
         remaining_args = argv[1:] if len(argv) > 1 else []
         _delegate_to_project_cli(command, remaining_args)

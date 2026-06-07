@@ -26,8 +26,8 @@ def test_generate_vendor_and_variant_outputs(
     )
     vendor_expected = {
         vendor_root / "modules" / "free" / "auth" / "api_keys" / "api_keys.py",
-        vendor_root / "health" / "api_keys.py",
-        vendor_root / "modules" / "free" / "auth" / "api_keys" / "types" / "api_keys.py",
+        vendor_root / "modules" / "free" / "auth" / "api_keys" / "api_keys_health.py",
+        vendor_root / "modules" / "free" / "auth" / "api_keys" / "api_keys_types.py",
     }
     for artefact in vendor_expected:
         assert artefact.exists(), f"Expected vendor artefact {artefact}"

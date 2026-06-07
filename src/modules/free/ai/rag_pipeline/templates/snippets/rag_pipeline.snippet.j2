@@ -1,0 +1,12 @@
+{# Shared snippet for the RapidKit RAG Pipeline module. #}
+{% set module_name = "rag_pipeline" %}
+{% set module_title = "RAG Pipeline" %}
+
+# {{ module_title }} integration notes
+
+- Canonical module: `free/ai/rag_pipeline`
+- Primary purpose: Document ingestion, embeddings, retrieval, citations, and evaluation-ready AI search scaffolding.
+- Key capabilities: Defines ingestion and chunking boundaries for knowledge products., Connects embeddings to a vector store abstraction., Surfaces retrieval metadata and citation-ready payloads.
+- Runtime environment keys: RAPIDKIT_RAG_PIPELINE_ENABLED, RAPIDKIT_RAG_PIPELINE_CHUNK_SIZE, RAPIDKIT_RAG_PIPELINE_TOP_K
+
+Use this snippet near the owning service/module registration point so generated projects keep module intent, operational boundaries, and security expectations visible to maintainers.

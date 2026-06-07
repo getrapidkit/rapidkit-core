@@ -1,0 +1,10 @@
+from datetime import datetime
+
+
+def check_health() -> dict[str, str]:
+    """Return a simple health payload for the runtime facade."""
+
+    return {
+        "timestamp": datetime.utcnow().isoformat(timespec="seconds"),
+        "status": "ok",
+    }

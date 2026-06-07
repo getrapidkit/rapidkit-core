@@ -3,7 +3,7 @@ snippets:
     target: .env,.env.dev,.env.prod,.env.example
     anchor: "# <<<inject:module-env>>>"
     template: rate_limiting_env.snippet.j2
-    features: [rate-limiting]
+    features: [rate_limiting]
     profiles: [fastapi/standard,fastapi/ddd,nestjs/standard]
     description: Injects rate limiting environment variables and defaults.
     version: "1.0.0"
@@ -58,8 +58,8 @@ snippets:
     target: src/modules/free/essentials/settings/settings.py
     anchor: "# <<<inject:settings-fields>>>"
     template: rate_limiting_settings_fields.snippet.j2
-    features: [rate-limiting, extendable_settings]
-    profiles: [fastapi/standard,fastapi/ddd,nestjs/standard]
+    features: [rate_limiting, extendable_settings]
+    profiles: [fastapi/standard,fastapi/ddd]
     description: Injects rate limiting configuration fields into the shared settings module.
     version: "1.0.0"
     priority: 25
@@ -99,7 +99,7 @@ snippets:
     target: src/config/configuration.ts
     anchor: "// <<<inject:configuration>>>"
     template: rate_limiting_settings_fields_nestjs.snippet.j2
-    features: [rate-limiting]
+    features: [rate_limiting]
     profiles: [nestjs/standard]
     description: Adds rate limiting fields to the NestJS settings interface.
     version: "1.0.0"
@@ -120,7 +120,7 @@ snippets:
     target: src/modules/index.ts
     anchor: "// <<<inject:module-exports>>>"
     template: rate_limiting.nestjs.module_registry.snippet.j2
-    features: [rate-limiting]
+    features: [rate_limiting]
     profiles: [nestjs/standard]
     description: Register RateLimitingModule in NestJS optional module registry
     version: "1.0.0"
@@ -141,7 +141,7 @@ snippets:
     target: src/modules/index.ts
     anchor: "// <<<inject:module-exports>>>"
     template: rate_limiting.nestjs.health_registry.snippet.j2
-    features: [rate-limiting]
+    features: [rate_limiting]
     profiles: [nestjs/standard]
     description: Register RateLimitingHealthModule in NestJS optional module registry
     version: "1.0.0"

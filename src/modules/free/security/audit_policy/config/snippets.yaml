@@ -1,0 +1,7 @@
+# Register snippet bundles for Audit Policy
+
+snippets:
+  -
+    name: "audit_policy_usage_example"
+    template: "templates/snippets/audit_policy.snippet.j2"
+    description: "Injects an opinionated usage example for Audit Policy."

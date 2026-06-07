@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib.util
 import sys
 import tempfile
 from pathlib import Path
@@ -197,6 +198,48 @@ def test_module_config_loads() -> None:
     assert config["tier"] == "free"
     assert config["status"] in ("active", "stable")
     assert "communication" in config.get("tags", [])
+
+
+def test_vendor_notification_manager_delivery_log(tmp_path: Path) -> None:
+    generator = generate.NotificationsModuleGenerator()
+    renderer = generator.create_renderer()
+    config = generate.load_module_config()
+    context = generate.build_base_context(config)
+    template_path = generate.MODULE_ROOT / "templates/base/notifications.py.j2"
+    runtime_path = tmp_path / "notifications_runtime.py"
+    runtime_path.write_text(renderer.render(template_path, context), encoding="utf-8")
+
+    spec = importlib.util.spec_from_file_location("rapidkit_notifications_runtime", runtime_path)
+    if spec is None or spec.loader is None:
+        pytest.fail("Unable to load rendered notifications runtime")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module
+    spec.loader.exec_module(module)
+
+    async def email_handler(payload):
+        assert payload.recipient == "ops@example.com"
+        return "notif-1"
+
+    manager = module.NotificationManager()
+    manager.register_provider("email", email_handler)
+
+    import asyncio
+
+    record = asyncio.run(
+        manager.send(
+            module.NotificationPayload(
+                channel="email",
+                recipient="ops@example.com",
+                subject="Status",
+                body="ok",
+            )
+        )
+    )
+
+    assert record.accepted is True
+    assert record.message_id == "notif-1"
+    assert manager.delivery_log()[0].channel == "email"
+    assert manager.health_check()["providers"]["email"]["enabled"] is True
 
 
 def test_generate_variants_produce_expected_outputs(tmp_path: Path) -> None:

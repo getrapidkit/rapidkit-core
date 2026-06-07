@@ -1,0 +1,7 @@
+# Register snippet bundles for Forms Engine
+
+snippets:
+  -
+    name: "forms_engine_usage_example"
+    template: "templates/snippets/forms_engine.snippet.j2"
+    description: "Injects an opinionated usage example for Forms Engine."

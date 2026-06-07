@@ -1,0 +1,284 @@
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from threading import RLock
+from typing import Any, Callable, Mapping
+from uuid import uuid4
+
+
+class {{ module_class_name }}Error(ValueError):
+    """Raised when connector definitions, credentials, or operations are invalid."""
+
+
+OperationHandler = Callable[[Mapping[str, Any], Mapping[str, Any]], Mapping[str, Any]]
+
+
+@dataclass(frozen=True)
+class ConnectorDefinition:
+    key: str
+    display_name: str
+    operations: tuple[str, ...]
+    required_secrets: tuple[str, ...] = ()
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class ConnectorConnection:
+    id: str
+    connector: str
+    tenant_id: str
+    secrets: Mapping[str, str]
+    config: Mapping[str, Any] = field(default_factory=dict)
+    active: bool = True
+    created_at: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds")
+    )
+
+
+@dataclass(frozen=True)
+class ConnectorRun:
+    id: str
+    connection_id: str
+    operation: str
+    status: str
+    output: Mapping[str, Any] = field(default_factory=dict)
+    error: str | None = None
+    timestamp: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds")
+    )
+
+
+@dataclass(frozen=True)
+class ConnectorAuditEvent:
+    type: str
+    connector: str | None = None
+    connection_id: str | None = None
+    run_id: str | None = None
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+    timestamp: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds")
+    )
+
+
+@dataclass(frozen=True)
+class {{ module_class_name }}Config:
+    """Runtime configuration for {{ module_title }}."""
+
+    enabled: bool = True
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+
+def build_default_config() -> {{ module_class_name }}Config:
+    """Return default configuration payload."""
+
+    return {{ module_class_name }}Config()
+
+
+def redact_secrets(connection: ConnectorConnection) -> dict[str, Any]:
+    return {
+        "id": connection.id,
+        "connector": connection.connector,
+        "tenant_id": connection.tenant_id,
+        "secrets": {key: "***" for key in connection.secrets},
+        "config": dict(connection.config),
+        "active": connection.active,
+        "created_at": connection.created_at,
+    }
+
+
+class {{ module_class_name }}:
+    """Connector catalog, connection registry, and operation executor."""
+
+    def __init__(self, config: {{ module_class_name }}Config | None = None) -> None:
+        self.config = config or build_default_config()
+        self._definitions: dict[str, ConnectorDefinition] = {}
+        self._connections: dict[str, ConnectorConnection] = {}
+        self._handlers: dict[tuple[str, str], OperationHandler] = {}
+        self._runs: list[ConnectorRun] = []
+        self._idempotency_index: dict[tuple[str, str], ConnectorRun] = {}
+        self._audit: list[ConnectorAuditEvent] = []
+        self._lock = RLock()
+
+    def register_connector(
+        self,
+        definition: ConnectorDefinition,
+        handlers: Mapping[str, OperationHandler] | None = None,
+    ) -> ConnectorDefinition:
+        if not self.config.enabled:
+            raise {{ module_class_name }}Error("connector hub is disabled")
+        if not definition.key.strip():
+            raise {{ module_class_name }}Error("connector key must not be empty")
+        if not definition.operations:
+            raise {{ module_class_name }}Error("connector must define at least one operation")
+        with self._lock:
+            self._definitions[definition.key] = definition
+            for operation, handler in (handlers or {}).items():
+                if operation not in definition.operations:
+                    raise {{ module_class_name }}Error("handler operation is not declared")
+                self._handlers[(definition.key, operation)] = handler
+            self._record_audit("connector.registered", connector=definition.key)
+        return definition
+
+    def connect(
+        self,
+        *,
+        connector: str,
+        tenant_id: str,
+        secrets: Mapping[str, str],
+        config: Mapping[str, Any] | None = None,
+    ) -> ConnectorConnection:
+        definition = self._definitions.get(connector)
+        if definition is None:
+            raise {{ module_class_name }}Error("connector not found")
+        missing = [key for key in definition.required_secrets if not secrets.get(key)]
+        if missing:
+            raise {{ module_class_name }}Error(f"missing connector secrets: {missing}")
+        connection = ConnectorConnection(
+            id=str(uuid4()),
+            connector=connector,
+            tenant_id=tenant_id,
+            secrets=dict(secrets),
+            config=dict(config or {}),
+        )
+        with self._lock:
+            self._connections[connection.id] = connection
+            self._record_audit(
+                "connection.created", connector=connection.connector, connection_id=connection.id
+            )
+        return connection
+
+    def deactivate_connection(self, connection_id: str) -> ConnectorConnection:
+        connection = self._connections.get(connection_id)
+        if connection is None:
+            raise {{ module_class_name }}Error("connection not found")
+        updated = ConnectorConnection(
+            id=connection.id,
+            connector=connection.connector,
+            tenant_id=connection.tenant_id,
+            secrets=dict(connection.secrets),
+            config=dict(connection.config),
+            active=False,
+            created_at=connection.created_at,
+        )
+        with self._lock:
+            self._connections[connection_id] = updated
+            self._record_audit("connection.deactivated", connector=updated.connector, connection_id=updated.id)
+        return updated
+
+    def execute(
+        self,
+        *,
+        connection_id: str,
+        operation: str,
+        payload: Mapping[str, Any] | None = None,
+        idempotency_key: str | None = None,
+        tenant_id: str | None = None,
+    ) -> ConnectorRun:
+        connection = self._connections.get(connection_id)
+        if connection is None:
+            raise {{ module_class_name }}Error("connection not found")
+        if not connection.active:
+            raise {{ module_class_name }}Error("connection is inactive")
+        if tenant_id is not None and connection.tenant_id != tenant_id:
+            raise {{ module_class_name }}Error("tenant is not allowed for this connection")
+        definition = self._definitions[connection.connector]
+        if operation not in definition.operations:
+            raise {{ module_class_name }}Error("operation is not supported")
+        if idempotency_key is not None:
+            key = idempotency_key.strip()
+            if not key:
+                raise {{ module_class_name }}Error("idempotency_key must not be empty")
+            existing = self._idempotency_index.get((connection_id, key))
+            if existing is not None:
+                return existing
+        handler = self._handlers.get((connection.connector, operation), self._default_handler)
+        try:
+            output = dict(handler(payload or {}, {"connection": redact_secrets(connection)}))
+            run = ConnectorRun(str(uuid4()), connection_id, operation, "succeeded", output=output)
+        except Exception as exc:  # pragma: no cover - caller handler failure is captured
+            run = ConnectorRun(str(uuid4()), connection_id, operation, "failed", error=str(exc))
+        with self._lock:
+            self._runs.append(run)
+            if idempotency_key is not None:
+                self._idempotency_index[(connection_id, idempotency_key.strip())] = run
+            self._record_audit(
+                "run.recorded",
+                connector=connection.connector,
+                connection_id=connection.id,
+                run_id=run.id,
+                metadata={"operation": operation, "status": run.status},
+            )
+        return run
+
+    def list_connectors(self) -> tuple[ConnectorDefinition, ...]:
+        return tuple(sorted(self._definitions.values(), key=lambda item: item.key))
+
+    def list_connections(self, *, tenant_id: str | None = None) -> tuple[dict[str, Any], ...]:
+        connections = tuple(self._connections.values())
+        if tenant_id is not None:
+            connections = tuple(connection for connection in connections if connection.tenant_id == tenant_id)
+        return tuple(redact_secrets(connection) for connection in connections)
+
+    def list_runs(self, *, connection_id: str | None = None) -> tuple[ConnectorRun, ...]:
+        runs = tuple(self._runs)
+        if connection_id is not None:
+            runs = tuple(run for run in runs if run.connection_id == connection_id)
+        return runs
+
+    def audit_events(
+        self,
+        *,
+        connection_id: str | None = None,
+        run_id: str | None = None,
+    ) -> tuple[ConnectorAuditEvent, ...]:
+        events = tuple(self._audit)
+        if connection_id is not None:
+            events = tuple(item for item in events if item.connection_id == connection_id)
+        if run_id is not None:
+            events = tuple(item for item in events if item.run_id == run_id)
+        return events
+
+    def stats(self) -> dict[str, Any]:
+        return {
+            "enabled": self.config.enabled,
+            "connectors": len(self._definitions),
+            "connections": len(self._connections),
+            "runs": len(self._runs),
+            "audit_events": len(self._audit),
+            "failed_runs": len([run for run in self._runs if run.status == "failed"]),
+        }
+
+    def health(self) -> dict[str, Any]:
+        return {
+            "module": "{{ module_name }}",
+            "status": "ok" if self.config.enabled else "disabled",
+            "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "stats": self.stats(),
+        }
+
+    @staticmethod
+    def _default_handler(
+        payload: Mapping[str, Any],
+        _context: Mapping[str, Any],
+    ) -> Mapping[str, Any]:
+        return {"echo": dict(payload)}
+
+    def _record_audit(
+        self,
+        event_type: str,
+        *,
+        connector: str | None = None,
+        connection_id: str | None = None,
+        run_id: str | None = None,
+        metadata: Mapping[str, Any] | None = None,
+    ) -> None:
+        self._audit.append(
+            ConnectorAuditEvent(
+                type=event_type,
+                connector=connector,
+                connection_id=connection_id,
+                run_id=run_id,
+                metadata=dict(metadata or {}),
+            )
+        )

@@ -1,160 +1,90 @@
-# 🛠️ RapidKit Community Developer Guide
+# RapidKit Core Developer Guide
 
-Welcome to the RapidKit Community developer documentation. This guide explains how to contribute to
-the open-source distribution, build high-quality modules, and keep your local environment aligned
-with the published toolchain. Everything here assumes you are working inside the community
-repository — the same one that ships to every open-source user.
+Last updated: 2026-06-04
 
-______________________________________________________________________
+This guide is for contributors working on the RapidKit core engine, free module catalog, release
+kits, and distribution automation.
 
-## 🎯 What You’ll Learn
+## Requirements
 
-- Setting up a local development environment for RapidKit Community
-- Understanding the repository layout and where to make changes
-- Following contribution standards (testing, linting, commit style)
-- Building, documenting, and publishing community modules
-- Managing the module lock file and keeping releases reliable
+| Tool    | Recommended                           |
+| ------- | ------------------------------------- |
+| Python  | 3.10.x                                |
+| Poetry  | Latest stable                         |
+| Node.js | 20.x for NestJS gates                 |
+| npm     | Latest stable compatible with Node 20 |
+| Git     | 2.40+                                 |
 
-______________________________________________________________________
-
-## 🚀 Before You Start
-
-| Requirement | Recommended Version | Notes                                           |
-| ----------- | ------------------- | ----------------------------------------------- |
-| Python      | 3.10                | Use `pyenv`, `asdf`, or your OS package manager |
-| Poetry      | Latest stable       | Handles dependency management                   |
-| Git         | 2.40+               | Required for contributions                      |
-| Docker      | Latest stable       | Optional, but useful for smoke tests            |
-
-Clone the community repository and install dependencies:
+## Setup
 
 ```bash
-git clone https://github.com/getrapidkit/rapidkit-core.git rapidkit-core
+git clone https://github.com/rapidkitlabs/rapidkit-core.git rapidkit-core
 cd rapidkit-core
-
-# Create and activate a virtual environment if you prefer
-python -m venv .venv
-source .venv/bin/activate  # Windows: .venv\Scripts\activate
-
-# Install project dependencies
 poetry install
-
-# Install git hooks (optional but recommended)
 poetry run pre-commit install
-poetry run pre-commit install --hook-type commit-msg
 ```
 
-> 💡 Tip: This repository powers all downstream distributions. Ship improvements here first so every
-> community user receives them automatically.
+If you are working from the internal monorepo checkout, run commands from the `core/` directory.
 
-______________________________________________________________________
+## Core Concepts
 
-## 🔁 Updating Templates After Customisation
+- Modules live under `src/modules/free/<category>/<slug>`.
+- Kits live under `src/kits`.
+- Distribution file maps decide what ships in the public package.
+- `dev-engine/playbooks` contains the current operating guidance.
+- `dev-engine/audit-history` is the active evidence root.
 
-The lean module layout is designed so template refreshes remain safe and predictable:
-
-1. Inspect the current state with `rapidkit diff module <name>`.
-1. Apply compatible changes and regenerate snapshots with `rapidkit merge module <name>`.
-1. Resolve any `locally_modified` or `diverged` files manually, then rerun the merge to refresh the
-   registry hash.
-
-See **[Module System](../modules/overview.md)** for an in-depth breakdown of the lean structure and
-**[Override Contracts](override-contracts.md)** for the supported customisation points.
-
-> ℹ️ Every module must keep `config/snippets.yaml` and `templates/snippets/` so reusable snippets
-> are tracked across generated outputs.
-
-> ℹ️ Spec v2 ignores internal state files such as `.module_state.json` and
-> `.module_pending_changelog.yaml` during structure validation, so you can commit them without
-> triggering a compliance error.
-
-______________________________________________________________________
-
-## 🧪 Testing and CI Guidelines
-
-- Run Python tests with `poetry run pytest` and ensure the settings module covers
-  `tests/modules/settings` at a minimum.
-- Use `scripts/check_module_integrity.py` for NestJS smoke coverage (the same script CI executes).
-- Whenever you add new tests, register them under the `testing` section of `module.yaml`.
-
-For extended examples (E2E, performance, security), explore the `tests/` tree and the
-**[Testing Guide](../testing/README.md)**.
-
-______________________________________________________________________
-
-## 🚀 Release Workflow
-
-### Version Management
+## Everyday Commands
 
 ```bash
-# Update version
-poetry version patch  # or minor, major
-
-# Update changelog
-# Edit CHANGELOG.md with new features and fixes
-
-# Create release commit
-git add .
-git commit -m "chore: release v1.2.3"
-
-# Create git tag
-git tag -a v1.2.3 -m "Release v1.2.3"
-
-# Push changes and tags
-git push origin main
-git push origin v1.2.3
+poetry run pytest -q
+python scripts/sync_free_modules_registry.py
+make stabilize-fast <category>
+make stabilize-shared <category>
+make stabilize-release <category>
+make community-dist-install
 ```
 
-### Automated Release
+Use a temporary mirror only when your network requires it:
 
-```yaml
-# .github/workflows/release.yml
-name: Release
-on:
-    push:
-        tags:
-            - "v*"
-
-jobs:
-    release:
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v3
-            - name: Publish to PyPI
-              run: |
-                  poetry build
-                  poetry publish --username ${{ secrets.PYPI_USERNAME }} --password ${{ secrets.PYPI_PASSWORD }}
+```bash
+RAPIDKIT_PYPI_MIRROR=<https-url> make community-dist-install
 ```
 
-## 📚 Further Reading
+Do not commit local mirror or proxy values.
 
-- **[Override Contracts](override-contracts.md)** – Safe customisation techniques for modules
-- **[Module System](../modules/overview.md)** – Lean layout and module requirements
-- **[Testing Guide](../testing/README.md)** – Testing policies and coverage tooling
-- **[GitHub Actions Overview](github-actions-overview.md)** – How CI, distribution, and release
-  workflows connect
+## Module Development
 
-> ℹ️ Some maintainer-only references (module standards, schema internals) live in `docs/internal/`
-> and are intentionally not shipped with the community distribution.
+Start with:
 
-## 🤝 Community
+- `dev-engine/playbooks/modules/MODULE_QUICK_REFERENCE.md`
+- `dev-engine/playbooks/modules/MODULE_DEVELOPMENT_PROMPT.md`
+- `dev-engine/playbooks/modules/MODULE_STABILIZATION_PROMPT.md`
 
-### Communication Channels
+Minimum module expectations:
 
-- **GitHub Issues**: Bug reports and feature requests
-- **GitHub Discussions**: General questions and community support
-- **Discord**: Real-time chat for contributors
-- **Newsletter**: Monthly updates and roadmap
+- stable `module.yaml`
+- generated code imports cleanly
+- docs and changelog are useful
+- tests cover generated behavior
+- supported kits pass stabilization
 
-### Recognition
+## Release Confidence
 
-Contributors are recognized through:
+Before release:
 
-- **GitHub Contributors** list
-- **CHANGELOG.md** entries
-- **Release notes** mentions
-- **Community badges**
+```bash
+make stabilize-release-all
+make community-dist-install
+./dev-engine/validate_ai_security.sh
+```
 
-______________________________________________________________________
+Attach or preserve the relevant output under `dev-engine/audit-history/`.
 
-**🚀 Ready to contribute to RapidKit? Your ideas and code can make a difference!**
+## Related Docs
+
+- [Module Overview](../modules/overview.md)
+- [Module Validation](module-validation.md)
+- [Override Contracts](override-contracts.md)
+- [Testing](../testing/README.md)
+- [GitHub Actions Overview](github-actions-overview.md)

@@ -1,0 +1,7 @@
+# Register snippet bundles for Feature Flags
+
+snippets:
+  -
+    name: "feature_flags_usage_example"
+    template: "templates/snippets/feature_flags.snippet.j2"
+    description: "Injects an opinionated usage example for Feature Flags."

@@ -1,0 +1,7 @@
+# Register snippet bundles for Event Bus
+
+snippets:
+  -
+    name: "event_bus_usage_example"
+    template: "templates/snippets/event_bus.snippet.j2"
+    description: "Injects an opinionated usage example for Event Bus."

@@ -1,0 +1,181 @@
+name: queue_platform
+display_name: "Queue Platform"
+description: "Tenant-aware durable queue abstraction with retry, delay, dead-letter, and worker leasing"
+version: 0.1.5
+access: free
+status: stable
+tier: free
+category: tasks
+tags:
+  - tasks
+  - queue
+  - workers
+  - retry
+  - dead-letter
+depends_on:
+  - free/observability/core
+  - free/security/audit_policy
+generated_from_config: true
+profile_inherits:
+  fastapi.standard: fastapi
+  fastapi.ddd: fastapi
+  nestjs.standard: nestjs
+config_sources:
+  - config/base.yaml
+  - config/snippets.yaml
+generation:
+  vendor:
+    root: .rapidkit/vendor
+    files:
+      - template: templates/base/queue_platform.py.j2
+        relative: src/tasks/queue_platform.py
+      - template: templates/base/queue_platform_types.py.j2
+        relative: src/tasks/queue_platform_types.py
+      - template: templates/base/queue_platform_health.py.j2
+        relative: src/health/tasks/queue_platform.py
+      - template: templates/vendor/nestjs/configuration.js.j2
+        relative: nestjs/configuration.js
+  variants:
+    fastapi: &fastapi_variant
+      root: .
+      context:
+        framework: fastapi
+        module_class_name: QueuePlatform
+      files:
+        - template: templates/variants/fastapi/queue_platform.py.j2
+          output: src/tasks/queue_platform.py
+        - template: templates/variants/fastapi/queue_platform_routes.py.j2
+          output: src/routers/tasks/queue_platform.py
+        - template: templates/variants/fastapi/queue_platform_health.py.j2
+          output: src/health/tasks/queue_platform.py
+        - template: templates/tests/integration/test_queue_platform_integration.j2
+          output: tests/modules/free/integration/tasks/queue_platform/test_queue_platform_integration.py
+        - template: templates/variants/fastapi/tests/test_queue_platform_e2e.py
+          output: tests/modules/e2e/free/tasks/queue_platform/test_queue_platform_e2e.py
+
+    # Compatibility aliases: the installer uses kit profile names.
+    fastapi.standard: *fastapi_variant
+    fastapi.ddd: *fastapi_variant
+
+    nestjs: &nestjs_variant
+      root: .
+      context:
+        framework: nestjs
+        vendor_configuration_relative: nestjs/configuration.js
+        module_class_name: QueuePlatform
+        module_kebab: queue-platform
+      files:
+        - template: templates/variants/nestjs/queue_platform.service.ts.j2
+          output: src/queue-platform/queue_platform.service.ts
+        - template: templates/variants/nestjs/queue_platform.controller.ts.j2
+          output: src/queue-platform/queue_platform.controller.ts
+        - template: templates/variants/nestjs/queue_platform.module.ts.j2
+          output: src/queue-platform/queue_platform.module.ts
+        - template: templates/variants/nestjs/queue_platform.health.ts.j2
+          output: src/queue-platform/queue_platform.health.ts
+        - template: templates/variants/nestjs/queue_platform.validation.ts.j2
+          output: src/queue-platform/queue_platform.validation.ts
+        - template: templates/variants/nestjs/queue_platform.index.ts.j2
+          output: src/queue-platform/index.ts
+        - template: templates/variants/nestjs/queue_platform.configuration.ts.j2
+          output: src/queue-platform/configuration.ts
+        - template: templates/variants/nestjs/tests/queue_platform.e2e-spec.ts
+          output: tests/modules/e2e/tasks/queue_platform/queue_platform.e2e-spec.ts
+
+    nestjs.standard: *nestjs_variant
+  snippets:
+    enabled: true
+    config: config/snippets.yaml
+    default: []
+compatibility:
+  python: ">=3.9,<4.0"
+  frameworks:
+    - fastapi
+    - nestjs
+  os:
+    - linux
+    - darwin
+    - windows
+testing:
+  coverage_min: 85
+  integration_tests: true
+  e2e_tests: false
+  unit_tests:
+    - tests/modules/free/tasks/queue_platform/test_queue_platform_generator.py
+    - tests/modules/free/tasks/queue_platform/test_queue_platform_overrides.py
+    - tests/modules/free/tasks/queue_platform/test_queue_platform_runtime.py
+    - tests/modules/free/tasks/queue_platform/test_queue_platform_adapters.py
+    - tests/modules/free/tasks/queue_platform/test_queue_platform_validation.py
+    - tests/modules/free/tasks/queue_platform/test_queue_platform_error_handling.py
+    - tests/modules/free/tasks/queue_platform/test_queue_platform_health_check.py
+    - tests/modules/free/tasks/queue_platform/test_queue_platform_framework_variants.py
+    - tests/modules/free/tasks/queue_platform/test_queue_platform_vendor_layer.py
+    - tests/modules/free/tasks/queue_platform/test_queue_platform_configuration.py
+    - tests/modules/free/tasks/queue_platform/test_queue_platform_versioning.py
+    - tests/modules/free/tasks/queue_platform/test_queue_platform_standard_module.py
+  integration_test_files:
+    - tests/modules/free/integration/tasks/queue_platform/test_queue_platform_integration.py
+  fixtures: []
+documentation:
+  changelog: "docs/changelog.md"
+  readme: "README.md"
+  overview: "docs/overview.md"
+  usage: "docs/usage.md"
+  advanced: "docs/advanced.md"
+  migration: "docs/migration.md"
+  troubleshooting: "docs/troubleshooting.md"
+  api_docs: "docs/api-reference.md"
+  examples: []
+support:
+  issues: https://github.com/rapidkitlabs/rapidkit-core/issues
+  discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+  documentation: https://docs.rapidkit.top/modules/queue_platform
+changelog:
+  - version: "0.1.5"
+    date: "2026-06-02"
+    notes: "See docs/changelog.md"
+validation:
+  pre_install:
+    - check_python_version
+  post_install:
+    - validate_generated_code
+rollback:
+  strategy: uninstall
+  backup_path: .rapidkit/backups/
+  max_backups: 3
+performance:
+  lazy_loading: true
+  caching:
+    templates: true
+    ttl: 300
+capabilities:
+  - durable_queue
+  - worker_leasing
+  - retry_policy
+  - delayed_jobs
+  - dead_letter_queue
+  - tenant_scoped_messages
+  - health_checks
+metadata:
+  enterprise_ready: true
+  free_marketplace_module: true
+  product_factory_priority: high
+signature: null
+signer_id: null
+signature_version: null
+
+file_hashes:
+  README.md: sha256:28199c2f38dabfb0c32a794f30bb14b344ec6f3c1d97f5afad3b056545350f7e
+  __init__.py: sha256:a4f80cd1a010447e9730e47823d5ff9e9610ec85662fa01600d13f89431f567e
+  config/base.yaml: sha256:4918630549ecbc7de0a93b2324eade8e84c50f69b8feb22e89c96a67aace50aa
+  config/snippets.yaml: sha256:a459e6aa13437eef86b4650a616e5787cf866d64790be4e632935fc6731f1787
+  docs/README.md: sha256:c5794826588710350d6e10a05aa674824a552dcdc9fc4dac50eb67a4d9a000cb
+  docs/advanced.md: sha256:6c8b80e761c063b61900f090df159bdde71f3357c8c4cba847d242523962f9c0
+  docs/api-reference.md: sha256:6ff7164c9f7992bb3db6baa1a2d90b6491e5fc3ef0977771e00626e076c1e1ff
+  docs/changelog.md: sha256:61583ab195db7ed293b7b423fc84a811a2f86d87c2266ab7da1976a4f415e7e5
+  docs/migration.md: sha256:54fa83e4176352a5422bd0fcff702f2497ecee16f0cb73feb9f5c62e43f1a3a6
+  docs/overview.md: sha256:cc8185d487c5547a71a08ad02f31e2177e1837707652ef264f6a4b70fcbe8a61
+  docs/troubleshooting.md: sha256:8b93bcda7a571303fe3467bb8ba4473983993cf78bd01a236968df07fe55c0ea
+  docs/usage.md: sha256:a07fa4ec99a136990418c2b4fe4060d886ec0b5956e56567ef1946a929d45ef3
+  templates/vendor/nestjs/configuration.js.j2: sha256:2801e63c6520908c18cf2d123ee1d5108d9153f67996f08a7b90c286deadd795
+  module.verify.json: sha256:0a5c3eb74121f55e2c2e9d77989c3bcbc3873d54ac7b686d455594f225017e35

@@ -1,0 +1,232 @@
+from __future__ import annotations
+
+import time
+from dataclasses import dataclass, field
+from enum import Enum
+from string import Template
+from threading import RLock
+from typing import Any, Dict, Mapping
+
+
+@dataclass
+class {{ module_class_name }}Config:
+    """Runtime configuration for {{ module_title }}."""
+
+    enabled: bool = True
+    require_approval_for_publish: bool = True
+    metadata: Dict[str, Any] | None = None
+
+
+class PromptStatus(str, Enum):
+    DRAFT = "draft"
+    PUBLISHED = "published"
+    ARCHIVED = "archived"
+
+
+@dataclass(frozen=True)
+class PromptVersion:
+    prompt_id: str
+    version: int
+    template: str
+    status: PromptStatus = PromptStatus.DRAFT
+    changelog: str = ""
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+    created_at: float = field(default_factory=time.time)
+    published_at: float | None = None
+
+
+@dataclass(frozen=True)
+class PromptEvaluation:
+    prompt_id: str
+    version: int
+    score: float
+    passed: bool
+    notes: str = ""
+    created_at: float = field(default_factory=time.time)
+
+
+class PromptOpsError(RuntimeError):
+    """Raised when prompt lifecycle policy is violated."""
+
+
+def build_default_config() -> {{ module_class_name }}Config:
+    """Return default configuration payload."""
+
+    return {{ module_class_name }}Config()
+
+
+class {{ module_class_name }}:
+    """Prompt lifecycle service with versions, publish policy, evals, and rollback."""
+
+    def __init__(self, config: {{ module_class_name }}Config | None = None) -> None:
+        self.config = config or build_default_config()
+        self._versions: dict[str, list[PromptVersion]] = {}
+        self._evals: list[PromptEvaluation] = []
+        self._audit: list[dict[str, Any]] = []
+        self._lock = RLock()
+
+    def create_prompt(
+        self,
+        prompt_id: str,
+        template: str,
+        *,
+        changelog: str = "",
+        metadata: Mapping[str, Any] | None = None,
+    ) -> PromptVersion:
+        if not self.config.enabled:
+            raise PromptOpsError("prompt ops is disabled")
+        normalized = prompt_id.strip()
+        if not normalized:
+            raise PromptOpsError("prompt_id is required")
+        if not template.strip():
+            raise PromptOpsError("template is required")
+        with self._lock:
+            version = len(self._versions.get(normalized, [])) + 1
+            prompt = PromptVersion(
+                prompt_id=normalized,
+                version=version,
+                template=template,
+                changelog=changelog,
+                metadata=dict(metadata or {}),
+            )
+            self._versions.setdefault(normalized, []).append(prompt)
+            self._audit.append({"event": "prompt.created", "prompt_id": normalized, "version": version})
+        return prompt
+
+    def publish(self, prompt_id: str, version: int, *, approved_by: str | None = None) -> PromptVersion:
+        prompt = self.get_version(prompt_id, version)
+        if self.config.require_approval_for_publish and not approved_by:
+            raise PromptOpsError("approved_by is required to publish prompt version")
+        updated = PromptVersion(
+            prompt_id=prompt.prompt_id,
+            version=prompt.version,
+            template=prompt.template,
+            status=PromptStatus.PUBLISHED,
+            changelog=prompt.changelog,
+            metadata=dict(prompt.metadata),
+            created_at=prompt.created_at,
+            published_at=time.time(),
+        )
+        with self._lock:
+            self._replace_version(updated)
+            self._audit.append(
+                {"event": "prompt.published", "prompt_id": prompt_id, "version": version, "approved_by": approved_by}
+            )
+        return updated
+
+    def archive(self, prompt_id: str, version: int, *, reason: str) -> PromptVersion:
+        if not reason.strip():
+            raise PromptOpsError("archive reason is required")
+        prompt = self.get_version(prompt_id, version)
+        updated = PromptVersion(
+            prompt_id=prompt.prompt_id,
+            version=prompt.version,
+            template=prompt.template,
+            status=PromptStatus.ARCHIVED,
+            changelog=prompt.changelog,
+            metadata=dict(prompt.metadata),
+            created_at=prompt.created_at,
+            published_at=prompt.published_at,
+        )
+        with self._lock:
+            self._replace_version(updated)
+            self._audit.append({"event": "prompt.archived", "prompt_id": prompt_id, "version": version, "reason": reason})
+        return updated
+
+    def rollback(self, prompt_id: str, target_version: int, *, reason: str) -> PromptVersion:
+        if not reason.strip():
+            raise PromptOpsError("rollback reason is required")
+        target = self.get_version(prompt_id, target_version)
+        new_version = self.create_prompt(
+            prompt_id,
+            target.template,
+            changelog=f"Rollback to v{target_version}: {reason}",
+            metadata={"rollback_from": self.latest(prompt_id).version, "rollback_to": target_version},
+        )
+        self._audit.append(
+            {"event": "prompt.rollback", "prompt_id": prompt_id, "new_version": new_version.version, "reason": reason}
+        )
+        return new_version
+
+    def record_evaluation(
+        self,
+        prompt_id: str,
+        version: int,
+        *,
+        score: float,
+        passed: bool,
+        notes: str = "",
+    ) -> PromptEvaluation:
+        self.get_version(prompt_id, version)
+        if score < 0 or score > 1:
+            raise PromptOpsError("score must be between 0 and 1")
+        evaluation = PromptEvaluation(prompt_id, version, score, passed, notes)
+        with self._lock:
+            self._evals.append(evaluation)
+            self._audit.append({"event": "prompt.evaluated", "prompt_id": prompt_id, "version": version, "passed": passed})
+        return evaluation
+
+    def render(self, prompt_id: str, variables: Mapping[str, Any], *, version: int | None = None) -> str:
+        prompt = self.get_version(prompt_id, version) if version else self.latest_published(prompt_id)
+        return Template(prompt.template).safe_substitute({key: str(value) for key, value in variables.items()})
+
+    def latest(self, prompt_id: str) -> PromptVersion:
+        with self._lock:
+            versions = tuple(self._versions.get(prompt_id, []))
+        if not versions:
+            raise KeyError(f"prompt {prompt_id!r} not found")
+        return versions[-1]
+
+    def latest_published(self, prompt_id: str) -> PromptVersion:
+        with self._lock:
+            published = [prompt for prompt in self._versions.get(prompt_id, []) if prompt.status == PromptStatus.PUBLISHED]
+        if not published:
+            raise PromptOpsError(f"prompt {prompt_id!r} has no published version")
+        return published[-1]
+
+    def get_version(self, prompt_id: str, version: int | None) -> PromptVersion:
+        if version is None:
+            return self.latest(prompt_id)
+        with self._lock:
+            for prompt in self._versions.get(prompt_id, []):
+                if prompt.version == version:
+                    return prompt
+        raise KeyError(f"prompt {prompt_id!r} version {version!r} not found")
+
+    def list_versions(self, prompt_id: str) -> list[PromptVersion]:
+        with self._lock:
+            return list(self._versions.get(prompt_id, []))
+
+    def evaluations(self, prompt_id: str | None = None) -> list[PromptEvaluation]:
+        with self._lock:
+            if prompt_id is None:
+                return list(self._evals)
+            return [evaluation for evaluation in self._evals if evaluation.prompt_id == prompt_id]
+
+    def audit_log(self) -> list[dict[str, Any]]:
+        with self._lock:
+            return [dict(event) for event in self._audit]
+
+    def health_check(self) -> dict[str, Any]:
+        with self._lock:
+            prompt_count = len(self._versions)
+            version_count = sum(len(versions) for versions in self._versions.values())
+            published_count = sum(
+                1 for versions in self._versions.values() for prompt in versions if prompt.status == PromptStatus.PUBLISHED
+            )
+            evaluations = len(self._evals)
+        return {
+            "module": "{{ module_name }}",
+            "status": "ok" if self.config.enabled else "disabled",
+            "enabled": self.config.enabled,
+            "prompts": prompt_count,
+            "versions": version_count,
+            "published": published_count,
+            "evaluations": evaluations,
+        }
+
+    def _replace_version(self, replacement: PromptVersion) -> None:
+        versions = self._versions.get(replacement.prompt_id, [])
+        self._versions[replacement.prompt_id] = [
+            replacement if prompt.version == replacement.version else prompt for prompt in versions
+        ]

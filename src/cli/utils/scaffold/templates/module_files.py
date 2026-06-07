@@ -141,7 +141,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         rel_slug = module_root.relative_to(modules_root).as_posix()
     except ValueError:
-        raise SystemExit(f"Unable to resolve module slug for {module_root}")
+        raise SystemExit(f"Unable to resolve module slug for {module_root}") from None
 
     module_import = f"modules.{rel_slug.replace('/', '.')}"
     default_out = project_root / "tmp" / f"${module_name}-{args.variant}"
@@ -379,8 +379,8 @@ def main() -> None:
         available_plugins = list_available_plugins()
         available_names = list(available_plugins.keys())
         guidance = (
-            f"Usage: python -m {MODULE_IMPORT_PATH}.generate <framework> <target_dir>\n"
-            f"Example: python -m {MODULE_IMPORT_PATH}.generate fastapi ./tmp/{MODULE_NAME}\n"
+            f"Usage: python -m {MODULE_IMPORT_PATH}.generate <framework> <target_dir>\\n"
+            f"Example: python -m {MODULE_IMPORT_PATH}.generate fastapi ./tmp/{MODULE_NAME}\\n"
             f"Available frameworks: {', '.join(available_names)}"
         )
         raise GeneratorError(
@@ -416,11 +416,11 @@ def main() -> None:
                 print(f"  {key}: {value}")
         dep_hint = format_missing_dependencies(missing_optional_dependencies)
         if dep_hint:
-            print(f"\n{dep_hint}")
+            print(f"\\n{dep_hint}")
         sys.exit(exc.exit_code)
     except (RuntimeError, OSError, yaml.YAMLError) as exc:
         print("❌ Generator failed with an unexpected error:")
-        traceback = "\n".join(TracebackException.from_exception(exc).format())
+        traceback = "\\n".join(TracebackException.from_exception(exc).format())
         print(traceback)
         print(
             f"💡 If this persists, run 'rapidkit modules doctor {MODULE_NAME}' or reinstall dependencies."
@@ -577,7 +577,7 @@ def _readme_template() -> str:
         - API reference: `docs/api-reference.md`
         - Override contracts: `overrides.py`
 
-        For additional help, open an issue at <https://github.com/getrapidkit/rapidkit-core/issues> or consult the full product documentation at <https://docs.rapidkit.top>.
+        For additional help, open an issue at <https://github.com/rapidkitlabs/rapidkit-core/issues> or consult the full product documentation at <https://docs.rapidkit.top>.
         """).strip()
 
 
@@ -775,10 +775,15 @@ def _framework_fastapi_template() -> str:
 
         from __future__ import annotations
 
+        from contextlib import suppress
         from pathlib import Path
         from typing import Any, Dict, List, Mapping
 
         from modules.shared.frameworks import FrameworkPlugin
+        from modules.shared.utils.health import ensure_health_package, ensure_vendor_health_shim
+        from modules.shared.utils.health_specs import build_standard_health_spec
+
+        MODULE_ROOT = Path(__file__).resolve().parents[1]
 
 
         class FastAPIPlugin(FrameworkPlugin):
@@ -835,6 +840,18 @@ def _framework_fastapi_template() -> str:
             def pre_generation_hook(self, output_dir: Path) -> None:
                 (output_dir / "src" / "routers").mkdir(parents=True, exist_ok=True)
                 (output_dir / "src" / "health").mkdir(parents=True, exist_ok=True)
+                spec = build_standard_health_spec(MODULE_ROOT)
+                with suppress(RuntimeError, OSError):
+                    ensure_vendor_health_shim(output_dir, spec=spec)
+                ensure_health_package(
+                    output_dir,
+                    extra_imports=[
+                        (
+                            f"src.health.${category_import}.{spec.module_name}",
+                            f"register_{spec.module_name}_health",
+                        )
+                    ],
+                )
 
             def post_generation_hook(self, output_dir: Path) -> None:
                 _ = output_dir
@@ -1031,8 +1048,8 @@ def _module_yaml_template() -> str:
         '  api_docs: "${doc_api_reference_rel_module}"',
         "  examples: []",
         "support:",
-        "  issues: https://github.com/getrapidkit/rapidkit-core/issues",
-        "  discussions: https://github.com/getrapidkit/rapidkit-core/discussions",
+        "  issues: https://github.com/rapidkitlabs/rapidkit-core/issues",
+        "  discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions",
         "  documentation: https://docs.rapidkit.top/modules/${module_name}",
         "changelog:",
         "- version: 0.1.0",

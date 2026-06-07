@@ -1,0 +1,16 @@
+from __future__ import annotations
+
+from datetime import datetime, timezone
+from typing import Any
+
+
+def check_health(runtime: Any | None = None) -> dict[str, Any]:
+    """Return workflow engine health and diagnostic statistics."""
+
+    if runtime is not None and hasattr(runtime, "health"):
+        return runtime.health()
+    return {
+        "module": "{{ module_name }}",
+        "status": "ok",
+        "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+    }

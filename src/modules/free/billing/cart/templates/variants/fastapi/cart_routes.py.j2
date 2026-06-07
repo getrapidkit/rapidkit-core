@@ -53,7 +53,7 @@ def _handle_error(exc: Exception) -> HTTPException:
     return HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(exc))
 
 
-def get_cart_service(request: Request) -> CartService:
+async def get_cart_service(request: Request) -> CartService:
     service = getattr(request.app.state, "cart_service", None)
     if service is None:
         service = CartService()

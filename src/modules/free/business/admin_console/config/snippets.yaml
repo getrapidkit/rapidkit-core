@@ -1,0 +1,7 @@
+# Register snippet bundles for Admin Console
+
+snippets:
+  -
+    name: "admin_console_usage_example"
+    template: "templates/snippets/admin_console.snippet.j2"
+    description: "Injects an opinionated usage example for Admin Console."

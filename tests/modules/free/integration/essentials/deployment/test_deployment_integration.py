@@ -199,17 +199,21 @@ def test_deployment_health_router_registration():
     importlib.util.find_spec("fastapi") is None,
     reason="FastAPI not installed",
 )
-def test_deployment_health_endpoint_payload():
+@pytest.mark.asyncio
+async def test_deployment_health_endpoint_payload():
     """Invoke the deployment health endpoint and validate its payload"""
     from fastapi import FastAPI, status
-    from fastapi.testclient import TestClient
+    from httpx import ASGITransport, AsyncClient
     from src.health.deployment import register_deployment_health  # type: ignore[import]
 
     app = FastAPI()
     register_deployment_health(app)
 
-    client = TestClient(app)
-    response = client.get("/api/health/module/deployment")
+    async with AsyncClient(
+        transport=ASGITransport(app=app),
+        base_url="http://testserver",
+    ) as client:
+        response = await client.get("/api/health/module/deployment")
 
     assert response.status_code == status.HTTP_200_OK
     payload = response.json()

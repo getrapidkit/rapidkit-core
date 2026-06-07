@@ -307,13 +307,13 @@ def _write_verification_file(module_path: Path, spec: ModuleSpec, result: Valida
 
         if current_snapshot == new_snapshot:
             payload["checked_at"] = str(existing_payload.get("checked_at", payload["checked_at"]))
-            serialized = json.dumps(payload, indent=2, sort_keys=True)
+            serialized = json.dumps(payload, indent=2, sort_keys=True) + "\n"
             if existing_text is not None and existing_text == serialized:
                 return
             target.write_text(serialized, encoding="utf-8")
             return
 
-    target.write_text(json.dumps(payload, indent=2, sort_keys=True), encoding="utf-8")
+    target.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
 def _build_result(

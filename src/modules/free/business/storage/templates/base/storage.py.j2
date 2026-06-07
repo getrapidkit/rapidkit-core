@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-import asyncio
 import contextlib
+import base64
+import hmac
 import hashlib
 import io
 import json
@@ -14,7 +15,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Iterable, Mapping, MutableMapping, Protocol
+from typing import Any, Callable, Iterable, Mapping, MutableMapping, Protocol
 
 try:  # pragma: no cover - optional dependency
     from PIL import Image
@@ -101,6 +102,10 @@ class StorageConfig:
     max_file_size: int = _DEFAULT_MAX_FILE_SIZE
     chunk_size: int = _DEFAULT_CHUNK_SIZE
     image_processing_enabled: bool = True
+    signed_url_secret: str = "rapidkit-dev-storage-secret"
+    signed_url_ttl_seconds: int = 900
+    malware_scan_hook: Callable[[str, bytes], bool] | None = None
+    blocked_checksums: Iterable[str] = ()
 
 
 class LocalStorageAdapter:
@@ -118,20 +123,20 @@ class LocalStorageAdapter:
         *,
         metadata: Mapping[str, Any] | None = None,
     ) -> None:
-        await asyncio.to_thread(self._write_file, file_id, payload)
-        await asyncio.to_thread(self._write_metadata, file_id, metadata or {})
+        self._write_file(file_id, payload)
+        self._write_metadata(file_id, metadata or {})
 
     async def load(self, file_id: str) -> bytes:
-        return await asyncio.to_thread(self._read_file, file_id)
+        return self._read_file(file_id)
 
     async def delete(self, file_id: str) -> None:
-        await asyncio.to_thread(self._delete_file, file_id)
+        self._delete_file(file_id)
 
     async def stat(self, file_id: str) -> FileMetadata:
-        return await asyncio.to_thread(self._stat_file, file_id)
+        return self._stat_file(file_id)
 
     async def health(self) -> Mapping[str, Any]:
-        return await asyncio.to_thread(self._health)
+        return self._health()
 
     def _target(self, file_id: str) -> Path:
         return self._root / file_id
@@ -229,8 +234,11 @@ class {{ module_class_name }}:
         metadata: MutableMapping[str, Any] | None = None,
     ) -> UploadResult:
         self._validate_payload(filename, content)
+        self._scan_payload(filename, content)
         file_id = self._build_file_id(filename)
         checksum = self._checksum(content)
+        if checksum in set(self._config.blocked_checksums):
+            raise FileValidationError("file checksum is blocked by storage policy")
         stored_metadata: dict[str, Any] = {"original_filename": filename, "checksum": checksum}
         if metadata:
             stored_metadata.update(metadata)
@@ -256,6 +264,46 @@ class {{ module_class_name }}:
     async def get_file_info(self, file_id: str) -> FileMetadata:
         return await self._adapter.stat(file_id)
 
+    async def verify_checksum(self, file_id: str, expected_checksum: str | None = None) -> bool:
+        payload = await self._adapter.load(file_id)
+        actual = self._checksum(payload)
+        if expected_checksum is not None:
+            return hmac.compare_digest(actual, expected_checksum)
+        metadata = await self._adapter.stat(file_id)
+        return bool(metadata.checksum and hmac.compare_digest(actual, metadata.checksum))
+
+    def create_download_token(
+        self,
+        file_id: str,
+        *,
+        expires_in_seconds: int | None = None,
+        purpose: str = "download",
+    ) -> str:
+        expires_at = int(datetime.now().timestamp()) + (
+            expires_in_seconds or self._config.signed_url_ttl_seconds
+        )
+        payload = {"file_id": file_id, "purpose": purpose, "expires_at": expires_at}
+        body = self._encode_json(payload)
+        signature = self._sign(body)
+        return f"{body}.{signature}"
+
+    def verify_download_token(self, token: str, *, purpose: str = "download") -> str:
+        try:
+            body, signature = token.rsplit(".", 1)
+        except ValueError as exc:
+            raise FileValidationError("download token is malformed") from exc
+        if not hmac.compare_digest(self._sign(body), signature):
+            raise FileValidationError("download token signature is invalid")
+        payload = self._decode_json(body)
+        if payload.get("purpose") != purpose:
+            raise FileValidationError("download token purpose mismatch")
+        if int(payload.get("expires_at", 0)) < int(datetime.now().timestamp()):
+            raise FileValidationError("download token has expired")
+        file_id = str(payload.get("file_id") or "")
+        if not file_id:
+            raise FileValidationError("download token missing file_id")
+        return file_id
+
     async def health_check(self) -> Mapping[str, Any]:
         backend = await self._adapter.health()
         status = "healthy"
@@ -267,6 +315,8 @@ class {{ module_class_name }}:
             "status": status,
             "module": "{{ module_name }}",
             "adapter": backend,
+            "signed_downloads": bool(self._config.signed_url_secret),
+            "malware_scan": self._config.malware_scan_hook is not None,
         }
 
     def _validate_payload(self, filename: str, content: bytes) -> None:
@@ -279,6 +329,13 @@ class {{ module_class_name }}:
         ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
         if self._allowed and ext not in self._allowed:
             raise FileValidationError(f"files with extension .{ext or '<none>'} not allowed")
+
+    def _scan_payload(self, filename: str, content: bytes) -> None:
+        hook = self._config.malware_scan_hook
+        if hook is None:
+            return
+        if not hook(filename, content):
+            raise FileValidationError("file rejected by malware scan policy")
 
     def _build_file_id(self, filename: str) -> str:
         ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
@@ -303,7 +360,7 @@ class {{ module_class_name }}:
         if not metadata.mimetype or not metadata.mimetype.startswith("image/"):
             return
         try:
-            thumb_bytes = await asyncio.to_thread(self._render_thumbnail, content)
+            thumb_bytes = self._render_thumbnail(content)
         except Exception:  # pragma: no cover - best effort logging handled by caller
             return
         if thumb_bytes is None:
@@ -322,3 +379,26 @@ class {{ module_class_name }}:
 
     def _checksum(self, payload: bytes) -> str:
         return hashlib.sha256(payload).hexdigest()
+
+    def _sign(self, body: str) -> str:
+        digest = hmac.new(
+            self._config.signed_url_secret.encode("utf-8"),
+            body.encode("utf-8"),
+            hashlib.sha256,
+        ).digest()
+        return base64.urlsafe_b64encode(digest).decode("ascii").rstrip("=")
+
+    def _encode_json(self, payload: Mapping[str, Any]) -> str:
+        raw = json.dumps(dict(payload), sort_keys=True, separators=(",", ":")).encode("utf-8")
+        return base64.urlsafe_b64encode(raw).decode("ascii").rstrip("=")
+
+    def _decode_json(self, body: str) -> Mapping[str, Any]:
+        padding = "=" * (-len(body) % 4)
+        try:
+            decoded = base64.urlsafe_b64decode(f"{body}{padding}".encode("ascii"))
+            loaded = json.loads(decoded.decode("utf-8"))
+        except (ValueError, json.JSONDecodeError) as exc:
+            raise FileValidationError("download token payload is invalid") from exc
+        if not isinstance(loaded, Mapping):
+            raise FileValidationError("download token payload must be an object")
+        return loaded

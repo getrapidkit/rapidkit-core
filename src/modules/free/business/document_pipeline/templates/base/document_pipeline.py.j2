@@ -1,0 +1,222 @@
+from __future__ import annotations
+
+import hashlib
+import time
+from dataclasses import dataclass, field
+from enum import Enum
+from threading import RLock
+from typing import Any, Callable, Mapping, Sequence
+from uuid import uuid4
+
+
+class DocumentStatus(str, Enum):
+    INGESTED = "ingested"
+    PROCESSED = "processed"
+    FAILED = "failed"
+
+
+@dataclass(frozen=True)
+class DocumentSource:
+    filename: str
+    content: bytes
+    tenant_id: str | None = None
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class DocumentChunk:
+    chunk_id: str
+    document_id: str
+    index: int
+    text: str
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+
+@dataclass
+class DocumentRecord:
+    document_id: str
+    filename: str
+    checksum: str
+    status: DocumentStatus = DocumentStatus.INGESTED
+    tenant_id: str | None = None
+    text: str = ""
+    classification: str | None = None
+    chunks: list[DocumentChunk] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
+    error: str | None = None
+    created_at: float = field(default_factory=time.time)
+    updated_at: float = field(default_factory=time.time)
+
+
+@dataclass
+class {{ module_class_name }}Config:
+    enabled: bool = True
+    chunk_size: int = 1000
+    chunk_overlap: int = 100
+    allowed_extensions: Sequence[str] = ("txt", "md", "csv", "json", "pdf", "docx")
+    max_bytes: int = 25 * 1024 * 1024
+    metadata: dict[str, Any] | None = None
+
+
+Extractor = Callable[[DocumentSource], str]
+Classifier = Callable[[str, Mapping[str, Any]], str]
+
+
+class DocumentPipelineError(RuntimeError):
+    """Raised when document pipeline policy or processing fails."""
+
+
+def build_default_config() -> {{ module_class_name }}Config:
+    return {{ module_class_name }}Config()
+
+
+class {{ module_class_name }}:
+    """Document ingestion/extraction/chunking pipeline with audit-safe state."""
+
+    def __init__(
+        self,
+        config: {{ module_class_name }}Config | None = None,
+        *,
+        extractor: Extractor | None = None,
+        classifier: Classifier | None = None,
+    ) -> None:
+        self.config = config or build_default_config()
+        self._extractor = extractor or self._default_extract
+        self._classifier = classifier or self._default_classify
+        self._records: dict[str, DocumentRecord] = {}
+        self._audit: list[dict[str, Any]] = []
+        self._lock = RLock()
+
+    def ingest(self, source: DocumentSource) -> DocumentRecord:
+        if not self.config.enabled:
+            raise DocumentPipelineError("document pipeline is disabled")
+        self._validate_source(source)
+        record = DocumentRecord(
+            document_id=str(uuid4()),
+            filename=source.filename,
+            checksum=self._checksum(source.content),
+            tenant_id=source.tenant_id,
+            metadata=dict(source.metadata),
+        )
+        with self._lock:
+            self._records[record.document_id] = record
+            self._audit.append({"event": "document.ingested", "document_id": record.document_id})
+        return record
+
+    def process(self, document_id: str, source: DocumentSource) -> DocumentRecord:
+        record = self.get(document_id)
+        try:
+            text = self._extractor(source)
+            chunks = self._chunk(record.document_id, text, source.metadata)
+            classification = self._classifier(text, source.metadata)
+            record.text = text
+            record.chunks = chunks
+            record.classification = classification
+            record.status = DocumentStatus.PROCESSED
+            record.error = None
+            record.updated_at = time.time()
+            with self._lock:
+                self._audit.append(
+                    {
+                        "event": "document.processed",
+                        "document_id": record.document_id,
+                        "chunks": len(chunks),
+                        "classification": classification,
+                    }
+                )
+            return record
+        except Exception as exc:
+            record.status = DocumentStatus.FAILED
+            record.error = str(exc)
+            record.updated_at = time.time()
+            with self._lock:
+                self._audit.append(
+                    {"event": "document.failed", "document_id": record.document_id, "error": record.error}
+                )
+            raise DocumentPipelineError("document processing failed") from exc
+
+    def ingest_and_process(self, source: DocumentSource) -> DocumentRecord:
+        record = self.ingest(source)
+        return self.process(record.document_id, source)
+
+    def get(self, document_id: str) -> DocumentRecord:
+        with self._lock:
+            try:
+                return self._records[document_id]
+            except KeyError as exc:
+                raise DocumentPipelineError(f"document {document_id!r} not found") from exc
+
+    def list_documents(self, *, tenant_id: str | None = None) -> list[DocumentRecord]:
+        with self._lock:
+            records = list(self._records.values())
+        if tenant_id is not None:
+            records = [record for record in records if record.tenant_id == tenant_id]
+        return sorted(records, key=lambda record: record.created_at)
+
+    def audit_log(self) -> list[dict[str, Any]]:
+        with self._lock:
+            return [dict(event) for event in self._audit]
+
+    def health_check(self) -> dict[str, Any]:
+        with self._lock:
+            records = tuple(self._records.values())
+        return {
+            "module": "{{ module_name }}",
+            "status": "ok" if self.config.enabled else "disabled",
+            "enabled": self.config.enabled,
+            "documents": len(records),
+            "processed": sum(1 for record in records if record.status == DocumentStatus.PROCESSED),
+            "failed": sum(1 for record in records if record.status == DocumentStatus.FAILED),
+            "chunk_size": self.config.chunk_size,
+        }
+
+    def _validate_source(self, source: DocumentSource) -> None:
+        if not source.filename.strip():
+            raise DocumentPipelineError("filename is required")
+        if not source.content:
+            raise DocumentPipelineError("document content is required")
+        if len(source.content) > self.config.max_bytes:
+            raise DocumentPipelineError("document exceeds max_bytes policy")
+        ext = source.filename.rsplit(".", 1)[-1].lower() if "." in source.filename else ""
+        if self.config.allowed_extensions and ext not in self.config.allowed_extensions:
+            raise DocumentPipelineError(f"document extension .{ext or '<none>'} is not allowed")
+
+    def _default_extract(self, source: DocumentSource) -> str:
+        return source.content.decode("utf-8", errors="replace")
+
+    def _default_classify(self, text: str, metadata: Mapping[str, Any]) -> str:
+        if metadata.get("classification"):
+            return str(metadata["classification"])
+        lowered = text.lower()
+        if "invoice" in lowered or "payment" in lowered:
+            return "finance"
+        if "contract" in lowered or "agreement" in lowered:
+            return "legal"
+        return "general"
+
+    def _chunk(self, document_id: str, text: str, metadata: Mapping[str, Any]) -> list[DocumentChunk]:
+        chunk_size = max(1, self.config.chunk_size)
+        overlap = min(max(0, self.config.chunk_overlap), chunk_size - 1)
+        chunks: list[DocumentChunk] = []
+        start = 0
+        index = 0
+        while start < len(text):
+            end = min(len(text), start + chunk_size)
+            chunk_text = text[start:end]
+            chunks.append(
+                DocumentChunk(
+                    chunk_id=f"{document_id}:{index}",
+                    document_id=document_id,
+                    index=index,
+                    text=chunk_text,
+                    metadata=dict(metadata),
+                )
+            )
+            if end == len(text):
+                break
+            start = end - overlap
+            index += 1
+        return chunks
+
+    def _checksum(self, payload: bytes) -> str:
+        return hashlib.sha256(payload).hexdigest()

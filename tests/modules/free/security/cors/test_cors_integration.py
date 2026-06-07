@@ -13,7 +13,6 @@ pytest.importorskip("fastapi")
 pytest.importorskip("httpx")
 
 from fastapi import FastAPI
-from fastapi.testclient import TestClient
 from httpx import ASGITransport, AsyncClient
 
 HTTP_OK = 200
@@ -147,7 +146,7 @@ def test_cors_middleware_integration() -> None:
 
 
 def test_cors_with_testclient() -> None:
-    """Test CORS with FastAPI TestClient."""
+    """Test CORS with an in-process ASGI client."""
     app = FastAPI()
 
     # Mock CORS setup (similar to above)
@@ -165,14 +164,16 @@ def test_cors_with_testclient() -> None:
     async def get_data():
         return {"data": "test"}
 
-    client = TestClient(app)
+    async def exercise() -> None:
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            response = await client.get("/api/data", headers={"Origin": "https://test.com"})
 
-    # Test CORS headers on actual request
-    response = client.get("/api/data", headers={"Origin": "https://test.com"})
+            assert response.status_code == HTTP_OK
+            assert response.headers.get("access-control-allow-origin") == "https://test.com"
+            assert response.headers.get("access-control-allow-credentials") == "true"
 
-    assert response.status_code == HTTP_OK
-    assert response.headers.get("access-control-allow-origin") == "https://test.com"
-    assert response.headers.get("access-control-allow-credentials") == "true"
+    asyncio.run(exercise())
 
 
 def test_cors_preflight_request() -> None:
@@ -190,25 +191,30 @@ def test_cors_preflight_request() -> None:
         max_age=3600,
     )
 
-    client = TestClient(app)
+    async def exercise() -> None:
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            response = await client.options(
+                "/api/test",
+                headers={
+                    "Origin": "https://app.example.com",
+                    "Access-Control-Request-Method": "POST",
+                    "Access-Control-Request-Headers": "Authorization, Content-Type",
+                },
+            )
 
-    # Test preflight OPTIONS request
-    response = client.options(
-        "/api/test",
-        headers={
-            "Origin": "https://app.example.com",
-            "Access-Control-Request-Method": "POST",
-            "Access-Control-Request-Headers": "Authorization, Content-Type",
-        },
-    )
+            assert response.status_code == HTTP_OK
+            assert response.headers.get("access-control-allow-origin") == "https://app.example.com"
+            assert (
+                response.headers.get("access-control-allow-methods")
+                == "GET, POST, PUT, DELETE, OPTIONS"
+            )
+            assert "Authorization" in response.headers.get("access-control-allow-headers", "")
+            assert "Content-Type" in response.headers.get("access-control-allow-headers", "")
+            assert response.headers.get("access-control-allow-credentials") == "true"
+            assert response.headers.get("access-control-max-age") == "3600"
 
-    assert response.status_code == HTTP_OK
-    assert response.headers.get("access-control-allow-origin") == "https://app.example.com"
-    assert response.headers.get("access-control-allow-methods") == "GET, POST, PUT, DELETE, OPTIONS"
-    assert "Authorization" in response.headers.get("access-control-allow-headers", "")
-    assert "Content-Type" in response.headers.get("access-control-allow-headers", "")
-    assert response.headers.get("access-control-allow-credentials") == "true"
-    assert response.headers.get("access-control-max-age") == "3600"
+    asyncio.run(exercise())
 
 
 def test_cors_rejects_invalid_origin() -> None:
@@ -225,14 +231,15 @@ def test_cors_rejects_invalid_origin() -> None:
     async def secure_endpoint():
         return {"message": "secure"}
 
-    client = TestClient(app)
+    async def exercise() -> None:
+        transport = ASGITransport(app=app)
+        async with AsyncClient(transport=transport, base_url="http://test") as client:
+            response = await client.get("/secure", headers={"Origin": "https://evil.com"})
 
-    # Request from disallowed origin should not include CORS headers
-    response = client.get("/secure", headers={"Origin": "https://evil.com"})
+            assert response.status_code == HTTP_OK
+            assert "access-control-allow-origin" not in response.headers
 
-    assert response.status_code == HTTP_OK
-    # CORS headers should not be present for disallowed origins
-    assert "access-control-allow-origin" not in response.headers
+    asyncio.run(exercise())
 
 
 def test_cors_documentation_exists() -> None:

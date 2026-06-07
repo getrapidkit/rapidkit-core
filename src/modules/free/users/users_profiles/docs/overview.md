@@ -263,4 +263,4 @@ if user:
 - **Module README**: `src/modules/free/users/users_profiles/README.md`
 
 For issues and questions, visit our
-[GitHub repository](https://github.com/getrapidkit/rapidkit-core).
+[GitHub repository](https://github.com/rapidkitlabs/rapidkit-core).

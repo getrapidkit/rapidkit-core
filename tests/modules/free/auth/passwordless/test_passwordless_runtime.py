@@ -10,11 +10,11 @@ from pathlib import Path
 import pytest
 
 pytest.importorskip("fastapi")
+httpx = pytest.importorskip("httpx")
 
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
+from fastapi import FastAPI  # noqa: E402
 
-from modules.free.auth.passwordless import generate
+from modules.free.auth.passwordless import generate  # noqa: E402
 
 
 def _load_module(module_name: str, path: Path):  # type: ignore[no-untyped-def]
@@ -84,58 +84,60 @@ def test_passwordless_issue_and_verify(monkeypatch, rendered_modules):  # type: 
         runtime.verify_code("next@example.com", token_expiring.code)
 
 
-def test_fastapi_passwordless_endpoints(rendered_modules):  # type: ignore[no-untyped-def]
+@pytest.mark.asyncio
+async def test_fastapi_passwordless_endpoints(rendered_modules):  # type: ignore[no-untyped-def]
     _, passwordless_fastapi = rendered_modules
 
     app = FastAPI()
     app.include_router(passwordless_fastapi.create_router())
-    client = TestClient(app)
+    transport = httpx.ASGITransport(app=app)
 
-    issue_resp = client.post(
-        "/passwordless/tokens",
-        json={"identifier": "test@example.com", "delivery_method": "email"},
-    )
-    assert issue_resp.status_code == HTTPStatus.CREATED
-    payload = issue_resp.json()
-    token_id = payload["token_id"]
-    code = payload["code"]
+    async with httpx.AsyncClient(transport=transport, base_url="http://testserver") as client:
+        issue_resp = await client.post(
+            "/passwordless/tokens",
+            json={"identifier": "test@example.com", "delivery_method": "email"},
+        )
+        assert issue_resp.status_code == HTTPStatus.CREATED
+        payload = issue_resp.json()
+        token_id = payload["token_id"]
+        code = payload["code"]
 
-    cooldown_resp = client.post(
-        "/passwordless/tokens",
-        json={"identifier": "test@example.com", "delivery_method": "email"},
-    )
-    assert cooldown_resp.status_code == HTTPStatus.BAD_REQUEST
+        cooldown_resp = await client.post(
+            "/passwordless/tokens",
+            json={"identifier": "test@example.com", "delivery_method": "email"},
+        )
+        assert cooldown_resp.status_code == HTTPStatus.BAD_REQUEST
 
-    verify_resp = client.post(
-        "/passwordless/verify",
-        json={
-            "identifier": "test@example.com",
-            "code": code,
-            "delivery_method": "email",
-        },
-    )
-    assert verify_resp.status_code == HTTPStatus.OK
-    assert verify_resp.json()["token_id"] == token_id
+        verify_resp = await client.post(
+            "/passwordless/verify",
+            json={
+                "identifier": "test@example.com",
+                "code": code,
+                "delivery_method": "email",
+            },
+        )
+        assert verify_resp.status_code == HTTPStatus.OK
+        assert verify_resp.json()["token_id"] == token_id
 
-    replay_resp = client.post(
-        "/passwordless/verify",
-        json={
-            "identifier": "test@example.com",
-            "code": code,
-            "delivery_method": "email",
-        },
-    )
-    assert replay_resp.status_code == HTTPStatus.BAD_REQUEST
+        replay_resp = await client.post(
+            "/passwordless/verify",
+            json={
+                "identifier": "test@example.com",
+                "code": code,
+                "delivery_method": "email",
+            },
+        )
+        assert replay_resp.status_code == HTTPStatus.BAD_REQUEST
 
-    magic_link_resp = client.post(
-        "/passwordless/magic-link",
-        json={"identifier": "other@example.com"},
-    )
-    assert magic_link_resp.status_code == HTTPStatus.CREATED
-    assert "url" in magic_link_resp.json()
+        magic_link_resp = await client.post(
+            "/passwordless/magic-link",
+            json={"identifier": "other@example.com"},
+        )
+        assert magic_link_resp.status_code == HTTPStatus.CREATED
+        assert "url" in magic_link_resp.json()
 
-    invalid_resp = client.post(
-        "/passwordless/verify",
-        json={"identifier": "missing@example.com", "code": "000000"},
-    )
-    assert invalid_resp.status_code == HTTPStatus.BAD_REQUEST
+        invalid_resp = await client.post(
+            "/passwordless/verify",
+            json={"identifier": "missing@example.com", "code": "000000"},
+        )
+        assert invalid_resp.status_code == HTTPStatus.BAD_REQUEST

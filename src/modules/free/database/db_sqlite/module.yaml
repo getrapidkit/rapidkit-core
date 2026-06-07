@@ -1,7 +1,7 @@
 name: db_sqlite
 display_name: Db Sqlite
 description: SQLite database integration for development
-version: 0.1.4
+version: 0.1.9
 access: free
 status: stable
 tier: free
@@ -124,12 +124,12 @@ documentation:
     api_docs: docs/api-reference.md
     examples: []
 support:
-    issues: https://github.com/getrapidkit/rapidkit-core/issues
-    discussions: https://github.com/getrapidkit/rapidkit-core/discussions
+    issues: https://github.com/rapidkitlabs/rapidkit-core/issues
+    discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
     documentation: https://docs.rapidkit.top/modules/database/db_sqlite
 changelog:
-  - version: "0.1.4"
-    date: "2026-02-11"
+  - version: "0.1.9"
+    date: "2026-06-07"
     notes: "See docs/changelog.md"
 validation:
     pre_install:
@@ -176,7 +176,7 @@ file_hashes:
     frameworks/fastapi.py: sha256:cb4984e02f6b33dc24202533e02c95056f66318736828491646bbff398474064
     frameworks/nestjs.py: sha256:10291b86c9fe5aaf07dd65f96fa6cfae9e6afd4ec4b2c4a7761a4848bef4d0ca
     generate.py: sha256:62e7b10e9ed041dc31cf8caed6fae8b106a8cf3f4d643408613f7641ca9ee002
-    module.verify.json: sha256:d89d92ab3bf4f7e1c2d0dc8c34db130abaa2d92f1ece1391213df2296dbefebf
+    module.verify.json: sha256:c5ac6b3c8d225ef6d12b64c58c19078c87de92c0416faf1490a62f5cc1129243
     overrides.py: sha256:5944a8802c8d15d281fe35acdcca02b0b877376f01256f8cf4c3e91575427e93
     templates/base/db_sqlite.py.j2: sha256:acea38182b7ecab14717c15255d4ed860c712a8fc2f00318fc7f4fee6dc6c322
     templates/base/db_sqlite_health.py.j2: sha256:dd6dd66ad30fbfea75e6cbf1a1d4f6493ca6afa301d8c33b25560f183f1562f2

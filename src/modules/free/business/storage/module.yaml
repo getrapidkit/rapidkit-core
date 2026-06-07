@@ -1,5 +1,5 @@
 name: storage
-version: 0.1.6
+version: 0.1.10
 access: free
 status: stable
 tier: free
@@ -130,12 +130,12 @@ documentation:
   api_docs: docs/api-reference.md
   examples: []
 support:
-  issues: https://github.com/getrapidkit/rapidkit-core/issues
-  discussions: https://github.com/getrapidkit/rapidkit-core/discussions
+  issues: https://github.com/rapidkitlabs/rapidkit-core/issues
+  discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
   documentation: https://docs.rapidkit.top/modules/business/storage
 changelog:
-  - version: "0.1.6"
-    date: "2026-02-14"
+  - version: "0.1.10"
+    date: "2026-06-07"
     notes: "See docs/changelog.md"
 validation:
   pre_install:
@@ -160,6 +160,9 @@ capabilities:
 - s3_support
 - gcs_support
 - image_processing
+- checksum_verification
+- signed_download_tokens
+- malware_scan_hook
 - health_checks
 dependencies:
 - module: settings
@@ -199,7 +202,7 @@ file_hashes:
   frameworks/fastapi.py: sha256:0bf55a521f038ff81d52d3736245bc5302cc8cdec6e7bb636839355f1a4c54bf
   frameworks/nestjs.py: sha256:561f14dc99d62097e353c5259054e352c56731ea977930c4e7fc9bc845a871fd
   generate.py: sha256:2dacaf4e71d409b5629e854464452941c324aacda993cf9e39877e955e193529
-  module.verify.json: sha256:85c4baf0001aed553fd13a4c932d501d6feb9cb2980358737d78a3997600ac4f
+  module.verify.json: sha256:16296a003000d78bfdd15cdcab56a7ac936f6eebf8f1e9c18d9265a5a6cfd04e
   overrides.py: sha256:60c22faf7cd947bd3e417cef370710f315cd31ea5c4ad75fcc1d99b896292c40
   templates/base/storage.py.j2: sha256:547142daf8a14b54c170388001ebf05af28dd639ff345d668e74c6e83bc3f56f
   templates/base/storage_health.py.j2: sha256:a1777e95684d07e5d633d3c07f155dbd518e9952f0c68a2e7ed62795e1ba2aeb

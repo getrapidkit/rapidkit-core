@@ -1,0 +1,291 @@
+from __future__ import annotations
+
+from dataclasses import dataclass, field, replace
+from datetime import datetime, timedelta, timezone
+from enum import Enum
+from threading import RLock
+from typing import Any, Mapping
+from uuid import uuid4
+
+
+class TicketStatus(str, Enum):
+    OPEN = "open"
+    PENDING = "pending"
+    RESOLVED = "resolved"
+    CLOSED = "closed"
+
+
+class TicketPriority(str, Enum):
+    LOW = "low"
+    NORMAL = "normal"
+    HIGH = "high"
+    URGENT = "urgent"
+
+
+class {{ module_class_name }}Error(ValueError):
+    """Raised when support workflow input is invalid."""
+
+
+@dataclass(frozen=True)
+class SupportTicket:
+    id: str
+    subject: str
+    customer_id: str
+    requester_email: str
+    priority: TicketPriority = TicketPriority.NORMAL
+    status: TicketStatus = TicketStatus.OPEN
+    tenant_id: str | None = None
+    assigned_to: str | None = None
+    tags: tuple[str, ...] = ()
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+    created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds"))
+    updated_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds"))
+    resolved_at: str | None = None
+    due_at: str | None = None
+
+
+@dataclass(frozen=True)
+class TicketNote:
+    id: str
+    ticket_id: str
+    author_id: str
+    body: str
+    internal: bool = True
+    created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds"))
+
+
+@dataclass(frozen=True)
+class SupportAuditEvent:
+    type: str
+    ticket_id: str | None = None
+    actor_id: str | None = None
+    tenant_id: str | None = None
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds"))
+
+
+@dataclass(frozen=True)
+class {{ module_class_name }}Config:
+    """Runtime configuration for {{ module_title }}."""
+
+    enabled: bool = True
+    default_sla_hours: int = 48
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+
+def build_default_config() -> {{ module_class_name }}Config:
+    """Return default configuration payload."""
+
+    return {{ module_class_name }}Config()
+
+
+class {{ module_class_name }}:
+    """Support ticket workflow with notes, assignment, SLA state, and audit trail."""
+
+    def __init__(self, config: {{ module_class_name }}Config | None = None) -> None:
+        self.config = config or build_default_config()
+        self._tickets: dict[str, SupportTicket] = {}
+        self._notes: dict[str, list[TicketNote]] = {}
+        self._audit: list[SupportAuditEvent] = []
+        self._lock = RLock()
+
+    def open_ticket(
+        self,
+        *,
+        subject: str,
+        customer_id: str,
+        requester_email: str,
+        priority: TicketPriority | str = TicketPriority.NORMAL,
+        tenant_id: str | None = None,
+        tags: tuple[str, ...] | list[str] = (),
+        metadata: Mapping[str, Any] | None = None,
+    ) -> SupportTicket:
+        if not self.config.enabled:
+            raise {{ module_class_name }}Error("support center is disabled")
+        if not subject.strip():
+            raise {{ module_class_name }}Error("ticket subject is required")
+        if not customer_id.strip():
+            raise {{ module_class_name }}Error("customer_id is required")
+        if "@" not in requester_email:
+            raise {{ module_class_name }}Error("requester_email must be valid enough for support contact")
+        now = datetime.now(timezone.utc)
+        ticket = SupportTicket(
+            id=str(uuid4()),
+            subject=subject.strip(),
+            customer_id=customer_id.strip(),
+            requester_email=requester_email.strip(),
+            priority=TicketPriority(priority),
+            tenant_id=tenant_id,
+            tags=tuple(tag.strip() for tag in tags if tag.strip()),
+            metadata=dict(metadata or {}),
+            created_at=now.isoformat(timespec="seconds"),
+            updated_at=now.isoformat(timespec="seconds"),
+            due_at=(now + timedelta(hours=self.config.default_sla_hours)).isoformat(timespec="seconds"),
+        )
+        with self._lock:
+            self._tickets[ticket.id] = ticket
+            self._notes[ticket.id] = []
+            self._record_audit(
+                "ticket.opened",
+                ticket_id=ticket.id,
+                tenant_id=tenant_id,
+                metadata={"priority": ticket.priority.value, "customer_id": ticket.customer_id},
+            )
+        return ticket
+
+    def assign(self, ticket_id: str, *, agent_id: str, actor_id: str) -> SupportTicket:
+        if not agent_id.strip():
+            raise {{ module_class_name }}Error("agent_id is required")
+        with self._lock:
+            ticket = self._ticket(ticket_id)
+            updated = self._update(ticket, assigned_to=agent_id.strip(), status=TicketStatus.PENDING)
+            self._record_audit(
+                "ticket.assigned",
+                ticket_id=ticket_id,
+                actor_id=actor_id,
+                tenant_id=ticket.tenant_id,
+                metadata={"agent_id": agent_id.strip()},
+            )
+        return updated
+
+    def add_note(
+        self,
+        ticket_id: str,
+        *,
+        author_id: str,
+        body: str,
+        internal: bool = True,
+    ) -> TicketNote:
+        if not body.strip():
+            raise {{ module_class_name }}Error("note body is required")
+        with self._lock:
+            ticket = self._ticket(ticket_id)
+            note = TicketNote(
+                id=str(uuid4()),
+                ticket_id=ticket_id,
+                author_id=author_id.strip(),
+                body=body.strip(),
+                internal=internal,
+            )
+            self._notes.setdefault(ticket_id, []).append(note)
+            self._tickets[ticket_id] = replace(
+                ticket,
+                updated_at=datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            )
+            self._record_audit(
+                "ticket.note_added",
+                ticket_id=ticket_id,
+                actor_id=author_id,
+                tenant_id=ticket.tenant_id,
+                metadata={"internal": internal},
+            )
+        return note
+
+    def resolve(self, ticket_id: str, *, actor_id: str, resolution: str) -> SupportTicket:
+        if not resolution.strip():
+            raise {{ module_class_name }}Error("resolution is required")
+        with self._lock:
+            ticket = self._ticket(ticket_id)
+            self.add_note(ticket_id, author_id=actor_id, body=resolution, internal=True)
+            resolved_at = datetime.now(timezone.utc).isoformat(timespec="seconds")
+            updated = self._update(ticket, status=TicketStatus.RESOLVED, resolved_at=resolved_at)
+            self._record_audit("ticket.resolved", ticket_id=ticket_id, actor_id=actor_id, tenant_id=ticket.tenant_id)
+        return updated
+
+    def close(self, ticket_id: str, *, actor_id: str) -> SupportTicket:
+        with self._lock:
+            ticket = self._ticket(ticket_id)
+            if ticket.status != TicketStatus.RESOLVED:
+                raise {{ module_class_name }}Error("only resolved tickets can be closed")
+            updated = self._update(ticket, status=TicketStatus.CLOSED)
+            self._record_audit("ticket.closed", ticket_id=ticket_id, actor_id=actor_id, tenant_id=ticket.tenant_id)
+        return updated
+
+    def list_tickets(
+        self,
+        *,
+        status: TicketStatus | None = None,
+        tenant_id: str | None = None,
+        assigned_to: str | None = None,
+    ) -> tuple[SupportTicket, ...]:
+        with self._lock:
+            tickets = tuple(self._tickets.values())
+        if status is not None:
+            tickets = tuple(ticket for ticket in tickets if ticket.status == status)
+        if tenant_id is not None:
+            tickets = tuple(ticket for ticket in tickets if ticket.tenant_id == tenant_id)
+        if assigned_to is not None:
+            tickets = tuple(ticket for ticket in tickets if ticket.assigned_to == assigned_to)
+        return tickets
+
+    def list_notes(self, ticket_id: str, *, include_internal: bool = True) -> tuple[TicketNote, ...]:
+        with self._lock:
+            self._ticket(ticket_id)
+            notes = tuple(self._notes.get(ticket_id, ()))
+        if not include_internal:
+            notes = tuple(note for note in notes if not note.internal)
+        return notes
+
+    def sla_breaches(self, *, now: datetime | None = None) -> tuple[SupportTicket, ...]:
+        current = now or datetime.now(timezone.utc)
+        breached: list[SupportTicket] = []
+        with self._lock:
+            tickets = tuple(self._tickets.values())
+        for ticket in tickets:
+            if ticket.status in {TicketStatus.RESOLVED, TicketStatus.CLOSED} or ticket.due_at is None:
+                continue
+            due_at = datetime.fromisoformat(ticket.due_at)
+            if due_at < current:
+                breached.append(ticket)
+        return tuple(breached)
+
+    def audit_events(self, *, ticket_id: str | None = None) -> tuple[SupportAuditEvent, ...]:
+        with self._lock:
+            events = tuple(self._audit)
+        if ticket_id is not None:
+            events = tuple(item for item in events if item.ticket_id == ticket_id)
+        return events
+
+    def health(self) -> dict[str, Any]:
+        with self._lock:
+            tickets = tuple(self._tickets.values())
+            audit_events = len(self._audit)
+        return {
+            "module": "{{ module_name }}",
+            "status": "ok" if self.config.enabled else "disabled",
+            "tickets": len(tickets),
+            "open": len([ticket for ticket in tickets if ticket.status == TicketStatus.OPEN]),
+            "pending": len([ticket for ticket in tickets if ticket.status == TicketStatus.PENDING]),
+            "audit_events": audit_events,
+        }
+
+    def _ticket(self, ticket_id: str) -> SupportTicket:
+        try:
+            return self._tickets[ticket_id]
+        except KeyError as exc:
+            raise {{ module_class_name }}Error("ticket not found") from exc
+
+    def _update(self, ticket: SupportTicket, **changes: Any) -> SupportTicket:
+        updated = replace(ticket, updated_at=datetime.now(timezone.utc).isoformat(timespec="seconds"), **changes)
+        with self._lock:
+            self._tickets[ticket.id] = updated
+        return updated
+
+    def _record_audit(
+        self,
+        event_type: str,
+        *,
+        ticket_id: str | None = None,
+        actor_id: str | None = None,
+        tenant_id: str | None = None,
+        metadata: Mapping[str, Any] | None = None,
+    ) -> None:
+        self._audit.append(
+            SupportAuditEvent(
+                type=event_type,
+                ticket_id=ticket_id,
+                actor_id=actor_id,
+                tenant_id=tenant_id,
+                metadata=dict(metadata or {}),
+            )
+        )

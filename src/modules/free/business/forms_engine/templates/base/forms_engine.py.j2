@@ -1,0 +1,248 @@
+from __future__ import annotations
+
+import csv
+import io
+import time
+from dataclasses import dataclass, field
+from enum import Enum
+from threading import RLock
+from typing import Any, Callable, Mapping, Sequence
+from uuid import uuid4
+
+
+@dataclass
+class {{ module_class_name }}Config:
+    enabled: bool = True
+    max_submissions_per_form: int = 10000
+    metadata: dict[str, Any] | None = None
+
+
+class FieldType(str, Enum):
+    TEXT = "text"
+    EMAIL = "email"
+    NUMBER = "number"
+    BOOLEAN = "boolean"
+    SELECT = "select"
+
+
+@dataclass(frozen=True)
+class FormField:
+    name: str
+    label: str
+    field_type: FieldType = FieldType.TEXT
+    required: bool = False
+    options: Sequence[str] = ()
+
+
+@dataclass
+class FormDefinition:
+    form_id: str
+    name: str
+    fields: list[FormField]
+    tenant_id: str | None = None
+    version: int = 1
+    active: bool = True
+    metadata: dict[str, Any] = field(default_factory=dict)
+    created_at: float = field(default_factory=time.time)
+    updated_at: float = field(default_factory=time.time)
+
+
+@dataclass
+class FormSubmission:
+    submission_id: str
+    form_id: str
+    data: dict[str, Any]
+    tenant_id: str | None = None
+    valid: bool = True
+    errors: dict[str, str] = field(default_factory=dict)
+    created_at: float = field(default_factory=time.time)
+
+
+WorkflowHook = Callable[[FormSubmission], None]
+
+
+class FormsEngineError(RuntimeError):
+    """Raised when form configuration or submission policy fails."""
+
+
+def build_default_config() -> {{ module_class_name }}Config:
+    return {{ module_class_name }}Config()
+
+
+class {{ module_class_name }}:
+    """Schema-driven forms engine with validation, submissions, and export."""
+
+    def __init__(
+        self,
+        config: {{ module_class_name }}Config | None = None,
+        *,
+        workflow_hook: WorkflowHook | None = None,
+    ) -> None:
+        self.config = config or build_default_config()
+        self._workflow_hook = workflow_hook
+        self._forms: dict[str, FormDefinition] = {}
+        self._submissions: dict[str, FormSubmission] = {}
+        self._audit: list[dict[str, Any]] = []
+        self._lock = RLock()
+
+    def create_form(
+        self,
+        name: str,
+        fields: Sequence[FormField],
+        *,
+        tenant_id: str | None = None,
+        metadata: Mapping[str, Any] | None = None,
+    ) -> FormDefinition:
+        if not self.config.enabled:
+            raise FormsEngineError("forms engine is disabled")
+        if not name.strip():
+            raise FormsEngineError("form name is required")
+        self._validate_fields(fields)
+        form = FormDefinition(
+            form_id=str(uuid4()),
+            name=name,
+            fields=list(fields),
+            tenant_id=tenant_id,
+            metadata=dict(metadata or {}),
+        )
+        with self._lock:
+            self._forms[form.form_id] = form
+            self._audit.append({"event": "form.created", "form_id": form.form_id})
+        return form
+
+    def submit(
+        self,
+        form_id: str,
+        data: Mapping[str, Any],
+        *,
+        tenant_id: str | None = None,
+    ) -> FormSubmission:
+        form = self.get_form(form_id)
+        if not form.active:
+            raise FormsEngineError("form is archived")
+        if tenant_id is not None and form.tenant_id != tenant_id:
+            raise FormsEngineError("tenant is not allowed to submit this form")
+        if len(self.list_submissions(form_id=form_id)) >= self.config.max_submissions_per_form:
+            raise FormsEngineError("form submission limit reached")
+        errors = self.validate(form, data)
+        submission = FormSubmission(
+            submission_id=str(uuid4()),
+            form_id=form_id,
+            data=dict(data),
+            tenant_id=form.tenant_id,
+            valid=not errors,
+            errors=errors,
+        )
+        with self._lock:
+            self._submissions[submission.submission_id] = submission
+            self._audit.append(
+                {
+                    "event": "form.submitted",
+                    "form_id": form_id,
+                    "submission_id": submission.submission_id,
+                    "valid": submission.valid,
+                }
+            )
+        if submission.valid and self._workflow_hook is not None:
+            self._workflow_hook(submission)
+        return submission
+
+    def validate(self, form: FormDefinition, data: Mapping[str, Any]) -> dict[str, str]:
+        errors: dict[str, str] = {}
+        for field in form.fields:
+            value = data.get(field.name)
+            if field.required and (value is None or value == ""):
+                errors[field.name] = "required"
+                continue
+            if value is None or value == "":
+                continue
+            if field.field_type == FieldType.EMAIL and ("@" not in str(value) or "." not in str(value)):
+                errors[field.name] = "invalid_email"
+            elif field.field_type == FieldType.NUMBER and not isinstance(value, (int, float)):
+                errors[field.name] = "invalid_number"
+            elif field.field_type == FieldType.BOOLEAN and not isinstance(value, bool):
+                errors[field.name] = "invalid_boolean"
+            elif field.field_type == FieldType.SELECT and value not in field.options:
+                errors[field.name] = "invalid_option"
+        return errors
+
+    def archive_form(self, form_id: str) -> FormDefinition:
+        with self._lock:
+            form = self.get_form(form_id)
+            form.active = False
+            form.updated_at = time.time()
+            self._audit.append({"event": "form.archived", "form_id": form_id})
+        return form
+
+    def get_form(self, form_id: str) -> FormDefinition:
+        with self._lock:
+            try:
+                return self._forms[form_id]
+            except KeyError as exc:
+                raise FormsEngineError(f"form {form_id!r} not found") from exc
+
+    def list_forms(self, *, tenant_id: str | None = None, active: bool | None = None) -> list[FormDefinition]:
+        with self._lock:
+            forms = list(self._forms.values())
+        if tenant_id is not None:
+            forms = [form for form in forms if form.tenant_id == tenant_id]
+        if active is not None:
+            forms = [form for form in forms if form.active == active]
+        return sorted(forms, key=lambda form: form.created_at)
+
+    def list_submissions(
+        self,
+        *,
+        form_id: str | None = None,
+        tenant_id: str | None = None,
+        valid: bool | None = None,
+    ) -> list[FormSubmission]:
+        with self._lock:
+            submissions = list(self._submissions.values())
+        if form_id is not None:
+            submissions = [submission for submission in submissions if submission.form_id == form_id]
+        if tenant_id is not None:
+            submissions = [submission for submission in submissions if submission.tenant_id == tenant_id]
+        if valid is not None:
+            submissions = [submission for submission in submissions if submission.valid == valid]
+        return sorted(submissions, key=lambda submission: submission.created_at)
+
+    def export_csv(self, form_id: str) -> str:
+        form = self.get_form(form_id)
+        output = io.StringIO()
+        writer = csv.DictWriter(output, fieldnames=[field.name for field in form.fields])
+        writer.writeheader()
+        for submission in self.list_submissions(form_id=form_id, valid=True):
+            writer.writerow({field.name: submission.data.get(field.name, "") for field in form.fields})
+        return output.getvalue()
+
+    def audit_log(self) -> list[dict[str, Any]]:
+        with self._lock:
+            return [dict(event) for event in self._audit]
+
+    def health_check(self) -> dict[str, Any]:
+        with self._lock:
+            forms = tuple(self._forms.values())
+            submissions = tuple(self._submissions.values())
+        return {
+            "module": "{{ module_name }}",
+            "status": "ok" if self.config.enabled else "disabled",
+            "enabled": self.config.enabled,
+            "forms": len(forms),
+            "active_forms": sum(1 for form in forms if form.active),
+            "submissions": len(submissions),
+            "invalid_submissions": sum(1 for submission in submissions if not submission.valid),
+        }
+
+    def _validate_fields(self, fields: Sequence[FormField]) -> None:
+        if not fields:
+            raise FormsEngineError("at least one form field is required")
+        seen: set[str] = set()
+        for field in fields:
+            if not field.name.strip():
+                raise FormsEngineError("field name is required")
+            if field.name in seen:
+                raise FormsEngineError(f"duplicate field {field.name!r}")
+            seen.add(field.name)
+            if field.field_type == FieldType.SELECT and not field.options:
+                raise FormsEngineError(f"select field {field.name!r} requires options")

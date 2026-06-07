@@ -1,0 +1,181 @@
+name: prompt_ops
+display_name: "Prompt Ops"
+description: "Prompt versioning, rollout, evaluation, rollback, and audit operations for AI products"
+version: 0.1.4
+access: free
+status: stable
+tier: free
+category: ai
+tags:
+  - ai
+  - prompts
+  - evaluations
+  - rollback
+  - audit
+depends_on:
+  - free/ai/llm_gateway
+  - free/security/audit_policy
+  - free/observability/core
+generated_from_config: true
+profile_inherits:
+  fastapi.standard: fastapi
+  fastapi.ddd: fastapi
+  nestjs.standard: nestjs
+config_sources:
+  - config/base.yaml
+  - config/snippets.yaml
+generation:
+  vendor:
+    root: .rapidkit/vendor
+    files:
+      - template: templates/base/prompt_ops.py.j2
+        relative: src/ai/prompt_ops.py
+      - template: templates/base/prompt_ops_types.py.j2
+        relative: src/ai/prompt_ops_types.py
+      - template: templates/base/prompt_ops_health.py.j2
+        relative: src/health/ai/prompt_ops.py
+      - template: templates/vendor/nestjs/configuration.js.j2
+        relative: nestjs/configuration.js
+  variants:
+    fastapi: &fastapi_variant
+      root: .
+      context:
+        framework: fastapi
+        module_class_name: PromptOps
+      files:
+        - template: templates/variants/fastapi/prompt_ops.py.j2
+          output: src/ai/prompt_ops.py
+        - template: templates/variants/fastapi/prompt_ops_routes.py.j2
+          output: src/routers/ai/prompt_ops.py
+        - template: templates/variants/fastapi/prompt_ops_health.py.j2
+          output: src/health/ai/prompt_ops.py
+        - template: templates/tests/integration/test_prompt_ops_integration.j2
+          output: tests/modules/free/integration/ai/prompt_ops/test_prompt_ops_integration.py
+        - template: templates/variants/fastapi/tests/test_prompt_ops_e2e.py
+          output: tests/modules/e2e/free/ai/prompt_ops/test_prompt_ops_e2e.py
+
+    # Compatibility aliases: the installer uses kit profile names.
+    fastapi.standard: *fastapi_variant
+    fastapi.ddd: *fastapi_variant
+
+    nestjs: &nestjs_variant
+      root: .
+      context:
+        framework: nestjs
+        vendor_configuration_relative: nestjs/configuration.js
+        module_class_name: PromptOps
+        module_kebab: prompt-ops
+      files:
+        - template: templates/variants/nestjs/prompt_ops.service.ts.j2
+          output: src/prompt-ops/prompt_ops.service.ts
+        - template: templates/variants/nestjs/prompt_ops.controller.ts.j2
+          output: src/prompt-ops/prompt_ops.controller.ts
+        - template: templates/variants/nestjs/prompt_ops.module.ts.j2
+          output: src/prompt-ops/prompt_ops.module.ts
+        - template: templates/variants/nestjs/prompt_ops.health.ts.j2
+          output: src/prompt-ops/prompt_ops.health.ts
+        - template: templates/variants/nestjs/prompt_ops.validation.ts.j2
+          output: src/prompt-ops/prompt_ops.validation.ts
+        - template: templates/variants/nestjs/prompt_ops.index.ts.j2
+          output: src/prompt-ops/index.ts
+        - template: templates/variants/nestjs/prompt_ops.configuration.ts.j2
+          output: src/prompt-ops/configuration.ts
+        - template: templates/variants/nestjs/tests/prompt_ops.e2e-spec.ts
+          output: tests/modules/e2e/ai/prompt_ops/prompt_ops.e2e-spec.ts
+
+    nestjs.standard: *nestjs_variant
+  snippets:
+    enabled: true
+    config: config/snippets.yaml
+    default: []
+compatibility:
+  python: ">=3.9,<4.0"
+  frameworks:
+    - fastapi
+    - nestjs
+  os:
+    - linux
+    - darwin
+    - windows
+testing:
+  coverage_min: 85
+  integration_tests: true
+  e2e_tests: false
+  unit_tests:
+    - tests/modules/free/ai/prompt_ops/test_prompt_ops_generator.py
+    - tests/modules/free/ai/prompt_ops/test_prompt_ops_overrides.py
+    - tests/modules/free/ai/prompt_ops/test_prompt_ops_runtime.py
+    - tests/modules/free/ai/prompt_ops/test_prompt_ops_adapters.py
+    - tests/modules/free/ai/prompt_ops/test_prompt_ops_validation.py
+    - tests/modules/free/ai/prompt_ops/test_prompt_ops_error_handling.py
+    - tests/modules/free/ai/prompt_ops/test_prompt_ops_health_check.py
+    - tests/modules/free/ai/prompt_ops/test_prompt_ops_framework_variants.py
+    - tests/modules/free/ai/prompt_ops/test_prompt_ops_vendor_layer.py
+    - tests/modules/free/ai/prompt_ops/test_prompt_ops_configuration.py
+    - tests/modules/free/ai/prompt_ops/test_prompt_ops_versioning.py
+    - tests/modules/free/ai/prompt_ops/test_prompt_ops_standard_module.py
+  integration_test_files:
+    - tests/modules/free/integration/ai/prompt_ops/test_prompt_ops_integration.py
+  fixtures: []
+documentation:
+  changelog: "docs/changelog.md"
+  readme: "README.md"
+  overview: "docs/overview.md"
+  usage: "docs/usage.md"
+  advanced: "docs/advanced.md"
+  migration: "docs/migration.md"
+  troubleshooting: "docs/troubleshooting.md"
+  api_docs: "docs/api-reference.md"
+  examples: []
+support:
+  issues: https://github.com/rapidkitlabs/rapidkit-core/issues
+  discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+  documentation: https://docs.rapidkit.top/modules/prompt_ops
+changelog:
+  - version: "0.1.4"
+    date: "2026-06-02"
+    notes: "See docs/changelog.md"
+validation:
+  pre_install:
+    - check_python_version
+  post_install:
+    - validate_generated_code
+rollback:
+  strategy: uninstall
+  backup_path: .rapidkit/backups/
+  max_backups: 3
+performance:
+  lazy_loading: true
+  caching:
+    templates: true
+    ttl: 300
+capabilities:
+  - prompt_versioning
+  - prompt_publish_approval
+  - prompt_evaluations
+  - prompt_rollback
+  - prompt_audit
+  - health_checks
+metadata:
+  enterprise_ready: true
+  free_marketplace_module: true
+  product_factory_priority: high
+signature: null
+signer_id: null
+signature_version: null
+
+file_hashes:
+  README.md: sha256:0549dc057ecf47592f811403b97abab32f61c002c99be75aa66789f7da1e3334
+  __init__.py: sha256:283914c4a2e2f25d4ec4d8d338d4c8f22c4fe97500428dfaf251f066c1739583
+  config/base.yaml: sha256:443fb00454ce1161f29d4a5a172ffae4a0dc7494836ce4586164488ec4c4d4d7
+  config/snippets.yaml: sha256:81e80e3017f6c01ea15bb48c4b1d7c12340b5aed9687bc6d05b6ac6346889a09
+  docs/README.md: sha256:0a385c4c1254314fce8b955a2f3684ce41f2baa44a6b6e343cdd0de929e3b379
+  docs/advanced.md: sha256:252eaf16413f813ae7cf9513417db1a361d2e14f469f9f69f8bb44b40250481d
+  docs/api-reference.md: sha256:09a956b7b2fce119cdfac6ec5aadd9ae7e47e1a0836a77e8dd06261f2d23acb8
+  docs/changelog.md: sha256:39a7060f9994bd5ff2b9d7f00432c22eb6864b92ed704a85ecd36f13cd611810
+  docs/migration.md: sha256:59afc53ab4aced06c68da311cf15121cdd1aba4f55eb89eaa1edd77d3d09f8ee
+  docs/overview.md: sha256:cb6b86a021a87770720bf6b7cdbb48b43190bf9cd14cb0c29fe5c002c97a5667
+  docs/troubleshooting.md: sha256:1cac74fb6beeef6155828a2f1c0f8821fa1a383230d9c10cf53bf8743d1b31a3
+  docs/usage.md: sha256:0115f95b50351fa48b5b4368be6f8580cb308957d8d2cafe07f9b9c680cada73
+  templates/vendor/nestjs/configuration.js.j2: sha256:c2f39aa9d631e6fb97c1acc24302a2d3f6a74e5a6fdd4c9aa752250b77b50918
+  module.verify.json: sha256:d27f96fe0793e04de8c2cc7c12222acaed8408e2f1df156e126b5f4460cf13c7

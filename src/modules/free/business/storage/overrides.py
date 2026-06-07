@@ -131,7 +131,7 @@ class StorageOverrideManager:
             # Deep merge user config into generated
             merged = self._deep_merge_dicts(generated_config, user_config)
 
-            return yaml.dump(merged, default_flow_style=False, sort_keys=False)
+            return str(yaml.dump(merged, default_flow_style=False, sort_keys=False))
         except (yaml.YAMLError, TypeError, AttributeError, ValueError):
             # If merge fails, preserve user content
             return user

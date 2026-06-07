@@ -10,11 +10,11 @@ from pathlib import Path
 import pytest
 
 pytest.importorskip("fastapi")
+httpx = pytest.importorskip("httpx")
 
-from fastapi import FastAPI
-from fastapi.testclient import TestClient
+from fastapi import FastAPI  # noqa: E402
 
-from modules.free.auth.oauth import generate
+from modules.free.auth.oauth import generate  # noqa: E402
 
 
 def _load_module(module_name: str, path: Path):  # type: ignore[no-untyped-def]
@@ -79,29 +79,30 @@ def test_runtime_state_validation(rendered_modules):  # type: ignore[no-untyped-
         runtime.validate_callback("google", "invalid-state")
 
 
-def test_fastapi_router_behaviour(rendered_modules):  # type: ignore[no-untyped-def]
+@pytest.mark.asyncio
+async def test_fastapi_router_behaviour(rendered_modules):  # type: ignore[no-untyped-def]
     _, oauth_fastapi = rendered_modules
 
     app = FastAPI()
     app.include_router(oauth_fastapi.create_router())
-    client = TestClient(app)
+    transport = httpx.ASGITransport(app=app)
 
-    providers_response = client.get("/oauth/providers")
-    assert providers_response.status_code == HTTPStatus.OK
-    assert "google" in providers_response.json()
+    async with httpx.AsyncClient(
+        transport=transport, base_url="http://testserver", follow_redirects=False
+    ) as client:
+        providers_response = await client.get("/oauth/providers")
+        assert providers_response.status_code == HTTPStatus.OK
+        assert "google" in providers_response.json()
 
-    authorize_response = client.get(
-        "/oauth/google/authorize",
-        follow_redirects=False,
-    )
-    assert authorize_response.status_code == HTTPStatus.TEMPORARY_REDIRECT
-    target = authorize_response.headers["location"]
-    assert target.startswith("https://accounts.google.com/")
+        authorize_response = await client.get("/oauth/google/authorize")
+        assert authorize_response.status_code == HTTPStatus.TEMPORARY_REDIRECT
+        target = authorize_response.headers["location"]
+        assert target.startswith("https://accounts.google.com/")
 
-    state = oauth_fastapi._runtime.issue_state("google", {"user_id": "abc"})
-    callback_response = client.get(f"/oauth/google/callback?state={state}")
-    assert callback_response.status_code == HTTPStatus.OK
-    assert callback_response.json()["metadata"]["user_id"] == "abc"
+        state = oauth_fastapi._runtime.issue_state("google", {"user_id": "abc"})
+        callback_response = await client.get(f"/oauth/google/callback?state={state}")
+        assert callback_response.status_code == HTTPStatus.OK
+        assert callback_response.json()["metadata"]["user_id"] == "abc"
 
-    missing_response = client.get("/oauth/unknown/callback?state=test")
-    assert missing_response.status_code == HTTPStatus.BAD_REQUEST
+        missing_response = await client.get("/oauth/unknown/callback?state=test")
+        assert missing_response.status_code == HTTPStatus.BAD_REQUEST

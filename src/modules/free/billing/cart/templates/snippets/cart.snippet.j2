@@ -3,4 +3,17 @@
 
 {% set module_name = "cart" %}
 
-# TODO: Provide snippet content for {{ module_name }}
+def build_cart_line(*, sku: str, quantity: int, unit_price: float) -> dict[str, object]:
+    """Create a normalized cart line payload for application services."""
+    if not sku.strip():
+        raise ValueError("sku is required")
+    if quantity <= 0:
+        raise ValueError("quantity must be greater than zero")
+    if unit_price < 0:
+        raise ValueError("unit_price cannot be negative")
+    return {
+        "sku": sku.strip(),
+        "quantity": quantity,
+        "unit_price": unit_price,
+        "line_total": round(quantity * unit_price, 2),
+    }

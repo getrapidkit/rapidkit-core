@@ -7,6 +7,7 @@ import time
 from collections import deque
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from threading import RLock
 from typing import Any, Deque, Dict, Iterable, Iterator, Mapping, Protocol, Sequence, Tuple
 
 from .ai_assistant_types import (
@@ -186,6 +187,7 @@ class {{ module_class_name }}:
         self._history: Deque[AssistantMessage] = deque(maxlen=self._config.conversation_window)
         self._providers: Dict[str, ChatProvider] = {}
         self._cache: Dict[Tuple[Any, ...], AssistantResponse] = {}
+        self._lock = RLock()
 
         self._register_builtin_providers(self._config.providers)
         self._default_provider = self._config.default_provider
@@ -197,24 +199,28 @@ class {{ module_class_name }}:
     def register_provider(self, provider: ChatProvider) -> None:
         """Register a provider implementation at runtime."""
 
-        self._providers[provider.name] = provider
+        with self._lock:
+            self._providers[provider.name] = provider
 
     def list_providers(self) -> Tuple[str, ...]:
         """Return a tuple of available provider names."""
 
-        return tuple(self._providers.keys())
+        with self._lock:
+            return tuple(self._providers.keys())
 
     def get_provider(self, name: str | None = None) -> ChatProvider:
-        provider_name = name or self._default_provider
-        try:
-            return self._providers[provider_name]
-        except KeyError as exc:  # pragma: no cover - defensive guard
-            raise ProviderNotFoundError(f"Provider '{provider_name}' is not registered") from exc
+        with self._lock:
+            provider_name = name or self._default_provider
+            try:
+                return self._providers[provider_name]
+            except KeyError as exc:  # pragma: no cover - defensive guard
+                raise ProviderNotFoundError(f"Provider '{provider_name}' is not registered") from exc
 
     def set_default_provider(self, provider_name: str) -> None:
-        if provider_name not in self._providers:
-            raise ProviderNotFoundError(f"Provider '{provider_name}' is not registered")
-        self._default_provider = provider_name
+        with self._lock:
+            if provider_name not in self._providers:
+                raise ProviderNotFoundError(f"Provider '{provider_name}' is not registered")
+            self._default_provider = provider_name
 
     def chat(
         self,
@@ -226,24 +232,29 @@ class {{ module_class_name }}:
     ) -> AssistantResponse:
         """Request a completion from the configured provider."""
 
-        self._record_user_prompt(prompt, context)
+        if not prompt.strip():
+            raise AssistantConfigurationError("prompt is required")
+        with self._lock:
+            self._record_user_prompt(prompt, context)
         target = self.get_provider(provider)
-        conversation = self._build_conversation(context)
+        with self._lock:
+            conversation = self._build_conversation(context)
         cache_key = self._build_cache_key(target.name, prompt, conversation, settings)
 
-        if cache_key is not None and cache_key in self._cache:
-            cached = self._cache[cache_key]
-            assistant_message = AssistantMessage(role="assistant", content=cached.content)
-            self._history.append(assistant_message)
-            return AssistantResponse(
-                provider=cached.provider,
-                content=cached.content,
-                created_at=datetime.now(timezone.utc),
-                latency_ms=cached.latency_ms,
-                cached=True,
-                usage=cached.usage,
-                metadata=dict(cached.metadata),
-            )
+        with self._lock:
+            cached = self._cache.get(cache_key) if cache_key is not None else None
+            if cached is not None:
+                assistant_message = AssistantMessage(role="assistant", content=cached.content)
+                self._history.append(assistant_message)
+                return AssistantResponse(
+                    provider=cached.provider,
+                    content=cached.content,
+                    created_at=datetime.now(timezone.utc),
+                    latency_ms=cached.latency_ms,
+                    cached=True,
+                    usage=cached.usage,
+                    metadata=dict(cached.metadata),
+                )
 
         start = time.perf_counter()
         content = target.generate(prompt, conversation=conversation, settings=settings)
@@ -260,10 +271,10 @@ class {{ module_class_name }}:
         )
 
         assistant_message = AssistantMessage(role="assistant", content=content)
-        self._history.append(assistant_message)
-
-        if cache_key is not None:
-            self._cache[cache_key] = response
+        with self._lock:
+            self._history.append(assistant_message)
+            if cache_key is not None:
+                self._cache[cache_key] = response
 
         return response
 
@@ -277,17 +288,23 @@ class {{ module_class_name }}:
     ) -> Iterator[str]:
         """Yield streamed response tokens using the provider implementation."""
 
+        if not prompt.strip():
+            raise AssistantConfigurationError("prompt is required")
         target = self.get_provider(provider)
-        conversation = self._build_conversation(context)
+        with self._lock:
+            conversation = self._build_conversation(context)
         return iter(target.stream(prompt, conversation=conversation, settings=settings))
 
     def health_report(self) -> Dict[str, Any]:
         """Return aggregated provider health information."""
 
         providers: list[Dict[str, Any]] = []
-        overall_status = "ok" if self._providers else "error"
-
-        for provider in self._providers.values():
+        with self._lock:
+            providers_snapshot = tuple(self._providers.values())
+            cache_entries = len(self._cache)
+            history_length = len(self._history)
+        overall_status = "ok" if providers_snapshot else "error"
+        for provider in providers_snapshot:
             status = provider.health()
             providers.append(
                 {
@@ -304,20 +321,22 @@ class {{ module_class_name }}:
             "module": "{{ module_name }}",
             "status": overall_status,
             "providers": providers,
-            "cache_entries": len(self._cache),
-            "history_length": len(self._history),
+            "cache_entries": cache_entries,
+            "history_length": history_length,
             "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         }
 
     def clear_cache(self) -> None:
         """Remove cached responses."""
 
-        self._cache.clear()
+        with self._lock:
+            self._cache.clear()
 
     def get_history(self) -> Tuple[AssistantMessage, ...]:
         """Return the tracked conversation history."""
 
-        return tuple(self._history)
+        with self._lock:
+            return tuple(self._history)
 
     def _record_user_prompt(
         self, prompt: str, context: Sequence[AssistantMessage] | None

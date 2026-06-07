@@ -1,7 +1,7 @@
 name: cors
 description: Cross-Origin Resource Sharing security module
 category: security
-version: 0.1.9
+version: 0.1.12
 access: free
 status: stable
 tags:
@@ -118,12 +118,12 @@ documentation:
   api_docs: docs/api-reference.md
   examples: []
 support:
-  issues: https://github.com/getrapidkit/rapidkit-core/issues
-  discussions: https://github.com/getrapidkit/rapidkit-core/discussions
+  issues: https://github.com/rapidkitlabs/rapidkit-core/issues
+  discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
   documentation: https://docs.rapidkit.top/modules/cors
 changelog:
-  - version: "0.1.9"
-    date: "2026-02-15"
+  - version: "0.1.12"
+    date: "2026-06-07"
     notes: "See docs/changelog.md"
 validation:
   pre_install:
@@ -166,7 +166,7 @@ file_hashes:
   frameworks/fastapi.py: sha256:63e0bf200cd5a8edbf54c04c57777c7c3136eb71d7f61abb0efd1a4d2fe39cf0
   frameworks/nestjs.py: sha256:845d07911b194ac0a44353b416b591d805e22ddf0dec4df1237731472b844847
   generate.py: sha256:70de66f462efbec00854dae08847321a62b69994fc88ce9623728addd7e95491
-  module.verify.json: sha256:b1832b548946aa2cb3b46518e94b6740d81b2abb43a166b3d92a3617c46b13c0
+  module.verify.json: sha256:2bf98b72a4724c00a9bbe1935d959235903a22e1f6c14b795ea76cde47494c23
   overrides.py: sha256:9d08e42d33579ed1aed08227c213ff1ab680b6ee2e7f74be0b519da290ef5d1c
   templates/base/cors.py.j2: sha256:e1a209dc44e6df93ef4dd9be89978f85aefc0e9d56a124fc1f30eae75510d8c6
   templates/base/cors_health.py.j2: sha256:6923d3641a0a87c6cd1a28e54b8f58d687baf63d5feae828338588ee0941b69c
@@ -181,7 +181,7 @@ file_hashes:
   templates/variants/fastapi/cors_health_runtime.py.j2: sha256:c507e3722329e4d72690b941a9cf3763ed8e51be7b9ffd856a8caaedef7d15a7
   templates/variants/fastapi/cors_routes.py.j2: sha256:a56732debc0534668672252cd286af8aa17c6c8a57878adc92848d5d433f3e59
   templates/variants/nestjs/cors.configuration.ts.j2: sha256:11455255e7ed4c80d08bbef20bc0e4f97b940d2ef51856d5f52fd1a28239a970
-  templates/variants/nestjs/cors.controller.ts.j2: sha256:3c6b0a454cf386daba19da2df4ca44ba05eb9e8dddc1b0c613feeadfa86b239a
+  templates/variants/nestjs/cors.controller.ts.j2: sha256:baf6245eeb02960f3ba123ca2ba7420f3243d43a2e35827eb10df26de325669e
   templates/variants/nestjs/cors.health.ts.j2: sha256:b257fa3158b7fa88d181d3f2719659feb110e203a096a656f925857ba40e9a31
   templates/variants/nestjs/cors.module.ts.j2: sha256:d24d44b47d7ef4061d095344aeaf5b8a775d2724bac999c7cc4e2506ac52979e
   templates/variants/nestjs/cors.routes.ts.j2: sha256:033897c41b085ccb9fdf4aee8d82fd7c9da57574702e567eadc8aac7725c8f36

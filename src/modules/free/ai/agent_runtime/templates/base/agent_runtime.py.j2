@@ -1,0 +1,295 @@
+from __future__ import annotations
+
+import time
+from dataclasses import dataclass, field
+from enum import Enum
+from threading import RLock
+from typing import Any, Callable, Dict, Mapping, Sequence
+from uuid import uuid4
+
+
+class AgentRunStatus(str, Enum):
+    PENDING = "pending"
+    RUNNING = "running"
+    SUCCEEDED = "succeeded"
+    FAILED = "failed"
+    CANCELLED = "cancelled"
+
+
+@dataclass(frozen=True)
+class AgentToolCall:
+    tool: str
+    arguments: Mapping[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class AgentStep:
+    index: int
+    tool: str
+    status: str
+    output: Any = None
+    error: str | None = None
+    created_at: float = field(default_factory=time.time)
+
+
+@dataclass
+class AgentRun:
+    run_id: str
+    objective: str
+    tenant_id: str | None = None
+    user_id: str | None = None
+    status: AgentRunStatus = AgentRunStatus.PENDING
+    steps: list[AgentStep] = field(default_factory=list)
+    metadata: Dict[str, Any] = field(default_factory=dict)
+    created_at: float = field(default_factory=time.time)
+    updated_at: float = field(default_factory=time.time)
+
+
+@dataclass(frozen=True)
+class AgentRuntimeEvent:
+    type: str
+    run_id: str
+    step_index: int | None = None
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+    created_at: float = field(default_factory=time.time)
+
+
+@dataclass
+class {{ module_class_name }}Config:
+    """Runtime configuration for {{ module_title }}."""
+
+    enabled: bool = True
+    max_steps: int = 12
+    retry_limit: int = 1
+    allowed_tools: Sequence[str] = ()
+    metadata: Dict[str, Any] | None = None
+
+
+ToolHandler = Callable[[Mapping[str, Any], AgentRun], Any]
+
+
+class AgentRuntimeError(RuntimeError):
+    """Raised when an agent run cannot continue."""
+
+
+def build_default_config() -> {{ module_class_name }}Config:
+    """Return default configuration payload."""
+
+    return {{ module_class_name }}Config()
+
+
+class {{ module_class_name }}:
+    """Small but production-shaped agent runtime with tools, state, and auditability."""
+
+    def __init__(
+        self,
+        config: {{ module_class_name }}Config | None = None,
+        tools: Mapping[str, ToolHandler] | None = None,
+    ) -> None:
+        self.config = config or build_default_config()
+        self._tools: dict[str, ToolHandler] = {}
+        self._runs: dict[str, AgentRun] = {}
+        self._idempotency_index: dict[tuple[str | None, str], str] = {}
+        self._events: list[AgentRuntimeEvent] = []
+        self._lock = RLock()
+        if tools:
+            for name, handler in tools.items():
+                self.register_tool(name, handler)
+
+    def register_tool(self, name: str, handler: ToolHandler) -> None:
+        normalized = name.strip()
+        if not normalized:
+            raise AgentRuntimeError("tool name is required")
+        if self.config.allowed_tools and normalized not in self.config.allowed_tools:
+            raise AgentRuntimeError(f"tool {normalized!r} is not allowed by policy")
+        with self._lock:
+            self._tools[normalized] = handler
+
+    def create_run(
+        self,
+        objective: str,
+        *,
+        tenant_id: str | None = None,
+        user_id: str | None = None,
+        metadata: Mapping[str, Any] | None = None,
+        idempotency_key: str | None = None,
+    ) -> AgentRun:
+        if not self.config.enabled:
+            raise AgentRuntimeError("agent runtime is disabled")
+        if not objective.strip():
+            raise AgentRuntimeError("objective is required")
+        with self._lock:
+            if idempotency_key is not None:
+                normalized_key = idempotency_key.strip()
+                if not normalized_key:
+                    raise AgentRuntimeError("idempotency_key must not be empty")
+                existing = self._idempotency_index.get((tenant_id, normalized_key))
+                if existing is not None:
+                    return self.get_run(existing)
+            else:
+                normalized_key = None
+            run = AgentRun(
+                run_id=str(uuid4()),
+                objective=objective,
+                tenant_id=tenant_id,
+                user_id=user_id,
+                metadata=dict(metadata or {}),
+            )
+            if normalized_key is not None:
+                run.metadata["idempotency_key"] = normalized_key
+                self._idempotency_index[(tenant_id, normalized_key)] = run.run_id
+            self._runs[run.run_id] = run
+            self._record_event("run.created", run.run_id, metadata={"tenant_id": tenant_id})
+            return run
+
+    def get_run(self, run_id: str) -> AgentRun:
+        with self._lock:
+            try:
+                return self._runs[run_id]
+            except KeyError as exc:
+                raise AgentRuntimeError(f"agent run {run_id!r} not found") from exc
+
+    def execute(self, run_id: str, calls: Sequence[AgentToolCall]) -> AgentRun:
+        run = self.get_run(run_id)
+        if run.status in {AgentRunStatus.CANCELLED, AgentRunStatus.SUCCEEDED}:
+            raise AgentRuntimeError(f"run {run_id!r} is already {run.status.value}")
+        if len(run.steps) + len(calls) > self.config.max_steps:
+            raise AgentRuntimeError("run exceeds max_steps")
+        run.status = AgentRunStatus.RUNNING
+        run.updated_at = time.time()
+        self._record_event("run.started", run.run_id, metadata={"calls": len(calls)})
+        for call in calls:
+            self._execute_call(run, call)
+            if run.status == AgentRunStatus.FAILED:
+                self._record_event("run.failed", run.run_id, metadata={"steps": len(run.steps)})
+                return run
+        run.status = AgentRunStatus.SUCCEEDED
+        run.updated_at = time.time()
+        self._record_event("run.succeeded", run.run_id, metadata={"steps": len(run.steps)})
+        return run
+
+    def cancel(self, run_id: str) -> AgentRun:
+        run = self.get_run(run_id)
+        run.status = AgentRunStatus.CANCELLED
+        run.updated_at = time.time()
+        self._record_event("run.cancelled", run.run_id)
+        return run
+
+    def list_runs(self, *, tenant_id: str | None = None) -> list[AgentRun]:
+        with self._lock:
+            runs = list(self._runs.values())
+        if tenant_id is not None:
+            runs = [run for run in runs if run.tenant_id == tenant_id]
+        return sorted(runs, key=lambda run: run.created_at)
+
+    def health_check(self) -> dict[str, Any]:
+        with self._lock:
+            runs = tuple(self._runs.values())
+            tools = tuple(sorted(self._tools))
+            events = len(self._events)
+        by_status: dict[str, int] = {}
+        for run in runs:
+            by_status[run.status.value] = by_status.get(run.status.value, 0) + 1
+        return {
+            "module": "{{ module_name }}",
+            "status": "ok" if self.config.enabled else "disabled",
+            "enabled": self.config.enabled,
+            "tools": tools,
+            "runs": len(runs),
+            "events": events,
+            "by_status": by_status,
+            "max_steps": self.config.max_steps,
+        }
+
+    def events(self, run_id: str | None = None) -> list[AgentRuntimeEvent]:
+        if run_id is None:
+            with self._lock:
+                return list(self._events)
+        with self._lock:
+            return [event for event in self._events if event.run_id == run_id]
+
+    def _execute_call(self, run: AgentRun, call: AgentToolCall) -> None:
+        self._record_event(
+            "step.started",
+            run.run_id,
+            step_index=len(run.steps),
+            metadata={"tool": call.tool},
+        )
+        with self._lock:
+            handler = self._tools.get(call.tool)
+        if handler is None:
+            run.steps.append(
+                AgentStep(
+                    index=len(run.steps),
+                    tool=call.tool,
+                    status="failed",
+                    error=f"tool {call.tool!r} is not registered",
+                )
+            )
+            run.status = AgentRunStatus.FAILED
+            run.updated_at = time.time()
+            self._record_event(
+                "step.failed",
+                run.run_id,
+                step_index=run.steps[-1].index,
+                metadata={"tool": call.tool, "error": run.steps[-1].error},
+            )
+            return
+
+        attempts = self.config.retry_limit + 1
+        last_error: str | None = None
+        for _attempt in range(attempts):
+            try:
+                output = handler(call.arguments, run)
+                run.steps.append(
+                    AgentStep(
+                        index=len(run.steps),
+                        tool=call.tool,
+                        status="succeeded",
+                        output=output,
+                    )
+                )
+                run.updated_at = time.time()
+                self._record_event(
+                    "step.succeeded",
+                    run.run_id,
+                    step_index=run.steps[-1].index,
+                    metadata={"tool": call.tool},
+                )
+                return
+            except Exception as exc:  # pragma: no cover - tool-specific failure
+                last_error = str(exc)
+        run.steps.append(
+            AgentStep(
+                index=len(run.steps),
+                tool=call.tool,
+                status="failed",
+                error=last_error or "tool failed",
+            )
+        )
+        run.status = AgentRunStatus.FAILED
+        run.updated_at = time.time()
+        self._record_event(
+            "step.failed",
+            run.run_id,
+            step_index=run.steps[-1].index,
+            metadata={"tool": call.tool, "error": run.steps[-1].error},
+        )
+
+    def _record_event(
+        self,
+        event_type: str,
+        run_id: str,
+        *,
+        step_index: int | None = None,
+        metadata: Mapping[str, Any] | None = None,
+    ) -> None:
+        with self._lock:
+            self._events.append(
+                AgentRuntimeEvent(
+                    type=event_type,
+                    run_id=run_id,
+                    step_index=step_index,
+                    metadata=dict(metadata or {}),
+                )
+            )

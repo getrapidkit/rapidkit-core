@@ -40,6 +40,7 @@ _VENDOR_HEALTH_WRAPPER_TEMPLATE = Template(dedent('''
         import importlib.util
         import os
         import sys
+        import time
         from functools import lru_cache
         from pathlib import Path
         from types import ModuleType
@@ -50,8 +51,19 @@ _VENDOR_HEALTH_WRAPPER_TEMPLATE = Template(dedent('''
         _VENDOR_RELATIVE_PATH = "$vendor_relative_path"
         _VENDOR_ROOT_ENV = "RAPIDKIT_VENDOR_ROOT"
         _CACHE_PREFIX = "rapidkit_vendor_$cache_slug"
+        _STARTED_AT = time.monotonic()
 
         DEFAULT_HEALTH_PREFIX = "/api/health/module/$slug"
+
+
+        def _base_health_payload(*, status: str = "ok") -> dict[str, Any]:
+            return {
+                "module": _VENDOR_MODULE,
+                "status": status,
+                "version": _VENDOR_VERSION,
+                "uptime": max(0.0, time.monotonic() - _STARTED_AT),
+                "warnings": [],
+            }
 
 
         def _project_root() -> Path:
@@ -155,7 +167,17 @@ _VENDOR_HEALTH_WRAPPER_TEMPLATE = Template(dedent('''
             if vendor_base not in sys.path:
                 sys.path.insert(0, vendor_base)
 
-            module_name = _CACHE_PREFIX + _VENDOR_MODULE.replace("/", "_") + "_health"
+            module_root = _vendor_module_root() or vendor_path.parent
+            package_name = _CACHE_PREFIX + _VENDOR_MODULE.replace("/", "_") + "_pkg"
+            package = sys.modules.get(package_name)
+            if package is None:
+                package = ModuleType(package_name)
+                package.__path__ = [str(module_root)]
+                sys.modules[package_name] = package
+            else:
+                package.__path__ = [str(module_root)]
+
+            module_name = f"{package_name}.{vendor_path.stem}"
             spec = importlib.util.spec_from_file_location(module_name, vendor_path)
             if spec is None or spec.loader is None:
                 raise RuntimeError(f"Unable to load vendor health runtime from {vendor_path}")
@@ -185,6 +207,52 @@ _VENDOR_HEALTH_WRAPPER_TEMPLATE = Template(dedent('''
             _load_vendor_module.cache_clear()
 
 
+        async def health_check() -> dict[str, Any]:
+            """Return the standardized module health payload without a web router."""
+
+            probe_names = (
+                "check_health",
+                "health_check",
+                "module_health_status",
+                f"{_VENDOR_MODULE}_health_check",
+            )
+
+            for probe_name in probe_names:
+                try:
+                    probe = _resolve_export(probe_name)
+                except Exception:
+                    probe = None
+
+                if not callable(probe):
+                    continue
+
+                try:
+                    result = probe()
+                    if hasattr(result, "__await__"):
+                        result = await result
+                except Exception as exc:
+                    payload = _base_health_payload(status="error")
+                    payload["detail"] = str(exc)
+                    return payload
+
+                if isinstance(result, dict):
+                    payload = dict(result)
+                    payload.setdefault("module", _VENDOR_MODULE)
+                    payload.setdefault("status", "ok")
+                    payload.setdefault("version", _VENDOR_VERSION)
+                    payload.setdefault("uptime", max(0.0, time.monotonic() - _STARTED_AT))
+                    payload.setdefault("warnings", [])
+                    return payload
+
+                payload = _base_health_payload()
+                payload["detail"] = str(result)
+                return payload
+
+            payload = _base_health_payload(status="unknown")
+            payload["detail"] = "runtime not initialized"
+            return payload
+
+
         def build_health_router(prefix: str = DEFAULT_HEALTH_PREFIX) -> Any:
             """Return a standardized FastAPI router for module health.
 
@@ -203,54 +271,7 @@ _VENDOR_HEALTH_WRAPPER_TEMPLATE = Template(dedent('''
                 router = APIRouter(prefix=prefix, tags=["health"])
 
                 async def _build_health_payload() -> dict[str, Any]:
-                    probe_names = (
-                        "check_health",
-                        "health_check",
-                        "module_health_status",
-                        f"{_VENDOR_MODULE}_health_check",
-                    )
-
-                    for probe_name in probe_names:
-                        try:
-                            probe = _resolve_export(probe_name)
-                        except Exception:
-                            probe = None
-
-                        if not callable(probe):
-                            continue
-
-                        try:
-                            result = probe()
-                            if hasattr(result, "__await__"):
-                                result = await result
-                        except Exception as exc:
-                            return {
-                                "module": _VENDOR_MODULE,
-                                "status": "error",
-                                "detail": str(exc),
-                                "warnings": [],
-                            }
-
-                        if isinstance(result, dict):
-                            payload = dict(result)
-                            payload.setdefault("module", _VENDOR_MODULE)
-                            payload.setdefault("status", "ok")
-                            payload.setdefault("warnings", [])
-                            return payload
-
-                        return {
-                            "module": _VENDOR_MODULE,
-                            "status": "ok",
-                            "detail": str(result),
-                            "warnings": [],
-                        }
-
-                    return {
-                        "module": _VENDOR_MODULE,
-                        "status": "unknown",
-                        "detail": "runtime not initialized",
-                        "warnings": [],
-                    }
+                    return await health_check()
 
                 @router.get("", summary=f"{_VENDOR_MODULE} health check")
                 async def read_health() -> dict[str, Any]:
@@ -320,6 +341,7 @@ _VENDOR_HEALTH_WRAPPER_TEMPLATE = Template(dedent('''
             | {
                 "build_health_router",
                 "create_health_router",
+                "health_check",
                 "refresh_vendor_module",
                 "$register_symbol",
                 "router",

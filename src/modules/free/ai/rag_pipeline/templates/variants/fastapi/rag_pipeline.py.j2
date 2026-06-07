@@ -1,0 +1,172 @@
+from __future__ import annotations
+
+import importlib.util
+import os
+import sys
+from functools import lru_cache
+from pathlib import Path
+from typing import Any, Dict, List
+
+from fastapi import APIRouter, HTTPException, status
+from pydantic import BaseModel, Field
+
+_VENDOR_MODULE = "{{ rapidkit_vendor_module }}"
+_VENDOR_VERSION = "{{ rapidkit_vendor_version }}"
+_VENDOR_RELATIVE_PATH = "{{ rapidkit_vendor_relative_path }}"
+_VENDOR_ROOT_ENV = "RAPIDKIT_VENDOR_ROOT"
+_CACHE_PREFIX = "rapidkit_vendor_rag_pipeline"
+
+
+def _project_root() -> Path:
+    current = Path(__file__).resolve()
+    for parent in current.parents:
+        if (parent / "pyproject.toml").exists():
+            return parent
+    return current.parents[2]
+
+
+def _vendor_root() -> Path:
+    override = os.getenv(_VENDOR_ROOT_ENV)
+    if override:
+        return Path(override).expanduser().resolve()
+    return _project_root() / ".rapidkit" / "vendor"
+
+
+def _vendor_base_dir() -> Path:
+    module_dir = _vendor_root() / _VENDOR_MODULE
+    preferred = module_dir / _VENDOR_VERSION if _VENDOR_VERSION else None
+    if preferred and preferred.exists():
+        return preferred
+    candidates = sorted((path for path in module_dir.glob("*") if path.is_dir()), reverse=True)
+    if candidates:
+        return candidates[0]
+    raise RuntimeError(f"RapidKit vendor payload for {_VENDOR_MODULE!r} not found under {module_dir}")
+
+
+@lru_cache(maxsize=1)
+def _load_vendor_module():
+    vendor_path = _vendor_base_dir() / _VENDOR_RELATIVE_PATH
+    if not vendor_path.exists():
+        raise RuntimeError(f"RapidKit vendor rag_pipeline file missing at {vendor_path}")
+    module_name = _CACHE_PREFIX + "_" + _VENDOR_MODULE.replace("/", "_")
+    spec = importlib.util.spec_from_file_location(module_name, vendor_path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Unable to load vendor rag_pipeline module from {vendor_path}")
+    module = importlib.util.module_from_spec(spec)
+    sys.modules.setdefault(module_name, module)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _resolve_export(name: str):
+    module = _load_vendor_module()
+    try:
+        return getattr(module, name)
+    except AttributeError as exc:  # pragma: no cover - defensive against drift
+        raise RuntimeError(f"Vendor rag_pipeline module missing attribute {name!r}") from exc
+
+
+{{ module_class_name }} = _resolve_export("{{ module_class_name }}")
+{{ module_class_name }}Config = _resolve_export("{{ module_class_name }}Config")
+{{ module_class_name }}Error = _resolve_export("{{ module_class_name }}Error")
+RagQuery = _resolve_export("RagQuery")
+RagAnswer = _resolve_export("RagAnswer")
+
+
+class IngestPayload(BaseModel):
+    id: str | None = None
+    text: str = Field(min_length=1)
+    namespace: str = "default"
+    metadata: Dict[str, Any] = Field(default_factory=dict)
+
+
+class QueryPayload(BaseModel):
+    question: str = Field(min_length=1)
+    namespace: str = "default"
+    top_k: int = Field(default=4, ge=1)
+    metadata_filter: Dict[str, Any] = Field(default_factory=dict)
+
+
+def _answer_payload(answer: Any) -> dict[str, Any]:
+    return {
+        "answer": answer.answer,
+        "prompt": answer.prompt,
+        "metadata": dict(answer.metadata),
+        "citations": [
+            {
+                "document_id": citation.document_id,
+                "chunk_id": citation.chunk_id,
+                "text": citation.text,
+                "score": citation.score,
+                "metadata": dict(citation.metadata),
+            }
+            for citation in answer.citations
+        ],
+    }
+
+
+def create_router(pipeline: Any | None = None) -> APIRouter:
+    """Provide an application router for {{ module_title }}."""
+
+    router = APIRouter(prefix="/{{ module_kebab }}", tags=["{{ module_name }}"])
+    runtime = pipeline or {{ module_class_name }}()
+
+    @router.get("/health")
+    async def healthcheck() -> dict[str, Any]:
+        return runtime.health()
+
+    @router.get("/stats")
+    async def stats() -> dict[str, Any]:
+        return runtime.stats()
+
+    @router.post("/documents", status_code=status.HTTP_201_CREATED)
+    async def ingest(payload: IngestPayload) -> dict[str, Any]:
+        try:
+            document = runtime.ingest(**payload.model_dump())
+        except (ValueError, {{ module_class_name }}Error) as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+        return {
+            "id": document.id,
+            "namespace": document.namespace,
+            "metadata": dict(document.metadata),
+            "created_at": document.created_at,
+        }
+
+    @router.post("/answer", status_code=status.HTTP_200_OK)
+    async def answer(payload: QueryPayload) -> dict[str, Any]:
+        try:
+            response = runtime.answer(RagQuery(**payload.model_dump()))
+        except (ValueError, {{ module_class_name }}Error) as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+        return _answer_payload(response)
+
+    @router.post("/retrieve", status_code=status.HTTP_200_OK)
+    async def retrieve(payload: QueryPayload) -> dict[str, Any]:
+        try:
+            citations = runtime.retrieve(RagQuery(**payload.model_dump()))
+        except (ValueError, {{ module_class_name }}Error) as exc:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
+        return {
+            "citations": [
+                {
+                    "document_id": citation.document_id,
+                    "chunk_id": citation.chunk_id,
+                    "text": citation.text,
+                    "score": citation.score,
+                    "metadata": dict(citation.metadata),
+                }
+                for citation in citations
+            ]
+        }
+
+    return router
+
+
+__all__ = [
+    "{{ module_class_name }}",
+    "{{ module_class_name }}Config",
+    "{{ module_class_name }}Error",
+    "RagQuery",
+    "RagAnswer",
+    "create_router",
+]

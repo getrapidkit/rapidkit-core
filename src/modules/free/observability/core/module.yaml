@@ -3,7 +3,7 @@ display_name: Observability Core
 description:
     Cohesive metrics, tracing, and structured logging foundation for RapidKit
     services.
-version: 0.1.11
+version: 0.1.13
 access: free
 status: stable
 tier: free
@@ -134,12 +134,12 @@ documentation:
     examples:
         - templates/snippets/observability_core.snippet.j2
 support:
-    issues: https://github.com/getrapidkit/rapidkit-core/issues
-    discussions: https://github.com/getrapidkit/rapidkit-core/discussions
+    issues: https://github.com/rapidkitlabs/rapidkit-core/issues
+    discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
     documentation: https://docs.rapidkit.top/modules/observability/observability_core
 changelog:
-  - version: "0.1.11"
-    date: "2026-02-11"
+  - version: "0.1.13"
+    date: "2026-06-07"
     notes: "See docs/changelog.md"
 validation:
     pre_install:
@@ -190,7 +190,7 @@ file_hashes:
     frameworks/fastapi.py: sha256:03e74264345a6fb03f067cda0e2c51b07642d3f3b55a7deb1a9904f4eff59429
     frameworks/nestjs.py: sha256:36971da359e64085a0ac5210c89f0ef2e8364fa691577002f22df3ffc1e02b60
     generate.py: sha256:e88c260297277c3c49bd00037bcd87dacc1a22c421efdea25f33f5d10739b3bf
-    module.verify.json: sha256:378c3fe2bccaf00c04982572dc8c8a6201bc1cf919c88c7303611acf61abc41b
+    module.verify.json: sha256:f5f77e594612184474080f4aa6df978b5a652e0d50111f1b8c03c5f569cf2d1f
     overrides.py: sha256:c1e4c88b1d5ffe20f75b5e444114cc276b407afa05c994efe453c18e3342400c
     templates/base/core.py.j2: sha256:67820383727369291c56cb128fa2591d549cebbc9a7280a12e40660b6131f776
     templates/base/core_health.py.j2: sha256:713cd6f0a33e923e3f4519c71decc34d13ca6aa76fef5e625bd5ea948cf12b83

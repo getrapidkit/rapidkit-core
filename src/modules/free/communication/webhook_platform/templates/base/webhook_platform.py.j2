@@ -1,0 +1,337 @@
+from __future__ import annotations
+
+import hmac
+import json
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from hashlib import sha256
+from threading import RLock
+from typing import Any, Callable, Mapping
+from uuid import uuid4
+
+
+class {{ module_class_name }}Error(ValueError):
+    """Raised when webhook configuration or delivery fails validation."""
+
+
+DeliveryHandler = Callable[[str, Mapping[str, str], Mapping[str, Any]], tuple[int, str]]
+
+
+@dataclass(frozen=True)
+class WebhookEndpoint:
+    id: str
+    url: str
+    secret: str
+    events: tuple[str, ...] = ("*",)
+    active: bool = True
+    tenant_id: str | None = None
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class WebhookEvent:
+    id: str
+    type: str
+    payload: Mapping[str, Any]
+    idempotency_key: str
+    tenant_id: str | None = None
+    timestamp: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds")
+    )
+
+
+@dataclass(frozen=True)
+class WebhookDelivery:
+    id: str
+    event_id: str
+    endpoint_id: str
+    status_code: int | None
+    status: str
+    attempt: int
+    response: str = ""
+    signature: str = ""
+    timestamp: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds")
+    )
+
+
+@dataclass(frozen=True)
+class WebhookAuditEvent:
+    type: str
+    event_id: str | None = None
+    endpoint_id: str | None = None
+    delivery_id: str | None = None
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+    timestamp: str = field(
+        default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds")
+    )
+
+
+@dataclass(frozen=True)
+class {{ module_class_name }}Config:
+    """Runtime configuration for {{ module_title }}."""
+
+    enabled: bool = True
+    max_attempts: int = 3
+    signature_header: str = "X-RapidKit-Signature"
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+
+def build_default_config() -> {{ module_class_name }}Config:
+    """Return default configuration payload."""
+
+    return {{ module_class_name }}Config()
+
+
+def sign_payload(secret: str, payload: Mapping[str, Any]) -> str:
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+    return hmac.new(secret.encode("utf-8"), encoded, sha256).hexdigest()
+
+
+def verify_signature(secret: str, payload: Mapping[str, Any], signature: str) -> bool:
+    return hmac.compare_digest(sign_payload(secret, payload), signature)
+
+
+class {{ module_class_name }}:
+    """In-process webhook dispatcher with signatures and retry tracking."""
+
+    def __init__(
+        self,
+        config: {{ module_class_name }}Config | None = None,
+        *,
+        handler: DeliveryHandler | None = None,
+    ) -> None:
+        self.config = config or build_default_config()
+        self._handler = handler or self._default_handler
+        self._endpoints: dict[str, WebhookEndpoint] = {}
+        self._events: dict[str, WebhookEvent] = {}
+        self._deliveries: list[WebhookDelivery] = []
+        self._idempotency_index: dict[str, WebhookEvent] = {}
+        self._audit: list[WebhookAuditEvent] = []
+        self._lock = RLock()
+
+    def register_endpoint(
+        self,
+        *,
+        url: str,
+        secret: str,
+        events: tuple[str, ...] | list[str] = ("*",),
+        tenant_id: str | None = None,
+        active: bool = True,
+        metadata: Mapping[str, Any] | None = None,
+    ) -> WebhookEndpoint:
+        if not self.config.enabled:
+            raise {{ module_class_name }}Error("webhook platform is disabled")
+        if not url.startswith(("http://", "https://")):
+            raise {{ module_class_name }}Error("endpoint url must be http or https")
+        if not secret:
+            raise {{ module_class_name }}Error("endpoint secret must not be empty")
+        endpoint = WebhookEndpoint(
+            id=str(uuid4()),
+            url=url,
+            secret=secret,
+            events=tuple(events),
+            active=active,
+            tenant_id=tenant_id,
+            metadata=dict(metadata or {}),
+        )
+        with self._lock:
+            self._endpoints[endpoint.id] = endpoint
+            self._record_audit("endpoint.registered", endpoint_id=endpoint.id, metadata={"url": endpoint.url})
+        return endpoint
+
+    def publish(
+        self,
+        *,
+        event_type: str,
+        payload: Mapping[str, Any],
+        idempotency_key: str | None = None,
+        tenant_id: str | None = None,
+    ) -> WebhookEvent:
+        if not self.config.enabled:
+            raise {{ module_class_name }}Error("webhook platform is disabled")
+        if not event_type.strip():
+            raise {{ module_class_name }}Error("event_type must not be empty")
+        key = idempotency_key or str(uuid4())
+        with self._lock:
+            if key in self._idempotency_index:
+                return self._idempotency_index[key]
+            event = WebhookEvent(
+                id=str(uuid4()),
+                type=event_type,
+                payload=dict(payload),
+                idempotency_key=key,
+                tenant_id=tenant_id,
+            )
+            self._events[event.id] = event
+            self._idempotency_index[key] = event
+            self._record_audit("event.created", event_id=event.id, metadata={"type": event.type})
+        self.dispatch(event.id)
+        return event
+
+    def dispatch(self, event_id: str, *, tenant_id: str | None = None) -> tuple[WebhookDelivery, ...]:
+        event = self._events.get(event_id)
+        if event is None:
+            raise {{ module_class_name }}Error("webhook event not found")
+        if tenant_id is not None and event.tenant_id != tenant_id:
+            raise {{ module_class_name }}Error("tenant is not allowed for this event")
+        deliveries: list[WebhookDelivery] = []
+        for endpoint in self._matching_endpoints(event):
+            deliveries.append(self._deliver(event, endpoint, attempt=1))
+        self._record_audit(
+            "event.dispatched",
+            event_id=event.id,
+            metadata={"deliveries": len(deliveries), "tenant_id": event.tenant_id},
+        )
+        return tuple(deliveries)
+
+    def retry_failed(self) -> tuple[WebhookDelivery, ...]:
+        retries: list[WebhookDelivery] = []
+        latest = {(delivery.event_id, delivery.endpoint_id): delivery for delivery in self._deliveries}
+        for delivery in latest.values():
+            if delivery.status != "failed" or delivery.attempt >= self.config.max_attempts:
+                continue
+            event = self._events[delivery.event_id]
+            endpoint = self._endpoints[delivery.endpoint_id]
+            retries.append(self._deliver(event, endpoint, attempt=delivery.attempt + 1))
+        return tuple(retries)
+
+    def list_deliveries(
+        self,
+        *,
+        event_id: str | None = None,
+        endpoint_id: str | None = None,
+        status: str | None = None,
+    ) -> tuple[WebhookDelivery, ...]:
+        deliveries = tuple(self._deliveries)
+        if event_id is not None:
+            deliveries = tuple(delivery for delivery in deliveries if delivery.event_id == event_id)
+        if endpoint_id is not None:
+            deliveries = tuple(delivery for delivery in deliveries if delivery.endpoint_id == endpoint_id)
+        if status is not None:
+            deliveries = tuple(delivery for delivery in deliveries if delivery.status == status)
+        return deliveries
+
+    def replay_delivery(self, delivery_id: str, *, tenant_id: str | None = None) -> WebhookDelivery:
+        previous = next((delivery for delivery in self._deliveries if delivery.id == delivery_id), None)
+        if previous is None:
+            raise {{ module_class_name }}Error("delivery not found")
+        event = self._events[previous.event_id]
+        endpoint = self._endpoints[previous.endpoint_id]
+        if tenant_id is not None and event.tenant_id != tenant_id:
+            raise {{ module_class_name }}Error("tenant is not allowed for this delivery")
+        replayed = self._deliver(event, endpoint, attempt=previous.attempt + 1)
+        self._record_audit(
+            "delivery.replayed",
+            event_id=event.id,
+            endpoint_id=endpoint.id,
+            delivery_id=replayed.id,
+            metadata={"from_delivery_id": previous.id},
+        )
+        return replayed
+
+    def audit_events(
+        self,
+        *,
+        event_id: str | None = None,
+        endpoint_id: str | None = None,
+    ) -> tuple[WebhookAuditEvent, ...]:
+        events = tuple(self._audit)
+        if event_id is not None:
+            events = tuple(item for item in events if item.event_id == event_id)
+        if endpoint_id is not None:
+            events = tuple(item for item in events if item.endpoint_id == endpoint_id)
+        return events
+
+    def stats(self) -> dict[str, Any]:
+        return {
+            "enabled": self.config.enabled,
+            "endpoints": len(self._endpoints),
+            "events": len(self._events),
+            "deliveries": len(self._deliveries),
+            "audit_events": len(self._audit),
+            "failed": len([delivery for delivery in self._deliveries if delivery.status == "failed"]),
+        }
+
+    def health(self) -> dict[str, Any]:
+        return {
+            "module": "{{ module_name }}",
+            "status": "ok" if self.config.enabled else "disabled",
+            "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+            "stats": self.stats(),
+        }
+
+    def _matching_endpoints(self, event: WebhookEvent) -> tuple[WebhookEndpoint, ...]:
+        return tuple(
+            endpoint
+            for endpoint in self._endpoints.values()
+            if endpoint.active
+            and (endpoint.tenant_id is None or endpoint.tenant_id == event.tenant_id)
+            and ("*" in endpoint.events or event.type in endpoint.events)
+        )
+
+    def _deliver(
+        self,
+        event: WebhookEvent,
+        endpoint: WebhookEndpoint,
+        *,
+        attempt: int,
+    ) -> WebhookDelivery:
+        signature = sign_payload(endpoint.secret, event.payload)
+        headers = {
+            self.config.signature_header: signature,
+            "X-RapidKit-Event": event.type,
+            "X-RapidKit-Delivery": event.id,
+        }
+        try:
+            status_code, response = self._handler(endpoint.url, headers, event.payload)
+            status = "delivered" if 200 <= status_code < 300 else "failed"
+        except Exception as exc:  # pragma: no cover - caller handler failure is captured
+            status_code, response, status = None, str(exc), "failed"
+        delivery = WebhookDelivery(
+            id=str(uuid4()),
+            event_id=event.id,
+            endpoint_id=endpoint.id,
+            status_code=status_code,
+            status=status,
+            attempt=attempt,
+            response=response,
+            signature=signature,
+        )
+        with self._lock:
+            self._deliveries.append(delivery)
+            self._record_audit(
+                "delivery.recorded",
+                event_id=event.id,
+                endpoint_id=endpoint.id,
+                delivery_id=delivery.id,
+                metadata={"attempt": attempt, "status": delivery.status},
+            )
+        return delivery
+
+    def _record_audit(
+        self,
+        event_type: str,
+        *,
+        event_id: str | None = None,
+        endpoint_id: str | None = None,
+        delivery_id: str | None = None,
+        metadata: Mapping[str, Any] | None = None,
+    ) -> None:
+        self._audit.append(
+            WebhookAuditEvent(
+                type=event_type,
+                event_id=event_id,
+                endpoint_id=endpoint_id,
+                delivery_id=delivery_id,
+                metadata=dict(metadata or {}),
+            )
+        )
+
+    @staticmethod
+    def _default_handler(
+        _url: str,
+        _headers: Mapping[str, str],
+        _payload: Mapping[str, Any],
+    ) -> tuple[int, str]:
+        return 202, "accepted"

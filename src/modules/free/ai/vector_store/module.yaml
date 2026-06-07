@@ -1,0 +1,175 @@
+name: vector_store
+display_name: Vector Store
+description: Vector store abstraction for pgvector/Qdrant-style indexes, similarity search, and embedding
+  metadata
+version: 0.1.6
+access: free
+status: stable
+tier: free
+category: ai
+tags:
+- ai
+- vectors
+- embeddings
+- search
+- pgvector
+generated_from_config: true
+profile_inherits:
+  fastapi.standard: fastapi
+  fastapi.ddd: fastapi
+  nestjs.standard: nestjs
+config_sources:
+- config/base.yaml
+- config/snippets.yaml
+generation:
+  vendor:
+    root: .rapidkit/vendor
+    files:
+    - template: templates/base/vector_store.py.j2
+      relative: src/ai/vector_store.py
+    - template: templates/base/vector_store_types.py.j2
+      relative: src/ai/vector_store_types.py
+    - template: templates/base/vector_store_health.py.j2
+      relative: src/health/ai/vector_store.py
+    - template: templates/vendor/nestjs/configuration.js.j2
+      relative: nestjs/configuration.js
+  variants:
+    fastapi: &fastapi_variant
+      root: .
+      context:
+        framework: fastapi
+        module_class_name: VectorStore
+      files:
+      - template: templates/variants/fastapi/vector_store.py.j2
+        output: src/ai/vector_store.py
+      - template: templates/variants/fastapi/vector_store_routes.py.j2
+        output: src/routers/ai/vector_store.py
+      - template: templates/variants/fastapi/vector_store_health.py.j2
+        output: src/health/ai/vector_store.py
+      - template: templates/tests/integration/test_vector_store_integration.j2
+        output: tests/modules/free/integration/ai/vector_store/test_vector_store_integration.py
+      - template: templates/variants/fastapi/tests/test_vector_store_e2e.py
+        output: tests/modules/e2e/free/ai/vector_store/test_vector_store_e2e.py
+    fastapi.standard: *fastapi_variant
+    fastapi.ddd: *fastapi_variant
+    nestjs: &nestjs_variant
+      root: .
+      context:
+        framework: nestjs
+        vendor_configuration_relative: nestjs/configuration.js
+        module_class_name: VectorStore
+        module_kebab: vector-store
+      files:
+      - template: templates/variants/nestjs/vector_store.service.ts.j2
+        output: src/vector-store/vector_store.service.ts
+      - template: templates/variants/nestjs/vector_store.controller.ts.j2
+        output: src/vector-store/vector_store.controller.ts
+      - template: templates/variants/nestjs/vector_store.module.ts.j2
+        output: src/vector-store/vector_store.module.ts
+      - template: templates/variants/nestjs/vector_store.health.ts.j2
+        output: src/vector-store/vector_store.health.ts
+      - template: templates/variants/nestjs/vector_store.validation.ts.j2
+        output: src/vector-store/vector_store.validation.ts
+      - template: templates/variants/nestjs/vector_store.index.ts.j2
+        output: src/vector-store/index.ts
+      - template: templates/variants/nestjs/vector_store.configuration.ts.j2
+        output: src/vector-store/configuration.ts
+      - template: templates/variants/nestjs/tests/vector_store.e2e-spec.ts
+        output: tests/modules/e2e/ai/vector_store/vector_store.e2e-spec.ts
+    nestjs.standard: *nestjs_variant
+  snippets:
+    enabled: true
+    config: config/snippets.yaml
+    default: []
+compatibility:
+  python: '>=3.9,<4.0'
+  frameworks:
+  - fastapi
+  - nestjs
+  os:
+  - linux
+  - darwin
+  - windows
+testing:
+  coverage_min: 85
+  integration_tests: true
+  e2e_tests: false
+  unit_tests:
+  - tests/modules/free/ai/vector_store/test_vector_store_generator.py
+  - tests/modules/free/ai/vector_store/test_vector_store_overrides.py
+  - tests/modules/free/ai/vector_store/test_vector_store_runtime.py
+  - tests/modules/free/ai/vector_store/test_vector_store_adapters.py
+  - tests/modules/free/ai/vector_store/test_vector_store_validation.py
+  - tests/modules/free/ai/vector_store/test_vector_store_error_handling.py
+  - tests/modules/free/ai/vector_store/test_vector_store_health_check.py
+  - tests/modules/free/ai/vector_store/test_vector_store_framework_variants.py
+  - tests/modules/free/ai/vector_store/test_vector_store_vendor_layer.py
+  - tests/modules/free/ai/vector_store/test_vector_store_configuration.py
+  - tests/modules/free/ai/vector_store/test_vector_store_versioning.py
+  - tests/modules/free/ai/vector_store/test_vector_store_standard_module.py
+  integration_test_files:
+  - tests/modules/free/integration/ai/vector_store/test_vector_store_integration.py
+  fixtures: []
+documentation:
+  changelog: docs/changelog.md
+  readme: README.md
+  overview: docs/overview.md
+  usage: docs/usage.md
+  advanced: docs/advanced.md
+  migration: docs/migration.md
+  troubleshooting: docs/troubleshooting.md
+  api_docs: docs/api-reference.md
+  examples: []
+support:
+  issues: https://github.com/rapidkitlabs/rapidkit-core/issues
+  discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+  documentation: https://docs.rapidkit.top/modules/vector_store
+changelog:
+  - version: "0.1.6"
+    date: "2026-06-02"
+    notes: "See docs/changelog.md"
+validation:
+  pre_install:
+  - check_python_version
+  post_install:
+  - validate_generated_code
+rollback:
+  strategy: uninstall
+  backup_path: .rapidkit/backups/
+  max_backups: 3
+performance:
+  lazy_loading: true
+  caching:
+    templates: true
+    ttl: 300
+capabilities:
+- vector_indexing
+- similarity_search
+- metadata_filters
+- embedding_storage
+- health_checks
+signature: null
+signer_id: null
+signature_version: null
+file_hashes:
+  README.md: sha256:0efc8f7da6da25c64c071159f195c60cdf924d6c14c73e30dd388d0301a1ee5f
+  __init__.py: sha256:d99de81a62aba9f704afa658db1824ba0588dfe3e4701796705011e5b4cbc9a1
+  config/base.yaml: sha256:f2b0edea9fd8cacbe4caa764fcd4b0dcecb69f982d9161f2da83f94b477a8d4d
+  config/snippets.yaml: sha256:814429ffc304c079418b758188fb297fdb0a3649397c060241e210a39fa17234
+  docs/README.md: sha256:a5a90e1b0aa0422b86ad1a504b0f640e4e9ec82c145057a90c83195a49d5b41f
+  docs/advanced.md: sha256:732f33bcd6106276206b2bb5350b3dda586a5df3a430782927d25aba706ed1ff
+  docs/api-reference.md: sha256:c8f590cb8928c0494cb2d7e27a2037e76aabec784411fe3852e8f94a50e55b42
+  docs/changelog.md: sha256:d2abdd34f1dad0fd1c62c7cef02969717ba142a53947d416705b28b0156eae79
+  docs/migration.md: sha256:23459c951412d81d160604577993410f560dff1d284264e7cc0503780c9d305a
+  docs/overview.md: sha256:711306b3ace8f8d5a8012d085c9c61aec9b6693d5f0a493d6233c8c706770560
+  docs/troubleshooting.md: sha256:660a49880723c3567e788bb6c3d7830a6ff78ff56ba5f0b541fb9bdaa764220f
+  docs/usage.md: sha256:62a602e4fb2b93f01574f02bb562cbb84273308f433dd1b00f7baf483b6cddfe
+  templates/vendor/nestjs/configuration.js.j2: sha256:c038c50dc5df2bc7e2f51953fe69dd38ecf8b9226118954128659436b080ef01
+  module.verify.json: sha256:b893c34b8ed5541873e32a60427f523005359e4721db1ee3b2f819a76d3d463c
+depends_on:
+- free/database/db_postgres
+- free/essentials/settings
+metadata:
+  enterprise_ready: true
+  free_marketplace_module: true
+  product_factory_priority: high

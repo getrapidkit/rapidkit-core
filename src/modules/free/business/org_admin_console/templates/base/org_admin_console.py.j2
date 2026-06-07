@@ -1,0 +1,168 @@
+from __future__ import annotations
+
+from dataclasses import dataclass, field, replace
+from datetime import datetime, timezone
+from threading import RLock
+from typing import Any, Mapping
+from uuid import uuid4
+
+
+class {{ module_class_name }}Error(ValueError):
+    """Raised when organization admin input is invalid."""
+
+
+@dataclass(frozen=True)
+class Organization:
+    id: str
+    name: str
+    slug: str
+    settings: Mapping[str, Any] = field(default_factory=dict)
+    created_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds"))
+
+
+@dataclass(frozen=True)
+class OrgMember:
+    id: str
+    org_id: str
+    user_id: str
+    role: str
+    status: str = "active"
+
+
+@dataclass(frozen=True)
+class OrgInvitation:
+    id: str
+    org_id: str
+    email: str
+    role: str
+    status: str = "pending"
+
+
+@dataclass(frozen=True)
+class {{ module_class_name }}Config:
+    enabled: bool = True
+    allowed_roles: tuple[str, ...] = ("owner", "admin", "member", "viewer")
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+
+def build_default_config() -> {{ module_class_name }}Config:
+    return {{ module_class_name }}Config()
+
+
+class {{ module_class_name }}:
+    """Organization admin console for tenant settings, memberships, roles, and invitations."""
+
+    def __init__(self, config: {{ module_class_name }}Config | None = None) -> None:
+        self.config = config or build_default_config()
+        self._orgs: dict[str, Organization] = {}
+        self._members: dict[str, OrgMember] = {}
+        self._invites: dict[str, OrgInvitation] = {}
+        self._audit: list[dict[str, Any]] = []
+        self._lock = RLock()
+
+    def create_org(self, *, name: str, slug: str, owner_user_id: str, settings: Mapping[str, Any] | None = None) -> Organization:
+        if not self.config.enabled:
+            raise {{ module_class_name }}Error("org admin console is disabled")
+        if not name.strip() or not slug.strip():
+            raise {{ module_class_name }}Error("organization name and slug are required")
+        clean_slug = slug.strip()
+        org = Organization(id=str(uuid4()), name=name.strip(), slug=clean_slug, settings=dict(settings or {}))
+        owner = OrgMember(id=str(uuid4()), org_id=org.id, user_id=owner_user_id, role="owner")
+        with self._lock:
+            if any(existing.slug == clean_slug for existing in self._orgs.values()):
+                raise {{ module_class_name }}Error("organization slug already exists")
+            self._orgs[org.id] = org
+            self._members[owner.id] = owner
+            self._record("org.created", org_id=org.id, actor_id=owner_user_id)
+        return org
+
+    def invite_member(self, *, org_id: str, email: str, role: str, actor_id: str) -> OrgInvitation:
+        self._validate_role(role)
+        if "@" not in email:
+            raise {{ module_class_name }}Error("invitation email is invalid")
+        invite = OrgInvitation(id=str(uuid4()), org_id=org_id, email=email.strip(), role=role)
+        with self._lock:
+            self._require_org(org_id)
+            self._invites[invite.id] = invite
+            self._record("member.invited", org_id=org_id, actor_id=actor_id, metadata={"email": email, "role": role})
+        return invite
+
+    def accept_invite(self, invite_id: str, *, user_id: str) -> OrgMember:
+        with self._lock:
+            invite = self._require_invite(invite_id)
+            if invite.status != "pending":
+                raise {{ module_class_name }}Error("only pending invitations can be accepted")
+            member = OrgMember(id=str(uuid4()), org_id=invite.org_id, user_id=user_id, role=invite.role)
+            self._invites[invite_id] = replace(invite, status="accepted")
+            self._members[member.id] = member
+            self._record("member.joined", org_id=invite.org_id, actor_id=user_id, metadata={"role": invite.role})
+        return member
+
+    def update_role(self, member_id: str, *, role: str, actor_id: str) -> OrgMember:
+        self._validate_role(role)
+        with self._lock:
+            member = self._require_member(member_id)
+            updated = replace(member, role=role)
+            self._members[member_id] = updated
+            self._record("member.role_updated", org_id=member.org_id, actor_id=actor_id, metadata={"role": role})
+        return updated
+
+    def update_settings(self, org_id: str, *, settings: Mapping[str, Any], actor_id: str) -> Organization:
+        with self._lock:
+            org = self._require_org(org_id)
+            updated = replace(org, settings={**dict(org.settings), **dict(settings)})
+            self._orgs[org_id] = updated
+            self._record("org.settings_updated", org_id=org_id, actor_id=actor_id, metadata={"keys": sorted(settings)})
+        return updated
+
+    def list_members(self, org_id: str) -> tuple[OrgMember, ...]:
+        with self._lock:
+            return tuple(member for member in self._members.values() if member.org_id == org_id)
+
+    def audit_events(self, *, org_id: str | None = None) -> tuple[dict[str, Any], ...]:
+        with self._lock:
+            events = tuple(dict(event) for event in self._audit)
+        if org_id is not None:
+            events = tuple(event for event in events if event.get("org_id") == org_id)
+        return events
+
+    def health(self) -> dict[str, Any]:
+        with self._lock:
+            return {
+                "module": "{{ module_name }}",
+                "status": "ok" if self.config.enabled else "disabled",
+                "organizations": len(self._orgs),
+                "members": len(self._members),
+                "pending_invitations": len([invite for invite in self._invites.values() if invite.status == "pending"]),
+            }
+
+    def _validate_role(self, role: str) -> None:
+        if role not in self.config.allowed_roles:
+            raise {{ module_class_name }}Error("role is not allowed")
+
+    def _require_org(self, org_id: str) -> Organization:
+        try:
+            return self._orgs[org_id]
+        except KeyError as exc:
+            raise {{ module_class_name }}Error("organization not found") from exc
+
+    def _require_member(self, member_id: str) -> OrgMember:
+        try:
+            return self._members[member_id]
+        except KeyError as exc:
+            raise {{ module_class_name }}Error("member not found") from exc
+
+    def _require_invite(self, invite_id: str) -> OrgInvitation:
+        try:
+            return self._invites[invite_id]
+        except KeyError as exc:
+            raise {{ module_class_name }}Error("invitation not found") from exc
+
+    def _record(self, event_type: str, *, org_id: str, actor_id: str, metadata: Mapping[str, Any] | None = None) -> None:
+        self._audit.append({
+            "type": event_type,
+            "org_id": org_id,
+            "actor_id": actor_id,
+            "metadata": dict(metadata or {}),
+            "timestamp": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        })

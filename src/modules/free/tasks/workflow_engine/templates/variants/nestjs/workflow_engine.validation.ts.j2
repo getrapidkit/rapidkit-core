@@ -1,0 +1,7 @@
+import { z } from "zod";
+
+export const {{ module_name }}ConfigSchema = z.object({
+    enabled: z.boolean().default(true),
+});
+
+export type {{ module_class_name }}Config = z.infer<typeof {{ module_name }}ConfigSchema>;

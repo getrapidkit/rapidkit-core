@@ -1,0 +1,7 @@
+# Register snippet bundles for Webhook Platform
+
+snippets:
+  -
+    name: "webhook_platform_usage_example"
+    template: "templates/snippets/webhook_platform.snippet.j2"
+    description: "Injects an opinionated usage example for Webhook Platform."

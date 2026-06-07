@@ -75,6 +75,13 @@ def _relative_to_modules(filename: str, modules_root: Path) -> Optional[PurePosi
     if normalised.startswith(marker):
         return PurePosixPath(normalised[len(marker) :])
 
+    relative_candidate = PurePosixPath(normalised)
+    if len(relative_candidate.parts) >= MODULE_SLUG_DEPTH and relative_candidate.parts[0] in {
+        "free",
+        "paid",
+    }:
+        return relative_candidate
+
     alt_marker = f"{modules_root.name}/"
     if normalised.startswith(alt_marker):
         return PurePosixPath(normalised[len(alt_marker) :])
@@ -209,9 +216,9 @@ def _format_table(
 
     for record in records:
         threshold = thresholds.get(record.slug, 0.0)
-        status = "✅" if record.total_lines == 0 or record.percentage >= threshold else "❌"
+        status = "PASS" if record.total_lines == 0 or record.percentage >= threshold else "FAIL"
         lines.append(
-            f"{status} {record.slug:<40} {record.total_lines:>10} {record.covered_lines:>10} {record.display_percentage():>10}"
+            f"{status:<4} {record.slug:<40} {record.total_lines:>10} {record.covered_lines:>10} {record.display_percentage():>10}"
         )
 
     return "\n".join(lines)
@@ -266,10 +273,10 @@ def main() -> int:
     include_all_tiers = "all" in {tier.lower() for tier in tiers}
 
     if coverage_xml.suffix.lower() != ".xml":
-        print(f"⚠️ Expected an XML coverage report, got: {coverage_xml}")
+        print(f"WARNING: Expected an XML coverage report, got: {coverage_xml}")
     if not coverage_xml.exists():
         print(
-            f"❌ Coverage report not found at {coverage_xml}. Run pytest with --cov first.",
+            f"ERROR: Coverage report not found at {coverage_xml}. Run pytest with --cov first.",
             file=sys.stderr,
         )
         return 2
@@ -281,7 +288,7 @@ def main() -> int:
         requested = {slug.strip() for slug in args.modules}
         missing = requested - set(discovered_slugs)
         if missing:
-            print(f"⚠️ Requested module(s) not found: {', '.join(sorted(missing))}")
+            print(f"WARNING: Requested module(s) not found: {', '.join(sorted(missing))}")
         target_slugs = sorted(set(discovered_slugs) & requested)
     else:
         target_slugs = discovered_slugs
@@ -303,7 +310,7 @@ def main() -> int:
         records.append(record)
         info = module_infos.get(slug)
         if info and info.coverage_min is not None:
-            thresholds[slug] = max(float(info.coverage_min), threshold)
+            thresholds[slug] = float(info.coverage_min)
         else:
             thresholds[slug] = threshold
 
@@ -339,7 +346,7 @@ def main() -> int:
             for record in failing:
                 module_threshold = thresholds.get(record.slug, threshold)
                 print(
-                    f"  - {record.slug} ({record.display_percentage()}) — threshold {module_threshold:.1f}%"
+                    f"  - {record.slug} ({record.display_percentage()}) - threshold {module_threshold:.1f}%"
                 )
         else:
             print("\nAll modules meet the coverage threshold.")

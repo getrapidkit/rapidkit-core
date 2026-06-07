@@ -1,0 +1,12 @@
+{# Shared snippet for the RapidKit Audit Policy module. #}
+{% set module_name = "audit_policy" %}
+{% set module_title = "Audit Policy" %}
+
+# {{ module_title }} integration notes
+
+- Canonical module: `free/security/audit_policy`
+- Primary purpose: Immutable audit events, reason capture, admin policy, and compliance export scaffolding.
+- Key capabilities: Captures privileged actions with actor, target, reason, and context., Provides tamper-evident event shapes for compliance workflows., Adds reusable policy hooks for admin actions.
+- Runtime environment keys: RAPIDKIT_AUDIT_POLICY_ENABLED, RAPIDKIT_AUDIT_POLICY_REQUIRE_REASON, RAPIDKIT_AUDIT_POLICY_RETENTION_DAYS
+
+Use this snippet near the owning service/module registration point so generated projects keep module intent, operational boundaries, and security expectations visible to maintainers.

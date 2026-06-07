@@ -7,10 +7,9 @@ import pytest
 def fastapi_app():
     """Create FastAPI test app."""
     from fastapi import FastAPI
-    from fastapi.testclient import TestClient
 
     app = FastAPI()
-    return TestClient(app)
+    return app
 
 
 @pytest.fixture

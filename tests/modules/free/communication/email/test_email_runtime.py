@@ -288,3 +288,40 @@ def test_get_email_service_raises_when_unregistered(email_runtime) -> None:
 
     with pytest.raises(RuntimeError):
         get_email_service(_StubRequest())
+
+
+def test_email_delivery_log_retry_and_bounce_record(email_runtime) -> None:
+    EmailConfig = email_runtime.EmailConfig
+    EmailService = email_runtime.EmailService
+    EmailMessagePayload = email_runtime.EmailMessagePayload
+
+    attempts = {"count": 0}
+
+    async def flaky_transport(_message):
+        attempts["count"] += 1
+        if attempts["count"] == 1:
+            raise RuntimeError("temporary provider failure")
+        return "msg-retry-1"
+
+    config = EmailConfig(
+        enabled=True,
+        provider="smtp",
+        max_delivery_attempts=2,
+        retry_backoff_seconds=0,
+    )
+    service = EmailService(config, transport=flaky_transport)
+    payload = EmailMessagePayload(
+        to=["ops@example.com"],
+        subject="Retry",
+        text_body="hello",
+    )
+
+    result = asyncio.run(service.send_email(payload))
+    bounce = service.record_bounce(result.message_id, "mailbox unavailable")
+
+    assert attempts["count"] == 2
+    assert result.message_id == "msg-retry-1"
+    assert service.delivery_log()[0].attempts == 2
+    assert service.delivery_log()[0].accepted is True
+    assert bounce.reason == "mailbox unavailable"
+    assert service.bounce_log()[0].message_id == "msg-retry-1"

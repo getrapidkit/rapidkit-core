@@ -1,5 +1,21 @@
 # Changelog — free/business/storage
 
+## 0.1.10 — Automated patch release triggered by content hash change (2026-06-07)
+
+- chore: Automated patch release triggered by content hash change
+
+## 0.1.9 — Automated patch release triggered by content hash change (2026-06-02)
+
+- chore: Automated patch release triggered by content hash change
+
+## 0.1.8 — Automated patch release triggered by content hash change (2026-06-01)
+
+- chore: Automated patch release triggered by content hash change
+
+## 0.1.7 — Automated patch release triggered by content hash change (2026-05-31)
+
+- chore: Automated patch release triggered by content hash change
+
 ## 0.1.6 — Automated patch release triggered by content hash change (2026-02-14)
 
 - chore: Automated patch release triggered by content hash change

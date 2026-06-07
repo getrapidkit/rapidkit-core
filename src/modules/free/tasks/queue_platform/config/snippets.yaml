@@ -1,0 +1,7 @@
+# Register snippet bundles for Queue Platform
+
+snippets:
+  -
+    name: "queue_platform_usage_example"
+    template: "templates/snippets/queue_platform.snippet.j2"
+    description: "Injects an opinionated usage example for Queue Platform."

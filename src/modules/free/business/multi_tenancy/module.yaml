@@ -1,0 +1,175 @@
+name: multi_tenancy
+display_name: Multi Tenancy
+description: Organization, team, tenant isolation, membership, and tenant-aware request context scaffolding
+version: 0.1.6
+access: free
+status: stable
+tier: free
+category: business
+tags:
+- saas
+- tenancy
+- organizations
+- teams
+- isolation
+generated_from_config: true
+profile_inherits:
+  fastapi.standard: fastapi
+  fastapi.ddd: fastapi
+  nestjs.standard: nestjs
+config_sources:
+- config/base.yaml
+- config/snippets.yaml
+generation:
+  vendor:
+    root: .rapidkit/vendor
+    files:
+    - template: templates/base/multi_tenancy.py.j2
+      relative: src/business/multi_tenancy.py
+    - template: templates/base/multi_tenancy_types.py.j2
+      relative: src/business/multi_tenancy_types.py
+    - template: templates/base/multi_tenancy_health.py.j2
+      relative: src/health/business/multi_tenancy.py
+    - template: templates/vendor/nestjs/configuration.js.j2
+      relative: nestjs/configuration.js
+  variants:
+    fastapi: &fastapi_variant
+      root: .
+      context:
+        framework: fastapi
+        module_class_name: MultiTenancy
+      files:
+      - template: templates/variants/fastapi/multi_tenancy.py.j2
+        output: src/business/multi_tenancy.py
+      - template: templates/variants/fastapi/multi_tenancy_routes.py.j2
+        output: src/routers/business/multi_tenancy.py
+      - template: templates/variants/fastapi/multi_tenancy_health.py.j2
+        output: src/health/business/multi_tenancy.py
+      - template: templates/tests/integration/test_multi_tenancy_integration.j2
+        output: tests/modules/free/integration/business/multi_tenancy/test_multi_tenancy_integration.py
+      - template: templates/variants/fastapi/tests/test_multi_tenancy_e2e.py
+        output: tests/modules/e2e/free/business/multi_tenancy/test_multi_tenancy_e2e.py
+    fastapi.standard: *fastapi_variant
+    fastapi.ddd: *fastapi_variant
+    nestjs: &nestjs_variant
+      root: .
+      context:
+        framework: nestjs
+        vendor_configuration_relative: nestjs/configuration.js
+        module_class_name: MultiTenancy
+        module_kebab: multi-tenancy
+      files:
+      - template: templates/variants/nestjs/multi_tenancy.service.ts.j2
+        output: src/multi-tenancy/multi_tenancy.service.ts
+      - template: templates/variants/nestjs/multi_tenancy.controller.ts.j2
+        output: src/multi-tenancy/multi_tenancy.controller.ts
+      - template: templates/variants/nestjs/multi_tenancy.module.ts.j2
+        output: src/multi-tenancy/multi_tenancy.module.ts
+      - template: templates/variants/nestjs/multi_tenancy.health.ts.j2
+        output: src/multi-tenancy/multi_tenancy.health.ts
+      - template: templates/variants/nestjs/multi_tenancy.validation.ts.j2
+        output: src/multi-tenancy/multi_tenancy.validation.ts
+      - template: templates/variants/nestjs/multi_tenancy.index.ts.j2
+        output: src/multi-tenancy/index.ts
+      - template: templates/variants/nestjs/multi_tenancy.configuration.ts.j2
+        output: src/multi-tenancy/configuration.ts
+      - template: templates/variants/nestjs/tests/multi_tenancy.e2e-spec.ts
+        output: tests/modules/e2e/business/multi_tenancy/multi_tenancy.e2e-spec.ts
+    nestjs.standard: *nestjs_variant
+  snippets:
+    enabled: true
+    config: config/snippets.yaml
+    default: []
+compatibility:
+  python: '>=3.9,<4.0'
+  frameworks:
+  - fastapi
+  - nestjs
+  os:
+  - linux
+  - darwin
+  - windows
+testing:
+  coverage_min: 85
+  integration_tests: true
+  e2e_tests: false
+  unit_tests:
+  - tests/modules/free/business/multi_tenancy/test_multi_tenancy_generator.py
+  - tests/modules/free/business/multi_tenancy/test_multi_tenancy_overrides.py
+  - tests/modules/free/business/multi_tenancy/test_multi_tenancy_runtime.py
+  - tests/modules/free/business/multi_tenancy/test_multi_tenancy_adapters.py
+  - tests/modules/free/business/multi_tenancy/test_multi_tenancy_validation.py
+  - tests/modules/free/business/multi_tenancy/test_multi_tenancy_error_handling.py
+  - tests/modules/free/business/multi_tenancy/test_multi_tenancy_health_check.py
+  - tests/modules/free/business/multi_tenancy/test_multi_tenancy_framework_variants.py
+  - tests/modules/free/business/multi_tenancy/test_multi_tenancy_vendor_layer.py
+  - tests/modules/free/business/multi_tenancy/test_multi_tenancy_configuration.py
+  - tests/modules/free/business/multi_tenancy/test_multi_tenancy_versioning.py
+  - tests/modules/free/business/multi_tenancy/test_multi_tenancy_standard_module.py
+  integration_test_files:
+  - tests/modules/free/integration/business/multi_tenancy/test_multi_tenancy_integration.py
+  fixtures: []
+documentation:
+  changelog: docs/changelog.md
+  readme: README.md
+  overview: docs/overview.md
+  usage: docs/usage.md
+  advanced: docs/advanced.md
+  migration: docs/migration.md
+  troubleshooting: docs/troubleshooting.md
+  api_docs: docs/api-reference.md
+  examples: []
+support:
+  issues: https://github.com/rapidkitlabs/rapidkit-core/issues
+  discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+  documentation: https://docs.rapidkit.top/modules/multi_tenancy
+changelog:
+  - version: "0.1.6"
+    date: "2026-06-02"
+    notes: "See docs/changelog.md"
+validation:
+  pre_install:
+  - check_python_version
+  post_install:
+  - validate_generated_code
+rollback:
+  strategy: uninstall
+  backup_path: .rapidkit/backups/
+  max_backups: 3
+performance:
+  lazy_loading: true
+  caching:
+    templates: true
+    ttl: 300
+capabilities:
+- tenant_context
+- organization_model
+- team_membership
+- tenant_isolation
+- admin_scopes
+signature: null
+signer_id: null
+signature_version: null
+file_hashes:
+  README.md: sha256:ceb4b9bcedcaa604fe9fec9095b983ed485f8dbcaab4fb89a31d824642816e38
+  __init__.py: sha256:e0680da57e2fbea6ba4d8a51791b66941d448c3893678a3d562b35d066394672
+  config/base.yaml: sha256:b516cc78cb8521f735c13cab4549126db295f7baab236312c0d906ce6346c628
+  config/snippets.yaml: sha256:9a82eca5783b1b9479a408de43f58d13bcc83434d4849c12b4ca10e33134801a
+  docs/README.md: sha256:6b3ed2ff990df86ea875dbc16f9edeaaf1fa9e6e6869dc1b9d5492011650f937
+  docs/advanced.md: sha256:aa524e648643b22906703c2e9da199adadcefb9d2b58882b0751ff80c4d28015
+  docs/api-reference.md: sha256:6315e80c9bdafa8879886a1e1ef6fc9348327d28bf5602cd8180b1d6ad169348
+  docs/changelog.md: sha256:210c7ff7af857dc3be28964a5ff2d71fb4295ceba0ac937e0ab29c377377a9f2
+  docs/migration.md: sha256:9f9e1fea169c2e66865cb6ec4f79c12b37f9ab94b5d2ace4d8679cb76ffa5bbe
+  docs/overview.md: sha256:6652be5e8b5ea05e72c38c3a127c62529e5d18f7344e48196faca8f86c23cb01
+  docs/troubleshooting.md: sha256:ec75f660c6c5059eca5a9e95bd1aaa3eb1eb6fdb4231e699c1b3ca906c558d19
+  docs/usage.md: sha256:894483d775dd4fdbcc8533368feb06f3434a43d3bf569d817f6c8ca646faeb47
+  templates/vendor/nestjs/configuration.js.j2: sha256:55f0272ecbdf78ccc66aacc8d4796cb94d4e78b432ea659cd996028f7675638b
+  module.verify.json: sha256:cd89faf630193ead440c3a8ac322f182e97b4965229a0c035b5df113d0383c86
+depends_on:
+- free/auth/core
+- free/users/users_core
+- free/database/db_postgres
+metadata:
+  enterprise_ready: true
+  free_marketplace_module: true
+  product_factory_priority: high

@@ -11,6 +11,7 @@ import asyncio
 import json
 import logging
 import os
+import time
 from dataclasses import dataclass, field
 from email.message import EmailMessage
 from pathlib import Path
@@ -118,6 +119,8 @@ class EmailConfig:
     metadata: MutableMapping[str, Any] = field(default_factory=lambda: dict(_DEFAULTS.get("metadata", {})))
     smtp: SMTPSettings = field(default_factory=lambda: SMTPSettings.from_mapping(_SMTP_DEFAULTS))
     template: TemplateSettings = field(default_factory=lambda: TemplateSettings.from_mapping(_TEMPLATE_DEFAULTS))
+    max_delivery_attempts: int = int(_DEFAULTS.get("max_delivery_attempts", 3))
+    retry_backoff_seconds: float = float(_DEFAULTS.get("retry_backoff_seconds", 0.1))
 
     def sender_header(self) -> str:
         if self.from_name:
@@ -140,6 +143,12 @@ class EmailConfig:
             smtp=SMTPSettings.from_mapping(smtp_payload if isinstance(smtp_payload, Mapping) else {}),
             template=TemplateSettings.from_mapping(
                 template_payload if isinstance(template_payload, Mapping) else {}
+            ),
+            max_delivery_attempts=int(
+                payload.get("max_delivery_attempts", defaults.max_delivery_attempts)
+            ),
+            retry_backoff_seconds=float(
+                payload.get("retry_backoff_seconds", defaults.retry_backoff_seconds)
             ),
         )
 
@@ -237,6 +246,33 @@ class EmailSendResult:
     metadata: MutableMapping[str, Any] = field(default_factory=dict)
 
 
+@dataclass(slots=True)
+class EmailDeliveryRecord:
+    """Audit-safe record for a delivery attempt."""
+
+    provider: str
+    subject: str
+    recipients: tuple[str, ...]
+    accepted: bool
+    attempts: int
+    message_id: Optional[str] = None
+    detail: Optional[str] = None
+    error: Optional[str] = None
+    created_at: float = field(default_factory=time.time)
+    metadata: MutableMapping[str, Any] = field(default_factory=dict)
+
+
+@dataclass(slots=True)
+class EmailBounceRecord:
+    """Bounce/failure record that can be bridged into support workflows."""
+
+    message_id: str
+    reason: str
+    provider: str
+    created_at: float = field(default_factory=time.time)
+    metadata: MutableMapping[str, Any] = field(default_factory=dict)
+
+
 class EmailDeliveryError(RuntimeError):
     """Raised when delivery fails in a non-recoverable way."""
 
@@ -296,6 +332,8 @@ class EmailService:
         self._transport = transport
         self._renderer = template_renderer or EmailTemplateRenderer(config.template)
         self._lock = asyncio.Lock()
+        self._delivery_log: list[EmailDeliveryRecord] = []
+        self._bounce_log: list[EmailBounceRecord] = []
 
     @property
     def provider(self) -> str:
@@ -320,21 +358,33 @@ class EmailService:
             return EmailSendResult(accepted=False, provider=self.provider, detail="disabled")
 
         async with self._lock:
-            if self._transport is not None:
-                message_id = await self._transport(message)
-                return EmailSendResult(
-                    accepted=True,
-                    provider=self.provider,
-                    message_id=message_id,
-                )
-            if self.provider == "smtp":
-                return await self._send_via_smtp(message)
-            if self.provider == "console":
-                return self._send_via_console(message)
-            raise EmailDeliveryError(
-                f"Unsupported email provider '{self.config.provider}'",
-                provider=self.provider,
-            )
+            return await self._send_with_retry(payload, message)
+
+    def delivery_log(self) -> list[EmailDeliveryRecord]:
+        return list(self._delivery_log)
+
+    def bounce_log(self) -> list[EmailBounceRecord]:
+        return list(self._bounce_log)
+
+    def record_bounce(
+        self,
+        message_id: str,
+        reason: str,
+        *,
+        metadata: Mapping[str, Any] | None = None,
+    ) -> EmailBounceRecord:
+        if not message_id:
+            raise ValueError("message_id is required")
+        if not reason:
+            raise ValueError("bounce reason is required")
+        record = EmailBounceRecord(
+            message_id=message_id,
+            reason=reason,
+            provider=self.provider,
+            metadata=dict(metadata or {}),
+        )
+        self._bounce_log.append(record)
+        return record
 
     async def send_templated_email(
         self,
@@ -408,6 +458,9 @@ class EmailService:
             },
             "default_headers": dict(self.config.default_headers),
             "metadata": dict(self.config.metadata),
+            "delivery_log_size": len(self._delivery_log),
+            "bounce_log_size": len(self._bounce_log),
+            "max_delivery_attempts": self.config.max_delivery_attempts,
         }
 
     def metadata(self) -> Dict[str, Any]:
@@ -478,6 +531,79 @@ class EmailService:
     def _send_via_console(self, message: EmailMessage) -> EmailSendResult:
         LOGGER.info("Console email delivery\n%s", message.as_string())
         return EmailSendResult(accepted=True, provider=self.provider, detail="console")
+
+    async def _send_with_retry(
+        self,
+        payload: EmailMessagePayload,
+        message: EmailMessage,
+    ) -> EmailSendResult:
+        attempts = max(1, self.config.max_delivery_attempts)
+        last_error: Exception | None = None
+        for attempt in range(1, attempts + 1):
+            try:
+                if self._transport is not None:
+                    message_id = await self._transport(message)
+                    result = EmailSendResult(
+                        accepted=True,
+                        provider=self.provider,
+                        message_id=message_id,
+                        metadata={"attempts": attempt},
+                    )
+                elif self.provider == "smtp":
+                    result = await self._send_via_smtp(message)
+                    result.metadata.setdefault("attempts", attempt)
+                elif self.provider == "console":
+                    result = self._send_via_console(message)
+                    result.metadata.setdefault("attempts", attempt)
+                else:
+                    raise EmailDeliveryError(
+                        f"Unsupported email provider '{self.config.provider}'",
+                        provider=self.provider,
+                    )
+                self._record_delivery(payload, result, attempts=attempt)
+                return result
+            except Exception as exc:
+                last_error = exc
+                if attempt < attempts:
+                    await asyncio.sleep(self.config.retry_backoff_seconds * attempt)
+        error_text = str(last_error) if last_error else "delivery failed"
+        self._delivery_log.append(
+            EmailDeliveryRecord(
+                provider=self.provider,
+                subject=payload.subject,
+                recipients=tuple(str(value) for value in (*payload.to, *payload.cc, *payload.bcc)),
+                accepted=False,
+                attempts=attempts,
+                error=error_text,
+            )
+        )
+        if isinstance(last_error, EmailDeliveryError):
+            raise last_error
+        raise EmailDeliveryError(
+            "Email delivery failed after retries",
+            provider=self.provider,
+            metadata={"error": error_text, "attempts": attempts},
+        )
+
+    def _record_delivery(
+        self,
+        payload: EmailMessagePayload,
+        result: EmailSendResult,
+        *,
+        attempts: int,
+    ) -> None:
+        self._delivery_log.append(
+            EmailDeliveryRecord(
+                provider=result.provider,
+                subject=payload.subject,
+                recipients=tuple(str(value) for value in (*payload.to, *payload.cc, *payload.bcc)),
+                accepted=result.accepted,
+                attempts=attempts,
+                message_id=result.message_id,
+                detail=result.detail,
+                metadata=dict(result.metadata),
+            )
+        )
 
 
 class EmailSettings(BaseModel):

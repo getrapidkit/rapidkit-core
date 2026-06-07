@@ -1,0 +1,7 @@
+# Register snippet bundles for Multi Tenancy
+
+snippets:
+  -
+    name: "multi_tenancy_usage_example"
+    template: "templates/snippets/multi_tenancy.snippet.j2"
+    description: "Injects an opinionated usage example for Multi Tenancy."

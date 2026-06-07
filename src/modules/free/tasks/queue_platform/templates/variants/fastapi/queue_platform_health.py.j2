@@ -1,0 +1,7 @@
+from datetime import datetime
+
+
+def module_health_status() -> dict[str, str]:
+    """Return a minimal health payload for FastAPI variants."""
+
+    return {"checked_at": datetime.utcnow().isoformat(timespec="seconds")}

@@ -1,0 +1,145 @@
+from __future__ import annotations
+
+from dataclasses import dataclass, field
+from datetime import datetime, timezone
+from threading import RLock
+from typing import Any, Callable, Mapping
+from uuid import uuid4
+
+
+class {{ module_class_name }}Error(ValueError):
+    """Raised when admin console policy or action input is invalid."""
+
+
+AdminHandler = Callable[[Mapping[str, Any]], Mapping[str, Any]]
+
+
+@dataclass(frozen=True)
+class AdminAction:
+    key: str
+    label: str
+    required_roles: tuple[str, ...] = ("admin",)
+    require_reason: bool = True
+    dangerous: bool = False
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+
+@dataclass(frozen=True)
+class AdminActionRun:
+    id: str
+    action_key: str
+    actor_id: str
+    actor_role: str
+    reason: str
+    status: str
+    result: Mapping[str, Any] = field(default_factory=dict)
+    tenant_id: str | None = None
+    error: str | None = None
+    timestamp: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds"))
+
+
+@dataclass(frozen=True)
+class {{ module_class_name }}Config:
+    enabled: bool = True
+    default_role: str = "admin"
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+
+def build_default_config() -> {{ module_class_name }}Config:
+    return {{ module_class_name }}Config()
+
+
+class {{ module_class_name }}:
+    """Admin action registry with permission, reason, run history, and audit semantics."""
+
+    def __init__(self, config: {{ module_class_name }}Config | None = None) -> None:
+        self.config = config or build_default_config()
+        self._actions: dict[str, tuple[AdminAction, AdminHandler]] = {}
+        self._runs: list[AdminActionRun] = []
+        self._lock = RLock()
+
+    def register_action(self, action: AdminAction, handler: AdminHandler | None = None) -> AdminAction:
+        if not action.key.strip():
+            raise {{ module_class_name }}Error("action key is required")
+        if not action.required_roles:
+            raise {{ module_class_name }}Error("at least one required role is required")
+        resolved_handler = handler or (lambda payload: {"accepted": True, "payload": dict(payload)})
+        with self._lock:
+            self._actions[action.key] = (action, resolved_handler)
+        return action
+
+    def run_action(
+        self,
+        action_key: str,
+        *,
+        actor_id: str,
+        actor_role: str,
+        reason: str,
+        payload: Mapping[str, Any] | None = None,
+        tenant_id: str | None = None,
+    ) -> AdminActionRun:
+        if not self.config.enabled:
+            raise {{ module_class_name }}Error("admin console is disabled")
+        with self._lock:
+            action, handler = self._require_action(action_key)
+        if actor_role not in action.required_roles:
+            raise {{ module_class_name }}Error("actor role is not allowed")
+        if action.require_reason and not reason.strip():
+            raise {{ module_class_name }}Error("admin action reason is required")
+        try:
+            result = dict(handler(dict(payload or {})))
+            run = AdminActionRun(
+                id=str(uuid4()),
+                action_key=action.key,
+                actor_id=actor_id,
+                actor_role=actor_role,
+                reason=reason.strip(),
+                status="succeeded",
+                result=result,
+                tenant_id=tenant_id,
+            )
+        except Exception as exc:
+            run = AdminActionRun(
+                id=str(uuid4()),
+                action_key=action.key,
+                actor_id=actor_id,
+                actor_role=actor_role,
+                reason=reason.strip(),
+                status="failed",
+                tenant_id=tenant_id,
+                error=str(exc),
+            )
+        with self._lock:
+            self._runs.append(run)
+        return run
+
+    def list_actions(self) -> tuple[AdminAction, ...]:
+        with self._lock:
+            return tuple(action for action, _handler in self._actions.values())
+
+    def list_runs(self, *, action_key: str | None = None, tenant_id: str | None = None) -> tuple[AdminActionRun, ...]:
+        with self._lock:
+            runs = tuple(self._runs)
+        if action_key is not None:
+            runs = tuple(run for run in runs if run.action_key == action_key)
+        if tenant_id is not None:
+            runs = tuple(run for run in runs if run.tenant_id == tenant_id)
+        return runs
+
+    def summary(self) -> dict[str, Any]:
+        with self._lock:
+            return {
+                "actions": len(self._actions),
+                "runs": len(self._runs),
+                "failed_runs": len([run for run in self._runs if run.status == "failed"]),
+                "dangerous_actions": len([action for action, _handler in self._actions.values() if action.dangerous]),
+            }
+
+    def health(self) -> dict[str, Any]:
+        return {"module": "{{ module_name }}", "status": "ok" if self.config.enabled else "disabled", **self.summary()}
+
+    def _require_action(self, action_key: str) -> tuple[AdminAction, AdminHandler]:
+        try:
+            return self._actions[action_key]
+        except KeyError as exc:
+            raise {{ module_class_name }}Error("admin action not found") from exc

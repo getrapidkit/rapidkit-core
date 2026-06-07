@@ -1,0 +1,7 @@
+# Register snippet bundles for Agent Runtime
+
+snippets:
+  -
+    name: "agent_runtime_usage_example"
+    template: "templates/snippets/agent_runtime.snippet.j2"
+    description: "Injects an opinionated usage example for Agent Runtime."

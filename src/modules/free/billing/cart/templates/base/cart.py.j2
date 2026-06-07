@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from decimal import Decimal
+from threading import RLock
 from typing import Any, Dict, Iterable, List, Mapping, MutableMapping, Optional, Protocol, Sequence
 
 from {{ module_import_base }}.types.cart import (
@@ -149,19 +150,24 @@ class InMemoryCartStore(CartStore):
 
     def __init__(self) -> None:
         self._storage: Dict[str, CartSnapshot] = {}
+        self._lock = RLock()
 
     def get(self, cart_id: str) -> Optional[CartSnapshot]:
-        snapshot = self._storage.get(cart_id)
+        with self._lock:
+            snapshot = self._storage.get(cart_id)
         return snapshot.clone() if snapshot else None
 
     def set(self, snapshot: CartSnapshot) -> None:
-        self._storage[snapshot.cart_id] = snapshot.clone()
+        with self._lock:
+            self._storage[snapshot.cart_id] = snapshot.clone()
 
     def delete(self, cart_id: str) -> None:
-        self._storage.pop(cart_id, None)
+        with self._lock:
+            self._storage.pop(cart_id, None)
 
     def list_ids(self) -> Iterable[str]:
-        return list(self._storage.keys())
+        with self._lock:
+            return list(self._storage.keys())
 
 
 class DiscountRuleEvaluator(Protocol):
@@ -192,25 +198,29 @@ class CartService:
             self.config = CartConfig.from_mapping(config)
         self._store = store or InMemoryCartStore()
         self._evaluators: List[DiscountRuleEvaluator] = []
+        self._lock = RLock()
 
     # ------------------------------------------------------------------
     # Public API
     # ------------------------------------------------------------------
     def get_cart(self, cart_id: str) -> CartSnapshot:
-        snapshot = self._store.get(cart_id)
-        if snapshot is None:
-            snapshot = self._initial_snapshot(cart_id)
-            self._store.set(snapshot)
-        return snapshot.clone()
+        with self._lock:
+            snapshot = self._store.get(cart_id)
+            if snapshot is None:
+                snapshot = self._initial_snapshot(cart_id)
+                self._store.set(snapshot)
+            return snapshot.clone()
 
     def list_carts(self) -> List[str]:
-        return sorted(self._store.list_ids())
+        with self._lock:
+            return sorted(self._store.list_ids())
 
     def clear(self, cart_id: str, *, preserve_discounts: bool = False) -> CartSnapshot:
-        snapshot = self._ensure_snapshot(cart_id)
-        discount_codes = list(snapshot.discount_codes) if preserve_discounts else []
-        fresh = snapshot.clone(items=[], discount_codes=discount_codes)
-        return self._persist(fresh)
+        with self._lock:
+            snapshot = self._ensure_snapshot(cart_id)
+            discount_codes = list(snapshot.discount_codes) if preserve_discounts else []
+            fresh = snapshot.clone(items=[], discount_codes=discount_codes)
+            return self._persist(fresh)
 
     def add_item(
         self,
@@ -227,38 +237,39 @@ class CartService:
             raise CartValidationError("Item SKU cannot be empty")
         if quantity <= 0:
             raise CartValidationError("Quantity must be greater than zero")
-        snapshot = self._ensure_snapshot(cart_id)
-        items = {item.sku: item for item in snapshot.items}
-        if len(items) >= self.config.max_unique_items and sku not in items:
-            raise CartValidationError("Maximum unique items exceeded")
+        with self._lock:
+            snapshot = self._ensure_snapshot(cart_id)
+            items = {item.sku: item for item in snapshot.items}
+            if len(items) >= self.config.max_unique_items and sku not in items:
+                raise CartValidationError("Maximum unique items exceeded")
 
-        chosen_currency = self._coerce_currency(snapshot, currency or self.config.currency)
-        unit_price_decimal = quantize_amount(unit_price)
+            chosen_currency = self._coerce_currency(snapshot, currency or self.config.currency)
+            unit_price_decimal = quantize_amount(unit_price)
 
-        existing = items.get(sku)
-        if existing:
-            if existing.currency != chosen_currency:
-                raise CartValidationError("Currency mismatch for existing item")
-            new_quantity = existing.quantity + quantity
-            items[sku] = existing.clone(
-                name=name or existing.name,
-                quantity=new_quantity,
-                unit_price=unit_price_decimal,
-                metadata={**existing.metadata, **(metadata or {})},
-            )
-        else:
-            items[sku] = CartItem(
-                sku=sku,
-                name=name,
-                quantity=quantity,
-                unit_price=unit_price_decimal,
-                currency=chosen_currency,
-                metadata=dict(metadata or {}),
-            )
+            existing = items.get(sku)
+            if existing:
+                if existing.currency != chosen_currency:
+                    raise CartValidationError("Currency mismatch for existing item")
+                new_quantity = existing.quantity + quantity
+                items[sku] = existing.clone(
+                    name=name or existing.name,
+                    quantity=new_quantity,
+                    unit_price=unit_price_decimal,
+                    metadata={**existing.metadata, **(metadata or {})},
+                )
+            else:
+                items[sku] = CartItem(
+                    sku=sku,
+                    name=name,
+                    quantity=quantity,
+                    unit_price=unit_price_decimal,
+                    currency=chosen_currency,
+                    metadata=dict(metadata or {}),
+                )
 
-        updated = snapshot.clone(items=list(items.values()))
-        updated.metadata.setdefault("currency", chosen_currency)
-        return self._persist(updated)
+            updated = snapshot.clone(items=list(items.values()))
+            updated.metadata.setdefault("currency", chosen_currency)
+            return self._persist(updated)
 
     def update_item(
         self,
@@ -269,72 +280,78 @@ class CartService:
         unit_price: Optional[DecimalLike] = None,
         metadata: Optional[Mapping[str, Any]] = None,
     ) -> CartSnapshot:
-        snapshot = self._ensure_snapshot(cart_id)
-        items = {item.sku: item for item in snapshot.items}
-        if sku not in items:
-            raise CartItemNotFoundError(f"Item '{sku}' not found")
+        with self._lock:
+            snapshot = self._ensure_snapshot(cart_id)
+            items = {item.sku: item for item in snapshot.items}
+            if sku not in items:
+                raise CartItemNotFoundError(f"Item '{sku}' not found")
 
-        item = items[sku]
-        new_quantity = quantity if quantity is not None else item.quantity
-        if new_quantity < 0:
-            raise CartValidationError("Quantity cannot be negative")
-        if new_quantity == 0:
-            del items[sku]
-        else:
-            updated_item = item.clone(
-                quantity=new_quantity,
-                unit_price=quantize_amount(unit_price) if unit_price is not None else item.unit_price,
-                metadata={**item.metadata, **(metadata or {})} if metadata else dict(item.metadata),
-            )
-            items[sku] = updated_item
+            item = items[sku]
+            new_quantity = quantity if quantity is not None else item.quantity
+            if new_quantity < 0:
+                raise CartValidationError("Quantity cannot be negative")
+            if new_quantity == 0:
+                del items[sku]
+            else:
+                updated_item = item.clone(
+                    quantity=new_quantity,
+                    unit_price=quantize_amount(unit_price) if unit_price is not None else item.unit_price,
+                    metadata={**item.metadata, **(metadata or {})} if metadata else dict(item.metadata),
+                )
+                items[sku] = updated_item
 
-        updated = snapshot.clone(items=list(items.values()))
-        return self._persist(updated)
+            updated = snapshot.clone(items=list(items.values()))
+            return self._persist(updated)
 
     def remove_item(self, cart_id: str, *, sku: str) -> CartSnapshot:
-        snapshot = self._ensure_snapshot(cart_id)
-        items = [item for item in snapshot.items if item.sku != sku]
-        if len(items) == len(snapshot.items):
-            raise CartItemNotFoundError(f"Item '{sku}' not found")
-        updated = snapshot.clone(items=items)
-        return self._persist(updated)
+        with self._lock:
+            snapshot = self._ensure_snapshot(cart_id)
+            items = [item for item in snapshot.items if item.sku != sku]
+            if len(items) == len(snapshot.items):
+                raise CartItemNotFoundError(f"Item '{sku}' not found")
+            updated = snapshot.clone(items=items)
+            return self._persist(updated)
 
     def replace_items(self, cart_id: str, items: Sequence[CartItem]) -> CartSnapshot:
-        snapshot = self._ensure_snapshot(cart_id)
-        if len(items) > self.config.max_unique_items:
-            raise CartValidationError("Maximum unique items exceeded")
-        for item in items:
-            if item.quantity <= 0:
-                raise CartValidationError("Quantities must be positive")
-        updated = snapshot.clone(items=[item.clone() for item in items])
-        if items:
-            updated.metadata["currency"] = items[0].currency
-        return self._persist(updated)
+        with self._lock:
+            snapshot = self._ensure_snapshot(cart_id)
+            if len(items) > self.config.max_unique_items:
+                raise CartValidationError("Maximum unique items exceeded")
+            for item in items:
+                if item.quantity <= 0:
+                    raise CartValidationError("Quantities must be positive")
+            updated = snapshot.clone(items=[item.clone() for item in items])
+            if items:
+                updated.metadata["currency"] = items[0].currency
+            return self._persist(updated)
 
     def apply_discount(self, cart_id: str, code: str, *, force: bool = False) -> CartSnapshot:
         if not code:
             raise CartValidationError("Discount code cannot be empty")
-        snapshot = self._ensure_snapshot(cart_id)
-        codes = list(snapshot.discount_codes)
-        if code not in codes:
-            rule = self.config.discount_rules.get(code)
-            if rule is None and not force:
-                raise CartValidationError(f"Unknown discount code '{code}'")
-            codes.append(code)
-        updated = snapshot.clone(discount_codes=codes)
-        return self._persist(updated)
+        with self._lock:
+            snapshot = self._ensure_snapshot(cart_id)
+            codes = list(snapshot.discount_codes)
+            if code not in codes:
+                rule = self.config.discount_rules.get(code)
+                if rule is None and not force:
+                    raise CartValidationError(f"Unknown discount code '{code}'")
+                codes.append(code)
+            updated = snapshot.clone(discount_codes=codes)
+            return self._persist(updated)
 
     def remove_discount(self, cart_id: str, code: str) -> CartSnapshot:
-        snapshot = self._ensure_snapshot(cart_id)
-        codes = [existing for existing in snapshot.discount_codes if existing != code]
-        if len(codes) == len(snapshot.discount_codes):
-            raise CartValidationError(f"Discount '{code}' not applied")
-        updated = snapshot.clone(discount_codes=codes)
-        return self._persist(updated)
+        with self._lock:
+            snapshot = self._ensure_snapshot(cart_id)
+            codes = [existing for existing in snapshot.discount_codes if existing != code]
+            if len(codes) == len(snapshot.discount_codes):
+                raise CartValidationError(f"Discount '{code}' not applied")
+            updated = snapshot.clone(discount_codes=codes)
+            return self._persist(updated)
 
     def inspect(self) -> Dict[str, Any]:
-        ids = list(self._store.list_ids())
-        snapshots = [self._store.get(cart_id) for cart_id in ids]
+        with self._lock:
+            ids = list(self._store.list_ids())
+            snapshots = [self._store.get(cart_id) for cart_id in ids]
         present = [snapshot for snapshot in snapshots if snapshot is not None]
         total_carts = len(present)
         empty_carts = sum(1 for snapshot in present if not snapshot.items)
@@ -362,7 +379,8 @@ class CartService:
         }
 
     def register_discount_strategy(self, evaluator: DiscountRuleEvaluator) -> None:
-        self._evaluators.append(evaluator)
+        with self._lock:
+            self._evaluators.append(evaluator)
 
     # ------------------------------------------------------------------
     # Internal helpers
@@ -461,7 +479,9 @@ class CartService:
         items: Sequence[CartItem],
         subtotal: Decimal,
     ) -> Optional[DiscountApplication]:
-        for evaluator in self._evaluators:
+        with self._lock:
+            evaluators = tuple(self._evaluators)
+        for evaluator in evaluators:
             candidate = evaluator(rule=rule, items=items, subtotal=subtotal)
             if candidate is not None:
                 return candidate

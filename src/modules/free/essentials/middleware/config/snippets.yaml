@@ -1,2 +1,15 @@
 # Snippet registrations for the middleware module
-snippets: []
+snippets:
+  - id: middleware_correlation_factory
+    target: src/modules/free/essentials/middleware/middleware.py
+    anchor: "# <<<inject:middleware-factories>>>"
+    template: middleware.snippet.j2
+    features: [middleware, observability, correlation]
+    profiles: [fastapi/standard, fastapi/ddd]
+    description: Injects a request-correlation middleware factory into FastAPI projects.
+    version: "0.1.0"
+    priority: 20
+    dependencies: []
+    context:
+      request_header: X-Request-ID
+      response_header: X-Request-ID
