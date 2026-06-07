@@ -1,0 +1,152 @@
+name: "🏷️ Tag Stable Version (Core)"
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Git ref to tag (default: main)"
+        required: false
+        default: "main"
+        type: string
+      sign_tag:
+        description: "Create a GPG-signed tag (shows Verified on GitHub if key is trusted)"
+        required: false
+        default: "true"
+        type: choice
+        options:
+          - "true"
+          - "false"
+      dry_run:
+        description: "Compute/validate only; do not tag/push"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+concurrency:
+  group: core-tag-stable-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.ref }}
+          fetch-depth: 0
+          fetch-tags: true
+          persist-credentials: false
+
+      - name: Remove checkout auth header
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config --local --unset-all http.https://github.com/.extraheader || true
+
+      - name: Resolve stable version from pyproject.toml
+        id: v
+        shell: bash
+        run: |
+          set -euo pipefail
+
+          version=$(awk -F '"' 'BEGIN{in_poetry=0} /^\[tool\.poetry\]$/{in_poetry=1;next} in_poetry && /^\[/{in_poetry=0} in_poetry && /^version =/{print $2; exit}' pyproject.toml)
+          if [[ -z "${version:-}" ]]; then
+            echo "Unable to read [tool.poetry].version from pyproject.toml" >&2
+            exit 1
+          fi
+
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+            echo "This workflow only creates STABLE tags from X.Y.Z versions." >&2
+            echo "pyproject.toml version is: $version" >&2
+            echo "Tip: pre-releases like 1.2.3rc1 should use a separate RC tagging workflow." >&2
+            exit 1
+          fi
+
+          tag="v$version"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "Resolved stable tag: $tag"
+
+      - name: Ensure tag does not already exist
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="${{ steps.v.outputs.tag }}"
+
+          # actions/checkout runs with persist-credentials=false, so origin has no auth.
+          # Ensure fetch works for private repos by using the workflow's GITHUB_TOKEN.
+          token="${{ github.token }}"
+          git remote set-url origin "https://x-access-token:${token}@github.com/${GITHUB_REPOSITORY}.git"
+          git fetch --tags --force
+          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+            echo "Tag already exists: $tag" >&2
+            exit 1
+          fi
+
+      - name: "Guard: require PAT for tag push"
+        if: ${{ inputs.dry_run != 'true' }}
+        env:
+          CORE_TAG_PUSH_TOKEN: ${{ secrets.CORE_TAG_PUSH_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${CORE_TAG_PUSH_TOKEN:-}" ]]; then
+            echo "Missing CORE_TAG_PUSH_TOKEN secret." >&2
+            echo "Reason: pushing tags with GITHUB_TOKEN may not trigger downstream workflows (core-publish)." >&2
+            echo "Fix: create a fine-grained PAT secret CORE_TAG_PUSH_TOKEN with: Contents=Read/Write and Workflows=Read/Write." >&2
+            exit 1
+          fi
+
+      - name: "Guard: require GPG secrets when signing"
+        if: ${{ inputs.dry_run != 'true' && inputs.sign_tag == 'true' }}
+        env:
+          GPG_PRIVATE_KEY: ${{ secrets.CORE_TAG_GPG_PRIVATE_KEY }}
+          GPG_PASSPHRASE: ${{ secrets.CORE_TAG_GPG_PASSPHRASE }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ -z "${GPG_PRIVATE_KEY:-}" ]]; then
+            echo "Missing CORE_TAG_GPG_PRIVATE_KEY secret." >&2
+            exit 1
+          fi
+          if [[ -z "${GPG_PASSPHRASE:-}" ]]; then
+            echo "Missing CORE_TAG_GPG_PASSPHRASE secret." >&2
+            exit 1
+          fi
+
+      - name: Import GPG key (for signed tags)
+        if: ${{ inputs.dry_run != 'true' && inputs.sign_tag == 'true' }}
+        uses: crazy-max/ghaction-import-gpg@v6
+        with:
+          gpg_private_key: ${{ secrets.CORE_TAG_GPG_PRIVATE_KEY }}
+          passphrase: ${{ secrets.CORE_TAG_GPG_PASSPHRASE }}
+          git_user_signingkey: true
+          git_tag_gpgsign: true
+
+      - name: Create and push tag
+        if: ${{ inputs.dry_run != 'true' }}
+        env:
+          CORE_TAG_PUSH_TOKEN: ${{ secrets.CORE_TAG_PUSH_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="${{ steps.v.outputs.tag }}"
+
+          git config --global user.name "rapidkit-bot"
+          git config --global user.email "actions@users.noreply.github.com"
+          if [[ "${{ inputs.sign_tag }}" == "true" ]]; then
+            git tag -s "$tag" -m "Release $tag"
+          else
+            git tag -a "$tag" -m "Release $tag"
+          fi
+
+          git remote set-url origin "https://x-access-token:${CORE_TAG_PUSH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          git push origin "$tag"
+          echo "Pushed stable tag: $tag"
