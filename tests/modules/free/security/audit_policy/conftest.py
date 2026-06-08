@@ -46,7 +46,10 @@ def rendered_audit_policy(tmp_path: Path) -> dict[str, object]:
         / config["name"]
         / config["version"]
         / "src"
+        / "modules"
+        / "free"
         / "security"
+        / "audit_policy"
         / "audit_policy.py"
     )
 

@@ -26,10 +26,16 @@ def test_free_security_audit_policy_generates_append_only_hash_chain(tmp_path: P
     generator.generate_vendor_files(config, tmp_path, renderer, context)
     vendor_path = (
         tmp_path
-        / ".rapidkit/vendor"
+        / ".rapidkit"
+        / "vendor"
         / config["name"]
         / config["version"]
-        / "src/security/audit_policy.py"
+        / "src"
+        / "modules"
+        / "free"
+        / "security"
+        / "audit_policy"
+        / "audit_policy.py"
     )
     vendor = _load_module("integration_audit_policy_vendor", vendor_path)
 

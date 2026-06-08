@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import importlib.util
 import inspect
+import re
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -68,6 +69,48 @@ def _module_yaml_outputs(module_dir: Path) -> Iterable[tuple[str, str]]:
                     yield (f"generation.variants.{profile}.files[{index}].output", entry["output"])
 
 
+def _nestjs_variant_files(module_dir: Path) -> list[dict[str, Any]]:
+    config = _load_yaml(module_dir / "module.yaml")
+    generation = config.get("generation")
+    if not isinstance(generation, dict):
+        return []
+    variants = generation.get("variants")
+    if not isinstance(variants, dict):
+        return []
+
+    variant = variants.get("nestjs") or variants.get("nestjs.standard")
+    if not isinstance(variant, dict):
+        return []
+    files = variant.get("files")
+    if not isinstance(files, list):
+        return []
+    return [entry for entry in files if isinstance(entry, dict)]
+
+
+def _nestjs_module_output(module_dir: Path) -> str | None:
+    for entry in _nestjs_variant_files(module_dir):
+        output = entry.get("output")
+        if (
+            isinstance(output, str)
+            and output.startswith("src/modules/")
+            and output.endswith(".module.ts")
+            and "/health/" not in output
+        ):
+            return output
+    return None
+
+
+def _nestjs_e2e_templates(module_dir: Path) -> Iterable[Path]:
+    for entry in _nestjs_variant_files(module_dir):
+        template = entry.get("template")
+        if (
+            isinstance(template, str)
+            and template.startswith("templates/variants/nestjs/tests/")
+            and template.endswith(".e2e-spec.ts")
+        ):
+            yield module_dir / template
+
+
 def _load_framework_module(framework_file: Path) -> object:
     relative = framework_file.with_suffix("").relative_to(MODULES_ROOT)
     module_name = "rapidkit_namespace_contract_" + "_".join(relative.parts)
@@ -112,3 +155,36 @@ def test_free_module_src_outputs_are_module_owned() -> None:
                 violations.append(f"{slug}: {source} -> {output} (expected {namespace}*)")
 
     assert not violations, "Module output namespace drift detected:\n" + "\n".join(violations)
+
+
+def test_free_module_nestjs_e2e_imports_use_module_alias() -> None:
+    violations: list[str] = []
+
+    for module_dir in _module_dirs():
+        module_output = _nestjs_module_output(module_dir)
+        if not module_output:
+            continue
+        expected_import = "@modules/" + module_output.removeprefix("src/modules/").removesuffix(
+            ".ts"
+        )
+
+        for template in _nestjs_e2e_templates(module_dir):
+            if not template.exists():
+                violations.append(f"{module_dir.relative_to(MODULES_ROOT)}: missing {template}")
+                continue
+            text = template.read_text(encoding="utf-8")
+            imports = re.findall(r"from ['\"]([^'\"]+)['\"]", text)
+            module_imports = [value for value in imports if value != "@nestjs/testing"]
+            if expected_import not in module_imports:
+                violations.append(
+                    f"{module_dir.relative_to(MODULES_ROOT)}: {template.name} imports "
+                    f"{module_imports or 'nothing'} (expected {expected_import})"
+                )
+            for value in module_imports:
+                if value.startswith("../") and "/src/" in value:
+                    violations.append(
+                        f"{module_dir.relative_to(MODULES_ROOT)}: {template.name} uses "
+                        f"relative src import {value}; use {expected_import}"
+                    )
+
+    assert not violations, "NestJS e2e module import drift detected:\n" + "\n".join(violations)

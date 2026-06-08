@@ -1,6 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
 
-import { {{ module_class_name }}Module } from "../../../../../src/event-bus/event_bus.module";
+import { {{ module_class_name }}Module } from "@modules/free/tasks/event_bus/event_bus.module";
 
 describe("{{ module_class_name }} NestJS E2E", () => {
   it("compiles the module", async () => {

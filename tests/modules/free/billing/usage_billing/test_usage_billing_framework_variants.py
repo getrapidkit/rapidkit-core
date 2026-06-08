@@ -18,6 +18,26 @@ def test_usage_billing_renders_fastapi_and_nestjs_variants(tmp_path: Path) -> No
     )
     generator.generate_variant_files("nestjs", nestjs_dir, renderer, context)
 
-    assert (fastapi_dir / "src" / "billing" / "usage_billing.py").exists()
-    assert (fastapi_dir / "src" / "routers" / "billing" / "usage_billing.py").exists()
-    assert (nestjs_dir / "src" / "usage-billing" / "usage_billing.service.ts").exists()
+    assert (
+        fastapi_dir / "src" / "modules" / "free" / "billing" / "usage_billing" / "usage_billing.py"
+    ).exists()
+    assert (
+        fastapi_dir
+        / "src"
+        / "modules"
+        / "free"
+        / "billing"
+        / "usage_billing"
+        / "routers"
+        / "billing"
+        / "usage_billing.py"
+    ).exists()
+    assert (
+        nestjs_dir
+        / "src"
+        / "modules"
+        / "free"
+        / "billing"
+        / "usage_billing"
+        / "usage_billing.service.ts"
+    ).exists()

@@ -1,6 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
 
-import { {{ module_class_name }}Module } from "../../../../../../src/modules/free/security/security_headers/security-headers/security-headers.module";
+import { {{ module_class_name }}Module } from "@modules/free/security/security_headers/security-headers/security-headers.module";
 
 describe("{{ module_class_name }} NestJS E2E", () => {
   it("compiles the module", async () => {

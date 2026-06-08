@@ -18,6 +18,26 @@ def test_audit_policy_renders_fastapi_and_nestjs_variants(tmp_path: Path) -> Non
     )
     generator.generate_variant_files("nestjs", nestjs_dir, renderer, context)
 
-    assert (fastapi_dir / "src" / "security" / "audit_policy.py").exists()
-    assert (fastapi_dir / "src" / "routers" / "security" / "audit_policy.py").exists()
-    assert (nestjs_dir / "src" / "audit-policy" / "audit_policy.service.ts").exists()
+    assert (
+        fastapi_dir / "src" / "modules" / "free" / "security" / "audit_policy" / "audit_policy.py"
+    ).exists()
+    assert (
+        fastapi_dir
+        / "src"
+        / "modules"
+        / "free"
+        / "security"
+        / "audit_policy"
+        / "routers"
+        / "security"
+        / "audit_policy.py"
+    ).exists()
+    assert (
+        nestjs_dir
+        / "src"
+        / "modules"
+        / "free"
+        / "security"
+        / "audit_policy"
+        / "audit_policy.service.ts"
+    ).exists()
