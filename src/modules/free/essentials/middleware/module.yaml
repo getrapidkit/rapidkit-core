@@ -1,5 +1,5 @@
 name: middleware
-version: 0.1.23
+version: 0.1.24
 tier: free
 access: free
 status: stable
@@ -139,8 +139,8 @@ support:
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
   documentation: https://getrapidkit.com/modules/middleware
 changelog:
-  - version: "0.1.23"
-    date: "2026-06-07"
+  - version: "0.1.24"
+    date: "2026-06-08"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

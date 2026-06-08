@@ -1,5 +1,5 @@
 name: storage
-version: 0.1.11
+version: 0.1.12
 access: free
 status: stable
 tier: free
@@ -134,7 +134,7 @@ support:
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
   documentation: https://getrapidkit.com/modules/business/storage
 changelog:
-  - version: "0.1.11"
+  - version: "0.1.12"
     date: "2026-06-08"
     notes: "See docs/changelog.md"
 validation:

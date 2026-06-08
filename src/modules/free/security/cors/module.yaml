@@ -1,7 +1,7 @@
 name: cors
 description: Cross-Origin Resource Sharing security module
 category: security
-version: 0.1.13
+version: 0.1.14
 access: free
 status: stable
 tags:
@@ -122,7 +122,7 @@ support:
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
   documentation: https://getrapidkit.com/modules/cors
 changelog:
-  - version: "0.1.13"
+  - version: "0.1.14"
     date: "2026-06-08"
     notes: "See docs/changelog.md"
 validation:

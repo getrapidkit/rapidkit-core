@@ -1,7 +1,7 @@
 name: support_center
 display_name: "Support Center"
 description: "Support center foundation with tickets, SLA state, customer notes, assignments, and audit-ready support workflows"
-version: 0.1.5
+version: 0.1.6
 access: free
 status: stable
 tier: free
@@ -133,7 +133,7 @@ support:
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
   documentation: https://getrapidkit.com/modules/support_center
 changelog:
-  - version: "0.1.5"
+  - version: "0.1.6"
     date: "2026-06-08"
     notes: "See docs/changelog.md"
 validation:

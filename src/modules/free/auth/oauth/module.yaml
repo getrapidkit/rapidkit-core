@@ -1,6 +1,6 @@
 name: oauth
 description: OAuth flows and adapters for RapidKit authentication
-version: 0.1.14
+version: 0.1.15
 access: free
 status: stable
 category: auth
@@ -119,7 +119,7 @@ support:
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
   documentation: https://getrapidkit.com/modules/oauth
 changelog:
-  - version: "0.1.14"
+  - version: "0.1.15"
     date: "2026-06-08"
     notes: "See docs/changelog.md"
 validation:

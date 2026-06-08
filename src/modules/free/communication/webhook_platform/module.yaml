@@ -2,7 +2,7 @@ name: webhook_platform
 display_name: Webhook Platform
 description: Inbound and outbound webhook scaffolding with signatures, delivery attempts, replay, and
   event history
-version: 0.1.8
+version: 0.1.9
 access: free
 status: stable
 tier: free
@@ -125,7 +125,7 @@ support:
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
   documentation: https://getrapidkit.com/modules/webhook_platform
 changelog:
-  - version: "0.1.8"
+  - version: "0.1.9"
     date: "2026-06-08"
     notes: "See docs/changelog.md"
 validation:

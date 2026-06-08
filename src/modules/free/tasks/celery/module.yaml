@@ -1,7 +1,7 @@
 name: celery
 display_name: Celery
 description: Production-ready Celery task orchestration for asynchronous workloads
-version: 0.1.12
+version: 0.1.13
 tier: free
 access: free
 status: stable
@@ -132,8 +132,8 @@ support:
     discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
     documentation: https://getrapidkit.com/modules/celery
 changelog:
-  - version: "0.1.12"
-    date: "2026-06-07"
+  - version: "0.1.13"
+    date: "2026-06-08"
     notes: "See docs/changelog.md"
 validation:
     pre_install:

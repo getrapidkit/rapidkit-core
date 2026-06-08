@@ -1,7 +1,7 @@
 name: prompt_ops
 display_name: "Prompt Ops"
 description: "Prompt versioning, rollout, evaluation, rollback, and audit operations for AI products"
-version: 0.1.6
+version: 0.1.7
 access: free
 status: stable
 tier: free
@@ -132,7 +132,7 @@ support:
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
   documentation: https://getrapidkit.com/modules/prompt_ops
 changelog:
-  - version: "0.1.6"
+  - version: "0.1.7"
     date: "2026-06-08"
     notes: "See docs/changelog.md"
 validation:

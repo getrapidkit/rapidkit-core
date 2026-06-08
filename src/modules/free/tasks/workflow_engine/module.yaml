@@ -2,7 +2,7 @@ name: workflow_engine
 display_name: Workflow Engine
 description: Workflow engine scaffolding for triggers, actions, conditions, approvals, schedules, and
   durable runs
-version: 0.1.10
+version: 0.1.11
 access: free
 status: stable
 tier: free
@@ -125,7 +125,7 @@ support:
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
   documentation: https://getrapidkit.com/modules/workflow_engine
 changelog:
-  - version: "0.1.10"
+  - version: "0.1.11"
     date: "2026-06-08"
     notes: "See docs/changelog.md"
 validation:

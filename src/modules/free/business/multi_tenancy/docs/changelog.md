@@ -1,5 +1,9 @@
 # Changelog — free/business/multi_tenancy
 
+## 0.1.9 — Automated patch release triggered by content hash change (2026-06-08)
+
+- chore: Automated patch release triggered by content hash change
+
 ## 0.1.8 — Automated patch release triggered by content hash change (2026-06-08)
 
 - chore: Automated patch release triggered by content hash change

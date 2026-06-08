@@ -1,5 +1,9 @@
 # Changelog — free/auth/session
 
+## 0.1.13 — Automated patch release triggered by content hash change (2026-06-08)
+
+- chore: Automated patch release triggered by content hash change
+
 ## 0.1.12 — Automated patch release triggered by content hash change (2026-06-08)
 
 - chore: Automated patch release triggered by content hash change

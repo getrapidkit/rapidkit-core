@@ -1,7 +1,7 @@
 name: analytics_dashboard
 display_name: "Analytics Dashboard"
 description: "Analytics dashboard foundation with metrics, widgets, dashboard snapshots, drilldowns, and audit-ready reporting"
-version: 0.1.5
+version: 0.1.6
 access: free
 status: stable
 tier: free
@@ -130,7 +130,7 @@ support:
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
   documentation: https://getrapidkit.com/modules/analytics_dashboard
 changelog:
-  - version: "0.1.5"
+  - version: "0.1.6"
     date: "2026-06-08"
     notes: "See docs/changelog.md"
 validation:

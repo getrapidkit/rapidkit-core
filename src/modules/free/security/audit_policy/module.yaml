@@ -1,7 +1,7 @@
 name: audit_policy
 display_name: Audit Policy
 description: Immutable audit event, admin policy, reason capture, and compliance export scaffolding
-version: 0.1.7
+version: 0.1.8
 access: free
 status: stable
 tier: free
@@ -124,7 +124,7 @@ support:
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
   documentation: https://getrapidkit.com/modules/audit_policy
 changelog:
-  - version: "0.1.7"
+  - version: "0.1.8"
     date: "2026-06-08"
     notes: "See docs/changelog.md"
 validation:
