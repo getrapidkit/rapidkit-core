@@ -1,7 +1,7 @@
 name: document_pipeline
 display_name: "Document Pipeline"
 description: "Document ingestion, extraction, chunking, classification, and audit-safe processing pipeline for AI/workflow products"
-version: 0.1.4
+version: 0.1.6
 access: free
 status: stable
 tier: free
@@ -30,9 +30,9 @@ generation:
     root: .rapidkit/vendor
     files:
       - template: templates/base/document_pipeline.py.j2
-        relative: src/business/document_pipeline.py
+        relative: src/modules/free/business/document_pipeline/document_pipeline.py
       - template: templates/base/document_pipeline_types.py.j2
-        relative: src/business/document_pipeline_types.py
+        relative: src/modules/free/business/document_pipeline/document_pipeline_types.py
       - template: templates/base/document_pipeline_health.py.j2
         relative: src/health/business/document_pipeline.py
       - template: templates/vendor/nestjs/configuration.js.j2
@@ -45,9 +45,9 @@ generation:
         module_class_name: DocumentPipeline
       files:
         - template: templates/variants/fastapi/document_pipeline.py.j2
-          output: src/business/document_pipeline.py
+          output: src/modules/free/business/document_pipeline/document_pipeline.py
         - template: templates/variants/fastapi/document_pipeline_routes.py.j2
-          output: src/routers/business/document_pipeline.py
+          output: src/modules/free/business/document_pipeline/routers/business/document_pipeline.py
         - template: templates/variants/fastapi/document_pipeline_health.py.j2
           output: src/health/business/document_pipeline.py
         - template: templates/tests/integration/test_document_pipeline_integration.j2
@@ -68,19 +68,19 @@ generation:
         module_kebab: document-pipeline
       files:
         - template: templates/variants/nestjs/document_pipeline.service.ts.j2
-          output: src/document-pipeline/document_pipeline.service.ts
+          output: src/modules/free/business/document_pipeline/document_pipeline.service.ts
         - template: templates/variants/nestjs/document_pipeline.controller.ts.j2
-          output: src/document-pipeline/document_pipeline.controller.ts
+          output: src/modules/free/business/document_pipeline/document_pipeline.controller.ts
         - template: templates/variants/nestjs/document_pipeline.module.ts.j2
-          output: src/document-pipeline/document_pipeline.module.ts
+          output: src/modules/free/business/document_pipeline/document_pipeline.module.ts
         - template: templates/variants/nestjs/document_pipeline.health.ts.j2
-          output: src/document-pipeline/document_pipeline.health.ts
+          output: src/health/document_pipeline.health.ts
         - template: templates/variants/nestjs/document_pipeline.validation.ts.j2
-          output: src/document-pipeline/document_pipeline.validation.ts
+          output: src/modules/free/business/document_pipeline/document_pipeline.validation.ts
         - template: templates/variants/nestjs/document_pipeline.index.ts.j2
-          output: src/document-pipeline/index.ts
+          output: src/modules/free/business/document_pipeline/index.ts
         - template: templates/variants/nestjs/document_pipeline.configuration.ts.j2
-          output: src/document-pipeline/configuration.ts
+          output: src/modules/free/business/document_pipeline/configuration.ts
         - template: templates/variants/nestjs/tests/document_pipeline.e2e-spec.ts
           output: tests/modules/e2e/business/document_pipeline/document_pipeline.e2e-spec.ts
 
@@ -133,8 +133,8 @@ support:
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
   documentation: https://docs.rapidkit.top/modules/document_pipeline
 changelog:
-  - version: "0.1.4"
-    date: "2026-06-02"
+  - version: "0.1.6"
+    date: "2026-06-08"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

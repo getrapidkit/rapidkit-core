@@ -1,5 +1,5 @@
 name: logging
-version: 0.1.10
+version: 0.1.11
 access: free
 status: stable
 category: essentials
@@ -78,7 +78,7 @@ generation:
       - template: templates/variants/nestjs/validation.ts.j2
         output: src/modules/free/essentials/logging/validation.ts
       - template: templates/vendor/nestjs/logging.health.ts.j2
-        output: src/modules/free/essentials/logging/logging.health.ts
+        output: src/health/logging.health.ts
         description: NestJS logging health registration
       - template: templates/variants/nestjs/logging.interceptor.ts.j2
         output: src/modules/free/essentials/logging/logging.interceptor.ts
@@ -135,8 +135,8 @@ support:
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
   documentation: https://docs.rapidkit.top/modules/logging
 changelog:
-  - version: "0.1.10"
-    date: "2026-06-02"
+  - version: "0.1.11"
+    date: "2026-06-08"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

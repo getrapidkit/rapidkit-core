@@ -29,7 +29,7 @@ def test_free_ai_vector_store_generates_and_filters_documents(tmp_path: Path) ->
         / ".rapidkit/vendor"
         / config["name"]
         / config["version"]
-        / "src/ai/vector_store.py"
+        / "src/modules/free/ai/vector_store/vector_store.py"
     )
     vendor = _load_module("integration_vector_store_vendor", vendor_path)
 

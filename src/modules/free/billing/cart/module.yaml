@@ -1,7 +1,7 @@
 name: cart
 display_name: Cart
 description: Shopping cart service for checkout flows
-version: 0.1.15
+version: 0.1.16
 access: free
 status: stable
 tier: free
@@ -76,7 +76,7 @@ generation:
                 - template: templates/variants/nestjs/cart.configuration.ts.j2
                   output: src/modules/free/billing/cart/cart.configuration.ts
                 - template: templates/variants/nestjs/cart.health.ts.j2
-                  output: src/modules/free/billing/cart/cart.health.ts
+                  output: src/health/cart.health.ts
                 - template: templates/variants/nestjs/cart.routes.ts.j2
                   output: src/modules/free/billing/cart/cart.routes.ts
                 - template: templates/variants/nestjs/cart.spec.ts.j2
@@ -133,8 +133,8 @@ support:
     discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
     documentation: https://docs.rapidkit.top/modules/billing/cart
 changelog:
-  - version: "0.1.15"
-    date: "2026-06-07"
+  - version: "0.1.16"
+    date: "2026-06-08"
     notes: "See docs/changelog.md"
 validation:
     pre_install:

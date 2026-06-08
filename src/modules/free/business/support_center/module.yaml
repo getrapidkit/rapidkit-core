@@ -1,7 +1,7 @@
 name: support_center
 display_name: "Support Center"
 description: "Support center foundation with tickets, SLA state, customer notes, assignments, and audit-ready support workflows"
-version: 0.1.3
+version: 0.1.5
 access: free
 status: stable
 tier: free
@@ -30,9 +30,9 @@ generation:
     root: .rapidkit/vendor
     files:
       - template: templates/base/support_center.py.j2
-        relative: src/business/support_center.py
+        relative: src/modules/free/business/support_center/support_center.py
       - template: templates/base/support_center_types.py.j2
-        relative: src/business/support_center_types.py
+        relative: src/modules/free/business/support_center/support_center_types.py
       - template: templates/base/support_center_health.py.j2
         relative: src/health/business/support_center.py
       - template: templates/vendor/nestjs/configuration.js.j2
@@ -45,9 +45,9 @@ generation:
         module_class_name: SupportCenter
       files:
         - template: templates/variants/fastapi/support_center.py.j2
-          output: src/business/support_center.py
+          output: src/modules/free/business/support_center/support_center.py
         - template: templates/variants/fastapi/support_center_routes.py.j2
-          output: src/routers/business/support_center.py
+          output: src/modules/free/business/support_center/routers/business/support_center.py
         - template: templates/variants/fastapi/support_center_health.py.j2
           output: src/health/business/support_center.py
         - template: templates/tests/integration/test_support_center_integration.j2
@@ -68,19 +68,19 @@ generation:
         module_kebab: support-center
       files:
         - template: templates/variants/nestjs/support_center.service.ts.j2
-          output: src/support-center/support_center.service.ts
+          output: src/modules/free/business/support_center/support_center.service.ts
         - template: templates/variants/nestjs/support_center.controller.ts.j2
-          output: src/support-center/support_center.controller.ts
+          output: src/modules/free/business/support_center/support_center.controller.ts
         - template: templates/variants/nestjs/support_center.module.ts.j2
-          output: src/support-center/support_center.module.ts
+          output: src/modules/free/business/support_center/support_center.module.ts
         - template: templates/variants/nestjs/support_center.health.ts.j2
-          output: src/support-center/support_center.health.ts
+          output: src/health/support_center.health.ts
         - template: templates/variants/nestjs/support_center.validation.ts.j2
-          output: src/support-center/support_center.validation.ts
+          output: src/modules/free/business/support_center/support_center.validation.ts
         - template: templates/variants/nestjs/support_center.index.ts.j2
-          output: src/support-center/index.ts
+          output: src/modules/free/business/support_center/index.ts
         - template: templates/variants/nestjs/support_center.configuration.ts.j2
-          output: src/support-center/configuration.ts
+          output: src/modules/free/business/support_center/configuration.ts
         - template: templates/variants/nestjs/tests/support_center.e2e-spec.ts
           output: tests/modules/e2e/business/support_center/support_center.e2e-spec.ts
 
@@ -133,8 +133,8 @@ support:
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
   documentation: https://docs.rapidkit.top/modules/support_center
 changelog:
-  - version: "0.1.3"
-    date: "2026-06-02"
+  - version: "0.1.5"
+    date: "2026-06-08"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

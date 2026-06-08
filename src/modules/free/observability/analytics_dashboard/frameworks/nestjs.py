@@ -37,13 +37,13 @@ class NestJSPlugin(FrameworkPlugin):
 
     def get_output_paths(self) -> Dict[str, str]:
         return {
-            "service": "src/analytics-dashboard/analytics_dashboard.service.ts",
-            "controller": "src/analytics-dashboard/analytics_dashboard.controller.ts",
-            "module": "src/analytics-dashboard/analytics_dashboard.module.ts",
-            "health": "src/analytics-dashboard/analytics_dashboard.health.ts",
-            "validation": "src/analytics-dashboard/analytics_dashboard.validation.ts",
-            "index": "src/analytics-dashboard/index.ts",
-            "configuration": "src/analytics-dashboard/configuration.ts",
+            "service": "src/modules/free/observability/analytics_dashboard/analytics_dashboard.service.ts",
+            "controller": "src/modules/free/observability/analytics_dashboard/analytics_dashboard.controller.ts",
+            "module": "src/modules/free/observability/analytics_dashboard/analytics_dashboard.module.ts",
+            "health": "src/health/analytics_dashboard.health.ts",
+            "validation": "src/modules/free/observability/analytics_dashboard/analytics_dashboard.validation.ts",
+            "index": "src/modules/free/observability/analytics_dashboard/index.ts",
+            "configuration": "src/modules/free/observability/analytics_dashboard/configuration.ts",
             "e2e": "tests/modules/e2e/observability/analytics_dashboard/analytics_dashboard.e2e-spec.ts",
         }
 

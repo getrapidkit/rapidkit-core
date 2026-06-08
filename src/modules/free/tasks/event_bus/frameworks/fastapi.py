@@ -39,8 +39,8 @@ class FastAPIPlugin(FrameworkPlugin):
 
     def get_output_paths(self) -> Dict[str, str]:
         return {
-            "runtime": "src/tasks/event_bus.py",
-            "router": "src/routers/tasks/event_bus.py",
+            "runtime": "src/modules/free/tasks/event_bus/event_bus.py",
+            "router": "src/modules/free/tasks/event_bus/routers/tasks/event_bus.py",
             "health": "src/health/tasks/event_bus.py",
             "integration": "tests/modules/free/integration/tasks/event_bus/test_event_bus_integration.py",
             "e2e": "tests/modules/e2e/free/tasks/event_bus/test_event_bus_e2e.py",
@@ -67,7 +67,9 @@ class FastAPIPlugin(FrameworkPlugin):
         return ["pytest-asyncio>=0.23.0", "httpx>=0.27.0"]
 
     def pre_generation_hook(self, output_dir: Path) -> None:
-        (output_dir / "src" / "routers").mkdir(parents=True, exist_ok=True)
+        (
+            output_dir / "src" / "modules" / "free" / "tasks" / "event_bus" / "routers" / "tasks"
+        ).mkdir(parents=True, exist_ok=True)
         (output_dir / "src" / "health").mkdir(parents=True, exist_ok=True)
         spec = build_standard_health_spec(MODULE_ROOT)
         with suppress(RuntimeError, OSError):

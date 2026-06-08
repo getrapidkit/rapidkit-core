@@ -28,8 +28,7 @@ def test_queue_platform_integration_worker_flow(tmp_path: Path) -> None:
         / "vendor"
         / config["name"]
         / config["version"]
-        / "src"
-        / "tasks"
+        / "src/modules/free/tasks/queue_platform"
         / "queue_platform.py",
     )
     queue = vendor.QueuePlatform()

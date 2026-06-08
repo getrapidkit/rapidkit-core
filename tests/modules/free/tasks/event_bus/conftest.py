@@ -41,18 +41,11 @@ def rendered_event_bus(tmp_path: Path) -> dict[str, object]:
         / "vendor"
         / config["name"]
         / config["version"]
-        / "src"
+        / "src/modules/free/tasks/event_bus"
         / "event_bus.py"
     )
-    if not vendor_path.exists():
-        vendor_path = (
-            tmp_path
-            / ".rapidkit"
-            / "vendor"
-            / config["name"]
-            / config["version"]
-            / "src"
-            / "tasks"
-            / "event_bus.py"
-        )
-    return {"root": tmp_path, "vendor": _load_module("generated_event_bus_vendor", vendor_path)}
+    return {
+        "config": config,
+        "root": tmp_path,
+        "vendor": _load_module("generated_event_bus_vendor", vendor_path),
+    }

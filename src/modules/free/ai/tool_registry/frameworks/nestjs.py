@@ -37,13 +37,13 @@ class NestJSPlugin(FrameworkPlugin):
 
     def get_output_paths(self) -> Dict[str, str]:
         return {
-            "service": "src/tool-registry/tool_registry.service.ts",
-            "controller": "src/tool-registry/tool_registry.controller.ts",
-            "module": "src/tool-registry/tool_registry.module.ts",
-            "health": "src/tool-registry/tool_registry.health.ts",
-            "validation": "src/tool-registry/tool_registry.validation.ts",
-            "index": "src/tool-registry/index.ts",
-            "configuration": "src/tool-registry/configuration.ts",
+            "service": "src/modules/free/ai/tool_registry/tool_registry.service.ts",
+            "controller": "src/modules/free/ai/tool_registry/tool_registry.controller.ts",
+            "module": "src/modules/free/ai/tool_registry/tool_registry.module.ts",
+            "health": "src/health/tool_registry.health.ts",
+            "validation": "src/modules/free/ai/tool_registry/tool_registry.validation.ts",
+            "index": "src/modules/free/ai/tool_registry/index.ts",
+            "configuration": "src/modules/free/ai/tool_registry/configuration.ts",
             "e2e": "tests/modules/e2e/ai/tool_registry/tool_registry.e2e-spec.ts",
         }
 

@@ -37,13 +37,13 @@ class NestJSPlugin(FrameworkPlugin):
 
     def get_output_paths(self) -> Dict[str, str]:
         return {
-            "service": "src/rag-pipeline/rag_pipeline.service.ts",
-            "controller": "src/rag-pipeline/rag_pipeline.controller.ts",
-            "module": "src/rag-pipeline/rag_pipeline.module.ts",
-            "health": "src/rag-pipeline/rag_pipeline.health.ts",
-            "validation": "src/rag-pipeline/rag_pipeline.validation.ts",
-            "index": "src/rag-pipeline/index.ts",
-            "configuration": "src/rag-pipeline/configuration.ts",
+            "service": "src/modules/free/ai/rag_pipeline/rag_pipeline.service.ts",
+            "controller": "src/modules/free/ai/rag_pipeline/rag_pipeline.controller.ts",
+            "module": "src/modules/free/ai/rag_pipeline/rag_pipeline.module.ts",
+            "health": "src/health/rag_pipeline.health.ts",
+            "validation": "src/modules/free/ai/rag_pipeline/rag_pipeline.validation.ts",
+            "index": "src/modules/free/ai/rag_pipeline/index.ts",
+            "configuration": "src/modules/free/ai/rag_pipeline/configuration.ts",
             "e2e": "tests/modules/e2e/ai/rag_pipeline/rag_pipeline.e2e-spec.ts",
         }
 

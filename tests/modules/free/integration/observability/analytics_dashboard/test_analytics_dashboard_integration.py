@@ -27,9 +27,9 @@ def test_analytics_dashboard_integration_runtime_smoke(tmp_path: Path) -> None:
         tmp_path
         / ".rapidkit"
         / "vendor"
-        / "analytics_dashboard"
-        / "0.1.3"
-        / "src/observability/analytics_dashboard.py"
+        / config["name"]
+        / config["version"]
+        / "src/modules/free/observability/analytics_dashboard/analytics_dashboard.py"
     )
     console = vendor.AnalyticsDashboard()
     console.record_metric("orders", 2)

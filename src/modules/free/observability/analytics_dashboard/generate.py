@@ -27,18 +27,26 @@ MODULE_CLASS = "AnalyticsDashboard"
 MODULE_TITLE = "Analytics Dashboard"
 MODULE_TIER = "free"
 MODULE_SLUG = "free/observability/analytics_dashboard"
-PYTHON_OUTPUT_REL = "src/observability/analytics_dashboard.py"
-PYTHON_TYPES_REL = "src/observability/analytics_dashboard_types.py"
+PYTHON_OUTPUT_REL = "src/modules/free/observability/analytics_dashboard/analytics_dashboard.py"
+PYTHON_TYPES_REL = "src/modules/free/observability/analytics_dashboard/analytics_dashboard_types.py"
 PYTHON_HEALTH_REL = "src/health/observability/analytics_dashboard.py"
-NEST_OUTPUT_REL = "src/analytics-dashboard/analytics_dashboard.service.ts"
-NEST_CONTROLLER_REL = "src/analytics-dashboard/analytics_dashboard.controller.ts"
-NEST_MODULE_REL = "src/analytics-dashboard/analytics_dashboard.module.ts"
-NEST_HEALTH_REL = "src/analytics-dashboard/analytics_dashboard.health.ts"
-NEST_VALIDATION_REL = "src/analytics-dashboard/analytics_dashboard.validation.ts"
-NEST_INDEX_REL = "src/analytics-dashboard/index.ts"
-NEST_CONFIGURATION_REL = "src/analytics-dashboard/configuration.ts"
-VENDOR_RELATIVE = "src/observability/analytics_dashboard.py"
-VENDOR_TYPES_RELATIVE = "src/observability/analytics_dashboard_types.py"
+NEST_OUTPUT_REL = (
+    "src/modules/free/observability/analytics_dashboard/analytics_dashboard.service.ts"
+)
+NEST_CONTROLLER_REL = (
+    "src/modules/free/observability/analytics_dashboard/analytics_dashboard.controller.ts"
+)
+NEST_MODULE_REL = "src/modules/free/observability/analytics_dashboard/analytics_dashboard.module.ts"
+NEST_HEALTH_REL = "src/health/analytics_dashboard.health.ts"
+NEST_VALIDATION_REL = (
+    "src/modules/free/observability/analytics_dashboard/analytics_dashboard.validation.ts"
+)
+NEST_INDEX_REL = "src/modules/free/observability/analytics_dashboard/index.ts"
+NEST_CONFIGURATION_REL = "src/modules/free/observability/analytics_dashboard/configuration.ts"
+VENDOR_RELATIVE = "src/modules/free/observability/analytics_dashboard/analytics_dashboard.py"
+VENDOR_TYPES_RELATIVE = (
+    "src/modules/free/observability/analytics_dashboard/analytics_dashboard_types.py"
+)
 VENDOR_HEALTH_RELATIVE = "src/health/observability/analytics_dashboard.py"
 MODULE_IMPORT_PATH = "modules.free.observability.analytics_dashboard"
 

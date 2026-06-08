@@ -4,8 +4,11 @@ from __future__ import annotations
 
 import fnmatch
 import hashlib
+import importlib.util
+import inspect
 import json
 import os
+import types
 from dataclasses import dataclass, replace
 from datetime import datetime, timezone
 from functools import lru_cache
@@ -557,6 +560,120 @@ def _render_module_spec(spec: ModuleSpec, module_name: str) -> ModuleSpec:
     )
 
 
+def _iter_generation_outputs(module_yaml: Path) -> Iterable[Tuple[str, str]]:
+    try:
+        payload = yaml.safe_load(module_yaml.read_text(encoding="utf-8")) or {}
+    except (OSError, yaml.YAMLError):
+        return
+    if not isinstance(payload, dict):
+        return
+
+    generation = payload.get("generation")
+    if not isinstance(generation, dict):
+        return
+
+    vendor = generation.get("vendor")
+    if isinstance(vendor, dict):
+        files = vendor.get("files")
+        if isinstance(files, list):
+            for index, entry in enumerate(files):
+                if isinstance(entry, dict) and isinstance(entry.get("relative"), str):
+                    yield (f"generation.vendor.files[{index}].relative", entry["relative"])
+
+    variants = generation.get("variants")
+    if isinstance(variants, dict):
+        for profile, variant in variants.items():
+            if not isinstance(variant, dict):
+                continue
+            files = variant.get("files")
+            if not isinstance(files, list):
+                continue
+            for index, entry in enumerate(files):
+                if isinstance(entry, dict) and isinstance(entry.get("output"), str):
+                    yield (
+                        f"generation.variants.{profile}.files[{index}].output",
+                        entry["output"],
+                    )
+
+
+def _load_framework_module(framework_file: Path) -> types.ModuleType:
+    module_name = (
+        "rapidkit_structure_contract_"
+        + hashlib.sha256(framework_file.as_posix().encode("utf-8")).hexdigest()
+    )
+    spec = importlib.util.spec_from_file_location(module_name, framework_file)
+    if spec is None or spec.loader is None:
+        raise ImportError(f"Unable to load framework plugin: {framework_file}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
+def _iter_framework_outputs(module_path: Path) -> Iterable[Tuple[str, str]]:
+    frameworks_dir = module_path / "frameworks"
+    if not frameworks_dir.exists():
+        return
+
+    for framework_file in sorted(frameworks_dir.glob("*.py")):
+        if framework_file.name == "__init__.py":
+            continue
+        try:
+            module = _load_framework_module(framework_file)
+        except (ImportError, OSError, RuntimeError, AttributeError) as exc:
+            yield (f"{framework_file.relative_to(module_path)}", f"<plugin-load-error:{exc}>")
+            continue
+
+        for _, candidate in inspect.getmembers(module, inspect.isclass):
+            if candidate.__module__ != module.__name__:
+                continue
+            if not candidate.__name__.endswith("Plugin"):
+                continue
+            try:
+                plugin = candidate()
+                outputs = plugin.get_output_paths()
+            except (RuntimeError, OSError, ValueError, TypeError, AttributeError) as exc:
+                yield (
+                    f"{framework_file.relative_to(module_path)}::{candidate.__name__}",
+                    f"<plugin-output-error:{exc}>",
+                )
+                continue
+            if not isinstance(outputs, dict):
+                continue
+            for key, output in outputs.items():
+                if isinstance(output, str):
+                    yield (
+                        f"{framework_file.relative_to(module_path)}::{candidate.__name__}.{key}",
+                        output,
+                    )
+
+
+def _is_allowed_src_module_output(output: str, namespace: str) -> bool:
+    if output.startswith("<plugin-"):
+        return False
+    if not output.startswith("src/"):
+        return True
+    if output.startswith(namespace):
+        return True
+    return output.startswith("src/health/")
+
+
+def _module_output_namespace_errors(module_name: str, module_path: Path) -> List[str]:
+    namespace = f"src/modules/{module_name.strip('/')}/"
+    errors: List[str] = []
+    module_yaml = module_path / "module.yaml"
+
+    for source, output in (
+        *_iter_generation_outputs(module_yaml),
+        *_iter_framework_outputs(module_path),
+    ):
+        if not _is_allowed_src_module_output(output, namespace):
+            errors.append(
+                f"module output namespace drift: {source} -> {output} "
+                f"(expected {namespace}* or src/health/*)"
+            )
+    return errors
+
+
 def validate_module_structure(
     module_name: str, modules_root: Path = MODULES_ROOT
 ) -> ValidationResult:
@@ -630,6 +747,11 @@ def validate_module_structure(
             msg = f"generation target uses legacy path: {t} — migrate to src/health/*"
             result.messages.append(msg)
             result.missing_files.append(msg)
+        result.valid = False
+    namespace_errors = _module_output_namespace_errors(module_name, module_path)
+    if namespace_errors:
+        result.messages.extend(namespace_errors)
+        result.missing_files.extend(namespace_errors)
         result.valid = False
     _write_verification_file(module_path, module_spec, result)
     return result

@@ -29,8 +29,7 @@ def test_free_ai_tool_registry_generated_vendor_smoke(tmp_path: Path) -> None:
         / "vendor"
         / config["name"]
         / config["version"]
-        / "src"
-        / "ai"
+        / "src/modules/free/ai/tool_registry"
         / "tool_registry.py"
     )
     vendor = _load_module("generated_tool_registry_integration_vendor", vendor_path)

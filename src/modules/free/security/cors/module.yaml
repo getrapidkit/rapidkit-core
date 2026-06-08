@@ -1,7 +1,7 @@
 name: cors
 description: Cross-Origin Resource Sharing security module
 category: security
-version: 0.1.12
+version: 0.1.13
 access: free
 status: stable
 tags:
@@ -69,7 +69,7 @@ generation:
       - template: templates/variants/nestjs/cors.module.ts.j2
         output: src/modules/free/security/cors/cors.module.ts
       - template: templates/variants/nestjs/cors.health.ts.j2
-        output: src/modules/free/security/cors/cors.health.ts
+        output: src/health/cors.health.ts
         description: NestJS health endpoint wiring for CORS
       - template: templates/variants/nestjs/cors_health_runtime.py.j2
         output: src/health/cors.py
@@ -122,8 +122,8 @@ support:
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
   documentation: https://docs.rapidkit.top/modules/cors
 changelog:
-  - version: "0.1.12"
-    date: "2026-06-07"
+  - version: "0.1.13"
+    date: "2026-06-08"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

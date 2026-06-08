@@ -133,7 +133,7 @@ class NestJSPlugin(FrameworkPlugin):
             "index": "src/modules/free/essentials/logging/index.ts",
             "validation": "src/modules/free/essentials/logging/validation.ts",
             "interceptor": "src/modules/free/essentials/logging/logging.interceptor.ts",
-            "health": "src/modules/free/essentials/logging/logging.health.ts",
+            "health": "src/health/logging.health.ts",
             "integration_tests": "tests/modules/integration/essentials/logging/logging.integration.spec.ts",
             "e2e_tests": "tests/modules/e2e/free/essentials/logging/logging.e2e-spec.ts",
         }

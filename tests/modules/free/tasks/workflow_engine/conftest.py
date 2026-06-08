@@ -45,12 +45,12 @@ def rendered_workflow_engine(tmp_path: Path) -> dict[str, object]:
         / "vendor"
         / config["name"]
         / config["version"]
-        / "src"
-        / "tasks"
+        / "src/modules/free/tasks/workflow_engine"
         / "workflow_engine.py"
     )
 
     return {
+        "config": config,
         "root": tmp_path,
         "vendor": _load_module("generated_workflow_engine_vendor", vendor_path),
     }

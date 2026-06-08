@@ -1,7 +1,7 @@
 name: inventory
 display_name: Inventory
 description: Inventory and pricing service backing Cart + Stripe
-version: 0.1.8
+version: 0.1.9
 access: free
 status: stable
 tier: free
@@ -70,7 +70,7 @@ generation:
                 - template: templates/variants/nestjs/inventory.configuration.ts.j2
                   output: src/modules/free/billing/inventory/inventory.configuration.ts
                 - template: templates/variants/nestjs/inventory.health.ts.j2
-                  output: src/modules/free/billing/inventory/inventory.health.ts
+                  output: src/health/inventory.health.ts
                 - template: templates/variants/nestjs/inventory.routes.ts.j2
                   output: src/modules/free/billing/inventory/inventory.routes.ts
                 - template: templates/variants/nestjs/inventory.spec.ts.j2
@@ -127,8 +127,8 @@ support:
     discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
     documentation: https://docs.rapidkit.top/modules/billing/inventory
 changelog:
-  - version: "0.1.8"
-    date: "2026-06-07"
+  - version: "0.1.9"
+    date: "2026-06-08"
     notes: "See docs/changelog.md"
 validation:
     pre_install:

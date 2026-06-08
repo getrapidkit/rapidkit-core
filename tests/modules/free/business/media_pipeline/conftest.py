@@ -41,11 +41,11 @@ def rendered_media_pipeline(tmp_path: Path) -> dict[str, object]:
         / "vendor"
         / config["name"]
         / config["version"]
-        / "src"
-        / "business"
+        / "src/modules/free/business/media_pipeline"
         / "media_pipeline.py"
     )
     return {
+        "config": config,
         "root": tmp_path,
         "vendor": _load_module("generated_media_pipeline_vendor", vendor_path),
     }

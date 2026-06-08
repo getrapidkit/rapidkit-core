@@ -2,7 +2,7 @@ name: vector_store
 display_name: Vector Store
 description: Vector store abstraction for pgvector/Qdrant-style indexes, similarity search, and embedding
   metadata
-version: 0.1.6
+version: 0.1.8
 access: free
 status: stable
 tier: free
@@ -26,9 +26,9 @@ generation:
     root: .rapidkit/vendor
     files:
     - template: templates/base/vector_store.py.j2
-      relative: src/ai/vector_store.py
+      relative: src/modules/free/ai/vector_store/vector_store.py
     - template: templates/base/vector_store_types.py.j2
-      relative: src/ai/vector_store_types.py
+      relative: src/modules/free/ai/vector_store/vector_store_types.py
     - template: templates/base/vector_store_health.py.j2
       relative: src/health/ai/vector_store.py
     - template: templates/vendor/nestjs/configuration.js.j2
@@ -41,9 +41,9 @@ generation:
         module_class_name: VectorStore
       files:
       - template: templates/variants/fastapi/vector_store.py.j2
-        output: src/ai/vector_store.py
+        output: src/modules/free/ai/vector_store/vector_store.py
       - template: templates/variants/fastapi/vector_store_routes.py.j2
-        output: src/routers/ai/vector_store.py
+        output: src/modules/free/ai/vector_store/routers/ai/vector_store.py
       - template: templates/variants/fastapi/vector_store_health.py.j2
         output: src/health/ai/vector_store.py
       - template: templates/tests/integration/test_vector_store_integration.j2
@@ -61,19 +61,19 @@ generation:
         module_kebab: vector-store
       files:
       - template: templates/variants/nestjs/vector_store.service.ts.j2
-        output: src/vector-store/vector_store.service.ts
+        output: src/modules/free/ai/vector_store/vector_store.service.ts
       - template: templates/variants/nestjs/vector_store.controller.ts.j2
-        output: src/vector-store/vector_store.controller.ts
+        output: src/modules/free/ai/vector_store/vector_store.controller.ts
       - template: templates/variants/nestjs/vector_store.module.ts.j2
-        output: src/vector-store/vector_store.module.ts
+        output: src/modules/free/ai/vector_store/vector_store.module.ts
       - template: templates/variants/nestjs/vector_store.health.ts.j2
-        output: src/vector-store/vector_store.health.ts
+        output: src/health/vector_store.health.ts
       - template: templates/variants/nestjs/vector_store.validation.ts.j2
-        output: src/vector-store/vector_store.validation.ts
+        output: src/modules/free/ai/vector_store/vector_store.validation.ts
       - template: templates/variants/nestjs/vector_store.index.ts.j2
-        output: src/vector-store/index.ts
+        output: src/modules/free/ai/vector_store/index.ts
       - template: templates/variants/nestjs/vector_store.configuration.ts.j2
-        output: src/vector-store/configuration.ts
+        output: src/modules/free/ai/vector_store/configuration.ts
       - template: templates/variants/nestjs/tests/vector_store.e2e-spec.ts
         output: tests/modules/e2e/ai/vector_store/vector_store.e2e-spec.ts
     nestjs.standard: *nestjs_variant
@@ -125,8 +125,8 @@ support:
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
   documentation: https://docs.rapidkit.top/modules/vector_store
 changelog:
-  - version: "0.1.6"
-    date: "2026-06-02"
+  - version: "0.1.8"
+    date: "2026-06-08"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

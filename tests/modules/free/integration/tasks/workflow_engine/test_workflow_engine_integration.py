@@ -29,7 +29,7 @@ def test_free_tasks_workflow_engine_generates_and_runs_release_workflow(tmp_path
         / ".rapidkit/vendor"
         / config["name"]
         / config["version"]
-        / "src/tasks/workflow_engine.py"
+        / "src/modules/free/tasks/workflow_engine/workflow_engine.py"
     )
     vendor = _load_module("integration_workflow_engine_vendor", vendor_path)
 

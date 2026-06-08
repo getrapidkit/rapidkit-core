@@ -25,9 +25,9 @@ def test_admin_console_integration_runtime_smoke(tmp_path: Path) -> None:
         tmp_path
         / ".rapidkit"
         / "vendor"
-        / "admin_console"
-        / "0.1.3"
-        / "src/business/admin_console.py"
+        / config["name"]
+        / config["version"]
+        / "src/modules/free/business/admin_console/admin_console.py"
     )
     console = vendor.AdminConsole()
     console.register_action(vendor.AdminAction(key="publish", label="Publish"))

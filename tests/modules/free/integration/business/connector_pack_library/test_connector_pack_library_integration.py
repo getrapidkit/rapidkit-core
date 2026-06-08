@@ -27,9 +27,9 @@ def test_connector_pack_library_integration_runtime_smoke(tmp_path: Path) -> Non
         tmp_path
         / ".rapidkit"
         / "vendor"
-        / "connector_pack_library"
-        / "0.1.3"
-        / "src/business/connector_pack_library.py"
+        / config["name"]
+        / config["version"]
+        / "src/modules/free/business/connector_pack_library/connector_pack_library.py"
     )
     console = vendor.ConnectorPackLibrary()
     pack = console.register_pack(

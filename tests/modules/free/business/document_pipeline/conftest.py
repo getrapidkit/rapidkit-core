@@ -41,21 +41,11 @@ def rendered_document_pipeline(tmp_path: Path) -> dict[str, object]:
         / "vendor"
         / config["name"]
         / config["version"]
-        / "src"
+        / "src/modules/free/business/document_pipeline"
         / "document_pipeline.py"
     )
-    if not vendor_path.exists():
-        vendor_path = (
-            tmp_path
-            / ".rapidkit"
-            / "vendor"
-            / config["name"]
-            / config["version"]
-            / "src"
-            / "business"
-            / "document_pipeline.py"
-        )
     return {
+        "config": config,
         "root": tmp_path,
         "vendor": _load_module("generated_document_pipeline_vendor", vendor_path),
     }

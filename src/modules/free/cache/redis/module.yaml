@@ -1,7 +1,7 @@
 name: redis
 description: Unified Redis cache integration
 category: cache
-version: 0.1.19
+version: 0.1.20
 access: free
 status: stable
 tags:
@@ -72,7 +72,7 @@ generation:
       - template: templates/variants/nestjs/redis.controller.ts.j2
         output: src/modules/free/cache/redis/redis.controller.ts
       - template: templates/variants/nestjs/redis.health.ts.j2
-        output: src/modules/free/cache/redis/redis.health.ts
+        output: src/health/redis.health.ts
       - template: templates/variants/nestjs/index.ts.j2
         output: src/modules/free/cache/redis/index.ts
       - template: templates/variants/nestjs/validation.ts.j2
@@ -119,8 +119,8 @@ support:
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
   documentation: https://docs.rapidkit.top/modules/redis
 changelog:
-  - version: "0.1.19"
-    date: "2026-06-07"
+  - version: "0.1.20"
+    date: "2026-06-08"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

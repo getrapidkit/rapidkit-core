@@ -1,7 +1,7 @@
 name: ai_assistant
 display_name: Ai Assistant
 description: Provider-agnostic...
-version: 0.1.17
+version: 0.1.18
 access: free
 status: stable
 category: ai
@@ -68,7 +68,7 @@ generation:
       - template: templates/variants/nestjs/ai_assistant.module.ts.j2
         output: src/modules/free/ai/ai_assistant/ai_assistant.module.ts
       - template: templates/variants/nestjs/ai_assistant.health.ts.j2
-        output: src/modules/free/ai/ai_assistant/ai_assistant.health.ts
+        output: src/health/ai_assistant.health.ts
       - template: templates/variants/nestjs/ai_assistant.validation.ts.j2
         output: src/modules/free/ai/ai_assistant/ai_assistant.validation.ts
       - template: templates/variants/nestjs/ai_assistant.index.ts.j2
@@ -128,8 +128,8 @@ support:
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
   documentation: https://docs.rapidkit.top/modules/ai_assistant
 changelog:
-  - version: "0.1.17"
-    date: "2026-06-02"
+  - version: "0.1.18"
+    date: "2026-06-08"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

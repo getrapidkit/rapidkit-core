@@ -1,7 +1,7 @@
 name: media_pipeline
 display_name: "Media Pipeline"
 description: "Media ingestion and transformation pipeline with checksum, variant generation, and moderation hooks"
-version: 0.1.4
+version: 0.1.6
 access: free
 status: stable
 tier: free
@@ -29,9 +29,9 @@ generation:
     root: .rapidkit/vendor
     files:
       - template: templates/base/media_pipeline.py.j2
-        relative: src/business/media_pipeline.py
+        relative: src/modules/free/business/media_pipeline/media_pipeline.py
       - template: templates/base/media_pipeline_types.py.j2
-        relative: src/business/media_pipeline_types.py
+        relative: src/modules/free/business/media_pipeline/media_pipeline_types.py
       - template: templates/base/media_pipeline_health.py.j2
         relative: src/health/business/media_pipeline.py
       - template: templates/vendor/nestjs/configuration.js.j2
@@ -44,9 +44,9 @@ generation:
         module_class_name: MediaPipeline
       files:
         - template: templates/variants/fastapi/media_pipeline.py.j2
-          output: src/business/media_pipeline.py
+          output: src/modules/free/business/media_pipeline/media_pipeline.py
         - template: templates/variants/fastapi/media_pipeline_routes.py.j2
-          output: src/routers/business/media_pipeline.py
+          output: src/modules/free/business/media_pipeline/routers/business/media_pipeline.py
         - template: templates/variants/fastapi/media_pipeline_health.py.j2
           output: src/health/business/media_pipeline.py
         - template: templates/tests/integration/test_media_pipeline_integration.j2
@@ -67,19 +67,19 @@ generation:
         module_kebab: media-pipeline
       files:
         - template: templates/variants/nestjs/media_pipeline.service.ts.j2
-          output: src/media-pipeline/media_pipeline.service.ts
+          output: src/modules/free/business/media_pipeline/media_pipeline.service.ts
         - template: templates/variants/nestjs/media_pipeline.controller.ts.j2
-          output: src/media-pipeline/media_pipeline.controller.ts
+          output: src/modules/free/business/media_pipeline/media_pipeline.controller.ts
         - template: templates/variants/nestjs/media_pipeline.module.ts.j2
-          output: src/media-pipeline/media_pipeline.module.ts
+          output: src/modules/free/business/media_pipeline/media_pipeline.module.ts
         - template: templates/variants/nestjs/media_pipeline.health.ts.j2
-          output: src/media-pipeline/media_pipeline.health.ts
+          output: src/health/media_pipeline.health.ts
         - template: templates/variants/nestjs/media_pipeline.validation.ts.j2
-          output: src/media-pipeline/media_pipeline.validation.ts
+          output: src/modules/free/business/media_pipeline/media_pipeline.validation.ts
         - template: templates/variants/nestjs/media_pipeline.index.ts.j2
-          output: src/media-pipeline/index.ts
+          output: src/modules/free/business/media_pipeline/index.ts
         - template: templates/variants/nestjs/media_pipeline.configuration.ts.j2
-          output: src/media-pipeline/configuration.ts
+          output: src/modules/free/business/media_pipeline/configuration.ts
         - template: templates/variants/nestjs/tests/media_pipeline.e2e-spec.ts
           output: tests/modules/e2e/business/media_pipeline/media_pipeline.e2e-spec.ts
 
@@ -132,8 +132,8 @@ support:
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
   documentation: https://docs.rapidkit.top/modules/media_pipeline
 changelog:
-  - version: "0.1.4"
-    date: "2026-06-02"
+  - version: "0.1.6"
+    date: "2026-06-08"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

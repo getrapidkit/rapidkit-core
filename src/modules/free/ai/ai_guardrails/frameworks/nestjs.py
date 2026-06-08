@@ -37,13 +37,13 @@ class NestJSPlugin(FrameworkPlugin):
 
     def get_output_paths(self) -> Dict[str, str]:
         return {
-            "service": "src/ai-guardrails/ai_guardrails.service.ts",
-            "controller": "src/ai-guardrails/ai_guardrails.controller.ts",
-            "module": "src/ai-guardrails/ai_guardrails.module.ts",
-            "health": "src/ai-guardrails/ai_guardrails.health.ts",
-            "validation": "src/ai-guardrails/ai_guardrails.validation.ts",
-            "index": "src/ai-guardrails/index.ts",
-            "configuration": "src/ai-guardrails/configuration.ts",
+            "service": "src/modules/free/ai/ai_guardrails/ai_guardrails.service.ts",
+            "controller": "src/modules/free/ai/ai_guardrails/ai_guardrails.controller.ts",
+            "module": "src/modules/free/ai/ai_guardrails/ai_guardrails.module.ts",
+            "health": "src/health/ai_guardrails.health.ts",
+            "validation": "src/modules/free/ai/ai_guardrails/ai_guardrails.validation.ts",
+            "index": "src/modules/free/ai/ai_guardrails/index.ts",
+            "configuration": "src/modules/free/ai/ai_guardrails/configuration.ts",
             "e2e": "tests/modules/e2e/ai/ai_guardrails/ai_guardrails.e2e-spec.ts",
         }
 

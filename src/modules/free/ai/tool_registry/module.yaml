@@ -1,7 +1,7 @@
 name: tool_registry
 display_name: "Tool Registry"
 description: "Tool registry, schemas, permissions, and audit-safe invocation policy for AI products"
-version: 0.1.4
+version: 0.1.6
 access: free
 status: stable
 tier: free
@@ -28,9 +28,9 @@ generation:
     root: .rapidkit/vendor
     files:
       - template: templates/base/tool_registry.py.j2
-        relative: src/ai/tool_registry.py
+        relative: src/modules/free/ai/tool_registry/tool_registry.py
       - template: templates/base/tool_registry_types.py.j2
-        relative: src/ai/tool_registry_types.py
+        relative: src/modules/free/ai/tool_registry/tool_registry_types.py
       - template: templates/base/tool_registry_health.py.j2
         relative: src/health/ai/tool_registry.py
       - template: templates/vendor/nestjs/configuration.js.j2
@@ -43,9 +43,9 @@ generation:
         module_class_name: ToolRegistry
       files:
         - template: templates/variants/fastapi/tool_registry.py.j2
-          output: src/ai/tool_registry.py
+          output: src/modules/free/ai/tool_registry/tool_registry.py
         - template: templates/variants/fastapi/tool_registry_routes.py.j2
-          output: src/routers/ai/tool_registry.py
+          output: src/modules/free/ai/tool_registry/routers/ai/tool_registry.py
         - template: templates/variants/fastapi/tool_registry_health.py.j2
           output: src/health/ai/tool_registry.py
         - template: templates/tests/integration/test_tool_registry_integration.j2
@@ -66,19 +66,19 @@ generation:
         module_kebab: tool-registry
       files:
         - template: templates/variants/nestjs/tool_registry.service.ts.j2
-          output: src/tool-registry/tool_registry.service.ts
+          output: src/modules/free/ai/tool_registry/tool_registry.service.ts
         - template: templates/variants/nestjs/tool_registry.controller.ts.j2
-          output: src/tool-registry/tool_registry.controller.ts
+          output: src/modules/free/ai/tool_registry/tool_registry.controller.ts
         - template: templates/variants/nestjs/tool_registry.module.ts.j2
-          output: src/tool-registry/tool_registry.module.ts
+          output: src/modules/free/ai/tool_registry/tool_registry.module.ts
         - template: templates/variants/nestjs/tool_registry.health.ts.j2
-          output: src/tool-registry/tool_registry.health.ts
+          output: src/health/tool_registry.health.ts
         - template: templates/variants/nestjs/tool_registry.validation.ts.j2
-          output: src/tool-registry/tool_registry.validation.ts
+          output: src/modules/free/ai/tool_registry/tool_registry.validation.ts
         - template: templates/variants/nestjs/tool_registry.index.ts.j2
-          output: src/tool-registry/index.ts
+          output: src/modules/free/ai/tool_registry/index.ts
         - template: templates/variants/nestjs/tool_registry.configuration.ts.j2
-          output: src/tool-registry/configuration.ts
+          output: src/modules/free/ai/tool_registry/configuration.ts
         - template: templates/variants/nestjs/tests/tool_registry.e2e-spec.ts
           output: tests/modules/e2e/ai/tool_registry/tool_registry.e2e-spec.ts
 
@@ -131,8 +131,8 @@ support:
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
   documentation: https://docs.rapidkit.top/modules/tool_registry
 changelog:
-  - version: "0.1.4"
-    date: "2026-06-02"
+  - version: "0.1.6"
+    date: "2026-06-08"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

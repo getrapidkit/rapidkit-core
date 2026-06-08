@@ -45,12 +45,12 @@ def rendered_tool_registry(tmp_path: Path) -> dict[str, object]:
         / "vendor"
         / config["name"]
         / config["version"]
-        / "src"
-        / "ai"
+        / "src/modules/free/ai/tool_registry"
         / "tool_registry.py"
     )
 
     return {
+        "config": config,
         "root": tmp_path,
         "vendor": _load_module("generated_tool_registry_vendor", vendor_path),
     }

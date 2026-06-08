@@ -1,5 +1,5 @@
 name: notifications
-version: 0.1.28
+version: 0.1.29
 tier: free
 access: free
 status: stable
@@ -76,7 +76,7 @@ generation:
                 - template: templates/variants/nestjs/notifications.configuration.ts.j2
                   output: src/modules/free/communication/notifications/notifications.configuration.ts
                 - template: templates/variants/nestjs/notifications.health.ts.j2
-                  output: src/modules/free/communication/notifications/notifications.health.ts
+                  output: src/health/notifications.health.ts
                 - template: templates/tests/integration/notifications.integration.spec.ts.j2
                   output: tests/modules/integration/communication/notifications.integration.spec.ts
                 - template: templates/variants/nestjs/tests/notifications.e2e-spec.ts
@@ -144,8 +144,8 @@ support:
     discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
     documentation: https://docs.rapidkit.top/modules/notifications
 changelog:
-  - version: "0.1.28"
-    date: "2026-06-02"
+  - version: "0.1.29"
+    date: "2026-06-08"
     notes: "See docs/changelog.md"
 validation:
     pre_install:

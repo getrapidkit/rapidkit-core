@@ -28,8 +28,7 @@ def test_forms_engine_integration_workflow_hook(tmp_path: Path) -> None:
         / "vendor"
         / config["name"]
         / config["version"]
-        / "src"
-        / "business"
+        / "src/modules/free/business/forms_engine"
         / "forms_engine.py",
     )
     captured = []

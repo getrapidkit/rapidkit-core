@@ -18,6 +18,6 @@ def test_vector_store_renders_fastapi_and_nestjs_variants(tmp_path: Path) -> Non
     )
     generator.generate_variant_files("nestjs", nestjs_dir, renderer, context)
 
-    assert (fastapi_dir / "src" / "ai" / "vector_store.py").exists()
-    assert (fastapi_dir / "src" / "routers" / "ai" / "vector_store.py").exists()
-    assert (nestjs_dir / "src" / "vector-store" / "vector_store.service.ts").exists()
+    assert (fastapi_dir / "src/modules/free/ai/vector_store/vector_store.py").exists()
+    assert (fastapi_dir / "src/modules/free/ai/vector_store/routers/ai/vector_store.py").exists()
+    assert (nestjs_dir / "src/modules/free/ai/vector_store/vector_store.service.ts").exists()

@@ -37,13 +37,13 @@ class NestJSPlugin(FrameworkPlugin):
 
     def get_output_paths(self) -> Dict[str, str]:
         return {
-            "service": "src/vector-store/vector_store.service.ts",
-            "controller": "src/vector-store/vector_store.controller.ts",
-            "module": "src/vector-store/vector_store.module.ts",
-            "health": "src/vector-store/vector_store.health.ts",
-            "validation": "src/vector-store/vector_store.validation.ts",
-            "index": "src/vector-store/index.ts",
-            "configuration": "src/vector-store/configuration.ts",
+            "service": "src/modules/free/ai/vector_store/vector_store.service.ts",
+            "controller": "src/modules/free/ai/vector_store/vector_store.controller.ts",
+            "module": "src/modules/free/ai/vector_store/vector_store.module.ts",
+            "health": "src/health/vector_store.health.ts",
+            "validation": "src/modules/free/ai/vector_store/vector_store.validation.ts",
+            "index": "src/modules/free/ai/vector_store/index.ts",
+            "configuration": "src/modules/free/ai/vector_store/configuration.ts",
             "e2e": "tests/modules/e2e/ai/vector_store/vector_store.e2e-spec.ts",
         }
 

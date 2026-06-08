@@ -1,7 +1,7 @@
 name: event_bus
 display_name: "Event Bus"
 description: "In-process event bus with subscriptions, durable-style event records, replay, and dead-letter semantics"
-version: 0.1.4
+version: 0.1.6
 access: free
 status: stable
 tier: free
@@ -28,9 +28,9 @@ generation:
     root: .rapidkit/vendor
     files:
       - template: templates/base/event_bus.py.j2
-        relative: src/tasks/event_bus.py
+        relative: src/modules/free/tasks/event_bus/event_bus.py
       - template: templates/base/event_bus_types.py.j2
-        relative: src/tasks/event_bus_types.py
+        relative: src/modules/free/tasks/event_bus/event_bus_types.py
       - template: templates/base/event_bus_health.py.j2
         relative: src/health/tasks/event_bus.py
       - template: templates/vendor/nestjs/configuration.js.j2
@@ -43,9 +43,9 @@ generation:
         module_class_name: EventBus
       files:
         - template: templates/variants/fastapi/event_bus.py.j2
-          output: src/tasks/event_bus.py
+          output: src/modules/free/tasks/event_bus/event_bus.py
         - template: templates/variants/fastapi/event_bus_routes.py.j2
-          output: src/routers/tasks/event_bus.py
+          output: src/modules/free/tasks/event_bus/routers/tasks/event_bus.py
         - template: templates/variants/fastapi/event_bus_health.py.j2
           output: src/health/tasks/event_bus.py
         - template: templates/tests/integration/test_event_bus_integration.j2
@@ -66,19 +66,19 @@ generation:
         module_kebab: event-bus
       files:
         - template: templates/variants/nestjs/event_bus.service.ts.j2
-          output: src/event-bus/event_bus.service.ts
+          output: src/modules/free/tasks/event_bus/event_bus.service.ts
         - template: templates/variants/nestjs/event_bus.controller.ts.j2
-          output: src/event-bus/event_bus.controller.ts
+          output: src/modules/free/tasks/event_bus/event_bus.controller.ts
         - template: templates/variants/nestjs/event_bus.module.ts.j2
-          output: src/event-bus/event_bus.module.ts
+          output: src/modules/free/tasks/event_bus/event_bus.module.ts
         - template: templates/variants/nestjs/event_bus.health.ts.j2
-          output: src/event-bus/event_bus.health.ts
+          output: src/health/event_bus.health.ts
         - template: templates/variants/nestjs/event_bus.validation.ts.j2
-          output: src/event-bus/event_bus.validation.ts
+          output: src/modules/free/tasks/event_bus/event_bus.validation.ts
         - template: templates/variants/nestjs/event_bus.index.ts.j2
-          output: src/event-bus/index.ts
+          output: src/modules/free/tasks/event_bus/index.ts
         - template: templates/variants/nestjs/event_bus.configuration.ts.j2
-          output: src/event-bus/configuration.ts
+          output: src/modules/free/tasks/event_bus/configuration.ts
         - template: templates/variants/nestjs/tests/event_bus.e2e-spec.ts
           output: tests/modules/e2e/tasks/event_bus/event_bus.e2e-spec.ts
 
@@ -131,8 +131,8 @@ support:
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
   documentation: https://docs.rapidkit.top/modules/event_bus
 changelog:
-  - version: "0.1.4"
-    date: "2026-06-02"
+  - version: "0.1.6"
+    date: "2026-06-08"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

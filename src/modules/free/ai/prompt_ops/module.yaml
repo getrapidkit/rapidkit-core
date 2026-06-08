@@ -1,7 +1,7 @@
 name: prompt_ops
 display_name: "Prompt Ops"
 description: "Prompt versioning, rollout, evaluation, rollback, and audit operations for AI products"
-version: 0.1.4
+version: 0.1.6
 access: free
 status: stable
 tier: free
@@ -29,9 +29,9 @@ generation:
     root: .rapidkit/vendor
     files:
       - template: templates/base/prompt_ops.py.j2
-        relative: src/ai/prompt_ops.py
+        relative: src/modules/free/ai/prompt_ops/prompt_ops.py
       - template: templates/base/prompt_ops_types.py.j2
-        relative: src/ai/prompt_ops_types.py
+        relative: src/modules/free/ai/prompt_ops/prompt_ops_types.py
       - template: templates/base/prompt_ops_health.py.j2
         relative: src/health/ai/prompt_ops.py
       - template: templates/vendor/nestjs/configuration.js.j2
@@ -44,9 +44,9 @@ generation:
         module_class_name: PromptOps
       files:
         - template: templates/variants/fastapi/prompt_ops.py.j2
-          output: src/ai/prompt_ops.py
+          output: src/modules/free/ai/prompt_ops/prompt_ops.py
         - template: templates/variants/fastapi/prompt_ops_routes.py.j2
-          output: src/routers/ai/prompt_ops.py
+          output: src/modules/free/ai/prompt_ops/routers/ai/prompt_ops.py
         - template: templates/variants/fastapi/prompt_ops_health.py.j2
           output: src/health/ai/prompt_ops.py
         - template: templates/tests/integration/test_prompt_ops_integration.j2
@@ -67,19 +67,19 @@ generation:
         module_kebab: prompt-ops
       files:
         - template: templates/variants/nestjs/prompt_ops.service.ts.j2
-          output: src/prompt-ops/prompt_ops.service.ts
+          output: src/modules/free/ai/prompt_ops/prompt_ops.service.ts
         - template: templates/variants/nestjs/prompt_ops.controller.ts.j2
-          output: src/prompt-ops/prompt_ops.controller.ts
+          output: src/modules/free/ai/prompt_ops/prompt_ops.controller.ts
         - template: templates/variants/nestjs/prompt_ops.module.ts.j2
-          output: src/prompt-ops/prompt_ops.module.ts
+          output: src/modules/free/ai/prompt_ops/prompt_ops.module.ts
         - template: templates/variants/nestjs/prompt_ops.health.ts.j2
-          output: src/prompt-ops/prompt_ops.health.ts
+          output: src/health/prompt_ops.health.ts
         - template: templates/variants/nestjs/prompt_ops.validation.ts.j2
-          output: src/prompt-ops/prompt_ops.validation.ts
+          output: src/modules/free/ai/prompt_ops/prompt_ops.validation.ts
         - template: templates/variants/nestjs/prompt_ops.index.ts.j2
-          output: src/prompt-ops/index.ts
+          output: src/modules/free/ai/prompt_ops/index.ts
         - template: templates/variants/nestjs/prompt_ops.configuration.ts.j2
-          output: src/prompt-ops/configuration.ts
+          output: src/modules/free/ai/prompt_ops/configuration.ts
         - template: templates/variants/nestjs/tests/prompt_ops.e2e-spec.ts
           output: tests/modules/e2e/ai/prompt_ops/prompt_ops.e2e-spec.ts
 
@@ -132,8 +132,8 @@ support:
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
   documentation: https://docs.rapidkit.top/modules/prompt_ops
 changelog:
-  - version: "0.1.4"
-    date: "2026-06-02"
+  - version: "0.1.6"
+    date: "2026-06-08"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

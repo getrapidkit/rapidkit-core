@@ -37,13 +37,13 @@ class NestJSPlugin(FrameworkPlugin):
 
     def get_output_paths(self) -> Dict[str, str]:
         return {
-            "service": "src/workflow-engine/workflow_engine.service.ts",
-            "controller": "src/workflow-engine/workflow_engine.controller.ts",
-            "module": "src/workflow-engine/workflow_engine.module.ts",
-            "health": "src/workflow-engine/workflow_engine.health.ts",
-            "validation": "src/workflow-engine/workflow_engine.validation.ts",
-            "index": "src/workflow-engine/index.ts",
-            "configuration": "src/workflow-engine/configuration.ts",
+            "service": "src/modules/free/tasks/workflow_engine/workflow_engine.service.ts",
+            "controller": "src/modules/free/tasks/workflow_engine/workflow_engine.controller.ts",
+            "module": "src/modules/free/tasks/workflow_engine/workflow_engine.module.ts",
+            "health": "src/health/workflow_engine.health.ts",
+            "validation": "src/modules/free/tasks/workflow_engine/workflow_engine.validation.ts",
+            "index": "src/modules/free/tasks/workflow_engine/index.ts",
+            "configuration": "src/modules/free/tasks/workflow_engine/configuration.ts",
             "e2e": "tests/modules/e2e/tasks/workflow_engine/workflow_engine.e2e-spec.ts",
         }
 

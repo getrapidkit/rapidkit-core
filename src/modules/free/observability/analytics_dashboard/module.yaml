@@ -1,7 +1,7 @@
 name: analytics_dashboard
 display_name: "Analytics Dashboard"
 description: "Analytics dashboard foundation with metrics, widgets, dashboard snapshots, drilldowns, and audit-ready reporting"
-version: 0.1.3
+version: 0.1.5
 access: free
 status: stable
 tier: free
@@ -27,9 +27,9 @@ generation:
     root: .rapidkit/vendor
     files:
       - template: templates/base/analytics_dashboard.py.j2
-        relative: src/observability/analytics_dashboard.py
+        relative: src/modules/free/observability/analytics_dashboard/analytics_dashboard.py
       - template: templates/base/analytics_dashboard_types.py.j2
-        relative: src/observability/analytics_dashboard_types.py
+        relative: src/modules/free/observability/analytics_dashboard/analytics_dashboard_types.py
       - template: templates/base/analytics_dashboard_health.py.j2
         relative: src/health/observability/analytics_dashboard.py
       - template: templates/vendor/nestjs/configuration.js.j2
@@ -42,9 +42,9 @@ generation:
         module_class_name: AnalyticsDashboard
       files:
         - template: templates/variants/fastapi/analytics_dashboard.py.j2
-          output: src/observability/analytics_dashboard.py
+          output: src/modules/free/observability/analytics_dashboard/analytics_dashboard.py
         - template: templates/variants/fastapi/analytics_dashboard_routes.py.j2
-          output: src/routers/observability/analytics_dashboard.py
+          output: src/modules/free/observability/analytics_dashboard/routers/observability/analytics_dashboard.py
         - template: templates/variants/fastapi/analytics_dashboard_health.py.j2
           output: src/health/observability/analytics_dashboard.py
         - template: templates/tests/integration/test_analytics_dashboard_integration.j2
@@ -65,19 +65,19 @@ generation:
         module_kebab: analytics-dashboard
       files:
         - template: templates/variants/nestjs/analytics_dashboard.service.ts.j2
-          output: src/analytics-dashboard/analytics_dashboard.service.ts
+          output: src/modules/free/observability/analytics_dashboard/analytics_dashboard.service.ts
         - template: templates/variants/nestjs/analytics_dashboard.controller.ts.j2
-          output: src/analytics-dashboard/analytics_dashboard.controller.ts
+          output: src/modules/free/observability/analytics_dashboard/analytics_dashboard.controller.ts
         - template: templates/variants/nestjs/analytics_dashboard.module.ts.j2
-          output: src/analytics-dashboard/analytics_dashboard.module.ts
+          output: src/modules/free/observability/analytics_dashboard/analytics_dashboard.module.ts
         - template: templates/variants/nestjs/analytics_dashboard.health.ts.j2
-          output: src/analytics-dashboard/analytics_dashboard.health.ts
+          output: src/health/analytics_dashboard.health.ts
         - template: templates/variants/nestjs/analytics_dashboard.validation.ts.j2
-          output: src/analytics-dashboard/analytics_dashboard.validation.ts
+          output: src/modules/free/observability/analytics_dashboard/analytics_dashboard.validation.ts
         - template: templates/variants/nestjs/analytics_dashboard.index.ts.j2
-          output: src/analytics-dashboard/index.ts
+          output: src/modules/free/observability/analytics_dashboard/index.ts
         - template: templates/variants/nestjs/analytics_dashboard.configuration.ts.j2
-          output: src/analytics-dashboard/configuration.ts
+          output: src/modules/free/observability/analytics_dashboard/configuration.ts
         - template: templates/variants/nestjs/tests/analytics_dashboard.e2e-spec.ts
           output: tests/modules/e2e/observability/analytics_dashboard/analytics_dashboard.e2e-spec.ts
 
@@ -130,8 +130,8 @@ support:
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
   documentation: https://docs.rapidkit.top/modules/analytics_dashboard
 changelog:
-  - version: "0.1.3"
-    date: "2026-06-02"
+  - version: "0.1.5"
+    date: "2026-06-08"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

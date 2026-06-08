@@ -29,7 +29,7 @@ def test_free_ai_agent_runtime_generates_and_executes_tool_plan(tmp_path: Path) 
         / ".rapidkit/vendor"
         / config["name"]
         / config["version"]
-        / "src/ai/agent_runtime.py"
+        / "src/modules/free/ai/agent_runtime/agent_runtime.py"
     )
     vendor = _load_module("integration_agent_runtime_vendor", vendor_path)
 

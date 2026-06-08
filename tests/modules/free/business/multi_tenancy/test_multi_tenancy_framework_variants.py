@@ -18,6 +18,10 @@ def test_multi_tenancy_renders_fastapi_and_nestjs_variants(tmp_path: Path) -> No
     )
     generator.generate_variant_files("nestjs", nestjs_dir, renderer, context)
 
-    assert (fastapi_dir / "src" / "business" / "multi_tenancy.py").exists()
-    assert (fastapi_dir / "src" / "routers" / "business" / "multi_tenancy.py").exists()
-    assert (nestjs_dir / "src" / "multi-tenancy" / "multi_tenancy.service.ts").exists()
+    assert (fastapi_dir / "src/modules/free/business/multi_tenancy/multi_tenancy.py").exists()
+    assert (
+        fastapi_dir / "src/modules/free/business/multi_tenancy/routers/business/multi_tenancy.py"
+    ).exists()
+    assert (
+        nestjs_dir / "src/modules/free/business/multi_tenancy/multi_tenancy.service.ts"
+    ).exists()

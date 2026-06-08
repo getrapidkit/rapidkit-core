@@ -29,7 +29,7 @@ def test_free_ai_rag_pipeline_generates_retrieves_and_answers(tmp_path: Path) ->
         / ".rapidkit/vendor"
         / config["name"]
         / config["version"]
-        / "src/ai/rag_pipeline.py"
+        / "src/modules/free/ai/rag_pipeline/rag_pipeline.py"
     )
     vendor = _load_module("integration_rag_pipeline_vendor", vendor_path)
 

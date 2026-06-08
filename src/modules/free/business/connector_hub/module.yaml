@@ -2,7 +2,7 @@ name: connector_hub
 display_name: Connector Hub
 description: Integration connector hub scaffolding for external apps, credentials, sync jobs, and provider
   adapters
-version: 0.1.6
+version: 0.1.8
 access: free
 status: stable
 tier: free
@@ -26,9 +26,9 @@ generation:
     root: .rapidkit/vendor
     files:
     - template: templates/base/connector_hub.py.j2
-      relative: src/business/connector_hub.py
+      relative: src/modules/free/business/connector_hub/connector_hub.py
     - template: templates/base/connector_hub_types.py.j2
-      relative: src/business/connector_hub_types.py
+      relative: src/modules/free/business/connector_hub/connector_hub_types.py
     - template: templates/base/connector_hub_health.py.j2
       relative: src/health/business/connector_hub.py
     - template: templates/vendor/nestjs/configuration.js.j2
@@ -41,9 +41,9 @@ generation:
         module_class_name: ConnectorHub
       files:
       - template: templates/variants/fastapi/connector_hub.py.j2
-        output: src/business/connector_hub.py
+        output: src/modules/free/business/connector_hub/connector_hub.py
       - template: templates/variants/fastapi/connector_hub_routes.py.j2
-        output: src/routers/business/connector_hub.py
+        output: src/modules/free/business/connector_hub/routers/business/connector_hub.py
       - template: templates/variants/fastapi/connector_hub_health.py.j2
         output: src/health/business/connector_hub.py
       - template: templates/tests/integration/test_connector_hub_integration.j2
@@ -61,19 +61,19 @@ generation:
         module_kebab: connector-hub
       files:
       - template: templates/variants/nestjs/connector_hub.service.ts.j2
-        output: src/connector-hub/connector_hub.service.ts
+        output: src/modules/free/business/connector_hub/connector_hub.service.ts
       - template: templates/variants/nestjs/connector_hub.controller.ts.j2
-        output: src/connector-hub/connector_hub.controller.ts
+        output: src/modules/free/business/connector_hub/connector_hub.controller.ts
       - template: templates/variants/nestjs/connector_hub.module.ts.j2
-        output: src/connector-hub/connector_hub.module.ts
+        output: src/modules/free/business/connector_hub/connector_hub.module.ts
       - template: templates/variants/nestjs/connector_hub.health.ts.j2
-        output: src/connector-hub/connector_hub.health.ts
+        output: src/health/connector_hub.health.ts
       - template: templates/variants/nestjs/connector_hub.validation.ts.j2
-        output: src/connector-hub/connector_hub.validation.ts
+        output: src/modules/free/business/connector_hub/connector_hub.validation.ts
       - template: templates/variants/nestjs/connector_hub.index.ts.j2
-        output: src/connector-hub/index.ts
+        output: src/modules/free/business/connector_hub/index.ts
       - template: templates/variants/nestjs/connector_hub.configuration.ts.j2
-        output: src/connector-hub/configuration.ts
+        output: src/modules/free/business/connector_hub/configuration.ts
       - template: templates/variants/nestjs/tests/connector_hub.e2e-spec.ts
         output: tests/modules/e2e/business/connector_hub/connector_hub.e2e-spec.ts
     nestjs.standard: *nestjs_variant
@@ -125,8 +125,8 @@ support:
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
   documentation: https://docs.rapidkit.top/modules/connector_hub
 changelog:
-  - version: "0.1.6"
-    date: "2026-06-02"
+  - version: "0.1.8"
+    date: "2026-06-08"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

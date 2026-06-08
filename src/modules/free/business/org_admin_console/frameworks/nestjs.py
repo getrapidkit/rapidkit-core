@@ -37,13 +37,13 @@ class NestJSPlugin(FrameworkPlugin):
 
     def get_output_paths(self) -> Dict[str, str]:
         return {
-            "service": "src/org-admin-console/org_admin_console.service.ts",
-            "controller": "src/org-admin-console/org_admin_console.controller.ts",
-            "module": "src/org-admin-console/org_admin_console.module.ts",
-            "health": "src/org-admin-console/org_admin_console.health.ts",
-            "validation": "src/org-admin-console/org_admin_console.validation.ts",
-            "index": "src/org-admin-console/index.ts",
-            "configuration": "src/org-admin-console/configuration.ts",
+            "service": "src/modules/free/business/org_admin_console/org_admin_console.service.ts",
+            "controller": "src/modules/free/business/org_admin_console/org_admin_console.controller.ts",
+            "module": "src/modules/free/business/org_admin_console/org_admin_console.module.ts",
+            "health": "src/health/org_admin_console.health.ts",
+            "validation": "src/modules/free/business/org_admin_console/org_admin_console.validation.ts",
+            "index": "src/modules/free/business/org_admin_console/index.ts",
+            "configuration": "src/modules/free/business/org_admin_console/configuration.ts",
             "e2e": "tests/modules/e2e/business/org_admin_console/org_admin_console.e2e-spec.ts",
         }
 

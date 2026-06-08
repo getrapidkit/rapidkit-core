@@ -37,13 +37,13 @@ class NestJSPlugin(FrameworkPlugin):
 
     def get_output_paths(self) -> Dict[str, str]:
         return {
-            "service": "src/webhook-platform/webhook_platform.service.ts",
-            "controller": "src/webhook-platform/webhook_platform.controller.ts",
-            "module": "src/webhook-platform/webhook_platform.module.ts",
-            "health": "src/webhook-platform/webhook_platform.health.ts",
-            "validation": "src/webhook-platform/webhook_platform.validation.ts",
-            "index": "src/webhook-platform/index.ts",
-            "configuration": "src/webhook-platform/configuration.ts",
+            "service": "src/modules/free/communication/webhook_platform/webhook_platform.service.ts",
+            "controller": "src/modules/free/communication/webhook_platform/webhook_platform.controller.ts",
+            "module": "src/modules/free/communication/webhook_platform/webhook_platform.module.ts",
+            "health": "src/health/webhook_platform.health.ts",
+            "validation": "src/modules/free/communication/webhook_platform/webhook_platform.validation.ts",
+            "index": "src/modules/free/communication/webhook_platform/index.ts",
+            "configuration": "src/modules/free/communication/webhook_platform/configuration.ts",
             "e2e": "tests/modules/e2e/communication/webhook_platform/webhook_platform.e2e-spec.ts",
         }
 

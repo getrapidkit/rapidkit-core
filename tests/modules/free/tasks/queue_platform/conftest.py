@@ -41,11 +41,11 @@ def rendered_queue_platform(tmp_path: Path) -> dict[str, object]:
         / "vendor"
         / config["name"]
         / config["version"]
-        / "src"
-        / "tasks"
+        / "src/modules/free/tasks/queue_platform"
         / "queue_platform.py"
     )
     return {
+        "config": config,
         "root": tmp_path,
         "vendor": _load_module("generated_queue_platform_vendor", vendor_path),
     }

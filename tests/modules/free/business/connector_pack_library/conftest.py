@@ -45,11 +45,11 @@ def rendered_connector_pack_library(tmp_path: Path) -> dict[str, object]:
         / "vendor"
         / config["name"]
         / config["version"]
-        / "src"
-        / "business"
+        / "src/modules/free/business/connector_pack_library"
         / "connector_pack_library.py"
     )
     return {
+        "config": config,
         "root": tmp_path,
         "vendor": _load_module("generated_connector_pack_library_vendor", vendor_path),
     }

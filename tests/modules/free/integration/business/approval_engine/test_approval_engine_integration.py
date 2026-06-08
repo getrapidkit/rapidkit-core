@@ -25,9 +25,9 @@ def test_approval_engine_integration_runtime_smoke(tmp_path: Path) -> None:
         tmp_path
         / ".rapidkit"
         / "vendor"
-        / "approval_engine"
-        / "0.1.3"
-        / "src/business/approval_engine.py"
+        / config["name"]
+        / config["version"]
+        / "src/modules/free/business/approval_engine/approval_engine.py"
     )
     engine = vendor.ApprovalEngine()
     engine.register_policy(key="publish", required_roles=("publisher",))

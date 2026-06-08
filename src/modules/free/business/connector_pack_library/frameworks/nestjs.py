@@ -37,13 +37,13 @@ class NestJSPlugin(FrameworkPlugin):
 
     def get_output_paths(self) -> Dict[str, str]:
         return {
-            "service": "src/connector-pack-library/connector_pack_library.service.ts",
-            "controller": "src/connector-pack-library/connector_pack_library.controller.ts",
-            "module": "src/connector-pack-library/connector_pack_library.module.ts",
-            "health": "src/connector-pack-library/connector_pack_library.health.ts",
-            "validation": "src/connector-pack-library/connector_pack_library.validation.ts",
-            "index": "src/connector-pack-library/index.ts",
-            "configuration": "src/connector-pack-library/configuration.ts",
+            "service": "src/modules/free/business/connector_pack_library/connector_pack_library.service.ts",
+            "controller": "src/modules/free/business/connector_pack_library/connector_pack_library.controller.ts",
+            "module": "src/modules/free/business/connector_pack_library/connector_pack_library.module.ts",
+            "health": "src/health/connector_pack_library.health.ts",
+            "validation": "src/modules/free/business/connector_pack_library/connector_pack_library.validation.ts",
+            "index": "src/modules/free/business/connector_pack_library/index.ts",
+            "configuration": "src/modules/free/business/connector_pack_library/configuration.ts",
             "e2e": "tests/modules/e2e/business/connector_pack_library/connector_pack_library.e2e-spec.ts",
         }
 

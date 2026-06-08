@@ -1,5 +1,9 @@
 # Changelog — free/communication/notifications
 
+## 0.1.29 — Automated patch release triggered by content hash change (2026-06-08)
+
+- chore: Automated patch release triggered by content hash change
+
 ## 0.1.28 — Automated patch release triggered by content hash change (2026-06-02)
 
 - chore: Automated patch release triggered by content hash change

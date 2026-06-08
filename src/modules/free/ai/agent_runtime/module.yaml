@@ -2,7 +2,7 @@ name: agent_runtime
 display_name: Agent Runtime
 description: Agent runtime scaffolding for tools, memory, execution state, retries, and observable AI
   workflows
-version: 0.1.10
+version: 0.1.12
 access: free
 status: stable
 tier: free
@@ -26,9 +26,9 @@ generation:
     root: .rapidkit/vendor
     files:
     - template: templates/base/agent_runtime.py.j2
-      relative: src/ai/agent_runtime.py
+      relative: src/modules/free/ai/agent_runtime/agent_runtime.py
     - template: templates/base/agent_runtime_types.py.j2
-      relative: src/ai/agent_runtime_types.py
+      relative: src/modules/free/ai/agent_runtime/agent_runtime_types.py
     - template: templates/base/agent_runtime_health.py.j2
       relative: src/health/ai/agent_runtime.py
     - template: templates/vendor/nestjs/configuration.js.j2
@@ -41,9 +41,9 @@ generation:
         module_class_name: AgentRuntime
       files:
       - template: templates/variants/fastapi/agent_runtime.py.j2
-        output: src/ai/agent_runtime.py
+        output: src/modules/free/ai/agent_runtime/agent_runtime.py
       - template: templates/variants/fastapi/agent_runtime_routes.py.j2
-        output: src/routers/ai/agent_runtime.py
+        output: src/modules/free/ai/agent_runtime/routers/ai/agent_runtime.py
       - template: templates/variants/fastapi/agent_runtime_health.py.j2
         output: src/health/ai/agent_runtime.py
       - template: templates/tests/integration/test_agent_runtime_integration.j2
@@ -61,19 +61,19 @@ generation:
         module_kebab: agent-runtime
       files:
       - template: templates/variants/nestjs/agent_runtime.service.ts.j2
-        output: src/agent-runtime/agent_runtime.service.ts
+        output: src/modules/free/ai/agent_runtime/agent_runtime.service.ts
       - template: templates/variants/nestjs/agent_runtime.controller.ts.j2
-        output: src/agent-runtime/agent_runtime.controller.ts
+        output: src/modules/free/ai/agent_runtime/agent_runtime.controller.ts
       - template: templates/variants/nestjs/agent_runtime.module.ts.j2
-        output: src/agent-runtime/agent_runtime.module.ts
+        output: src/modules/free/ai/agent_runtime/agent_runtime.module.ts
       - template: templates/variants/nestjs/agent_runtime.health.ts.j2
-        output: src/agent-runtime/agent_runtime.health.ts
+        output: src/health/agent_runtime.health.ts
       - template: templates/variants/nestjs/agent_runtime.validation.ts.j2
-        output: src/agent-runtime/agent_runtime.validation.ts
+        output: src/modules/free/ai/agent_runtime/agent_runtime.validation.ts
       - template: templates/variants/nestjs/agent_runtime.index.ts.j2
-        output: src/agent-runtime/index.ts
+        output: src/modules/free/ai/agent_runtime/index.ts
       - template: templates/variants/nestjs/agent_runtime.configuration.ts.j2
-        output: src/agent-runtime/configuration.ts
+        output: src/modules/free/ai/agent_runtime/configuration.ts
       - template: templates/variants/nestjs/tests/agent_runtime.e2e-spec.ts
         output: tests/modules/e2e/ai/agent_runtime/agent_runtime.e2e-spec.ts
     nestjs.standard: *nestjs_variant
@@ -125,8 +125,8 @@ support:
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
   documentation: https://docs.rapidkit.top/modules/agent_runtime
 changelog:
-  - version: "0.1.10"
-    date: "2026-06-02"
+  - version: "0.1.12"
+    date: "2026-06-08"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

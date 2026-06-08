@@ -2,7 +2,7 @@ name: webhook_platform
 display_name: Webhook Platform
 description: Inbound and outbound webhook scaffolding with signatures, delivery attempts, replay, and
   event history
-version: 0.1.6
+version: 0.1.8
 access: free
 status: stable
 tier: free
@@ -26,9 +26,9 @@ generation:
     root: .rapidkit/vendor
     files:
     - template: templates/base/webhook_platform.py.j2
-      relative: src/communication/webhook_platform.py
+      relative: src/modules/free/communication/webhook_platform/webhook_platform.py
     - template: templates/base/webhook_platform_types.py.j2
-      relative: src/communication/webhook_platform_types.py
+      relative: src/modules/free/communication/webhook_platform/webhook_platform_types.py
     - template: templates/base/webhook_platform_health.py.j2
       relative: src/health/communication/webhook_platform.py
     - template: templates/vendor/nestjs/configuration.js.j2
@@ -41,9 +41,9 @@ generation:
         module_class_name: WebhookPlatform
       files:
       - template: templates/variants/fastapi/webhook_platform.py.j2
-        output: src/communication/webhook_platform.py
+        output: src/modules/free/communication/webhook_platform/webhook_platform.py
       - template: templates/variants/fastapi/webhook_platform_routes.py.j2
-        output: src/routers/communication/webhook_platform.py
+        output: src/modules/free/communication/webhook_platform/routers/communication/webhook_platform.py
       - template: templates/variants/fastapi/webhook_platform_health.py.j2
         output: src/health/communication/webhook_platform.py
       - template: templates/tests/integration/test_webhook_platform_integration.j2
@@ -61,19 +61,19 @@ generation:
         module_kebab: webhook-platform
       files:
       - template: templates/variants/nestjs/webhook_platform.service.ts.j2
-        output: src/webhook-platform/webhook_platform.service.ts
+        output: src/modules/free/communication/webhook_platform/webhook_platform.service.ts
       - template: templates/variants/nestjs/webhook_platform.controller.ts.j2
-        output: src/webhook-platform/webhook_platform.controller.ts
+        output: src/modules/free/communication/webhook_platform/webhook_platform.controller.ts
       - template: templates/variants/nestjs/webhook_platform.module.ts.j2
-        output: src/webhook-platform/webhook_platform.module.ts
+        output: src/modules/free/communication/webhook_platform/webhook_platform.module.ts
       - template: templates/variants/nestjs/webhook_platform.health.ts.j2
-        output: src/webhook-platform/webhook_platform.health.ts
+        output: src/health/webhook_platform.health.ts
       - template: templates/variants/nestjs/webhook_platform.validation.ts.j2
-        output: src/webhook-platform/webhook_platform.validation.ts
+        output: src/modules/free/communication/webhook_platform/webhook_platform.validation.ts
       - template: templates/variants/nestjs/webhook_platform.index.ts.j2
-        output: src/webhook-platform/index.ts
+        output: src/modules/free/communication/webhook_platform/index.ts
       - template: templates/variants/nestjs/webhook_platform.configuration.ts.j2
-        output: src/webhook-platform/configuration.ts
+        output: src/modules/free/communication/webhook_platform/configuration.ts
       - template: templates/variants/nestjs/tests/webhook_platform.e2e-spec.ts
         output: tests/modules/e2e/communication/webhook_platform/webhook_platform.e2e-spec.ts
     nestjs.standard: *nestjs_variant
@@ -125,8 +125,8 @@ support:
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
   documentation: https://docs.rapidkit.top/modules/webhook_platform
 changelog:
-  - version: "0.1.6"
-    date: "2026-06-02"
+  - version: "0.1.8"
+    date: "2026-06-08"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

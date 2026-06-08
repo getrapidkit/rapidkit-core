@@ -39,8 +39,8 @@ class FastAPIPlugin(FrameworkPlugin):
 
     def get_output_paths(self) -> Dict[str, str]:
         return {
-            "runtime": "src/observability/analytics_dashboard.py",
-            "router": "src/routers/observability/analytics_dashboard.py",
+            "runtime": "src/modules/free/observability/analytics_dashboard/analytics_dashboard.py",
+            "router": "src/modules/free/observability/analytics_dashboard/routers/observability/analytics_dashboard.py",
             "health": "src/health/observability/analytics_dashboard.py",
             "integration": "tests/modules/free/integration/observability/analytics_dashboard/test_analytics_dashboard_integration.py",
             "e2e": "tests/modules/e2e/free/observability/analytics_dashboard/test_analytics_dashboard_e2e.py",
@@ -67,7 +67,16 @@ class FastAPIPlugin(FrameworkPlugin):
         return ["pytest-asyncio>=0.23.0", "httpx>=0.27.0"]
 
     def pre_generation_hook(self, output_dir: Path) -> None:
-        (output_dir / "src" / "routers").mkdir(parents=True, exist_ok=True)
+        (
+            output_dir
+            / "src"
+            / "modules"
+            / "free"
+            / "observability"
+            / "analytics_dashboard"
+            / "routers"
+            / "observability"
+        ).mkdir(parents=True, exist_ok=True)
         (output_dir / "src" / "health").mkdir(parents=True, exist_ok=True)
         spec = build_standard_health_spec(MODULE_ROOT)
         with suppress(RuntimeError, OSError):

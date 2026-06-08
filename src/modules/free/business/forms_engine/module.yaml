@@ -1,7 +1,7 @@
 name: forms_engine
 display_name: "Forms Engine"
 description: "Schema-driven forms engine with validation, submissions, workflow hooks, and audit-ready exports"
-version: 0.1.4
+version: 0.1.6
 access: free
 status: stable
 tier: free
@@ -29,9 +29,9 @@ generation:
     root: .rapidkit/vendor
     files:
       - template: templates/base/forms_engine.py.j2
-        relative: src/business/forms_engine.py
+        relative: src/modules/free/business/forms_engine/forms_engine.py
       - template: templates/base/forms_engine_types.py.j2
-        relative: src/business/forms_engine_types.py
+        relative: src/modules/free/business/forms_engine/forms_engine_types.py
       - template: templates/base/forms_engine_health.py.j2
         relative: src/health/business/forms_engine.py
       - template: templates/vendor/nestjs/configuration.js.j2
@@ -44,9 +44,9 @@ generation:
         module_class_name: FormsEngine
       files:
         - template: templates/variants/fastapi/forms_engine.py.j2
-          output: src/business/forms_engine.py
+          output: src/modules/free/business/forms_engine/forms_engine.py
         - template: templates/variants/fastapi/forms_engine_routes.py.j2
-          output: src/routers/business/forms_engine.py
+          output: src/modules/free/business/forms_engine/routers/business/forms_engine.py
         - template: templates/variants/fastapi/forms_engine_health.py.j2
           output: src/health/business/forms_engine.py
         - template: templates/tests/integration/test_forms_engine_integration.j2
@@ -67,19 +67,19 @@ generation:
         module_kebab: forms-engine
       files:
         - template: templates/variants/nestjs/forms_engine.service.ts.j2
-          output: src/forms-engine/forms_engine.service.ts
+          output: src/modules/free/business/forms_engine/forms_engine.service.ts
         - template: templates/variants/nestjs/forms_engine.controller.ts.j2
-          output: src/forms-engine/forms_engine.controller.ts
+          output: src/modules/free/business/forms_engine/forms_engine.controller.ts
         - template: templates/variants/nestjs/forms_engine.module.ts.j2
-          output: src/forms-engine/forms_engine.module.ts
+          output: src/modules/free/business/forms_engine/forms_engine.module.ts
         - template: templates/variants/nestjs/forms_engine.health.ts.j2
-          output: src/forms-engine/forms_engine.health.ts
+          output: src/health/forms_engine.health.ts
         - template: templates/variants/nestjs/forms_engine.validation.ts.j2
-          output: src/forms-engine/forms_engine.validation.ts
+          output: src/modules/free/business/forms_engine/forms_engine.validation.ts
         - template: templates/variants/nestjs/forms_engine.index.ts.j2
-          output: src/forms-engine/index.ts
+          output: src/modules/free/business/forms_engine/index.ts
         - template: templates/variants/nestjs/forms_engine.configuration.ts.j2
-          output: src/forms-engine/configuration.ts
+          output: src/modules/free/business/forms_engine/configuration.ts
         - template: templates/variants/nestjs/tests/forms_engine.e2e-spec.ts
           output: tests/modules/e2e/business/forms_engine/forms_engine.e2e-spec.ts
 
@@ -132,8 +132,8 @@ support:
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
   documentation: https://docs.rapidkit.top/modules/forms_engine
 changelog:
-  - version: "0.1.4"
-    date: "2026-06-02"
+  - version: "0.1.6"
+    date: "2026-06-08"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

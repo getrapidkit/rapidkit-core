@@ -1,7 +1,7 @@
 name: connector_pack_library
 display_name: "Connector Pack Library"
 description: "Connector pack registry for provider catalogs, scopes, install state, health, and credential rotation workflows"
-version: 0.1.3
+version: 0.1.5
 access: free
 status: stable
 tier: free
@@ -28,9 +28,9 @@ generation:
     root: .rapidkit/vendor
     files:
       - template: templates/base/connector_pack_library.py.j2
-        relative: src/business/connector_pack_library.py
+        relative: src/modules/free/business/connector_pack_library/connector_pack_library.py
       - template: templates/base/connector_pack_library_types.py.j2
-        relative: src/business/connector_pack_library_types.py
+        relative: src/modules/free/business/connector_pack_library/connector_pack_library_types.py
       - template: templates/base/connector_pack_library_health.py.j2
         relative: src/health/business/connector_pack_library.py
       - template: templates/vendor/nestjs/configuration.js.j2
@@ -43,9 +43,9 @@ generation:
         module_class_name: ConnectorPackLibrary
       files:
         - template: templates/variants/fastapi/connector_pack_library.py.j2
-          output: src/business/connector_pack_library.py
+          output: src/modules/free/business/connector_pack_library/connector_pack_library.py
         - template: templates/variants/fastapi/connector_pack_library_routes.py.j2
-          output: src/routers/business/connector_pack_library.py
+          output: src/modules/free/business/connector_pack_library/routers/business/connector_pack_library.py
         - template: templates/variants/fastapi/connector_pack_library_health.py.j2
           output: src/health/business/connector_pack_library.py
         - template: templates/tests/integration/test_connector_pack_library_integration.j2
@@ -66,19 +66,19 @@ generation:
         module_kebab: connector-pack-library
       files:
         - template: templates/variants/nestjs/connector_pack_library.service.ts.j2
-          output: src/connector-pack-library/connector_pack_library.service.ts
+          output: src/modules/free/business/connector_pack_library/connector_pack_library.service.ts
         - template: templates/variants/nestjs/connector_pack_library.controller.ts.j2
-          output: src/connector-pack-library/connector_pack_library.controller.ts
+          output: src/modules/free/business/connector_pack_library/connector_pack_library.controller.ts
         - template: templates/variants/nestjs/connector_pack_library.module.ts.j2
-          output: src/connector-pack-library/connector_pack_library.module.ts
+          output: src/modules/free/business/connector_pack_library/connector_pack_library.module.ts
         - template: templates/variants/nestjs/connector_pack_library.health.ts.j2
-          output: src/connector-pack-library/connector_pack_library.health.ts
+          output: src/health/connector_pack_library.health.ts
         - template: templates/variants/nestjs/connector_pack_library.validation.ts.j2
-          output: src/connector-pack-library/connector_pack_library.validation.ts
+          output: src/modules/free/business/connector_pack_library/connector_pack_library.validation.ts
         - template: templates/variants/nestjs/connector_pack_library.index.ts.j2
-          output: src/connector-pack-library/index.ts
+          output: src/modules/free/business/connector_pack_library/index.ts
         - template: templates/variants/nestjs/connector_pack_library.configuration.ts.j2
-          output: src/connector-pack-library/configuration.ts
+          output: src/modules/free/business/connector_pack_library/configuration.ts
         - template: templates/variants/nestjs/tests/connector_pack_library.e2e-spec.ts
           output: tests/modules/e2e/business/connector_pack_library/connector_pack_library.e2e-spec.ts
 
@@ -131,8 +131,8 @@ support:
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
   documentation: https://docs.rapidkit.top/modules/connector_pack_library
 changelog:
-  - version: "0.1.3"
-    date: "2026-06-02"
+  - version: "0.1.5"
+    date: "2026-06-08"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

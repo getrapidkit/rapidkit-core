@@ -18,6 +18,6 @@ def test_rag_pipeline_renders_fastapi_and_nestjs_variants(tmp_path: Path) -> Non
     )
     generator.generate_variant_files("nestjs", nestjs_dir, renderer, context)
 
-    assert (fastapi_dir / "src" / "ai" / "rag_pipeline.py").exists()
-    assert (fastapi_dir / "src" / "routers" / "ai" / "rag_pipeline.py").exists()
-    assert (nestjs_dir / "src" / "rag-pipeline" / "rag_pipeline.service.ts").exists()
+    assert (fastapi_dir / "src/modules/free/ai/rag_pipeline/rag_pipeline.py").exists()
+    assert (fastapi_dir / "src/modules/free/ai/rag_pipeline/routers/ai/rag_pipeline.py").exists()
+    assert (nestjs_dir / "src/modules/free/ai/rag_pipeline/rag_pipeline.service.ts").exists()

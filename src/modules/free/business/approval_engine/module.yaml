@@ -1,7 +1,7 @@
 name: approval_engine
 display_name: "Approval Engine"
 description: "Approval workflow engine with policies, required reasons, reviewer decisions, escalation, and immutable audit trails"
-version: 0.1.3
+version: 0.1.5
 access: free
 status: stable
 tier: free
@@ -29,9 +29,9 @@ generation:
     root: .rapidkit/vendor
     files:
       - template: templates/base/approval_engine.py.j2
-        relative: src/business/approval_engine.py
+        relative: src/modules/free/business/approval_engine/approval_engine.py
       - template: templates/base/approval_engine_types.py.j2
-        relative: src/business/approval_engine_types.py
+        relative: src/modules/free/business/approval_engine/approval_engine_types.py
       - template: templates/base/approval_engine_health.py.j2
         relative: src/health/business/approval_engine.py
       - template: templates/vendor/nestjs/configuration.js.j2
@@ -44,9 +44,9 @@ generation:
         module_class_name: ApprovalEngine
       files:
         - template: templates/variants/fastapi/approval_engine.py.j2
-          output: src/business/approval_engine.py
+          output: src/modules/free/business/approval_engine/approval_engine.py
         - template: templates/variants/fastapi/approval_engine_routes.py.j2
-          output: src/routers/business/approval_engine.py
+          output: src/modules/free/business/approval_engine/routers/business/approval_engine.py
         - template: templates/variants/fastapi/approval_engine_health.py.j2
           output: src/health/business/approval_engine.py
         - template: templates/tests/integration/test_approval_engine_integration.j2
@@ -67,19 +67,19 @@ generation:
         module_kebab: approval-engine
       files:
         - template: templates/variants/nestjs/approval_engine.service.ts.j2
-          output: src/approval-engine/approval_engine.service.ts
+          output: src/modules/free/business/approval_engine/approval_engine.service.ts
         - template: templates/variants/nestjs/approval_engine.controller.ts.j2
-          output: src/approval-engine/approval_engine.controller.ts
+          output: src/modules/free/business/approval_engine/approval_engine.controller.ts
         - template: templates/variants/nestjs/approval_engine.module.ts.j2
-          output: src/approval-engine/approval_engine.module.ts
+          output: src/modules/free/business/approval_engine/approval_engine.module.ts
         - template: templates/variants/nestjs/approval_engine.health.ts.j2
-          output: src/approval-engine/approval_engine.health.ts
+          output: src/health/approval_engine.health.ts
         - template: templates/variants/nestjs/approval_engine.validation.ts.j2
-          output: src/approval-engine/approval_engine.validation.ts
+          output: src/modules/free/business/approval_engine/approval_engine.validation.ts
         - template: templates/variants/nestjs/approval_engine.index.ts.j2
-          output: src/approval-engine/index.ts
+          output: src/modules/free/business/approval_engine/index.ts
         - template: templates/variants/nestjs/approval_engine.configuration.ts.j2
-          output: src/approval-engine/configuration.ts
+          output: src/modules/free/business/approval_engine/configuration.ts
         - template: templates/variants/nestjs/tests/approval_engine.e2e-spec.ts
           output: tests/modules/e2e/business/approval_engine/approval_engine.e2e-spec.ts
 
@@ -132,8 +132,8 @@ support:
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
   documentation: https://docs.rapidkit.top/modules/approval_engine
 changelog:
-  - version: "0.1.3"
-    date: "2026-06-02"
+  - version: "0.1.5"
+    date: "2026-06-08"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

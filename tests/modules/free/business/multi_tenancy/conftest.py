@@ -45,12 +45,12 @@ def rendered_multi_tenancy(tmp_path: Path) -> dict[str, object]:
         / "vendor"
         / config["name"]
         / config["version"]
-        / "src"
-        / "business"
+        / "src/modules/free/business/multi_tenancy"
         / "multi_tenancy.py"
     )
 
     return {
+        "config": config,
         "root": tmp_path,
         "vendor": _load_module("generated_multi_tenancy_vendor", vendor_path),
     }

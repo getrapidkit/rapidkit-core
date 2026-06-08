@@ -31,7 +31,7 @@ def test_free_communication_webhook_platform_generates_and_delivers_signed_event
         / ".rapidkit/vendor"
         / config["name"]
         / config["version"]
-        / "src/communication/webhook_platform.py"
+        / "src/modules/free/communication/webhook_platform/webhook_platform.py"
     )
     vendor = _load_module("integration_webhook_platform_vendor", vendor_path)
 
