@@ -126,7 +126,7 @@ documentation:
 support:
   issues: https://github.com/rapidkitlabs/rapidkit-core/issues
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-  documentation: https://docs.rapidkit.top/modules/ai_assistant
+  documentation: https://getrapidkit.com/modules/ai_assistant
 changelog:
   - version: "0.1.18"
     date: "2026-06-08"

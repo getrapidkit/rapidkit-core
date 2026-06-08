@@ -577,7 +577,7 @@ def _readme_template() -> str:
         - API reference: `docs/api-reference.md`
         - Override contracts: `overrides.py`
 
-        For additional help, open an issue at <https://github.com/rapidkitlabs/rapidkit-core/issues> or consult the full product documentation at <https://docs.rapidkit.top>.
+        For additional help, open an issue at <https://github.com/rapidkitlabs/rapidkit-core/issues> or consult the full product documentation at <https://getrapidkit.com>.
         """).strip()
 
 
@@ -1050,7 +1050,7 @@ def _module_yaml_template() -> str:
         "support:",
         "  issues: https://github.com/rapidkitlabs/rapidkit-core/issues",
         "  discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions",
-        "  documentation: https://docs.rapidkit.top/modules/${module_name}",
+        "  documentation: https://getrapidkit.com/modules/${module_name}",
         "changelog:",
         "- version: 0.1.0",
         "  date: '${today_date}'",

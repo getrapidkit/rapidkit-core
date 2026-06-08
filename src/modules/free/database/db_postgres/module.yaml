@@ -156,7 +156,7 @@ documentation:
 support:
   issues: https://github.com/rapidkitlabs/rapidkit-core/issues
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-  documentation: https://docs.rapidkit.top/modules/db_postgres
+  documentation: https://getrapidkit.com/modules/db_postgres
 changelog:
   - version: "0.1.29"
     date: "2026-06-02"

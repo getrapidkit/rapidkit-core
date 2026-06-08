@@ -123,7 +123,7 @@ documentation:
 support:
   issues: https://github.com/rapidkitlabs/rapidkit-core/issues
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-  documentation: https://docs.rapidkit.top/modules/agent_runtime
+  documentation: https://getrapidkit.com/modules/agent_runtime
 changelog:
   - version: "0.1.12"
     date: "2026-06-08"

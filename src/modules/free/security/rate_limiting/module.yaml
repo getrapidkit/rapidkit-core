@@ -122,7 +122,7 @@ documentation:
 support:
     issues: https://github.com/rapidkitlabs/rapidkit-core/issues
     discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-    documentation: https://docs.rapidkit.top/modules/rate_limiting
+    documentation: https://getrapidkit.com/modules/rate_limiting
 changelog:
   - version: "0.1.13"
     date: "2026-06-07"

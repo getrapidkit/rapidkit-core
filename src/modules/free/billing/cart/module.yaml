@@ -131,7 +131,7 @@ documentation:
 support:
     issues: https://github.com/rapidkitlabs/rapidkit-core/issues
     discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-    documentation: https://docs.rapidkit.top/modules/billing/cart
+    documentation: https://getrapidkit.com/modules/billing/cart
 changelog:
   - version: "0.1.16"
     date: "2026-06-08"

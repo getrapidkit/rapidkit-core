@@ -22,7 +22,7 @@ metadata:
     title: Deployment Toolkit
     description: Portable Docker, Compose, Makefile, and CI assets for RapidKit projects.
     maintainer: RapidKit Core Team
-    support_contact: platform@rapidkit.top
+    support_contact: platform@getrapidkit.com
 options:
     include_ci: true
     include_postgres: true
@@ -175,7 +175,7 @@ generation:
 compatibility:
     breaking: 1.0.0
     deprecated: null
-    migration_guide: https://docs.rapidkit.top/modules/deployment/migration
+    migration_guide: https://getrapidkit.com/modules/deployment/migration
     python: ">=3.10"
     node: ">=18"
     frameworks:
@@ -216,7 +216,7 @@ documentation:
 support:
     issues: https://github.com/rapidkitlabs/rapidkit-core/issues
     discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-    documentation: https://docs.rapidkit.top/modules/deployment
+    documentation: https://getrapidkit.com/modules/deployment
 changelog:
   - version: "0.1.11"
     date: "2026-06-02"

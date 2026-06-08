@@ -22,7 +22,7 @@ metadata:
         Email notifications, templates, and delivery service for FastAPI and
         NestJS
     maintainer: RapidKit Core Team
-    support_contact: platform@rapidkit.top
+    support_contact: platform@getrapidkit.com
 config_sources:
     - config/base.yaml
     - config/snippets.yaml
@@ -110,7 +110,7 @@ dependencies:
 compatibility:
     breaking: 1.0.0
     deprecated: null
-    migration_guide: https://docs.rapidkit.top/modules/notifications/migration
+    migration_guide: https://getrapidkit.com/modules/notifications/migration
     python: ">=3.10"
     frameworks:
         - fastapi
@@ -142,7 +142,7 @@ documentation:
 support:
     issues: https://github.com/rapidkitlabs/rapidkit-core/issues
     discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-    documentation: https://docs.rapidkit.top/modules/notifications
+    documentation: https://getrapidkit.com/modules/notifications
 changelog:
   - version: "0.1.29"
     date: "2026-06-08"

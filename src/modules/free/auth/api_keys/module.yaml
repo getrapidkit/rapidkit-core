@@ -129,7 +129,7 @@ documentation:
 support:
     issues: https://github.com/rapidkitlabs/rapidkit-core/issues
     discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-    documentation: https://docs.rapidkit.top/modules/auth/api_keys
+    documentation: https://getrapidkit.com/modules/auth/api_keys
 changelog:
   - version: "0.1.3"
     date: "2026-06-07"

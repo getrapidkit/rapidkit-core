@@ -13,7 +13,7 @@ snippets:
     context:
       defaults:
         provider: smtp
-        from_email: "noreply@rapidkit.top"
+        from_email: "noreply@getrapidkit.com"
         smtp_host: "localhost"
         smtp_port: 1025
     schema:
@@ -30,7 +30,7 @@ snippets:
           description: Select the email transport provider.
         RAPIDKIT_EMAIL_FROM_ADDRESS:
           type: string
-          default: "noreply@rapidkit.top"
+          default: "noreply@getrapidkit.com"
         RAPIDKIT_EMAIL_FROM_NAME:
           type: string
           default: "RapidKit"

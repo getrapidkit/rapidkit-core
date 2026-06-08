@@ -11,7 +11,7 @@ profiles:
 defaults:
     enabled: true
     provider: smtp
-    from_email: "noreply@rapidkit.top"
+    from_email: "noreply@getrapidkit.com"
     from_name: "RapidKit"
     reply_to: null
     default_headers:

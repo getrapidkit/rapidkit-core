@@ -175,7 +175,7 @@ documentation:
 support:
     issues: https://github.com/rapidkitlabs/rapidkit-core/issues
     discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-    documentation: https://docs.rapidkit.top/modules/users_profiles
+    documentation: https://getrapidkit.com/modules/users_profiles
 changelog:
   - version: "0.1.10"
     date: "2026-06-07"

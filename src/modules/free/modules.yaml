@@ -78,7 +78,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/agent_runtime
+      documentation: https://getrapidkit.com/modules/agent_runtime
     changelog:
     - version: 0.1.12
       date: '2026-06-08'
@@ -161,7 +161,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/ai_assistant
+      documentation: https://getrapidkit.com/modules/ai_assistant
     changelog:
     - version: 0.1.18
       date: '2026-06-08'
@@ -254,7 +254,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/ai_guardrails
+      documentation: https://getrapidkit.com/modules/ai_guardrails
     changelog:
     - version: 0.1.6
       date: '2026-06-08'
@@ -347,7 +347,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/llm_gateway
+      documentation: https://getrapidkit.com/modules/llm_gateway
     changelog:
     - version: 0.1.15
       date: '2026-06-08'
@@ -439,7 +439,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/prompt_ops
+      documentation: https://getrapidkit.com/modules/prompt_ops
     changelog:
     - version: 0.1.6
       date: '2026-06-08'
@@ -533,7 +533,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/rag_pipeline
+      documentation: https://getrapidkit.com/modules/rag_pipeline
     changelog:
     - version: 0.1.8
       date: '2026-06-08'
@@ -623,7 +623,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/tool_registry
+      documentation: https://getrapidkit.com/modules/tool_registry
     changelog:
     - version: 0.1.6
       date: '2026-06-08'
@@ -714,7 +714,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/vector_store
+      documentation: https://getrapidkit.com/modules/vector_store
     changelog:
     - version: 0.1.8
       date: '2026-06-08'
@@ -804,7 +804,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/auth/api_keys
+      documentation: https://getrapidkit.com/modules/auth/api_keys
     changelog:
     - version: 0.1.3
       date: '2026-06-07'
@@ -887,7 +887,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/auth-core
+      documentation: https://getrapidkit.com/modules/auth-core
     changelog:
     - version: 0.1.12
       date: '2026-06-07'
@@ -962,7 +962,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/oauth
+      documentation: https://getrapidkit.com/modules/oauth
     changelog:
     - version: 0.1.14
       date: '2026-06-08'
@@ -1035,7 +1035,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/passwordless
+      documentation: https://getrapidkit.com/modules/passwordless
     changelog:
     - version: 0.1.11
       date: '2026-06-08'
@@ -1106,7 +1106,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/session
+      documentation: https://getrapidkit.com/modules/session
     changelog:
     - version: 0.1.12
       date: '2026-06-08'
@@ -1194,7 +1194,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/billing/cart
+      documentation: https://getrapidkit.com/modules/billing/cart
     changelog:
     - version: 0.1.16
       date: '2026-06-08'
@@ -1278,7 +1278,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/billing/inventory
+      documentation: https://getrapidkit.com/modules/billing/inventory
     changelog:
     - version: 0.1.9
       date: '2026-06-08'
@@ -1362,7 +1362,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/billing/stripe_payment
+      documentation: https://getrapidkit.com/modules/billing/stripe_payment
     changelog:
     - version: 0.1.4
       date: '2026-06-07'
@@ -1453,7 +1453,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/usage_billing
+      documentation: https://getrapidkit.com/modules/usage_billing
     changelog:
     - version: 0.1.8
       date: '2026-06-08'
@@ -1545,7 +1545,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/admin_console
+      documentation: https://getrapidkit.com/modules/admin_console
     changelog:
     - version: 0.1.5
       date: '2026-06-08'
@@ -1639,7 +1639,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/approval_engine
+      documentation: https://getrapidkit.com/modules/approval_engine
     changelog:
     - version: 0.1.5
       date: '2026-06-08'
@@ -1731,7 +1731,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/connector_hub
+      documentation: https://getrapidkit.com/modules/connector_hub
     changelog:
     - version: 0.1.8
       date: '2026-06-08'
@@ -1823,7 +1823,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/connector_pack_library
+      documentation: https://getrapidkit.com/modules/connector_pack_library
     changelog:
     - version: 0.1.5
       date: '2026-06-08'
@@ -1917,7 +1917,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/document_pipeline
+      documentation: https://getrapidkit.com/modules/document_pipeline
     changelog:
     - version: 0.1.6
       date: '2026-06-08'
@@ -2007,7 +2007,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/feature_flags
+      documentation: https://getrapidkit.com/modules/feature_flags
     changelog:
     - version: 0.1.7
       date: '2026-06-08'
@@ -2100,7 +2100,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/forms_engine
+      documentation: https://getrapidkit.com/modules/forms_engine
     changelog:
     - version: 0.1.6
       date: '2026-06-08'
@@ -2193,7 +2193,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/media_pipeline
+      documentation: https://getrapidkit.com/modules/media_pipeline
     changelog:
     - version: 0.1.6
       date: '2026-06-08'
@@ -2284,7 +2284,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/multi_tenancy
+      documentation: https://getrapidkit.com/modules/multi_tenancy
     changelog:
     - version: 0.1.8
       date: '2026-06-08'
@@ -2376,7 +2376,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/org_admin_console
+      documentation: https://getrapidkit.com/modules/org_admin_console
     changelog:
     - version: 0.1.5
       date: '2026-06-08'
@@ -2474,7 +2474,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/business/storage
+      documentation: https://getrapidkit.com/modules/business/storage
     changelog:
     - version: 0.1.11
       date: '2026-06-08'
@@ -2571,7 +2571,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/support_center
+      documentation: https://getrapidkit.com/modules/support_center
     changelog:
     - version: 0.1.5
       date: '2026-06-08'
@@ -2643,7 +2643,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/redis
+      documentation: https://getrapidkit.com/modules/redis
     changelog:
     - version: 0.1.20
       date: '2026-06-08'
@@ -2727,7 +2727,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/email
+      documentation: https://getrapidkit.com/modules/email
     changelog:
     - version: 0.1.22
       date: '2026-06-08'
@@ -2778,7 +2778,7 @@ modules:
     compatibility:
       breaking: 1.0.0
       deprecated: null
-      migration_guide: https://docs.rapidkit.top/modules/notifications/migration
+      migration_guide: https://getrapidkit.com/modules/notifications/migration
       python: '>=3.10'
       frameworks:
       - fastapi
@@ -2810,7 +2810,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/notifications
+      documentation: https://getrapidkit.com/modules/notifications
     changelog:
     - version: 0.1.29
       date: '2026-06-08'
@@ -2904,7 +2904,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/webhook_platform
+      documentation: https://getrapidkit.com/modules/webhook_platform
     changelog:
     - version: 0.1.8
       date: '2026-06-08'
@@ -2994,7 +2994,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/database/db_mongo
+      documentation: https://getrapidkit.com/modules/database/db_mongo
     changelog:
     - version: 0.1.7
       date: '2026-06-07'
@@ -3089,7 +3089,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/db_postgres
+      documentation: https://getrapidkit.com/modules/db_postgres
     changelog:
     - version: 0.1.29
       date: '2026-06-02'
@@ -3182,7 +3182,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/database/db_sqlite
+      documentation: https://getrapidkit.com/modules/database/db_sqlite
     changelog:
     - version: 0.1.9
       date: '2026-06-07'
@@ -3224,7 +3224,7 @@ modules:
     compatibility:
       breaking: 1.0.0
       deprecated: null
-      migration_guide: https://docs.rapidkit.top/modules/deployment/migration
+      migration_guide: https://getrapidkit.com/modules/deployment/migration
       python: '>=3.10'
       node: '>=18'
       frameworks:
@@ -3265,7 +3265,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/deployment
+      documentation: https://getrapidkit.com/modules/deployment
     changelog:
     - version: 0.1.11
       date: '2026-06-02'
@@ -3347,7 +3347,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/logging
+      documentation: https://getrapidkit.com/modules/logging
     changelog:
     - version: 0.1.11
       date: '2026-06-08'
@@ -3391,7 +3391,7 @@ modules:
     compatibility:
       breaking: 1.0.0
       deprecated: null
-      migration_guide: https://docs.rapidkit.top/modules/middleware/migration
+      migration_guide: https://getrapidkit.com/modules/middleware/migration
       python: '>=3.10'
       frameworks:
       - fastapi
@@ -3430,7 +3430,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/middleware
+      documentation: https://getrapidkit.com/modules/middleware
     changelog:
     - version: 0.1.23
       date: '2026-06-07'
@@ -3474,7 +3474,7 @@ modules:
     compatibility:
       breaking: 2.0.0
       deprecated: 1.5.0
-      migration_guide: https://docs.rapidkit.top/modules/settings/migration
+      migration_guide: https://getrapidkit.com/modules/settings/migration
       python: '>=3.10,<4.0'
       frameworks:
       - fastapi
@@ -3509,7 +3509,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/settings
+      documentation: https://getrapidkit.com/modules/settings
     changelog:
     - version: 0.1.43
       date: '2026-06-02'
@@ -3605,7 +3605,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/analytics_dashboard
+      documentation: https://getrapidkit.com/modules/analytics_dashboard
     changelog:
     - version: 0.1.5
       date: '2026-06-08'
@@ -3701,7 +3701,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/observability/observability_core
+      documentation: https://getrapidkit.com/modules/observability/observability_core
     changelog:
     - version: 0.1.13
       date: '2026-06-07'
@@ -3794,7 +3794,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/audit_policy
+      documentation: https://getrapidkit.com/modules/audit_policy
     changelog:
     - version: 0.1.7
       date: '2026-06-08'
@@ -3860,7 +3860,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/cors
+      documentation: https://getrapidkit.com/modules/cors
     changelog:
     - version: 0.1.13
       date: '2026-06-08'
@@ -3933,7 +3933,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/rate_limiting
+      documentation: https://getrapidkit.com/modules/rate_limiting
     changelog:
     - version: 0.1.13
       date: '2026-06-07'
@@ -4020,7 +4020,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/security/security_headers
+      documentation: https://getrapidkit.com/modules/security/security_headers
     changelog:
     - version: 0.1.5
       date: '2026-06-02'
@@ -4097,7 +4097,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/celery
+      documentation: https://getrapidkit.com/modules/celery
     changelog:
     - version: 0.1.12
       date: '2026-06-07'
@@ -4191,7 +4191,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/event_bus
+      documentation: https://getrapidkit.com/modules/event_bus
     changelog:
     - version: 0.1.6
       date: '2026-06-08'
@@ -4283,7 +4283,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/queue_platform
+      documentation: https://getrapidkit.com/modules/queue_platform
     changelog:
     - version: 0.1.7
       date: '2026-06-08'
@@ -4376,7 +4376,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/workflow_engine
+      documentation: https://getrapidkit.com/modules/workflow_engine
     changelog:
     - version: 0.1.10
       date: '2026-06-08'
@@ -4456,7 +4456,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/users-core
+      documentation: https://getrapidkit.com/modules/users-core
     changelog:
     - version: 0.1.11
       date: '2026-06-07'
@@ -4535,7 +4535,7 @@ modules:
     support:
       issues: https://github.com/rapidkitlabs/rapidkit-core/issues
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-      documentation: https://docs.rapidkit.top/modules/users_profiles
+      documentation: https://getrapidkit.com/modules/users_profiles
     changelog:
     - version: 0.1.10
       date: '2026-06-07'
@@ -4661,7 +4661,7 @@ global_config:
   last_updated: '2026-05-31'
   maintainer: RapidKit Team
   repository: https://github.com/rapidkitlabs/rapidkit-core
-  documentation: https://docs.rapidkit.top
+  documentation: https://getrapidkit.com
   source_of_truth: src/modules/free/**/module.yaml
   compatibility:
     python_versions:

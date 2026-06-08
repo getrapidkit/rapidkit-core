@@ -133,7 +133,7 @@ documentation:
 support:
   issues: https://github.com/rapidkitlabs/rapidkit-core/issues
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-  documentation: https://docs.rapidkit.top/modules/logging
+  documentation: https://getrapidkit.com/modules/logging
 changelog:
   - version: "0.1.11"
     date: "2026-06-08"

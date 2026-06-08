@@ -137,7 +137,7 @@ documentation:
 support:
     issues: https://github.com/rapidkitlabs/rapidkit-core/issues
     discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-    documentation: https://docs.rapidkit.top/modules/database/db_mongo
+    documentation: https://getrapidkit.com/modules/database/db_mongo
 changelog:
   - version: "0.1.7"
     date: "2026-06-07"

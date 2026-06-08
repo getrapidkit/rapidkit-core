@@ -110,7 +110,7 @@ class EmailConfig:
 
     enabled: bool = bool(_DEFAULTS.get("enabled", True))
     provider: str = str(_DEFAULTS.get("provider", "smtp"))
-    from_email: str = str(_DEFAULTS.get("from_email", "noreply@rapidkit.top"))
+    from_email: str = str(_DEFAULTS.get("from_email", "noreply@getrapidkit.com"))
     from_name: Optional[str] = _DEFAULTS.get("from_name")
     reply_to: Optional[str] = _DEFAULTS.get("reply_to")
     default_headers: MutableMapping[str, str] = field(

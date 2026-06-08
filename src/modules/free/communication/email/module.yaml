@@ -21,7 +21,7 @@ metadata:
         Pluggable transactional and marketing email service with template rendering
         and FastAPI/NestJS integrations.
     maintainer: RapidKit Core Team
-    support_contact: platform@rapidkit.top
+    support_contact: platform@getrapidkit.com
 config_sources:
     - config/base.yaml
     - config/snippets.yaml
@@ -138,7 +138,7 @@ documentation:
 support:
     issues: https://github.com/rapidkitlabs/rapidkit-core/issues
     discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-    documentation: https://docs.rapidkit.top/modules/email
+    documentation: https://getrapidkit.com/modules/email
 changelog:
   - version: "0.1.22"
     date: "2026-06-08"
