@@ -1,8 +1,8 @@
 from __future__ import annotations
 
 try:
-    from src.ai.llm_gateway import create_router
+    from src.modules.free.ai.llm_gateway.llm_gateway import create_router
 except ImportError:  # pragma: no cover - alternate app layouts
-    from ai.llm_gateway import create_router
+    from modules.free.ai.llm_gateway.llm_gateway import create_router
 
 __all__ = ["create_router"]

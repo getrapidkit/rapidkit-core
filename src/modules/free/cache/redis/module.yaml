@@ -1,7 +1,7 @@
 name: redis
 description: Unified Redis cache integration
 category: cache
-version: 0.1.21
+version: 0.1.22
 access: free
 status: stable
 tags:
@@ -119,8 +119,8 @@ support:
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
   documentation: https://getrapidkit.com/modules/redis
 changelog:
-  - version: "0.1.21"
-    date: "2026-06-08"
+  - version: "0.1.22"
+    date: "2026-06-09"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

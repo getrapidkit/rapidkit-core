@@ -1,7 +1,7 @@
 name: org_admin_console
 display_name: "Org Admin Console"
 description: "Organization admin console for tenant settings, memberships, invitations, roles, and governance workflows"
-version: 0.1.6
+version: 0.1.7
 access: free
 status: stable
 tier: free
@@ -131,8 +131,8 @@ support:
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
   documentation: https://getrapidkit.com/modules/org_admin_console
 changelog:
-  - version: "0.1.6"
-    date: "2026-06-08"
+  - version: "0.1.7"
+    date: "2026-06-09"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

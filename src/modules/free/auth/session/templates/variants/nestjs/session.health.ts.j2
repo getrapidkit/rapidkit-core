@@ -8,7 +8,7 @@ import {
   ServiceUnavailableException,
 } from "@nestjs/common";
 
-import { {{ module_class_name }}Service } from "./session.service";
+import { {{ module_class_name }}Service } from "../modules/free/auth/session/session.service";
 
 type SessionHealthPayload = {
   status: "ok" | "degraded";

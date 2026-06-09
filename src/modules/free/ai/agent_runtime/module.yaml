@@ -2,7 +2,7 @@ name: agent_runtime
 display_name: Agent Runtime
 description: Agent runtime scaffolding for tools, memory, execution state, retries, and observable AI
   workflows
-version: 0.1.13
+version: 0.1.14
 access: free
 status: stable
 tier: free
@@ -125,8 +125,8 @@ support:
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
   documentation: https://getrapidkit.com/modules/agent_runtime
 changelog:
-  - version: "0.1.13"
-    date: "2026-06-08"
+  - version: "0.1.14"
+    date: "2026-06-09"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

@@ -1,7 +1,7 @@
 name: document_pipeline
 display_name: "Document Pipeline"
 description: "Document ingestion, extraction, chunking, classification, and audit-safe processing pipeline for AI/workflow products"
-version: 0.1.7
+version: 0.1.8
 access: free
 status: stable
 tier: free
@@ -133,8 +133,8 @@ support:
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
   documentation: https://getrapidkit.com/modules/document_pipeline
 changelog:
-  - version: "0.1.7"
-    date: "2026-06-08"
+  - version: "0.1.8"
+    date: "2026-06-09"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

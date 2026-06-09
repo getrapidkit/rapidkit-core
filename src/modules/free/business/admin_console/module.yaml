@@ -1,7 +1,7 @@
 name: admin_console
 display_name: "Admin Console"
 description: "Reusable admin console foundation with action registry, permission checks, audit context, and operational summaries"
-version: 0.1.6
+version: 0.1.7
 access: free
 status: stable
 tier: free
@@ -131,8 +131,8 @@ support:
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
   documentation: https://getrapidkit.com/modules/admin_console
 changelog:
-  - version: "0.1.6"
-    date: "2026-06-08"
+  - version: "0.1.7"
+    date: "2026-06-09"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

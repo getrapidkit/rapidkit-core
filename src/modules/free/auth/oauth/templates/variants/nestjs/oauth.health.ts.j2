@@ -9,7 +9,7 @@ import {
   ServiceUnavailableException,
 } from "@nestjs/common";
 
-import { OauthService } from "./oauth.service";
+import { OauthService } from "../modules/free/auth/oauth/oauth.service";
 
 @Controller("api/health/module")
 export class OauthHealthController {
