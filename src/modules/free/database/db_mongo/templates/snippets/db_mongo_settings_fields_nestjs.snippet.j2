@@ -1,5 +1,5 @@
 // Db Mongo module configuration
-export const dbMongo = {
+dbMongo: {
   uri: process.env.RAPIDKIT_DB_MONGO_URI ?? "{{ mongo_defaults.connection_uri | default('mongodb://localhost:27017') }}",
   database: process.env.RAPIDKIT_DB_MONGO_DATABASE ?? "{{ mongo_defaults.database | default('rapidkit') }}",
   appName: process.env.RAPIDKIT_DB_MONGO_APP_NAME ?? "{{ mongo_defaults.app_name | default('rapidkit-db-mongo') }}",
@@ -25,4 +25,4 @@ export const dbMongo = {
     timeoutMs: process.env.RAPIDKIT_DB_MONGO_HEALTH_TIMEOUT_MS ? Number(process.env.RAPIDKIT_DB_MONGO_HEALTH_TIMEOUT_MS) : {{ health_defaults.ping_timeout_ms | default(1500) }},
     metrics: process.env.RAPIDKIT_DB_MONGO_HEALTH_METRICS ? process.env.RAPIDKIT_DB_MONGO_HEALTH_METRICS === "true" : {{ 'true' if health_defaults.metrics | default(true) else 'false' }},
   },
-};
+},

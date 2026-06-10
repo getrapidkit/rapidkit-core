@@ -1,7 +1,7 @@
 name: approval_engine
 display_name: "Approval Engine"
 description: "Approval workflow engine with policies, required reasons, reviewer decisions, escalation, and immutable audit trails"
-version: 0.1.7
+version: 0.1.8
 access: free
 status: stable
 tier: free
@@ -103,6 +103,7 @@ testing:
   e2e_tests: false
   unit_tests:
     - tests/modules/free/business/approval_engine/test_approval_engine_generator.py
+    - tests/modules/free/business/approval_engine/test_approval_engine_generator_contract.py
     - tests/modules/free/business/approval_engine/test_approval_engine_overrides.py
     - tests/modules/free/business/approval_engine/test_approval_engine_runtime.py
     - tests/modules/free/business/approval_engine/test_approval_engine_adapters.py
@@ -132,8 +133,8 @@ support:
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
   documentation: https://getrapidkit.com/modules/approval_engine
 changelog:
-  - version: "0.1.7"
-    date: "2026-06-09"
+  - version: "0.1.8"
+    date: "2026-06-10"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

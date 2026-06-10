@@ -45,4 +45,5 @@ def test_nestjs_variant_exposes_health_and_routes(storage_module_path: Path) -> 
         encoding="utf-8"
     )
     assert "StorageHealthController" in health
+    assert "../modules/free/business/storage/{{ module_kebab }}.service" in health
     assert "STORAGE_ROUTES" in routes

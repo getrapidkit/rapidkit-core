@@ -191,6 +191,7 @@ def test_generate_variants_produce_expected_outputs(tmp_path: Path) -> None:
 
     health_src = (tmp_path / "src" / "health" / "storage.health.ts").read_text()
     assert "StorageHealthController" in health_src
+    assert "../modules/free/business/storage/storage.service" in health_src
 
     routes_src = (storage_dir / "storage.routes.ts").read_text()
     assert "STORAGE_ROUTES" in routes_src
