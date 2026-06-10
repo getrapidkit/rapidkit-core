@@ -1567,7 +1567,7 @@ modules:
   approval_engine:
     name: approval_engine
     display_name: Approval Engine
-    version: 0.1.7
+    version: 0.1.8
     access: free
     tier: free
     status: stable
@@ -1612,6 +1612,7 @@ modules:
       e2e_tests: false
       unit_tests:
       - tests/modules/free/business/approval_engine/test_approval_engine_generator.py
+      - tests/modules/free/business/approval_engine/test_approval_engine_generator_contract.py
       - tests/modules/free/business/approval_engine/test_approval_engine_overrides.py
       - tests/modules/free/business/approval_engine/test_approval_engine_runtime.py
       - tests/modules/free/business/approval_engine/test_approval_engine_adapters.py
@@ -1641,8 +1642,8 @@ modules:
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/approval_engine
     changelog:
-    - version: 0.1.7
-      date: '2026-06-09'
+    - version: 0.1.8
+      date: '2026-06-10'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -2398,7 +2399,7 @@ modules:
   storage:
     name: storage
     display_name: Storage
-    version: 0.1.12
+    version: 0.1.13
     access: free
     tier: free
     status: stable
@@ -2476,8 +2477,8 @@ modules:
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/business/storage
     changelog:
-    - version: 0.1.12
-      date: '2026-06-08'
+    - version: 0.1.13
+      date: '2026-06-09'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -2926,7 +2927,7 @@ modules:
   db_mongo:
     name: db_mongo
     display_name: Db Mongo
-    version: 0.1.8
+    version: 0.1.9
     access: free
     tier: free
     status: stable
@@ -2996,8 +2997,8 @@ modules:
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/database/db_mongo
     changelog:
-    - version: 0.1.8
-      date: '2026-06-08'
+    - version: 0.1.9
+      date: '2026-06-09'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -3118,7 +3119,7 @@ modules:
   db_sqlite:
     name: db_sqlite
     display_name: Db Sqlite
-    version: 0.1.10
+    version: 0.1.11
     access: free
     tier: free
     status: stable
@@ -3184,8 +3185,8 @@ modules:
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/database/db_sqlite
     changelog:
-    - version: 0.1.10
-      date: '2026-06-08'
+    - version: 0.1.11
+      date: '2026-06-09'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -3816,7 +3817,7 @@ modules:
   cors:
     name: cors
     display_name: Cors
-    version: 0.1.14
+    version: 0.1.15
     access: free
     tier: free
     status: stable
@@ -3862,8 +3863,8 @@ modules:
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/cors
     changelog:
-    - version: 0.1.14
-      date: '2026-06-08'
+    - version: 0.1.15
+      date: '2026-06-09'
       notes: See docs/changelog.md
     validation:
       pre_install:
