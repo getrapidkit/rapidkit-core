@@ -2,6 +2,24 @@
 
 <!-- auto:promote-changelog start -->
 
+## [Snapshot 0.5.3] - 2026-06-10
+
+> Auto-generated promote snapshot for this version.
+
+### Promoted source commits
+
+- fix: enforce module-owned generated paths (`1e1613e1c7f2`)
+- fix: align module test artifacts with owned paths (`0c4b3ac52ab3`)
+- fix: curate staging promotion into public core (`f0db77ae0186`)
+- chore: align module docs domain (`8245c11601b3`)
+- chore: sync module metadata after docs domain update (`bf5b2aad605f`)
+- chore: investigate free/ai/rag_pipeline stabilization (logs + tests) (`e18b04679f64`)
+- chore: investigate free/ai/rag_pipeline stabilization (logs + tests) (`23ecd477c406`)
+- chore: add generator contract tests and module metadata updates (`d8ec65030139`)
+- chore: add generator contract tests and module metadata updates (`16a23751d439`)
+- fix(release): persist promote manifest and harden stable tag (`bbe759dc1756`)
+- fix(release): anchor promote chain to staging tags and source.json (`56e6b195fdf7`)
+
 ## [Snapshot 0.5.0]
 
 > Auto-generated promote snapshot for this version.
