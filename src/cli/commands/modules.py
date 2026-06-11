@@ -32,6 +32,7 @@ from core.services.vendor_store import load_vendor_file
 
 from ..ui.printer import console, print_error, print_info, print_success, print_warning
 from ..utils.filesystem import find_project_root
+from ..utils.module_identity import module_identity_matches
 from ..utils.module_structure_cli import (
     DEFAULT_MODULES_ROOT,
     collect_validation_results,
@@ -233,14 +234,10 @@ def _discover_free_manifest_paths(modules_root: Path) -> List[Path]:
 def _module_matches_filter(recorded: Optional[str], requested: Optional[str]) -> bool:
     if not requested:
         return True
-    if not recorded:
-        return False
     requested_norm = requested.strip()
     if not requested_norm:
         return True
-    if recorded == requested_norm:
-        return True
-    return recorded.endswith(f"/{requested_norm}")
+    return module_identity_matches(recorded, requested_norm)
 
 
 def _registry_lookup_by_slug(registry: Any, slug: str) -> Optional[Dict[str, Any]]:

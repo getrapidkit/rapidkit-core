@@ -18,6 +18,7 @@ from core.services.profile_utils import resolve_profile_chain
 
 from ..ui.printer import print_error, print_info, print_success, print_warning
 from ..utils.filesystem import find_project_root
+from ..utils.module_identity import module_identity_matches
 
 snapshot_app = typer.Typer(help="Snapshot utilities (backfill missing snapshots)")
 
@@ -97,7 +98,11 @@ def snapshot_backfill(
     registry = load_hashes(project_root)
     files_meta: Dict[str, Dict[str, Any]] = registry.get("files", {})
     targets = (
-        {p: meta for p, meta in files_meta.items() if meta.get("module") == module}
+        {
+            p: meta
+            for p, meta in files_meta.items()
+            if module_identity_matches(meta.get("module"), module)
+        }
         if module
         else files_meta
     )

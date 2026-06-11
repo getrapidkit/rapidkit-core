@@ -9,6 +9,8 @@ from core.services.file_hash_registry import load_hashes, save_hashes
 
 from ..ui.printer import print_error, print_info, print_success, print_warning
 from ..utils.filesystem import find_project_root
+from ..utils.module_identity import module_identity_matches
+from ..utils.registry import remove_from_registry
 
 uninstall_app = typer.Typer(help="Uninstall (remove) generated files of a module")
 
@@ -41,7 +43,11 @@ def uninstall_module(
     }
     # ensure registry points to cleaned mapping (so removals persist)
     registry["files"] = files_meta
-    targets = {p: meta for p, meta in files_meta.items() if meta.get("module") == name}
+    targets = {
+        p: meta
+        for p, meta in files_meta.items()
+        if module_identity_matches(meta.get("module"), name)
+    }
     removed: List[str] = []
     skipped: List[Dict[str, str]] = []
     for rel, meta in targets.items():
@@ -72,6 +78,8 @@ def uninstall_module(
 
     if not dry_run:
         save_hashes(project_root, registry)
+        if removed:
+            remove_from_registry(name, project_root)
 
     summary = {
         "module": name,
