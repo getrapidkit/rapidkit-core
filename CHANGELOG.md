@@ -2,6 +2,14 @@
 
 <!-- auto:promote-changelog start -->
 
+## [Snapshot 0.5.4] - 2026-06-11
+
+> Auto-generated promote snapshot for this version.
+
+### Promoted source commits
+
+- feat(cli): add module identity util and harden module lifecycle commands (`83fedbfd4236`)
+
 ## [Snapshot 0.5.3] - 2026-06-10
 
 > Auto-generated promote snapshot for this version.
