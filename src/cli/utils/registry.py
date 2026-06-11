@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Any, Dict, List
 
 from ..ui.printer import print_success, print_warning
+from .module_identity import module_identity_matches
 
 
 def _normalise_registry_entries(raw_entries: Any) -> List[Dict[str, Any]]:
@@ -72,3 +73,29 @@ def update_registry(
             print_success(f"🔄 Refreshed registry metadata for module: {module_name}")
     except (OSError, PermissionError) as e:
         print_warning(f"⚠️ Could not update registry: {e}")
+
+
+def remove_from_registry(module_name: str, project_root: Path) -> bool:
+    """Remove a module entry from registry.json when its slug matches."""
+
+    registry_path = project_root / "registry.json"
+    if not registry_path.exists():
+        return False
+
+    try:
+        data = json.loads(registry_path.read_text(encoding="utf-8"))
+    except json.JSONDecodeError:
+        return False
+
+    entries = _normalise_registry_entries(data.get("installed_modules", []))
+    filtered = [
+        entry for entry in entries if not module_identity_matches(entry.get("slug"), module_name)
+    ]
+
+    if len(filtered) == len(entries):
+        return False
+
+    data["installed_modules"] = filtered
+    registry_path.write_text(json.dumps(data, indent=2), encoding="utf-8")
+    print_success(f"✅ Removed module from registry: {module_name}")
+    return True

@@ -19,6 +19,7 @@ from core.services.snippet_injector import rollback_snippet_injection
 
 from ..ui.printer import print_error, print_info, print_success, print_warning
 from ..utils.filesystem import find_project_root
+from ..utils.module_identity import module_identity_matches
 
 rollback_app = typer.Typer(help="Rollback generated files to previous_hash snapshot")
 
@@ -182,7 +183,11 @@ def rollback_module(
                     template_lookup[str(Path(root_path) / rel if root_path else Path(rel))] = tpl
         except (OSError, json.JSONDecodeError):
             template_lookup = None
-    targets = [p for p, meta in registry.get("files", {}).items() if meta.get("module") == name]
+    targets = [
+        p
+        for p, meta in registry.get("files", {}).items()
+        if module_identity_matches(meta.get("module"), name)
+    ]
     results = [
         _rollback_file(
             project_root,

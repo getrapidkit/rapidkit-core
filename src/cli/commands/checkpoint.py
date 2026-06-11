@@ -17,6 +17,7 @@ from core.services.module_manifest import load_manifest_or_none
 
 from ..ui.printer import print_error, print_info, print_success, print_warning
 from ..utils.filesystem import find_project_root
+from ..utils.module_identity import module_identity_matches
 
 checkpoint_app = typer.Typer(help="Create rollback checkpoints for a module's files")
 
@@ -55,7 +56,11 @@ def checkpoint_module(
     manifest = load_manifest_or_none(MODULES_PATH, name)
     registry = load_hashes(project_root)
     files_meta: Dict[str, Dict[str, Any]] = registry.get("files", {})
-    targets = {p: meta for p, meta in files_meta.items() if meta.get("module") == name}
+    targets = {
+        p: meta
+        for p, meta in files_meta.items()
+        if module_identity_matches(meta.get("module"), name)
+    }
 
     updated = []
     skipped = []
