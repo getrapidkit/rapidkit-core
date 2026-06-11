@@ -1,7 +1,7 @@
 name: db_mongo
 display_name: Db Mongo
 description: MongoDB integration with async driver support, health diagnostics, configuration scaffolding, and multi-framework adapters
-version: 0.1.7
+version: 0.1.9
 access: free
 status: stable
 tier: free
@@ -137,10 +137,10 @@ documentation:
 support:
     issues: https://github.com/rapidkitlabs/rapidkit-core/issues
     discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-    documentation: https://docs.rapidkit.top/modules/database/db_mongo
+    documentation: https://getrapidkit.com/modules/database/db_mongo
 changelog:
-  - version: "0.1.7"
-    date: "2026-06-07"
+  - version: "0.1.9"
+    date: "2026-06-09"
     notes: "See docs/changelog.md"
 validation:
     pre_install:
@@ -195,7 +195,7 @@ file_hashes:
     templates/snippets/db_mongo.snippet.j2: sha256:7e9ec57fb915b095aa631d3f64af417b1f17ea84376ca32b524d713e122de0f8
     templates/snippets/db_mongo_env.snippet.j2: sha256:798f948e75435f31012ee6de0eb80a82b3741a6d543453c77b8c6282dd09d7b3
     templates/snippets/db_mongo_settings_fields.snippet.j2: sha256:036da1e74cdac26eb2ac261cdeac017110ebabe928673cd54e306999f852e8b3
-    templates/snippets/db_mongo_settings_fields_nestjs.snippet.j2: sha256:884422404ff535bb1a645f0edfb8fae98ccc477fbb8d62166428f1102da2c8da
+    templates/snippets/db_mongo_settings_fields_nestjs.snippet.j2: sha256:b5a0161d722f9fbfa57cc65ba53e1913ee894a6009b835654db187aedeb49dce
     templates/tests/__init__.py: sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
     templates/tests/integration/db_mongo.integration.spec.ts.j2: sha256:329584ed0e5ac3737f938b33b4df604f7aaf80855c3c0a8e176523863c7a55fd
     templates/tests/integration/test_db_mongo_integration.j2: sha256:f8ea208017828acc92b14b63cf01bf9133ed63af39dd315a2c9b6976fc88eaa9

@@ -97,6 +97,9 @@ modules_index.json
 
 # === Rapidkit workspace specific ===
 /.rapidkit*
+!/.rapidkit/source.json
+!/.rapidkit/release/
+!/.rapidkit/release/promote-manifest.json
 .ruff_cache/
 ruff*.json
 modules.lock

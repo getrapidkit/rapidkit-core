@@ -1,5 +1,5 @@
 name: middleware
-version: 0.1.23
+version: 0.1.24
 tier: free
 access: free
 status: stable
@@ -23,7 +23,7 @@ metadata:
   description: FastAPI middleware for request/response processing, CORS, headers,
     and timing
   maintainer: RapidKit Core Team
-  support_contact: platform@rapidkit.top
+  support_contact: platform@getrapidkit.com
 generation:
   vendor:
     root: .rapidkit/vendor
@@ -98,7 +98,7 @@ generation:
 compatibility:
   breaking: 1.0.0
   deprecated: null
-  migration_guide: https://docs.rapidkit.top/modules/middleware/migration
+  migration_guide: https://getrapidkit.com/modules/middleware/migration
   python: '>=3.10'
   frameworks:
   - fastapi
@@ -137,10 +137,10 @@ documentation:
 support:
   issues: https://github.com/rapidkitlabs/rapidkit-core/issues
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-  documentation: https://docs.rapidkit.top/modules/middleware
+  documentation: https://getrapidkit.com/modules/middleware
 changelog:
-  - version: "0.1.23"
-    date: "2026-06-07"
+  - version: "0.1.24"
+    date: "2026-06-08"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

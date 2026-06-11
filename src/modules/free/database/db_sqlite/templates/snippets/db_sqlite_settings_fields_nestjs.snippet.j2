@@ -1,6 +1,20 @@
-  RAPIDKIT_DB_SQLITE_PATH?: string;
-  RAPIDKIT_DB_SQLITE_CREATE_IF_MISSING?: boolean;
-  RAPIDKIT_DB_SQLITE_TIMEOUT_SECONDS?: number;
-  RAPIDKIT_DB_SQLITE_POOL_MAX_SIZE?: number;
-  RAPIDKIT_DB_SQLITE_POOL_RECYCLE_SECONDS?: number;
-  RAPIDKIT_DB_SQLITE_PRAGMAS?: Record<string, unknown>;
+  dbSqlite: {
+    databasePath: process.env.RAPIDKIT_DB_SQLITE_PATH ?? "{{ sqlite_defaults.database_path | default('./.rapidkit/runtime/sqlite/app.db') }}",
+    createIfMissing: process.env.RAPIDKIT_DB_SQLITE_CREATE_IF_MISSING
+      ? process.env.RAPIDKIT_DB_SQLITE_CREATE_IF_MISSING === "true"
+      : {{ 'true' if sqlite_defaults.create_if_missing | default(true) else 'false' }},
+    timeoutSeconds: process.env.RAPIDKIT_DB_SQLITE_TIMEOUT_SECONDS
+      ? Number(process.env.RAPIDKIT_DB_SQLITE_TIMEOUT_SECONDS)
+      : {{ sqlite_defaults.timeout_seconds | default(30) }},
+    pool: {
+      maxSize: process.env.RAPIDKIT_DB_SQLITE_POOL_MAX_SIZE
+        ? Number(process.env.RAPIDKIT_DB_SQLITE_POOL_MAX_SIZE)
+        : {{ sqlite_defaults.pool_max_size | default(4) }},
+      recycleSeconds: process.env.RAPIDKIT_DB_SQLITE_POOL_RECYCLE_SECONDS
+        ? Number(process.env.RAPIDKIT_DB_SQLITE_POOL_RECYCLE_SECONDS)
+        : {{ sqlite_defaults.pool_recycle_seconds | default(600) }},
+    },
+    pragmas: process.env.RAPIDKIT_DB_SQLITE_PRAGMAS
+      ? JSON.parse(process.env.RAPIDKIT_DB_SQLITE_PRAGMAS)
+      : {{ sqlite_defaults.pragmas | default({}) | tojson }},
+  },

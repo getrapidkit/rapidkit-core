@@ -29,7 +29,7 @@ def test_free_business_feature_flags_generates_and_evaluates_rules(tmp_path: Pat
         / ".rapidkit/vendor"
         / config["name"]
         / config["version"]
-        / "src/business/feature_flags.py"
+        / "src/modules/free/business/feature_flags/feature_flags.py"
     )
     vendor = _load_module("integration_feature_flags_vendor", vendor_path)
 

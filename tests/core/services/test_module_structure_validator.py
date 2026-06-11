@@ -544,3 +544,63 @@ generation:
 
     assert not result.valid
     assert any("legacy" in m or "src/core/health" in m for m in result.messages)
+
+
+def test_validate_module_structure_rejects_legacy_module_runtime_output(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    modules_root = tmp_path / "modules"
+    module_path = modules_root / "free" / "demo" / "example"
+    module_path.mkdir(parents=True)
+
+    (module_path / "module.yaml").write_text(
+        """
+generation:
+  variants:
+    fastapi.standard:
+      files:
+        - template: templates/variants/fastapi/example.py.j2
+          output: src/routers/demo/example.py
+""",
+        encoding="utf-8",
+    )
+
+    blueprint = _make_blueprint()
+    blueprint.required_files = ()
+    blueprint.required_directories = ()
+    monkeypatch.setattr(msv, "load_structure_spec", lambda: (3, blueprint, {}))
+
+    result = msv.validate_module_structure("free/demo/example", modules_root=modules_root)
+
+    assert not result.valid
+    assert any("module output namespace drift" in message for message in result.messages)
+    assert any("src/modules/free/demo/example/" in message for message in result.messages)
+
+
+def test_validate_module_structure_rejects_legacy_framework_plugin_output(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    modules_root = tmp_path / "modules"
+    module_path = modules_root / "paid" / "demo" / "example"
+    (module_path / "frameworks").mkdir(parents=True)
+    (module_path / "module.yaml").write_text("name: paid/demo/example\n", encoding="utf-8")
+    (module_path / "frameworks" / "fastapi.py").write_text(
+        """
+class FastAPIPlugin:
+    def get_output_paths(self):
+        return {"router": "src/demo/example.py"}
+""",
+        encoding="utf-8",
+    )
+
+    blueprint = _make_blueprint()
+    blueprint.required_files = ()
+    blueprint.required_directories = ()
+    blueprint.allow_extra_entries = True
+    monkeypatch.setattr(msv, "load_structure_spec", lambda: (3, blueprint, {}))
+
+    result = msv.validate_module_structure("paid/demo/example", modules_root=modules_root)
+
+    assert not result.valid
+    assert any("module output namespace drift" in message for message in result.messages)
+    assert any("src/modules/paid/demo/example/" in message for message in result.messages)

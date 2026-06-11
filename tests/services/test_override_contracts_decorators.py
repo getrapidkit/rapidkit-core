@@ -82,7 +82,7 @@ def test_override_setting_callable_becomes_classmethod() -> None:
 
         @classmethod
         def api_base(cls) -> str:
-            return f"https://{cls.NAME}.rapidkit.top"
+            return f"https://{cls.NAME}.getrapidkit.com"
 
     class Child(Base):
         NAME = "module"
@@ -96,7 +96,7 @@ def test_override_setting_callable_becomes_classmethod() -> None:
     assert Child.api_base() == "https://module.example.com"
     original_attr = "_original_api_base"
     original = getattr(Child, original_attr)  # type: ignore[attr-defined]  # noqa: SLF001
-    assert original.__get__(None, Child)() == "https://module.rapidkit.top"
+    assert original.__get__(None, Child)() == "https://module.getrapidkit.com"
 
 
 def test_safe_override_missing_method_raises() -> None:

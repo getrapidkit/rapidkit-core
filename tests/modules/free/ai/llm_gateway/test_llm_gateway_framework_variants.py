@@ -18,6 +18,6 @@ def test_llm_gateway_renders_fastapi_and_nestjs_variants(tmp_path: Path) -> None
     )
     generator.generate_variant_files("nestjs", nestjs_dir, renderer, context)
 
-    assert (fastapi_dir / "src" / "ai" / "llm_gateway.py").exists()
-    assert (fastapi_dir / "src" / "routers" / "ai" / "llm_gateway.py").exists()
-    assert (nestjs_dir / "src" / "llm-gateway" / "llm_gateway.service.ts").exists()
+    assert (fastapi_dir / "src/modules/free/ai/llm_gateway/llm_gateway.py").exists()
+    assert (fastapi_dir / "src/modules/free/ai/llm_gateway/routers/ai/llm_gateway.py").exists()
+    assert (nestjs_dir / "src/modules/free/ai/llm_gateway/llm_gateway.service.ts").exists()

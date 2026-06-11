@@ -37,13 +37,13 @@ class NestJSPlugin(FrameworkPlugin):
 
     def get_output_paths(self) -> Dict[str, str]:
         return {
-            "service": "src/usage-billing/usage_billing.service.ts",
-            "controller": "src/usage-billing/usage_billing.controller.ts",
-            "module": "src/usage-billing/usage_billing.module.ts",
-            "health": "src/usage-billing/usage_billing.health.ts",
-            "validation": "src/usage-billing/usage_billing.validation.ts",
-            "index": "src/usage-billing/index.ts",
-            "configuration": "src/usage-billing/configuration.ts",
+            "service": "src/modules/free/billing/usage_billing/usage_billing.service.ts",
+            "controller": "src/modules/free/billing/usage_billing/usage_billing.controller.ts",
+            "module": "src/modules/free/billing/usage_billing/usage_billing.module.ts",
+            "health": "src/health/usage_billing.health.ts",
+            "validation": "src/modules/free/billing/usage_billing/usage_billing.validation.ts",
+            "index": "src/modules/free/billing/usage_billing/index.ts",
+            "configuration": "src/modules/free/billing/usage_billing/configuration.ts",
             "e2e": "tests/modules/e2e/billing/usage_billing/usage_billing.e2e-spec.ts",
         }
 

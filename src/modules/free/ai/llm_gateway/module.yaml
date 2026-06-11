@@ -2,7 +2,7 @@ name: llm_gateway
 display_name: LLM Gateway
 description: Provider-neutral LLM gateway with routing, fallback, budgets, and usage telemetry for AI
   products
-version: 0.1.13
+version: 0.1.17
 access: free
 status: stable
 tier: free
@@ -26,9 +26,9 @@ generation:
     root: .rapidkit/vendor
     files:
     - template: templates/base/llm_gateway.py.j2
-      relative: src/ai/llm_gateway.py
+      relative: src/modules/free/ai/llm_gateway/llm_gateway.py
     - template: templates/base/llm_gateway_types.py.j2
-      relative: src/ai/llm_gateway_types.py
+      relative: src/modules/free/ai/llm_gateway/llm_gateway_types.py
     - template: templates/base/llm_gateway_health.py.j2
       relative: src/health/ai/llm_gateway.py
     - template: templates/vendor/nestjs/configuration.js.j2
@@ -41,9 +41,9 @@ generation:
         module_class_name: LlmGateway
       files:
       - template: templates/variants/fastapi/llm_gateway.py.j2
-        output: src/ai/llm_gateway.py
+        output: src/modules/free/ai/llm_gateway/llm_gateway.py
       - template: templates/variants/fastapi/llm_gateway_routes.py.j2
-        output: src/routers/ai/llm_gateway.py
+        output: src/modules/free/ai/llm_gateway/routers/ai/llm_gateway.py
       - template: templates/variants/fastapi/llm_gateway_health.py.j2
         output: src/health/ai/llm_gateway.py
       - template: templates/tests/integration/test_llm_gateway_integration.j2
@@ -61,19 +61,19 @@ generation:
         module_kebab: llm-gateway
       files:
       - template: templates/variants/nestjs/llm_gateway.service.ts.j2
-        output: src/llm-gateway/llm_gateway.service.ts
+        output: src/modules/free/ai/llm_gateway/llm_gateway.service.ts
       - template: templates/variants/nestjs/llm_gateway.controller.ts.j2
-        output: src/llm-gateway/llm_gateway.controller.ts
+        output: src/modules/free/ai/llm_gateway/llm_gateway.controller.ts
       - template: templates/variants/nestjs/llm_gateway.module.ts.j2
-        output: src/llm-gateway/llm_gateway.module.ts
+        output: src/modules/free/ai/llm_gateway/llm_gateway.module.ts
       - template: templates/variants/nestjs/llm_gateway.health.ts.j2
-        output: src/llm-gateway/llm_gateway.health.ts
+        output: src/health/llm_gateway.health.ts
       - template: templates/variants/nestjs/llm_gateway.validation.ts.j2
-        output: src/llm-gateway/llm_gateway.validation.ts
+        output: src/modules/free/ai/llm_gateway/llm_gateway.validation.ts
       - template: templates/variants/nestjs/llm_gateway.index.ts.j2
-        output: src/llm-gateway/index.ts
+        output: src/modules/free/ai/llm_gateway/index.ts
       - template: templates/variants/nestjs/llm_gateway.configuration.ts.j2
-        output: src/llm-gateway/configuration.ts
+        output: src/modules/free/ai/llm_gateway/configuration.ts
       - template: templates/variants/nestjs/tests/llm_gateway.e2e-spec.ts
         output: tests/modules/e2e/ai/llm_gateway/llm_gateway.e2e-spec.ts
     nestjs.standard: *nestjs_variant
@@ -123,10 +123,10 @@ documentation:
 support:
   issues: https://github.com/rapidkitlabs/rapidkit-core/issues
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-  documentation: https://docs.rapidkit.top/modules/llm_gateway
+  documentation: https://getrapidkit.com/modules/llm_gateway
 changelog:
-  - version: "0.1.13"
-    date: "2026-06-02"
+  - version: "0.1.17"
+    date: "2026-06-09"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

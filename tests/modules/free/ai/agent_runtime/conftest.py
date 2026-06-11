@@ -45,12 +45,12 @@ def rendered_agent_runtime(tmp_path: Path) -> dict[str, object]:
         / "vendor"
         / config["name"]
         / config["version"]
-        / "src"
-        / "ai"
+        / "src/modules/free/ai/agent_runtime"
         / "agent_runtime.py"
     )
 
     return {
+        "config": config,
         "root": tmp_path,
         "vendor": _load_module("generated_agent_runtime_vendor", vendor_path),
     }

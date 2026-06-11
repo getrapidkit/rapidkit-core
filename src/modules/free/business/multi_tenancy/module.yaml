@@ -1,7 +1,7 @@
 name: multi_tenancy
 display_name: Multi Tenancy
 description: Organization, team, tenant isolation, membership, and tenant-aware request context scaffolding
-version: 0.1.6
+version: 0.1.10
 access: free
 status: stable
 tier: free
@@ -25,9 +25,9 @@ generation:
     root: .rapidkit/vendor
     files:
     - template: templates/base/multi_tenancy.py.j2
-      relative: src/business/multi_tenancy.py
+      relative: src/modules/free/business/multi_tenancy/multi_tenancy.py
     - template: templates/base/multi_tenancy_types.py.j2
-      relative: src/business/multi_tenancy_types.py
+      relative: src/modules/free/business/multi_tenancy/multi_tenancy_types.py
     - template: templates/base/multi_tenancy_health.py.j2
       relative: src/health/business/multi_tenancy.py
     - template: templates/vendor/nestjs/configuration.js.j2
@@ -40,9 +40,9 @@ generation:
         module_class_name: MultiTenancy
       files:
       - template: templates/variants/fastapi/multi_tenancy.py.j2
-        output: src/business/multi_tenancy.py
+        output: src/modules/free/business/multi_tenancy/multi_tenancy.py
       - template: templates/variants/fastapi/multi_tenancy_routes.py.j2
-        output: src/routers/business/multi_tenancy.py
+        output: src/modules/free/business/multi_tenancy/routers/business/multi_tenancy.py
       - template: templates/variants/fastapi/multi_tenancy_health.py.j2
         output: src/health/business/multi_tenancy.py
       - template: templates/tests/integration/test_multi_tenancy_integration.j2
@@ -60,19 +60,19 @@ generation:
         module_kebab: multi-tenancy
       files:
       - template: templates/variants/nestjs/multi_tenancy.service.ts.j2
-        output: src/multi-tenancy/multi_tenancy.service.ts
+        output: src/modules/free/business/multi_tenancy/multi_tenancy.service.ts
       - template: templates/variants/nestjs/multi_tenancy.controller.ts.j2
-        output: src/multi-tenancy/multi_tenancy.controller.ts
+        output: src/modules/free/business/multi_tenancy/multi_tenancy.controller.ts
       - template: templates/variants/nestjs/multi_tenancy.module.ts.j2
-        output: src/multi-tenancy/multi_tenancy.module.ts
+        output: src/modules/free/business/multi_tenancy/multi_tenancy.module.ts
       - template: templates/variants/nestjs/multi_tenancy.health.ts.j2
-        output: src/multi-tenancy/multi_tenancy.health.ts
+        output: src/health/multi_tenancy.health.ts
       - template: templates/variants/nestjs/multi_tenancy.validation.ts.j2
-        output: src/multi-tenancy/multi_tenancy.validation.ts
+        output: src/modules/free/business/multi_tenancy/multi_tenancy.validation.ts
       - template: templates/variants/nestjs/multi_tenancy.index.ts.j2
-        output: src/multi-tenancy/index.ts
+        output: src/modules/free/business/multi_tenancy/index.ts
       - template: templates/variants/nestjs/multi_tenancy.configuration.ts.j2
-        output: src/multi-tenancy/configuration.ts
+        output: src/modules/free/business/multi_tenancy/configuration.ts
       - template: templates/variants/nestjs/tests/multi_tenancy.e2e-spec.ts
         output: tests/modules/e2e/business/multi_tenancy/multi_tenancy.e2e-spec.ts
     nestjs.standard: *nestjs_variant
@@ -122,10 +122,10 @@ documentation:
 support:
   issues: https://github.com/rapidkitlabs/rapidkit-core/issues
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-  documentation: https://docs.rapidkit.top/modules/multi_tenancy
+  documentation: https://getrapidkit.com/modules/multi_tenancy
 changelog:
-  - version: "0.1.6"
-    date: "2026-06-02"
+  - version: "0.1.10"
+    date: "2026-06-09"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

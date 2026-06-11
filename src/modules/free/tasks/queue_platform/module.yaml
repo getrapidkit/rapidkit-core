@@ -1,7 +1,7 @@
 name: queue_platform
 display_name: "Queue Platform"
 description: "Tenant-aware durable queue abstraction with retry, delay, dead-letter, and worker leasing"
-version: 0.1.5
+version: 0.1.9
 access: free
 status: stable
 tier: free
@@ -28,9 +28,9 @@ generation:
     root: .rapidkit/vendor
     files:
       - template: templates/base/queue_platform.py.j2
-        relative: src/tasks/queue_platform.py
+        relative: src/modules/free/tasks/queue_platform/queue_platform.py
       - template: templates/base/queue_platform_types.py.j2
-        relative: src/tasks/queue_platform_types.py
+        relative: src/modules/free/tasks/queue_platform/queue_platform_types.py
       - template: templates/base/queue_platform_health.py.j2
         relative: src/health/tasks/queue_platform.py
       - template: templates/vendor/nestjs/configuration.js.j2
@@ -43,9 +43,9 @@ generation:
         module_class_name: QueuePlatform
       files:
         - template: templates/variants/fastapi/queue_platform.py.j2
-          output: src/tasks/queue_platform.py
+          output: src/modules/free/tasks/queue_platform/queue_platform.py
         - template: templates/variants/fastapi/queue_platform_routes.py.j2
-          output: src/routers/tasks/queue_platform.py
+          output: src/modules/free/tasks/queue_platform/routers/tasks/queue_platform.py
         - template: templates/variants/fastapi/queue_platform_health.py.j2
           output: src/health/tasks/queue_platform.py
         - template: templates/tests/integration/test_queue_platform_integration.j2
@@ -66,19 +66,19 @@ generation:
         module_kebab: queue-platform
       files:
         - template: templates/variants/nestjs/queue_platform.service.ts.j2
-          output: src/queue-platform/queue_platform.service.ts
+          output: src/modules/free/tasks/queue_platform/queue_platform.service.ts
         - template: templates/variants/nestjs/queue_platform.controller.ts.j2
-          output: src/queue-platform/queue_platform.controller.ts
+          output: src/modules/free/tasks/queue_platform/queue_platform.controller.ts
         - template: templates/variants/nestjs/queue_platform.module.ts.j2
-          output: src/queue-platform/queue_platform.module.ts
+          output: src/modules/free/tasks/queue_platform/queue_platform.module.ts
         - template: templates/variants/nestjs/queue_platform.health.ts.j2
-          output: src/queue-platform/queue_platform.health.ts
+          output: src/health/queue_platform.health.ts
         - template: templates/variants/nestjs/queue_platform.validation.ts.j2
-          output: src/queue-platform/queue_platform.validation.ts
+          output: src/modules/free/tasks/queue_platform/queue_platform.validation.ts
         - template: templates/variants/nestjs/queue_platform.index.ts.j2
-          output: src/queue-platform/index.ts
+          output: src/modules/free/tasks/queue_platform/index.ts
         - template: templates/variants/nestjs/queue_platform.configuration.ts.j2
-          output: src/queue-platform/configuration.ts
+          output: src/modules/free/tasks/queue_platform/configuration.ts
         - template: templates/variants/nestjs/tests/queue_platform.e2e-spec.ts
           output: tests/modules/e2e/tasks/queue_platform/queue_platform.e2e-spec.ts
 
@@ -129,10 +129,10 @@ documentation:
 support:
   issues: https://github.com/rapidkitlabs/rapidkit-core/issues
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-  documentation: https://docs.rapidkit.top/modules/queue_platform
+  documentation: https://getrapidkit.com/modules/queue_platform
 changelog:
-  - version: "0.1.5"
-    date: "2026-06-02"
+  - version: "0.1.9"
+    date: "2026-06-09"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

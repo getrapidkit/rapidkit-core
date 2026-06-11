@@ -45,12 +45,12 @@ def rendered_ai_guardrails(tmp_path: Path) -> dict[str, object]:
         / "vendor"
         / config["name"]
         / config["version"]
-        / "src"
-        / "ai"
+        / "src/modules/free/ai/ai_guardrails"
         / "ai_guardrails.py"
     )
 
     return {
+        "config": config,
         "root": tmp_path,
         "vendor": _load_module("generated_ai_guardrails_vendor", vendor_path),
     }

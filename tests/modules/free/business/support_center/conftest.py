@@ -43,11 +43,11 @@ def rendered_support_center(tmp_path: Path) -> dict[str, object]:
         / "vendor"
         / config["name"]
         / config["version"]
-        / "src"
-        / "business"
+        / "src/modules/free/business/support_center"
         / "support_center.py"
     )
     return {
+        "config": config,
         "root": tmp_path,
         "vendor": _load_module("generated_support_center_vendor", vendor_path),
     }

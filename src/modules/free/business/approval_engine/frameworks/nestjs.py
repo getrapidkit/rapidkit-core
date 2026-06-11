@@ -37,13 +37,13 @@ class NestJSPlugin(FrameworkPlugin):
 
     def get_output_paths(self) -> Dict[str, str]:
         return {
-            "service": "src/approval-engine/approval_engine.service.ts",
-            "controller": "src/approval-engine/approval_engine.controller.ts",
-            "module": "src/approval-engine/approval_engine.module.ts",
-            "health": "src/approval-engine/approval_engine.health.ts",
-            "validation": "src/approval-engine/approval_engine.validation.ts",
-            "index": "src/approval-engine/index.ts",
-            "configuration": "src/approval-engine/configuration.ts",
+            "service": "src/modules/free/business/approval_engine/approval_engine.service.ts",
+            "controller": "src/modules/free/business/approval_engine/approval_engine.controller.ts",
+            "module": "src/modules/free/business/approval_engine/approval_engine.module.ts",
+            "health": "src/health/approval_engine.health.ts",
+            "validation": "src/modules/free/business/approval_engine/approval_engine.validation.ts",
+            "index": "src/modules/free/business/approval_engine/index.ts",
+            "configuration": "src/modules/free/business/approval_engine/configuration.ts",
             "e2e": "tests/modules/e2e/business/approval_engine/approval_engine.e2e-spec.ts",
         }
 

@@ -61,4 +61,4 @@ if not result.success:
 
 - [GitHub Issues](https://github.com/rapidkitlabs/rapidkit-core/issues)
 - [Discussions](https://github.com/rapidkitlabs/rapidkit-core/discussions)
-- [Documentation](https://docs.rapidkit.top)
+- [Documentation](https://getrapidkit.com)

@@ -2,7 +2,7 @@ name: workflow_engine
 display_name: Workflow Engine
 description: Workflow engine scaffolding for triggers, actions, conditions, approvals, schedules, and
   durable runs
-version: 0.1.8
+version: 0.1.12
 access: free
 status: stable
 tier: free
@@ -26,9 +26,9 @@ generation:
     root: .rapidkit/vendor
     files:
     - template: templates/base/workflow_engine.py.j2
-      relative: src/tasks/workflow_engine.py
+      relative: src/modules/free/tasks/workflow_engine/workflow_engine.py
     - template: templates/base/workflow_engine_types.py.j2
-      relative: src/tasks/workflow_engine_types.py
+      relative: src/modules/free/tasks/workflow_engine/workflow_engine_types.py
     - template: templates/base/workflow_engine_health.py.j2
       relative: src/health/tasks/workflow_engine.py
     - template: templates/vendor/nestjs/configuration.js.j2
@@ -41,9 +41,9 @@ generation:
         module_class_name: WorkflowEngine
       files:
       - template: templates/variants/fastapi/workflow_engine.py.j2
-        output: src/tasks/workflow_engine.py
+        output: src/modules/free/tasks/workflow_engine/workflow_engine.py
       - template: templates/variants/fastapi/workflow_engine_routes.py.j2
-        output: src/routers/tasks/workflow_engine.py
+        output: src/modules/free/tasks/workflow_engine/routers/tasks/workflow_engine.py
       - template: templates/variants/fastapi/workflow_engine_health.py.j2
         output: src/health/tasks/workflow_engine.py
       - template: templates/tests/integration/test_workflow_engine_integration.j2
@@ -61,19 +61,19 @@ generation:
         module_kebab: workflow-engine
       files:
       - template: templates/variants/nestjs/workflow_engine.service.ts.j2
-        output: src/workflow-engine/workflow_engine.service.ts
+        output: src/modules/free/tasks/workflow_engine/workflow_engine.service.ts
       - template: templates/variants/nestjs/workflow_engine.controller.ts.j2
-        output: src/workflow-engine/workflow_engine.controller.ts
+        output: src/modules/free/tasks/workflow_engine/workflow_engine.controller.ts
       - template: templates/variants/nestjs/workflow_engine.module.ts.j2
-        output: src/workflow-engine/workflow_engine.module.ts
+        output: src/modules/free/tasks/workflow_engine/workflow_engine.module.ts
       - template: templates/variants/nestjs/workflow_engine.health.ts.j2
-        output: src/workflow-engine/workflow_engine.health.ts
+        output: src/health/workflow_engine.health.ts
       - template: templates/variants/nestjs/workflow_engine.validation.ts.j2
-        output: src/workflow-engine/workflow_engine.validation.ts
+        output: src/modules/free/tasks/workflow_engine/workflow_engine.validation.ts
       - template: templates/variants/nestjs/workflow_engine.index.ts.j2
-        output: src/workflow-engine/index.ts
+        output: src/modules/free/tasks/workflow_engine/index.ts
       - template: templates/variants/nestjs/workflow_engine.configuration.ts.j2
-        output: src/workflow-engine/configuration.ts
+        output: src/modules/free/tasks/workflow_engine/configuration.ts
       - template: templates/variants/nestjs/tests/workflow_engine.e2e-spec.ts
         output: tests/modules/e2e/tasks/workflow_engine/workflow_engine.e2e-spec.ts
     nestjs.standard: *nestjs_variant
@@ -123,10 +123,10 @@ documentation:
 support:
   issues: https://github.com/rapidkitlabs/rapidkit-core/issues
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-  documentation: https://docs.rapidkit.top/modules/workflow_engine
+  documentation: https://getrapidkit.com/modules/workflow_engine
 changelog:
-  - version: "0.1.8"
-    date: "2026-06-02"
+  - version: "0.1.12"
+    date: "2026-06-09"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

@@ -1,7 +1,7 @@
 name: ai_guardrails
 display_name: "Ai Guardrails"
 description: "AI input/output safety policy, PII redaction hooks, and model boundary checks"
-version: 0.1.4
+version: 0.1.8
 access: free
 status: stable
 tier: free
@@ -30,9 +30,9 @@ generation:
     root: .rapidkit/vendor
     files:
       - template: templates/base/ai_guardrails.py.j2
-        relative: src/ai/ai_guardrails.py
+        relative: src/modules/free/ai/ai_guardrails/ai_guardrails.py
       - template: templates/base/ai_guardrails_types.py.j2
-        relative: src/ai/ai_guardrails_types.py
+        relative: src/modules/free/ai/ai_guardrails/ai_guardrails_types.py
       - template: templates/base/ai_guardrails_health.py.j2
         relative: src/health/ai/ai_guardrails.py
       - template: templates/vendor/nestjs/configuration.js.j2
@@ -45,9 +45,9 @@ generation:
         module_class_name: AiGuardrails
       files:
         - template: templates/variants/fastapi/ai_guardrails.py.j2
-          output: src/ai/ai_guardrails.py
+          output: src/modules/free/ai/ai_guardrails/ai_guardrails.py
         - template: templates/variants/fastapi/ai_guardrails_routes.py.j2
-          output: src/routers/ai/ai_guardrails.py
+          output: src/modules/free/ai/ai_guardrails/routers/ai/ai_guardrails.py
         - template: templates/variants/fastapi/ai_guardrails_health.py.j2
           output: src/health/ai/ai_guardrails.py
         - template: templates/tests/integration/test_ai_guardrails_integration.j2
@@ -68,19 +68,19 @@ generation:
         module_kebab: ai-guardrails
       files:
         - template: templates/variants/nestjs/ai_guardrails.service.ts.j2
-          output: src/ai-guardrails/ai_guardrails.service.ts
+          output: src/modules/free/ai/ai_guardrails/ai_guardrails.service.ts
         - template: templates/variants/nestjs/ai_guardrails.controller.ts.j2
-          output: src/ai-guardrails/ai_guardrails.controller.ts
+          output: src/modules/free/ai/ai_guardrails/ai_guardrails.controller.ts
         - template: templates/variants/nestjs/ai_guardrails.module.ts.j2
-          output: src/ai-guardrails/ai_guardrails.module.ts
+          output: src/modules/free/ai/ai_guardrails/ai_guardrails.module.ts
         - template: templates/variants/nestjs/ai_guardrails.health.ts.j2
-          output: src/ai-guardrails/ai_guardrails.health.ts
+          output: src/health/ai_guardrails.health.ts
         - template: templates/variants/nestjs/ai_guardrails.validation.ts.j2
-          output: src/ai-guardrails/ai_guardrails.validation.ts
+          output: src/modules/free/ai/ai_guardrails/ai_guardrails.validation.ts
         - template: templates/variants/nestjs/ai_guardrails.index.ts.j2
-          output: src/ai-guardrails/index.ts
+          output: src/modules/free/ai/ai_guardrails/index.ts
         - template: templates/variants/nestjs/ai_guardrails.configuration.ts.j2
-          output: src/ai-guardrails/configuration.ts
+          output: src/modules/free/ai/ai_guardrails/configuration.ts
         - template: templates/variants/nestjs/tests/ai_guardrails.e2e-spec.ts
           output: tests/modules/e2e/ai/ai_guardrails/ai_guardrails.e2e-spec.ts
 
@@ -131,10 +131,10 @@ documentation:
 support:
   issues: https://github.com/rapidkitlabs/rapidkit-core/issues
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-  documentation: https://docs.rapidkit.top/modules/ai_guardrails
+  documentation: https://getrapidkit.com/modules/ai_guardrails
 changelog:
-  - version: "0.1.4"
-    date: "2026-06-02"
+  - version: "0.1.8"
+    date: "2026-06-09"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

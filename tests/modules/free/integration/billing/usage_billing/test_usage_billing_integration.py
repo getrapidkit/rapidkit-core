@@ -29,10 +29,16 @@ def test_free_billing_usage_billing_generates_and_summarizes_metered_usage(
     generator.generate_vendor_files(config, tmp_path, renderer, context)
     vendor_path = (
         tmp_path
-        / ".rapidkit/vendor"
+        / ".rapidkit"
+        / "vendor"
         / config["name"]
         / config["version"]
-        / "src/billing/usage_billing.py"
+        / "src"
+        / "modules"
+        / "free"
+        / "billing"
+        / "usage_billing"
+        / "usage_billing.py"
     )
     vendor = _load_module("integration_usage_billing_vendor", vendor_path)
 

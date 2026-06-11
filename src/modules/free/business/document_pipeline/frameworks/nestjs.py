@@ -37,13 +37,13 @@ class NestJSPlugin(FrameworkPlugin):
 
     def get_output_paths(self) -> Dict[str, str]:
         return {
-            "service": "src/document-pipeline/document_pipeline.service.ts",
-            "controller": "src/document-pipeline/document_pipeline.controller.ts",
-            "module": "src/document-pipeline/document_pipeline.module.ts",
-            "health": "src/document-pipeline/document_pipeline.health.ts",
-            "validation": "src/document-pipeline/document_pipeline.validation.ts",
-            "index": "src/document-pipeline/index.ts",
-            "configuration": "src/document-pipeline/configuration.ts",
+            "service": "src/modules/free/business/document_pipeline/document_pipeline.service.ts",
+            "controller": "src/modules/free/business/document_pipeline/document_pipeline.controller.ts",
+            "module": "src/modules/free/business/document_pipeline/document_pipeline.module.ts",
+            "health": "src/health/document_pipeline.health.ts",
+            "validation": "src/modules/free/business/document_pipeline/document_pipeline.validation.ts",
+            "index": "src/modules/free/business/document_pipeline/index.ts",
+            "configuration": "src/modules/free/business/document_pipeline/configuration.ts",
             "e2e": "tests/modules/e2e/business/document_pipeline/document_pipeline.e2e-spec.ts",
         }
 

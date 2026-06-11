@@ -90,7 +90,7 @@ class NestJSPlugin(FrameworkPlugin):
     def get_documentation_urls(self) -> Dict[str, str]:
         return {
             "framework_docs": "https://docs.nestjs.com/",
-            "rate_limiting": "https://docs.rapidkit.top/modules/rate_limiting",
+            "rate_limiting": "https://getrapidkit.com/modules/rate_limiting",
         }
 
     def get_example_configurations(self) -> Dict[str, Any]:

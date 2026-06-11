@@ -166,5 +166,5 @@ ______________________________________________________________________
 - Override contracts: `overrides.py`
 
 For additional help, open an issue at <https://github.com/rapidkitlabs/rapidkit-core/issues> or consult the
-full product documentation at <https://docs.rapidkit.top>.
+full product documentation at <https://getrapidkit.com>.
 ````

@@ -1,6 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
 
-import { {{ module_class_name }}Module } from "../../../../../src/analytics-dashboard/analytics_dashboard.module";
+import { {{ module_class_name }}Module } from "@modules/free/observability/analytics_dashboard/analytics_dashboard.module";
 
 describe("{{ module_class_name }} NestJS E2E", () => {
   it("compiles the module", async () => {

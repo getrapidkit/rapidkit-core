@@ -1,7 +1,7 @@
 name: stripe_payment
 display_name: Stripe Payment
 description: Stripe payments and subscriptions
-version: 0.1.4
+version: 0.1.5
 access: free
 status: stable
 tier: free
@@ -128,10 +128,10 @@ documentation:
 support:
     issues: https://github.com/rapidkitlabs/rapidkit-core/issues
     discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-    documentation: https://docs.rapidkit.top/modules/billing/stripe_payment
+    documentation: https://getrapidkit.com/modules/billing/stripe_payment
 changelog:
-  - version: "0.1.4"
-    date: "2026-06-07"
+  - version: "0.1.5"
+    date: "2026-06-08"
     notes: "See docs/changelog.md"
 validation:
     pre_install:

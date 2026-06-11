@@ -39,8 +39,8 @@ class FastAPIPlugin(FrameworkPlugin):
 
     def get_output_paths(self) -> Dict[str, str]:
         return {
-            "runtime": "src/ai/rag_pipeline.py",
-            "router": "src/routers/ai/rag_pipeline.py",
+            "runtime": "src/modules/free/ai/rag_pipeline/rag_pipeline.py",
+            "router": "src/modules/free/ai/rag_pipeline/routers/ai/rag_pipeline.py",
             "health": "src/health/ai/rag_pipeline.py",
             "integration": "tests/modules/free/integration/ai/rag_pipeline/test_rag_pipeline_integration.py",
             "e2e": "tests/modules/e2e/free/ai/rag_pipeline/test_rag_pipeline_e2e.py",
@@ -67,7 +67,9 @@ class FastAPIPlugin(FrameworkPlugin):
         return ["pytest-asyncio>=0.23.0", "httpx>=0.27.0"]
 
     def pre_generation_hook(self, output_dir: Path) -> None:
-        (output_dir / "src" / "routers").mkdir(parents=True, exist_ok=True)
+        (output_dir / "src" / "modules" / "free" / "ai" / "rag_pipeline" / "routers" / "ai").mkdir(
+            parents=True, exist_ok=True
+        )
         (output_dir / "src" / "health").mkdir(parents=True, exist_ok=True)
         spec = build_standard_health_spec(MODULE_ROOT)
         with suppress(RuntimeError, OSError):

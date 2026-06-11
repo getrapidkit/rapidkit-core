@@ -11,7 +11,7 @@ notifications:
     port: {{ email_defaults.get('port', 587) }}
     username: {{ email_defaults.get('username') | tojson }}
     password: {{ email_defaults.get('password') | tojson }}
-    from_email: {{ email_defaults.get('from_email', 'noreply@rapidkit.top') | tojson }}
+    from_email: {{ email_defaults.get('from_email', 'noreply@getrapidkit.com') | tojson }}
     from_name: {{ email_defaults.get('from_name', 'RapidKit Notifications') | tojson }}
     reply_to: {{ email_defaults.get('reply_to') | tojson }}
     use_tls: {{ email_defaults.get('use_tls', True) | tojson }}

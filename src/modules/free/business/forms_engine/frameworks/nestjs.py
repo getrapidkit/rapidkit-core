@@ -37,13 +37,13 @@ class NestJSPlugin(FrameworkPlugin):
 
     def get_output_paths(self) -> Dict[str, str]:
         return {
-            "service": "src/forms-engine/forms_engine.service.ts",
-            "controller": "src/forms-engine/forms_engine.controller.ts",
-            "module": "src/forms-engine/forms_engine.module.ts",
-            "health": "src/forms-engine/forms_engine.health.ts",
-            "validation": "src/forms-engine/forms_engine.validation.ts",
-            "index": "src/forms-engine/index.ts",
-            "configuration": "src/forms-engine/configuration.ts",
+            "service": "src/modules/free/business/forms_engine/forms_engine.service.ts",
+            "controller": "src/modules/free/business/forms_engine/forms_engine.controller.ts",
+            "module": "src/modules/free/business/forms_engine/forms_engine.module.ts",
+            "health": "src/health/forms_engine.health.ts",
+            "validation": "src/modules/free/business/forms_engine/forms_engine.validation.ts",
+            "index": "src/modules/free/business/forms_engine/index.ts",
+            "configuration": "src/modules/free/business/forms_engine/configuration.ts",
             "e2e": "tests/modules/e2e/business/forms_engine/forms_engine.e2e-spec.ts",
         }
 

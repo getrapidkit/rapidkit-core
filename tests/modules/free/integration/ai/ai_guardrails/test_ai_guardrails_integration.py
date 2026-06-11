@@ -29,8 +29,7 @@ def test_free_ai_ai_guardrails_generated_vendor_smoke(tmp_path: Path) -> None:
         / "vendor"
         / config["name"]
         / config["version"]
-        / "src"
-        / "ai"
+        / "src/modules/free/ai/ai_guardrails"
         / "ai_guardrails.py"
     )
     vendor = _load_module("generated_ai_guardrails_integration_vendor", vendor_path)

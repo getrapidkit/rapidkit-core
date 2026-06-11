@@ -3,7 +3,7 @@ import { registerAs } from '@nestjs/config';
 export default registerAs('email', () => ({
   enabled: {{ email_defaults.get('enabled', True) | tojson }},
   provider: {{ email_defaults.get('provider', 'smtp') | tojson }},
-  fromEmail: {{ email_defaults.get('from_email', 'noreply@rapidkit.top') | tojson }},
+  fromEmail: {{ email_defaults.get('from_email', 'noreply@getrapidkit.com') | tojson }},
   fromName: {{ email_defaults.get('from_name', 'RapidKit') | tojson }},
   replyTo: {{ email_defaults.get('reply_to') | tojson }},
   dryRun: {{ email_defaults.get('dry_run', False) | tojson }},

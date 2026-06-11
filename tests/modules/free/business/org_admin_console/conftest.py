@@ -43,11 +43,11 @@ def rendered_org_admin_console(tmp_path: Path) -> dict[str, object]:
         / "vendor"
         / config["name"]
         / config["version"]
-        / "src"
-        / "business"
+        / "src/modules/free/business/org_admin_console"
         / "org_admin_console.py"
     )
     return {
+        "config": config,
         "root": tmp_path,
         "vendor": _load_module("generated_org_admin_console_vendor", vendor_path),
     }

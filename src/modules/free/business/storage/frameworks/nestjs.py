@@ -44,7 +44,7 @@ class NestJSPlugin(FrameworkPlugin):
             "service": "src/modules/free/business/storage/storage.service.ts",
             "controller": "src/modules/free/business/storage/storage.controller.ts",
             "module": "src/modules/free/business/storage/storage.module.ts",
-            "health": "src/modules/free/business/storage/storage.health.ts",
+            "health": "src/health/storage.health.ts",
             "routes": "src/modules/free/business/storage/storage.routes.ts",
             "configuration_ts": "src/modules/free/business/storage/storage.configuration.ts",
             "integration_test": "tests/modules/integration/business/storage/storage.integration.spec.ts",

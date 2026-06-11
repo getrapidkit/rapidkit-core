@@ -1,6 +1,6 @@
 import { Test, TestingModule } from "@nestjs/testing";
 
-import { {{ module_class_name }}Module } from "../../../../../src/queue-platform/queue_platform.module";
+import { {{ module_class_name }}Module } from "@modules/free/tasks/queue_platform/queue_platform.module";
 
 describe("{{ module_class_name }} NestJS E2E", () => {
   it("compiles the module", async () => {

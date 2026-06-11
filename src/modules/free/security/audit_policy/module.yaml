@@ -1,7 +1,7 @@
 name: audit_policy
 display_name: Audit Policy
 description: Immutable audit event, admin policy, reason capture, and compliance export scaffolding
-version: 0.1.5
+version: 0.1.9
 access: free
 status: stable
 tier: free
@@ -25,9 +25,9 @@ generation:
     root: .rapidkit/vendor
     files:
     - template: templates/base/audit_policy.py.j2
-      relative: src/security/audit_policy.py
+      relative: src/modules/free/security/audit_policy/audit_policy.py
     - template: templates/base/audit_policy_types.py.j2
-      relative: src/security/audit_policy_types.py
+      relative: src/modules/free/security/audit_policy/audit_policy_types.py
     - template: templates/base/audit_policy_health.py.j2
       relative: src/health/security/audit_policy.py
     - template: templates/vendor/nestjs/configuration.js.j2
@@ -40,9 +40,9 @@ generation:
         module_class_name: AuditPolicy
       files:
       - template: templates/variants/fastapi/audit_policy.py.j2
-        output: src/security/audit_policy.py
+        output: src/modules/free/security/audit_policy/audit_policy.py
       - template: templates/variants/fastapi/audit_policy_routes.py.j2
-        output: src/routers/security/audit_policy.py
+        output: src/modules/free/security/audit_policy/routers/security/audit_policy.py
       - template: templates/variants/fastapi/audit_policy_health.py.j2
         output: src/health/security/audit_policy.py
       - template: templates/tests/integration/test_audit_policy_integration.j2
@@ -60,19 +60,19 @@ generation:
         module_kebab: audit-policy
       files:
       - template: templates/variants/nestjs/audit_policy.service.ts.j2
-        output: src/audit-policy/audit_policy.service.ts
+        output: src/modules/free/security/audit_policy/audit_policy.service.ts
       - template: templates/variants/nestjs/audit_policy.controller.ts.j2
-        output: src/audit-policy/audit_policy.controller.ts
+        output: src/modules/free/security/audit_policy/audit_policy.controller.ts
       - template: templates/variants/nestjs/audit_policy.module.ts.j2
-        output: src/audit-policy/audit_policy.module.ts
+        output: src/modules/free/security/audit_policy/audit_policy.module.ts
       - template: templates/variants/nestjs/audit_policy.health.ts.j2
-        output: src/audit-policy/audit_policy.health.ts
+        output: src/health/audit_policy.health.ts
       - template: templates/variants/nestjs/audit_policy.validation.ts.j2
-        output: src/audit-policy/audit_policy.validation.ts
+        output: src/modules/free/security/audit_policy/audit_policy.validation.ts
       - template: templates/variants/nestjs/audit_policy.index.ts.j2
-        output: src/audit-policy/index.ts
+        output: src/modules/free/security/audit_policy/index.ts
       - template: templates/variants/nestjs/audit_policy.configuration.ts.j2
-        output: src/audit-policy/configuration.ts
+        output: src/modules/free/security/audit_policy/configuration.ts
       - template: templates/variants/nestjs/tests/audit_policy.e2e-spec.ts
         output: tests/modules/e2e/security/audit_policy/audit_policy.e2e-spec.ts
     nestjs.standard: *nestjs_variant
@@ -122,10 +122,10 @@ documentation:
 support:
   issues: https://github.com/rapidkitlabs/rapidkit-core/issues
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-  documentation: https://docs.rapidkit.top/modules/audit_policy
+  documentation: https://getrapidkit.com/modules/audit_policy
 changelog:
-  - version: "0.1.5"
-    date: "2026-06-02"
+  - version: "0.1.9"
+    date: "2026-06-09"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

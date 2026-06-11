@@ -1,7 +1,7 @@
 name: db_sqlite
 display_name: Db Sqlite
 description: SQLite database integration for development
-version: 0.1.9
+version: 0.1.11
 access: free
 status: stable
 tier: free
@@ -126,10 +126,10 @@ documentation:
 support:
     issues: https://github.com/rapidkitlabs/rapidkit-core/issues
     discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-    documentation: https://docs.rapidkit.top/modules/database/db_sqlite
+    documentation: https://getrapidkit.com/modules/database/db_sqlite
 changelog:
-  - version: "0.1.9"
-    date: "2026-06-07"
+  - version: "0.1.11"
+    date: "2026-06-09"
     notes: "See docs/changelog.md"
 validation:
     pre_install:
@@ -184,7 +184,7 @@ file_hashes:
     templates/snippets/db_sqlite.snippet.j2: sha256:5f56b0b4c41f3dc6dff061850f2442772e1ab4493d0a4d2db26b6f5485fe4826
     templates/snippets/db_sqlite_env.snippet.j2: sha256:eec012a3e59e853a2f5fb33282c32f9fa265d7057d12f971f4dbba7ac2a38be2
     templates/snippets/db_sqlite_settings_fields.snippet.j2: sha256:5bc17abbe977e6f6c7b5050080da3cfc6a3a348fab83eb7ae3b8deffed93262a
-    templates/snippets/db_sqlite_settings_fields_nestjs.snippet.j2: sha256:994aa1196ba304a814cc6769a5a09d26f87898e5beace30a25f1a7e406299405
+    templates/snippets/db_sqlite_settings_fields_nestjs.snippet.j2: sha256:df61f2f881f3b25053816d383234940989df6b97369afb1a93e3bb05cd236dd2
     templates/tests/__init__.py: sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855
     templates/tests/integration/db_sqlite.integration.spec.ts.j2: sha256:0f2ac1d145ed6b7ce548f0a738b0e9aeecaa7abe0868636641d83f65b4cb9db3
     templates/tests/integration/test_db_sqlite_integration.j2: sha256:b9b581db94b56b43ee0c165e9b969a95dde743ecc6302193be3318b1327a7455

@@ -46,7 +46,10 @@ def rendered_usage_billing(tmp_path: Path) -> dict[str, object]:
         / config["name"]
         / config["version"]
         / "src"
+        / "modules"
+        / "free"
         / "billing"
+        / "usage_billing"
         / "usage_billing.py"
     )
 

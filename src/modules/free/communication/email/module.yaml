@@ -1,5 +1,5 @@
 name: email
-version: 0.1.21
+version: 0.1.23
 tier: free
 access: free
 status: stable
@@ -21,7 +21,7 @@ metadata:
         Pluggable transactional and marketing email service with template rendering
         and FastAPI/NestJS integrations.
     maintainer: RapidKit Core Team
-    support_contact: platform@rapidkit.top
+    support_contact: platform@getrapidkit.com
 config_sources:
     - config/base.yaml
     - config/snippets.yaml
@@ -78,7 +78,7 @@ generation:
                 - template: templates/variants/nestjs/email.configuration.ts.j2
                   output: src/modules/free/communication/email/email.configuration.ts
                 - template: templates/variants/nestjs/email.health.ts.j2
-                  output: src/modules/free/communication/email/email.health.ts
+                  output: src/health/email.health.ts
                 - template: templates/tests/integration/email.integration.spec.ts.j2
                   output: tests/modules/integration/communication/email.integration.spec.ts
                 - template: templates/variants/nestjs/tests/email.e2e-spec.ts
@@ -138,10 +138,10 @@ documentation:
 support:
     issues: https://github.com/rapidkitlabs/rapidkit-core/issues
     discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-    documentation: https://docs.rapidkit.top/modules/email
+    documentation: https://getrapidkit.com/modules/email
 changelog:
-  - version: "0.1.21"
-    date: "2026-06-07"
+  - version: "0.1.23"
+    date: "2026-06-08"
     notes: "See docs/changelog.md"
 validation:
     pre_install:

@@ -37,13 +37,13 @@ class NestJSPlugin(FrameworkPlugin):
 
     def get_output_paths(self) -> Dict[str, str]:
         return {
-            "service": "src/audit-policy/audit_policy.service.ts",
-            "controller": "src/audit-policy/audit_policy.controller.ts",
-            "module": "src/audit-policy/audit_policy.module.ts",
-            "health": "src/audit-policy/audit_policy.health.ts",
-            "validation": "src/audit-policy/audit_policy.validation.ts",
-            "index": "src/audit-policy/index.ts",
-            "configuration": "src/audit-policy/configuration.ts",
+            "service": "src/modules/free/security/audit_policy/audit_policy.service.ts",
+            "controller": "src/modules/free/security/audit_policy/audit_policy.controller.ts",
+            "module": "src/modules/free/security/audit_policy/audit_policy.module.ts",
+            "health": "src/health/audit_policy.health.ts",
+            "validation": "src/modules/free/security/audit_policy/audit_policy.validation.ts",
+            "index": "src/modules/free/security/audit_policy/index.ts",
+            "configuration": "src/modules/free/security/audit_policy/configuration.ts",
             "e2e": "tests/modules/e2e/security/audit_policy/audit_policy.e2e-spec.ts",
         }
 

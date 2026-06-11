@@ -2,7 +2,7 @@ name: feature_flags
 display_name: Feature Flags
 description: Feature flag scaffolding for staged rollout, entitlement-aware gates, experiments, and kill
   switches
-version: 0.1.5
+version: 0.1.9
 access: free
 status: stable
 tier: free
@@ -25,9 +25,9 @@ generation:
     root: .rapidkit/vendor
     files:
     - template: templates/base/feature_flags.py.j2
-      relative: src/business/feature_flags.py
+      relative: src/modules/free/business/feature_flags/feature_flags.py
     - template: templates/base/feature_flags_types.py.j2
-      relative: src/business/feature_flags_types.py
+      relative: src/modules/free/business/feature_flags/feature_flags_types.py
     - template: templates/base/feature_flags_health.py.j2
       relative: src/health/business/feature_flags.py
     - template: templates/vendor/nestjs/configuration.js.j2
@@ -40,9 +40,9 @@ generation:
         module_class_name: FeatureFlags
       files:
       - template: templates/variants/fastapi/feature_flags.py.j2
-        output: src/business/feature_flags.py
+        output: src/modules/free/business/feature_flags/feature_flags.py
       - template: templates/variants/fastapi/feature_flags_routes.py.j2
-        output: src/routers/business/feature_flags.py
+        output: src/modules/free/business/feature_flags/routers/business/feature_flags.py
       - template: templates/variants/fastapi/feature_flags_health.py.j2
         output: src/health/business/feature_flags.py
       - template: templates/tests/integration/test_feature_flags_integration.j2
@@ -60,19 +60,19 @@ generation:
         module_kebab: feature-flags
       files:
       - template: templates/variants/nestjs/feature_flags.service.ts.j2
-        output: src/feature-flags/feature_flags.service.ts
+        output: src/modules/free/business/feature_flags/feature_flags.service.ts
       - template: templates/variants/nestjs/feature_flags.controller.ts.j2
-        output: src/feature-flags/feature_flags.controller.ts
+        output: src/modules/free/business/feature_flags/feature_flags.controller.ts
       - template: templates/variants/nestjs/feature_flags.module.ts.j2
-        output: src/feature-flags/feature_flags.module.ts
+        output: src/modules/free/business/feature_flags/feature_flags.module.ts
       - template: templates/variants/nestjs/feature_flags.health.ts.j2
-        output: src/feature-flags/feature_flags.health.ts
+        output: src/health/feature_flags.health.ts
       - template: templates/variants/nestjs/feature_flags.validation.ts.j2
-        output: src/feature-flags/feature_flags.validation.ts
+        output: src/modules/free/business/feature_flags/feature_flags.validation.ts
       - template: templates/variants/nestjs/feature_flags.index.ts.j2
-        output: src/feature-flags/index.ts
+        output: src/modules/free/business/feature_flags/index.ts
       - template: templates/variants/nestjs/feature_flags.configuration.ts.j2
-        output: src/feature-flags/configuration.ts
+        output: src/modules/free/business/feature_flags/configuration.ts
       - template: templates/variants/nestjs/tests/feature_flags.e2e-spec.ts
         output: tests/modules/e2e/business/feature_flags/feature_flags.e2e-spec.ts
     nestjs.standard: *nestjs_variant
@@ -122,10 +122,10 @@ documentation:
 support:
   issues: https://github.com/rapidkitlabs/rapidkit-core/issues
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-  documentation: https://docs.rapidkit.top/modules/feature_flags
+  documentation: https://getrapidkit.com/modules/feature_flags
 changelog:
-  - version: "0.1.5"
-    date: "2026-06-02"
+  - version: "0.1.9"
+    date: "2026-06-09"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

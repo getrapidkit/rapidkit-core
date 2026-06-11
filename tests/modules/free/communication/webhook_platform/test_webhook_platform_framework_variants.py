@@ -18,6 +18,13 @@ def test_webhook_platform_renders_fastapi_and_nestjs_variants(tmp_path: Path) ->
     )
     generator.generate_variant_files("nestjs", nestjs_dir, renderer, context)
 
-    assert (fastapi_dir / "src" / "communication" / "webhook_platform.py").exists()
-    assert (fastapi_dir / "src" / "routers" / "communication" / "webhook_platform.py").exists()
-    assert (nestjs_dir / "src" / "webhook-platform" / "webhook_platform.service.ts").exists()
+    assert (
+        fastapi_dir / "src/modules/free/communication/webhook_platform/webhook_platform.py"
+    ).exists()
+    assert (
+        fastapi_dir
+        / "src/modules/free/communication/webhook_platform/routers/communication/webhook_platform.py"
+    ).exists()
+    assert (
+        nestjs_dir / "src/modules/free/communication/webhook_platform/webhook_platform.service.ts"
+    ).exists()

@@ -39,8 +39,8 @@ class FastAPIPlugin(FrameworkPlugin):
 
     def get_output_paths(self) -> Dict[str, str]:
         return {
-            "runtime": "src/business/connector_pack_library.py",
-            "router": "src/routers/business/connector_pack_library.py",
+            "runtime": "src/modules/free/business/connector_pack_library/connector_pack_library.py",
+            "router": "src/modules/free/business/connector_pack_library/routers/business/connector_pack_library.py",
             "health": "src/health/business/connector_pack_library.py",
             "integration": "tests/modules/free/integration/business/connector_pack_library/test_connector_pack_library_integration.py",
             "e2e": "tests/modules/e2e/free/business/connector_pack_library/test_connector_pack_library_e2e.py",
@@ -67,7 +67,16 @@ class FastAPIPlugin(FrameworkPlugin):
         return ["pytest-asyncio>=0.23.0", "httpx>=0.27.0"]
 
     def pre_generation_hook(self, output_dir: Path) -> None:
-        (output_dir / "src" / "routers").mkdir(parents=True, exist_ok=True)
+        (
+            output_dir
+            / "src"
+            / "modules"
+            / "free"
+            / "business"
+            / "connector_pack_library"
+            / "routers"
+            / "business"
+        ).mkdir(parents=True, exist_ok=True)
         (output_dir / "src" / "health").mkdir(parents=True, exist_ok=True)
         spec = build_standard_health_spec(MODULE_ROOT)
         with suppress(RuntimeError, OSError):

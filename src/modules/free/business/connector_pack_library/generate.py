@@ -27,18 +27,30 @@ MODULE_CLASS = "ConnectorPackLibrary"
 MODULE_TITLE = "Connector Pack Library"
 MODULE_TIER = "free"
 MODULE_SLUG = "free/business/connector_pack_library"
-PYTHON_OUTPUT_REL = "src/business/connector_pack_library.py"
-PYTHON_TYPES_REL = "src/business/connector_pack_library_types.py"
+PYTHON_OUTPUT_REL = "src/modules/free/business/connector_pack_library/connector_pack_library.py"
+PYTHON_TYPES_REL = (
+    "src/modules/free/business/connector_pack_library/connector_pack_library_types.py"
+)
 PYTHON_HEALTH_REL = "src/health/business/connector_pack_library.py"
-NEST_OUTPUT_REL = "src/connector-pack-library/connector_pack_library.service.ts"
-NEST_CONTROLLER_REL = "src/connector-pack-library/connector_pack_library.controller.ts"
-NEST_MODULE_REL = "src/connector-pack-library/connector_pack_library.module.ts"
-NEST_HEALTH_REL = "src/connector-pack-library/connector_pack_library.health.ts"
-NEST_VALIDATION_REL = "src/connector-pack-library/connector_pack_library.validation.ts"
-NEST_INDEX_REL = "src/connector-pack-library/index.ts"
-NEST_CONFIGURATION_REL = "src/connector-pack-library/configuration.ts"
-VENDOR_RELATIVE = "src/business/connector_pack_library.py"
-VENDOR_TYPES_RELATIVE = "src/business/connector_pack_library_types.py"
+NEST_OUTPUT_REL = (
+    "src/modules/free/business/connector_pack_library/connector_pack_library.service.ts"
+)
+NEST_CONTROLLER_REL = (
+    "src/modules/free/business/connector_pack_library/connector_pack_library.controller.ts"
+)
+NEST_MODULE_REL = (
+    "src/modules/free/business/connector_pack_library/connector_pack_library.module.ts"
+)
+NEST_HEALTH_REL = "src/health/connector_pack_library.health.ts"
+NEST_VALIDATION_REL = (
+    "src/modules/free/business/connector_pack_library/connector_pack_library.validation.ts"
+)
+NEST_INDEX_REL = "src/modules/free/business/connector_pack_library/index.ts"
+NEST_CONFIGURATION_REL = "src/modules/free/business/connector_pack_library/configuration.ts"
+VENDOR_RELATIVE = "src/modules/free/business/connector_pack_library/connector_pack_library.py"
+VENDOR_TYPES_RELATIVE = (
+    "src/modules/free/business/connector_pack_library/connector_pack_library_types.py"
+)
 VENDOR_HEALTH_RELATIVE = "src/health/business/connector_pack_library.py"
 MODULE_IMPORT_PATH = "modules.free.business.connector_pack_library"
 

@@ -41,7 +41,7 @@ class NestJSPlugin(FrameworkPlugin):
             "service": "src/modules/free/security/cors/cors.service.ts",
             "controller": "src/modules/free/security/cors/cors.controller.ts",
             "module": "src/modules/free/security/cors/cors.module.ts",
-            "health": "src/modules/free/security/cors/cors.health.ts",
+            "health": "src/health/cors.health.ts",
             "shared_types": "src/modules/free/security/cors/cors_types.py",
             "routes": "src/modules/free/security/cors/cors.routes.ts",
             "configuration_ts": "src/modules/free/security/cors/cors.configuration.ts",

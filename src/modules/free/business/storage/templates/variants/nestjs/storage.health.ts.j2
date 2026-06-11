@@ -2,7 +2,10 @@
 
 import { Controller, Get, HttpCode, HttpStatus } from "@nestjs/common";
 
-import { StorageService, StorageHealthPayload } from "./{{ module_kebab }}.service";
+import {
+  StorageService,
+  StorageHealthPayload,
+} from "../modules/free/business/storage/{{ module_kebab }}.service";
 
 @Controller("api/health/module")
 export class StorageHealthController {

@@ -104,7 +104,7 @@ class FastAPIPlugin(FrameworkPlugin):
     def get_documentation_urls(self) -> Dict[str, str]:
         return {
             "fastapi": "https://fastapi.tiangolo.com/",
-            "inventory": "https://docs.rapidkit.top/modules/billing/inventory",
+            "inventory": "https://getrapidkit.com/modules/billing/inventory",
         }
 
     def get_example_configurations(self) -> Dict[str, Any]:

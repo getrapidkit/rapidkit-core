@@ -39,8 +39,8 @@ class FastAPIPlugin(FrameworkPlugin):
 
     def get_output_paths(self) -> Dict[str, str]:
         return {
-            "runtime": "src/tasks/queue_platform.py",
-            "router": "src/routers/tasks/queue_platform.py",
+            "runtime": "src/modules/free/tasks/queue_platform/queue_platform.py",
+            "router": "src/modules/free/tasks/queue_platform/routers/tasks/queue_platform.py",
             "health": "src/health/tasks/queue_platform.py",
             "integration": "tests/modules/free/integration/tasks/queue_platform/test_queue_platform_integration.py",
             "e2e": "tests/modules/e2e/free/tasks/queue_platform/test_queue_platform_e2e.py",
@@ -67,7 +67,16 @@ class FastAPIPlugin(FrameworkPlugin):
         return ["pytest-asyncio>=0.23.0", "httpx>=0.27.0"]
 
     def pre_generation_hook(self, output_dir: Path) -> None:
-        (output_dir / "src" / "routers").mkdir(parents=True, exist_ok=True)
+        (
+            output_dir
+            / "src"
+            / "modules"
+            / "free"
+            / "tasks"
+            / "queue_platform"
+            / "routers"
+            / "tasks"
+        ).mkdir(parents=True, exist_ok=True)
         (output_dir / "src" / "health").mkdir(parents=True, exist_ok=True)
         spec = build_standard_health_spec(MODULE_ROOT)
         with suppress(RuntimeError, OSError):

@@ -1,7 +1,7 @@
 name: cors
 description: Cross-Origin Resource Sharing security module
 category: security
-version: 0.1.12
+version: 0.1.15
 access: free
 status: stable
 tags:
@@ -69,7 +69,7 @@ generation:
       - template: templates/variants/nestjs/cors.module.ts.j2
         output: src/modules/free/security/cors/cors.module.ts
       - template: templates/variants/nestjs/cors.health.ts.j2
-        output: src/modules/free/security/cors/cors.health.ts
+        output: src/health/cors.health.ts
         description: NestJS health endpoint wiring for CORS
       - template: templates/variants/nestjs/cors_health_runtime.py.j2
         output: src/health/cors.py
@@ -120,10 +120,10 @@ documentation:
 support:
   issues: https://github.com/rapidkitlabs/rapidkit-core/issues
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-  documentation: https://docs.rapidkit.top/modules/cors
+  documentation: https://getrapidkit.com/modules/cors
 changelog:
-  - version: "0.1.12"
-    date: "2026-06-07"
+  - version: "0.1.15"
+    date: "2026-06-09"
     notes: "See docs/changelog.md"
 validation:
   pre_install:
@@ -182,7 +182,7 @@ file_hashes:
   templates/variants/fastapi/cors_routes.py.j2: sha256:a56732debc0534668672252cd286af8aa17c6c8a57878adc92848d5d433f3e59
   templates/variants/nestjs/cors.configuration.ts.j2: sha256:11455255e7ed4c80d08bbef20bc0e4f97b940d2ef51856d5f52fd1a28239a970
   templates/variants/nestjs/cors.controller.ts.j2: sha256:baf6245eeb02960f3ba123ca2ba7420f3243d43a2e35827eb10df26de325669e
-  templates/variants/nestjs/cors.health.ts.j2: sha256:b257fa3158b7fa88d181d3f2719659feb110e203a096a656f925857ba40e9a31
+  templates/variants/nestjs/cors.health.ts.j2: sha256:4ce669d0a61ea2d347b518f03be4e9053307ca1bc317a380e8466787f5d84aac
   templates/variants/nestjs/cors.module.ts.j2: sha256:d24d44b47d7ef4061d095344aeaf5b8a775d2724bac999c7cc4e2506ac52979e
   templates/variants/nestjs/cors.routes.ts.j2: sha256:033897c41b085ccb9fdf4aee8d82fd7c9da57574702e567eadc8aac7725c8f36
   templates/variants/nestjs/cors.service.ts.j2: sha256:57dd4234955c0fac0eefb6ec5fa60c445271b4aa2220b27ea8c7ad7b1d1aaade

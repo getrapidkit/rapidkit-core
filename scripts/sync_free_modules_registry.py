@@ -232,7 +232,7 @@ def build_registry() -> dict[str, Any]:
             "last_updated": "2026-05-31",
             "maintainer": "RapidKit Team",
             "repository": "https://github.com/rapidkitlabs/rapidkit-core",
-            "documentation": "https://docs.rapidkit.top",
+            "documentation": "https://getrapidkit.com",
             "source_of_truth": "src/modules/free/**/module.yaml",
             "compatibility": {
                 "python_versions": ["3.9", "3.10", "3.11", "3.12"],

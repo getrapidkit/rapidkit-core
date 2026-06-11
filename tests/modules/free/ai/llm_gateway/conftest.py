@@ -43,8 +43,13 @@ def rendered_llm_gateway(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> dic
     vendor_root = tmp_path / ".rapidkit" / "vendor"
     monkeypatch.setenv("RAPIDKIT_VENDOR_ROOT", str(vendor_root))
 
-    runtime_path = tmp_path / "src" / "ai" / "llm_gateway.py"
-    vendor_path = vendor_root / config["name"] / config["version"] / "src" / "ai" / "llm_gateway.py"
+    runtime_path = tmp_path / "src/modules/free/ai/llm_gateway/llm_gateway.py"
+    vendor_path = (
+        vendor_root
+        / config["name"]
+        / config["version"]
+        / "src/modules/free/ai/llm_gateway/llm_gateway.py"
+    )
 
     return {
         "root": tmp_path,

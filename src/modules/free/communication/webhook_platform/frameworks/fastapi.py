@@ -39,8 +39,8 @@ class FastAPIPlugin(FrameworkPlugin):
 
     def get_output_paths(self) -> Dict[str, str]:
         return {
-            "runtime": "src/communication/webhook_platform.py",
-            "router": "src/routers/communication/webhook_platform.py",
+            "runtime": "src/modules/free/communication/webhook_platform/webhook_platform.py",
+            "router": "src/modules/free/communication/webhook_platform/routers/communication/webhook_platform.py",
             "health": "src/health/communication/webhook_platform.py",
             "integration": "tests/modules/free/integration/communication/webhook_platform/test_webhook_platform_integration.py",
             "e2e": "tests/modules/e2e/free/communication/webhook_platform/test_webhook_platform_e2e.py",
@@ -67,7 +67,16 @@ class FastAPIPlugin(FrameworkPlugin):
         return ["pytest-asyncio>=0.23.0", "httpx>=0.27.0"]
 
     def pre_generation_hook(self, output_dir: Path) -> None:
-        (output_dir / "src" / "routers").mkdir(parents=True, exist_ok=True)
+        (
+            output_dir
+            / "src"
+            / "modules"
+            / "free"
+            / "communication"
+            / "webhook_platform"
+            / "routers"
+            / "communication"
+        ).mkdir(parents=True, exist_ok=True)
         (output_dir / "src" / "health").mkdir(parents=True, exist_ok=True)
         spec = build_standard_health_spec(MODULE_ROOT)
         with suppress(RuntimeError, OSError):

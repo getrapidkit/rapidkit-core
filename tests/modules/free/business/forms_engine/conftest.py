@@ -41,8 +41,11 @@ def rendered_forms_engine(tmp_path: Path) -> dict[str, object]:
         / "vendor"
         / config["name"]
         / config["version"]
-        / "src"
-        / "business"
+        / "src/modules/free/business/forms_engine"
         / "forms_engine.py"
     )
-    return {"root": tmp_path, "vendor": _load_module("generated_forms_engine_vendor", vendor_path)}
+    return {
+        "config": config,
+        "root": tmp_path,
+        "vendor": _load_module("generated_forms_engine_vendor", vendor_path),
+    }

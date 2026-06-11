@@ -29,8 +29,7 @@ def test_free_ai_prompt_ops_generated_vendor_smoke(tmp_path: Path) -> None:
         / "vendor"
         / config["name"]
         / config["version"]
-        / "src"
-        / "ai"
+        / "src/modules/free/ai/prompt_ops"
         / "prompt_ops.py"
     )
     vendor = _load_module("generated_prompt_ops_integration_vendor", vendor_path)

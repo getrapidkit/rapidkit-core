@@ -45,12 +45,12 @@ def rendered_prompt_ops(tmp_path: Path) -> dict[str, object]:
         / "vendor"
         / config["name"]
         / config["version"]
-        / "src"
-        / "ai"
+        / "src/modules/free/ai/prompt_ops"
         / "prompt_ops.py"
     )
 
     return {
+        "config": config,
         "root": tmp_path,
         "vendor": _load_module("generated_prompt_ops_vendor", vendor_path),
     }

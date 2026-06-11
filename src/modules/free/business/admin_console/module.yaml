@@ -1,7 +1,7 @@
 name: admin_console
 display_name: "Admin Console"
 description: "Reusable admin console foundation with action registry, permission checks, audit context, and operational summaries"
-version: 0.1.3
+version: 0.1.7
 access: free
 status: stable
 tier: free
@@ -28,9 +28,9 @@ generation:
     root: .rapidkit/vendor
     files:
       - template: templates/base/admin_console.py.j2
-        relative: src/business/admin_console.py
+        relative: src/modules/free/business/admin_console/admin_console.py
       - template: templates/base/admin_console_types.py.j2
-        relative: src/business/admin_console_types.py
+        relative: src/modules/free/business/admin_console/admin_console_types.py
       - template: templates/base/admin_console_health.py.j2
         relative: src/health/business/admin_console.py
       - template: templates/vendor/nestjs/configuration.js.j2
@@ -43,9 +43,9 @@ generation:
         module_class_name: AdminConsole
       files:
         - template: templates/variants/fastapi/admin_console.py.j2
-          output: src/business/admin_console.py
+          output: src/modules/free/business/admin_console/admin_console.py
         - template: templates/variants/fastapi/admin_console_routes.py.j2
-          output: src/routers/business/admin_console.py
+          output: src/modules/free/business/admin_console/routers/business/admin_console.py
         - template: templates/variants/fastapi/admin_console_health.py.j2
           output: src/health/business/admin_console.py
         - template: templates/tests/integration/test_admin_console_integration.j2
@@ -66,19 +66,19 @@ generation:
         module_kebab: admin-console
       files:
         - template: templates/variants/nestjs/admin_console.service.ts.j2
-          output: src/admin-console/admin_console.service.ts
+          output: src/modules/free/business/admin_console/admin_console.service.ts
         - template: templates/variants/nestjs/admin_console.controller.ts.j2
-          output: src/admin-console/admin_console.controller.ts
+          output: src/modules/free/business/admin_console/admin_console.controller.ts
         - template: templates/variants/nestjs/admin_console.module.ts.j2
-          output: src/admin-console/admin_console.module.ts
+          output: src/modules/free/business/admin_console/admin_console.module.ts
         - template: templates/variants/nestjs/admin_console.health.ts.j2
-          output: src/admin-console/admin_console.health.ts
+          output: src/health/admin_console.health.ts
         - template: templates/variants/nestjs/admin_console.validation.ts.j2
-          output: src/admin-console/admin_console.validation.ts
+          output: src/modules/free/business/admin_console/admin_console.validation.ts
         - template: templates/variants/nestjs/admin_console.index.ts.j2
-          output: src/admin-console/index.ts
+          output: src/modules/free/business/admin_console/index.ts
         - template: templates/variants/nestjs/admin_console.configuration.ts.j2
-          output: src/admin-console/configuration.ts
+          output: src/modules/free/business/admin_console/configuration.ts
         - template: templates/variants/nestjs/tests/admin_console.e2e-spec.ts
           output: tests/modules/e2e/business/admin_console/admin_console.e2e-spec.ts
 
@@ -129,10 +129,10 @@ documentation:
 support:
   issues: https://github.com/rapidkitlabs/rapidkit-core/issues
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-  documentation: https://docs.rapidkit.top/modules/admin_console
+  documentation: https://getrapidkit.com/modules/admin_console
 changelog:
-  - version: "0.1.3"
-    date: "2026-06-02"
+  - version: "0.1.7"
+    date: "2026-06-09"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

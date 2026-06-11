@@ -1,7 +1,7 @@
 name: usage_billing
 display_name: Usage Billing
 description: Usage metering, quota enforcement, plan limits, and overage scaffolding for SaaS products
-version: 0.1.6
+version: 0.1.10
 access: free
 status: stable
 tier: free
@@ -25,9 +25,9 @@ generation:
     root: .rapidkit/vendor
     files:
     - template: templates/base/usage_billing.py.j2
-      relative: src/billing/usage_billing.py
+      relative: src/modules/free/billing/usage_billing/usage_billing.py
     - template: templates/base/usage_billing_types.py.j2
-      relative: src/billing/usage_billing_types.py
+      relative: src/modules/free/billing/usage_billing/usage_billing_types.py
     - template: templates/base/usage_billing_health.py.j2
       relative: src/health/billing/usage_billing.py
     - template: templates/vendor/nestjs/configuration.js.j2
@@ -40,9 +40,9 @@ generation:
         module_class_name: UsageBilling
       files:
       - template: templates/variants/fastapi/usage_billing.py.j2
-        output: src/billing/usage_billing.py
+        output: src/modules/free/billing/usage_billing/usage_billing.py
       - template: templates/variants/fastapi/usage_billing_routes.py.j2
-        output: src/routers/billing/usage_billing.py
+        output: src/modules/free/billing/usage_billing/routers/billing/usage_billing.py
       - template: templates/variants/fastapi/usage_billing_health.py.j2
         output: src/health/billing/usage_billing.py
       - template: templates/tests/integration/test_usage_billing_integration.j2
@@ -60,19 +60,19 @@ generation:
         module_kebab: usage-billing
       files:
       - template: templates/variants/nestjs/usage_billing.service.ts.j2
-        output: src/usage-billing/usage_billing.service.ts
+        output: src/modules/free/billing/usage_billing/usage_billing.service.ts
       - template: templates/variants/nestjs/usage_billing.controller.ts.j2
-        output: src/usage-billing/usage_billing.controller.ts
+        output: src/modules/free/billing/usage_billing/usage_billing.controller.ts
       - template: templates/variants/nestjs/usage_billing.module.ts.j2
-        output: src/usage-billing/usage_billing.module.ts
+        output: src/modules/free/billing/usage_billing/usage_billing.module.ts
       - template: templates/variants/nestjs/usage_billing.health.ts.j2
-        output: src/usage-billing/usage_billing.health.ts
+        output: src/health/usage_billing.health.ts
       - template: templates/variants/nestjs/usage_billing.validation.ts.j2
-        output: src/usage-billing/usage_billing.validation.ts
+        output: src/modules/free/billing/usage_billing/usage_billing.validation.ts
       - template: templates/variants/nestjs/usage_billing.index.ts.j2
-        output: src/usage-billing/index.ts
+        output: src/modules/free/billing/usage_billing/index.ts
       - template: templates/variants/nestjs/usage_billing.configuration.ts.j2
-        output: src/usage-billing/configuration.ts
+        output: src/modules/free/billing/usage_billing/configuration.ts
       - template: templates/variants/nestjs/tests/usage_billing.e2e-spec.ts
         output: tests/modules/e2e/billing/usage_billing/usage_billing.e2e-spec.ts
     nestjs.standard: *nestjs_variant
@@ -122,10 +122,10 @@ documentation:
 support:
   issues: https://github.com/rapidkitlabs/rapidkit-core/issues
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-  documentation: https://docs.rapidkit.top/modules/usage_billing
+  documentation: https://getrapidkit.com/modules/usage_billing
 changelog:
-  - version: "0.1.6"
-    date: "2026-06-02"
+  - version: "0.1.10"
+    date: "2026-06-09"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

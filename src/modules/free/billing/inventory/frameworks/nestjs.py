@@ -70,7 +70,7 @@ class NestJSPlugin(FrameworkPlugin):
     def get_documentation_urls(self) -> Dict[str, str]:
         return {
             "nestjs": "https://docs.nestjs.com/",
-            "rapidkit": "https://docs.rapidkit.top/modules/billing/inventory",
+            "rapidkit": "https://getrapidkit.com/modules/billing/inventory",
         }
 
     def get_example_configurations(self) -> Dict[str, Any]:

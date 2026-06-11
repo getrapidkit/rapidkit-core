@@ -3,7 +3,7 @@ display_name: Observability Core
 description:
     Cohesive metrics, tracing, and structured logging foundation for RapidKit
     services.
-version: 0.1.13
+version: 0.1.14
 access: free
 status: stable
 tier: free
@@ -136,10 +136,10 @@ documentation:
 support:
     issues: https://github.com/rapidkitlabs/rapidkit-core/issues
     discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-    documentation: https://docs.rapidkit.top/modules/observability/observability_core
+    documentation: https://getrapidkit.com/modules/observability/observability_core
 changelog:
-  - version: "0.1.13"
-    date: "2026-06-07"
+  - version: "0.1.14"
+    date: "2026-06-08"
     notes: "See docs/changelog.md"
 validation:
     pre_install:

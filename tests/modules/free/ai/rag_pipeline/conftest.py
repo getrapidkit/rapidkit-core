@@ -45,12 +45,12 @@ def rendered_rag_pipeline(tmp_path: Path) -> dict[str, object]:
         / "vendor"
         / config["name"]
         / config["version"]
-        / "src"
-        / "ai"
+        / "src/modules/free/ai/rag_pipeline"
         / "rag_pipeline.py"
     )
 
     return {
+        "config": config,
         "root": tmp_path,
         "vendor": _load_module("generated_rag_pipeline_vendor", vendor_path),
     }

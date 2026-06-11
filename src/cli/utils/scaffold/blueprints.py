@@ -405,7 +405,7 @@ BLUEPRINTS: Dict[str, ModuleBlueprint] = {
             "node": ">=18",
             "frameworks": ["fastapi", "nestjs"],
             "os": ["linux", "darwin", "windows"],
-            "migration_guide": "https://docs.rapidkit.top/modules/settings/migration",
+            "migration_guide": "https://getrapidkit.com/modules/settings/migration",
         },
         testing={
             "coverage_min": 80,

@@ -1,0 +1,103 @@
+{
+  "excluded_commits": [
+    {
+      "reason": "protected workflow-only commit",
+      "sha": "968ac3613a89e9c9d94cde9789c989e56f21979d",
+      "subject": "fix: validate staging promote token before tagging"
+    },
+    {
+      "reason": "protected workflow-only commit",
+      "sha": "54d03752f2a08fab756099f91ff68dee3e56cf16",
+      "subject": "fix(ci): pass SOURCE_REF env to curated promote step"
+    },
+    {
+      "reason": "protected workflow-only commit",
+      "sha": "8b7c59fa2477b9dc56900116d806b9c22b3ea247",
+      "subject": "feat(ci): optional publish input for RC tag; pass SOURCE_REF"
+    },
+    {
+      "reason": "protected workflow-only commit",
+      "sha": "a9f3b6e7dfb6ee744e4345aa2a5fd41509e6ed20",
+      "subject": "fix(release): exclude protected paths at patch generation"
+    },
+    {
+      "reason": "protected workflow-only commit",
+      "sha": "7097d0e01290f438e98f23c84168af5da5bc63f1",
+      "subject": "fix(ci): always use promote tooling from main when promoting a tag"
+    },
+    {
+      "reason": "protected workflow-only commit",
+      "sha": "0035d1c252482c6058e3a09e8aeb6729011a3669",
+      "subject": "fix(release): skip engine-only modified/deleted paths in curated promote"
+    },
+    {
+      "reason": "protected workflow-only commit",
+      "sha": "3c00d4e007b4fdd9b0a6ae9be4a758e71b068d28",
+      "subject": "fix(release): exclude tier-owned files from promote"
+    },
+    {
+      "reason": "protected workflow-only commit",
+      "sha": "6b6e6840642ba76787fd23a0629cb9d1c7436565",
+      "subject": "fix(release): force-add promote manifest past target gitignore"
+    },
+    {
+      "reason": "empty after protected-path restore",
+      "sha": "fe17f029b51f4b1b97d41b3afcb6e021ee32b9e0",
+      "subject": "feat(release): redact engine repo and auto-snapshot changelog"
+    }
+  ],
+  "included_commits": [
+    {
+      "sha": "1e1613e1c7f29e4ad3c28965afa21106186746cf",
+      "subject": "fix: enforce module-owned generated paths"
+    },
+    {
+      "sha": "0c4b3ac52ab3c1322aacc9ead1de261d5188e7e3",
+      "subject": "fix: align module test artifacts with owned paths"
+    },
+    {
+      "sha": "f0db77ae0186a62c9431ec0f74b7be7a4e20173c",
+      "subject": "fix: curate staging promotion into public core"
+    },
+    {
+      "sha": "8245c11601b35d5274f76f3711a65441fa150b4d",
+      "subject": "chore: align module docs domain"
+    },
+    {
+      "sha": "bf5b2aad605f380074a22b58353cb4ea4b228531",
+      "subject": "chore: sync module metadata after docs domain update"
+    },
+    {
+      "sha": "e18b04679f64a3bff79148de76b2642b91493cca",
+      "subject": "chore: investigate free/ai/rag_pipeline stabilization (logs + tests)"
+    },
+    {
+      "sha": "23ecd477c4062128de6878e4d5fa8c12924b3622",
+      "subject": "chore: investigate free/ai/rag_pipeline stabilization (logs + tests)"
+    },
+    {
+      "sha": "d8ec650301393c4c04c0c2cae90d94c3a5ed07c5",
+      "subject": "chore: add generator contract tests and module metadata updates"
+    },
+    {
+      "sha": "16a23751d439bcdaef2409550185b4402d3292d0",
+      "subject": "chore: add generator contract tests and module metadata updates"
+    },
+    {
+      "sha": "bbe759dc17565ab39fd50be233a3564c5e639bc0",
+      "subject": "fix(release): persist promote manifest and harden stable tag"
+    },
+    {
+      "sha": "56e6b195fdf7644e982749e9127891d0b07757eb",
+      "subject": "fix(release): anchor promote chain to staging tags and source.json"
+    }
+  ],
+  "promote_branch": "promote/v0.5.3",
+  "promoted_at": "2026-06-10T23:35:59.946914Z",
+  "schema_version": 1,
+  "source_base_sha": "2529eeabd3aeff807c2148cc7d60f9f2d94f206c",
+  "source_head_sha": "fe17f029b51f4b1b97d41b3afcb6e021ee32b9e0",
+  "target_branch": "main",
+  "target_repo": "https://github.com/rapidkitlabs/rapidkit-core.git",
+  "version": "0.5.3"
+}

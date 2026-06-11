@@ -18,6 +18,10 @@ def test_workflow_engine_renders_fastapi_and_nestjs_variants(tmp_path: Path) -> 
     )
     generator.generate_variant_files("nestjs", nestjs_dir, renderer, context)
 
-    assert (fastapi_dir / "src" / "tasks" / "workflow_engine.py").exists()
-    assert (fastapi_dir / "src" / "routers" / "tasks" / "workflow_engine.py").exists()
-    assert (nestjs_dir / "src" / "workflow-engine" / "workflow_engine.service.ts").exists()
+    assert (fastapi_dir / "src/modules/free/tasks/workflow_engine/workflow_engine.py").exists()
+    assert (
+        fastapi_dir / "src/modules/free/tasks/workflow_engine/routers/tasks/workflow_engine.py"
+    ).exists()
+    assert (
+        nestjs_dir / "src/modules/free/tasks/workflow_engine/workflow_engine.service.ts"
+    ).exists()

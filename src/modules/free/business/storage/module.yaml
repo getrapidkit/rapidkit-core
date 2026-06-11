@@ -1,5 +1,5 @@
 name: storage
-version: 0.1.10
+version: 0.1.13
 access: free
 status: stable
 tier: free
@@ -75,7 +75,7 @@ generation:
       - template: templates/variants/nestjs/storage.module.ts.j2
         output: src/modules/free/business/storage/storage.module.ts
       - template: templates/variants/nestjs/storage.health.ts.j2
-        output: src/modules/free/business/storage/storage.health.ts
+        output: src/health/storage.health.ts
       - template: templates/variants/nestjs/storage.routes.ts.j2
         output: src/modules/free/business/storage/storage.routes.ts
       - template: templates/variants/nestjs/storage.configuration.ts.j2
@@ -132,10 +132,10 @@ documentation:
 support:
   issues: https://github.com/rapidkitlabs/rapidkit-core/issues
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-  documentation: https://docs.rapidkit.top/modules/business/storage
+  documentation: https://getrapidkit.com/modules/business/storage
 changelog:
-  - version: "0.1.10"
-    date: "2026-06-07"
+  - version: "0.1.13"
+    date: "2026-06-09"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

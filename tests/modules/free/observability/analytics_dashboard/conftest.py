@@ -45,11 +45,11 @@ def rendered_analytics_dashboard(tmp_path: Path) -> dict[str, object]:
         / "vendor"
         / config["name"]
         / config["version"]
-        / "src"
-        / "observability"
+        / "src/modules/free/observability/analytics_dashboard"
         / "analytics_dashboard.py"
     )
     return {
+        "config": config,
         "root": tmp_path,
         "vendor": _load_module("generated_analytics_dashboard_vendor", vendor_path),
     }

@@ -1,6 +1,6 @@
 name: oauth
 description: OAuth flows and adapters for RapidKit authentication
-version: 0.1.13
+version: 0.1.16
 access: free
 status: stable
 category: auth
@@ -72,7 +72,7 @@ generation:
       - template: templates/variants/nestjs/validation.ts.j2
         output: src/modules/free/auth/oauth/config/oauth.validation.ts
       - template: templates/variants/nestjs/oauth.health.ts.j2
-        output: src/modules/free/auth/oauth/oauth.health.ts
+        output: src/health/oauth.health.ts
       - template: templates/variants/nestjs/oauth.routes.ts.j2
         output: src/modules/free/auth/oauth/oauth.routes.ts
       - template: templates/variants/nestjs/oauth.spec.ts.j2
@@ -117,10 +117,10 @@ documentation:
 support:
   issues: https://github.com/rapidkitlabs/rapidkit-core/issues
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-  documentation: https://docs.rapidkit.top/modules/oauth
+  documentation: https://getrapidkit.com/modules/oauth
 changelog:
-  - version: "0.1.13"
-    date: "2026-06-07"
+  - version: "0.1.16"
+    date: "2026-06-09"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

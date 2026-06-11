@@ -25,9 +25,9 @@ def test_support_center_integration_runtime_smoke(tmp_path: Path) -> None:
         tmp_path
         / ".rapidkit"
         / "vendor"
-        / "support_center"
-        / "0.1.3"
-        / "src/business/support_center.py"
+        / config["name"]
+        / config["version"]
+        / "src/modules/free/business/support_center/support_center.py"
     )
     center = vendor.SupportCenter()
     ticket = center.open_ticket(

@@ -56,7 +56,7 @@ class NestJSPlugin(FrameworkPlugin):
             "controller": "src/modules/free/communication/email/email.controller.ts",
             "module": "src/modules/free/communication/email/email.module.ts",
             "configuration": "src/modules/free/communication/email/email.configuration.ts",
-            "health": "src/modules/free/communication/email/email.health.ts",
+            "health": "src/health/email.health.ts",
             "integration_test": "tests/modules/integration/communication/email.integration.spec.ts",
         }
 

@@ -14,7 +14,7 @@ def test_router_builds_without_crashing() -> None:
     fastapi = pytest.importorskip("fastapi")
     _ = fastapi
 
-    router_rel = "src/routers/ai/ai_guardrails.py"
+    router_rel = "src/modules/free/ai/ai_guardrails/routers/ai/ai_guardrails.py"
     router_mod_path = router_rel.replace("/", ".").removesuffix(".py")
     router_module = importlib.import_module(router_mod_path)
 

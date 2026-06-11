@@ -37,13 +37,13 @@ class NestJSPlugin(FrameworkPlugin):
 
     def get_output_paths(self) -> Dict[str, str]:
         return {
-            "service": "src/llm-gateway/llm_gateway.service.ts",
-            "controller": "src/llm-gateway/llm_gateway.controller.ts",
-            "module": "src/llm-gateway/llm_gateway.module.ts",
-            "health": "src/llm-gateway/llm_gateway.health.ts",
-            "validation": "src/llm-gateway/llm_gateway.validation.ts",
-            "index": "src/llm-gateway/index.ts",
-            "configuration": "src/llm-gateway/configuration.ts",
+            "service": "src/modules/free/ai/llm_gateway/llm_gateway.service.ts",
+            "controller": "src/modules/free/ai/llm_gateway/llm_gateway.controller.ts",
+            "module": "src/modules/free/ai/llm_gateway/llm_gateway.module.ts",
+            "health": "src/health/llm_gateway.health.ts",
+            "validation": "src/modules/free/ai/llm_gateway/llm_gateway.validation.ts",
+            "index": "src/modules/free/ai/llm_gateway/index.ts",
+            "configuration": "src/modules/free/ai/llm_gateway/configuration.ts",
             "e2e": "tests/modules/e2e/ai/llm_gateway/llm_gateway.e2e-spec.ts",
         }
 

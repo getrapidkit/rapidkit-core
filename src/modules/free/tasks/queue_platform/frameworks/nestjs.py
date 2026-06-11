@@ -37,13 +37,13 @@ class NestJSPlugin(FrameworkPlugin):
 
     def get_output_paths(self) -> Dict[str, str]:
         return {
-            "service": "src/queue-platform/queue_platform.service.ts",
-            "controller": "src/queue-platform/queue_platform.controller.ts",
-            "module": "src/queue-platform/queue_platform.module.ts",
-            "health": "src/queue-platform/queue_platform.health.ts",
-            "validation": "src/queue-platform/queue_platform.validation.ts",
-            "index": "src/queue-platform/index.ts",
-            "configuration": "src/queue-platform/configuration.ts",
+            "service": "src/modules/free/tasks/queue_platform/queue_platform.service.ts",
+            "controller": "src/modules/free/tasks/queue_platform/queue_platform.controller.ts",
+            "module": "src/modules/free/tasks/queue_platform/queue_platform.module.ts",
+            "health": "src/health/queue_platform.health.ts",
+            "validation": "src/modules/free/tasks/queue_platform/queue_platform.validation.ts",
+            "index": "src/modules/free/tasks/queue_platform/index.ts",
+            "configuration": "src/modules/free/tasks/queue_platform/configuration.ts",
             "e2e": "tests/modules/e2e/tasks/queue_platform/queue_platform.e2e-spec.ts",
         }
 

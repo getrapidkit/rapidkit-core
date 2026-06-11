@@ -37,13 +37,13 @@ class NestJSPlugin(FrameworkPlugin):
 
     def get_output_paths(self) -> Dict[str, str]:
         return {
-            "service": "src/event-bus/event_bus.service.ts",
-            "controller": "src/event-bus/event_bus.controller.ts",
-            "module": "src/event-bus/event_bus.module.ts",
-            "health": "src/event-bus/event_bus.health.ts",
-            "validation": "src/event-bus/event_bus.validation.ts",
-            "index": "src/event-bus/index.ts",
-            "configuration": "src/event-bus/configuration.ts",
+            "service": "src/modules/free/tasks/event_bus/event_bus.service.ts",
+            "controller": "src/modules/free/tasks/event_bus/event_bus.controller.ts",
+            "module": "src/modules/free/tasks/event_bus/event_bus.module.ts",
+            "health": "src/health/event_bus.health.ts",
+            "validation": "src/modules/free/tasks/event_bus/event_bus.validation.ts",
+            "index": "src/modules/free/tasks/event_bus/index.ts",
+            "configuration": "src/modules/free/tasks/event_bus/configuration.ts",
             "e2e": "tests/modules/e2e/tasks/event_bus/event_bus.e2e-spec.ts",
         }
 

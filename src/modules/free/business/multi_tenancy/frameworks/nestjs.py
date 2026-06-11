@@ -37,13 +37,13 @@ class NestJSPlugin(FrameworkPlugin):
 
     def get_output_paths(self) -> Dict[str, str]:
         return {
-            "service": "src/multi-tenancy/multi_tenancy.service.ts",
-            "controller": "src/multi-tenancy/multi_tenancy.controller.ts",
-            "module": "src/multi-tenancy/multi_tenancy.module.ts",
-            "health": "src/multi-tenancy/multi_tenancy.health.ts",
-            "validation": "src/multi-tenancy/multi_tenancy.validation.ts",
-            "index": "src/multi-tenancy/index.ts",
-            "configuration": "src/multi-tenancy/configuration.ts",
+            "service": "src/modules/free/business/multi_tenancy/multi_tenancy.service.ts",
+            "controller": "src/modules/free/business/multi_tenancy/multi_tenancy.controller.ts",
+            "module": "src/modules/free/business/multi_tenancy/multi_tenancy.module.ts",
+            "health": "src/health/multi_tenancy.health.ts",
+            "validation": "src/modules/free/business/multi_tenancy/multi_tenancy.validation.ts",
+            "index": "src/modules/free/business/multi_tenancy/index.ts",
+            "configuration": "src/modules/free/business/multi_tenancy/configuration.ts",
             "e2e": "tests/modules/e2e/business/multi_tenancy/multi_tenancy.e2e-spec.ts",
         }
 

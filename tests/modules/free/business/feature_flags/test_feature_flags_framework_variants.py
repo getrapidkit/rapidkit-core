@@ -18,6 +18,10 @@ def test_feature_flags_renders_fastapi_and_nestjs_variants(tmp_path: Path) -> No
     )
     generator.generate_variant_files("nestjs", nestjs_dir, renderer, context)
 
-    assert (fastapi_dir / "src" / "business" / "feature_flags.py").exists()
-    assert (fastapi_dir / "src" / "routers" / "business" / "feature_flags.py").exists()
-    assert (nestjs_dir / "src" / "feature-flags" / "feature_flags.service.ts").exists()
+    assert (fastapi_dir / "src/modules/free/business/feature_flags/feature_flags.py").exists()
+    assert (
+        fastapi_dir / "src/modules/free/business/feature_flags/routers/business/feature_flags.py"
+    ).exists()
+    assert (
+        nestjs_dir / "src/modules/free/business/feature_flags/feature_flags.service.ts"
+    ).exists()

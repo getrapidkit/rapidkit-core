@@ -31,7 +31,7 @@ def test_free_business_connector_hub_generates_and_runs_connector_operation(
         / ".rapidkit/vendor"
         / config["name"]
         / config["version"]
-        / "src/business/connector_hub.py"
+        / "src/modules/free/business/connector_hub/connector_hub.py"
     )
     vendor = _load_module("integration_connector_hub_vendor", vendor_path)
 

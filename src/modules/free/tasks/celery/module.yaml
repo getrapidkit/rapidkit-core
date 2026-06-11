@@ -1,7 +1,7 @@
 name: celery
 display_name: Celery
 description: Production-ready Celery task orchestration for asynchronous workloads
-version: 0.1.12
+version: 0.1.13
 tier: free
 access: free
 status: stable
@@ -22,7 +22,7 @@ metadata:
         Production-ready task queue integration powered by Celery for Python
         and NestJS workloads.
     maintainer: RapidKit Core Team
-    support_contact: platform@rapidkit.top
+    support_contact: platform@getrapidkit.com
 config_sources:
     - config/base.yaml
     - config/snippets.yaml
@@ -130,10 +130,10 @@ documentation:
 support:
     issues: https://github.com/rapidkitlabs/rapidkit-core/issues
     discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-    documentation: https://docs.rapidkit.top/modules/celery
+    documentation: https://getrapidkit.com/modules/celery
 changelog:
-  - version: "0.1.12"
-    date: "2026-06-07"
+  - version: "0.1.13"
+    date: "2026-06-08"
     notes: "See docs/changelog.md"
 validation:
     pre_install:

@@ -37,13 +37,13 @@ class NestJSPlugin(FrameworkPlugin):
 
     def get_output_paths(self) -> Dict[str, str]:
         return {
-            "service": "src/prompt-ops/prompt_ops.service.ts",
-            "controller": "src/prompt-ops/prompt_ops.controller.ts",
-            "module": "src/prompt-ops/prompt_ops.module.ts",
-            "health": "src/prompt-ops/prompt_ops.health.ts",
-            "validation": "src/prompt-ops/prompt_ops.validation.ts",
-            "index": "src/prompt-ops/index.ts",
-            "configuration": "src/prompt-ops/configuration.ts",
+            "service": "src/modules/free/ai/prompt_ops/prompt_ops.service.ts",
+            "controller": "src/modules/free/ai/prompt_ops/prompt_ops.controller.ts",
+            "module": "src/modules/free/ai/prompt_ops/prompt_ops.module.ts",
+            "health": "src/health/prompt_ops.health.ts",
+            "validation": "src/modules/free/ai/prompt_ops/prompt_ops.validation.ts",
+            "index": "src/modules/free/ai/prompt_ops/index.ts",
+            "configuration": "src/modules/free/ai/prompt_ops/configuration.ts",
             "e2e": "tests/modules/e2e/ai/prompt_ops/prompt_ops.e2e-spec.ts",
         }
 

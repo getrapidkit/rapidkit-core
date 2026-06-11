@@ -39,8 +39,8 @@ class FastAPIPlugin(FrameworkPlugin):
 
     def get_output_paths(self) -> Dict[str, str]:
         return {
-            "runtime": "src/business/approval_engine.py",
-            "router": "src/routers/business/approval_engine.py",
+            "runtime": "src/modules/free/business/approval_engine/approval_engine.py",
+            "router": "src/modules/free/business/approval_engine/routers/business/approval_engine.py",
             "health": "src/health/business/approval_engine.py",
             "integration": "tests/modules/free/integration/business/approval_engine/test_approval_engine_integration.py",
             "e2e": "tests/modules/e2e/free/business/approval_engine/test_approval_engine_e2e.py",
@@ -67,7 +67,16 @@ class FastAPIPlugin(FrameworkPlugin):
         return ["pytest-asyncio>=0.23.0", "httpx>=0.27.0"]
 
     def pre_generation_hook(self, output_dir: Path) -> None:
-        (output_dir / "src" / "routers").mkdir(parents=True, exist_ok=True)
+        (
+            output_dir
+            / "src"
+            / "modules"
+            / "free"
+            / "business"
+            / "approval_engine"
+            / "routers"
+            / "business"
+        ).mkdir(parents=True, exist_ok=True)
         (output_dir / "src" / "health").mkdir(parents=True, exist_ok=True)
         spec = build_standard_health_spec(MODULE_ROOT)
         with suppress(RuntimeError, OSError):

@@ -25,7 +25,11 @@ def test_free_ai_llm_gateway_generates_and_completes_offline(tmp_path: Path) -> 
 
     generator.generate_vendor_files(config, tmp_path, renderer, context)
     vendor_path = (
-        tmp_path / ".rapidkit/vendor" / config["name"] / config["version"] / "src/ai/llm_gateway.py"
+        tmp_path
+        / ".rapidkit/vendor"
+        / config["name"]
+        / config["version"]
+        / "src/modules/free/ai/llm_gateway/llm_gateway.py"
     )
     vendor = _load_module("integration_llm_gateway_vendor", vendor_path)
 

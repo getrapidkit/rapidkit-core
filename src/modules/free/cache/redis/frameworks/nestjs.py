@@ -92,7 +92,7 @@ class NestJSPlugin(FrameworkPlugin):
             "service": "src/modules/free/cache/redis/redis.service.ts",
             "module": "src/modules/free/cache/redis/redis.module.ts",
             "controller": "src/modules/free/cache/redis/redis.controller.ts",
-            "health": "src/modules/free/cache/redis/redis.health.ts",
+            "health": "src/health/redis.health.ts",
             "index": "src/modules/free/cache/redis/index.ts",
             "validation": "src/modules/free/cache/redis/redis.validation.ts",
             "integration_test": "tests/modules/integration/cache/redis/redis.integration.spec.ts",

@@ -1,6 +1,9 @@
 import { Controller, Get, HttpCode, HttpStatus } from "@nestjs/common";
 
-import { {{ module_class_name }}Service, CorsHealthPayload } from "./cors.service";
+import {
+  {{ module_class_name }}Service,
+  CorsHealthPayload,
+} from "../modules/free/security/cors/cors.service";
 
 @Controller("api/health/module")
 export class {{ module_class_name }}HealthController {

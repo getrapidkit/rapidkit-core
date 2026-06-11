@@ -29,7 +29,7 @@ def test_free_business_multi_tenancy_generates_and_enforces_tenant_roles(tmp_pat
         / ".rapidkit/vendor"
         / config["name"]
         / config["version"]
-        / "src/business/multi_tenancy.py"
+        / "src/modules/free/business/multi_tenancy/multi_tenancy.py"
     )
     vendor = _load_module("integration_multi_tenancy_vendor", vendor_path)
 

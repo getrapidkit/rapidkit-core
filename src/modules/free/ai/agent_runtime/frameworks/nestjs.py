@@ -37,13 +37,13 @@ class NestJSPlugin(FrameworkPlugin):
 
     def get_output_paths(self) -> Dict[str, str]:
         return {
-            "service": "src/agent-runtime/agent_runtime.service.ts",
-            "controller": "src/agent-runtime/agent_runtime.controller.ts",
-            "module": "src/agent-runtime/agent_runtime.module.ts",
-            "health": "src/agent-runtime/agent_runtime.health.ts",
-            "validation": "src/agent-runtime/agent_runtime.validation.ts",
-            "index": "src/agent-runtime/index.ts",
-            "configuration": "src/agent-runtime/configuration.ts",
+            "service": "src/modules/free/ai/agent_runtime/agent_runtime.service.ts",
+            "controller": "src/modules/free/ai/agent_runtime/agent_runtime.controller.ts",
+            "module": "src/modules/free/ai/agent_runtime/agent_runtime.module.ts",
+            "health": "src/health/agent_runtime.health.ts",
+            "validation": "src/modules/free/ai/agent_runtime/agent_runtime.validation.ts",
+            "index": "src/modules/free/ai/agent_runtime/index.ts",
+            "configuration": "src/modules/free/ai/agent_runtime/configuration.ts",
             "e2e": "tests/modules/e2e/ai/agent_runtime/agent_runtime.e2e-spec.ts",
         }
 

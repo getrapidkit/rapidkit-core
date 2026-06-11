@@ -25,9 +25,9 @@ def test_org_admin_console_integration_runtime_smoke(tmp_path: Path) -> None:
         tmp_path
         / ".rapidkit"
         / "vendor"
-        / "org_admin_console"
-        / "0.1.3"
-        / "src/business/org_admin_console.py"
+        / config["name"]
+        / config["version"]
+        / "src/modules/free/business/org_admin_console/org_admin_console.py"
     )
     console = vendor.OrgAdminConsole()
     org = console.create_org(name="Acme", slug="acme", owner_user_id="owner")

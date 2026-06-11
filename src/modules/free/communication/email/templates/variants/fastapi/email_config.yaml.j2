@@ -2,7 +2,7 @@
 email:
   enabled: {{ email_defaults.get('enabled', true) | tojson }}
   provider: {{ email_defaults.get('provider', 'smtp') | tojson }}
-  from_email: {{ email_defaults.get('from_email', 'noreply@rapidkit.top') | tojson }}
+  from_email: {{ email_defaults.get('from_email', 'noreply@getrapidkit.com') | tojson }}
   from_name: {{ email_defaults.get('from_name', 'RapidKit') | tojson }}
   reply_to: {{ email_defaults.get('reply_to') | tojson }}
   dry_run: {{ email_defaults.get('dry_run', false) | tojson }}

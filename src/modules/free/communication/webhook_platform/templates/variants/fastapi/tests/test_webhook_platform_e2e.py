@@ -14,7 +14,9 @@ def test_router_builds_without_crashing() -> None:
     fastapi = pytest.importorskip("fastapi")
     _ = fastapi
 
-    router_rel = "src/routers/communication/webhook_platform.py"
+    router_rel = (
+        "src/modules/free/communication/webhook_platform/routers/communication/webhook_platform.py"
+    )
     router_mod_path = router_rel.replace("/", ".").removesuffix(".py")
     router_module = importlib.import_module(router_mod_path)
 

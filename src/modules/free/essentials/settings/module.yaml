@@ -1,5 +1,5 @@
 name: settings
-version: 0.1.43
+version: 0.1.44
 access: free
 status: stable
 category: essentials
@@ -94,7 +94,7 @@ generation:
 compatibility:
   breaking: 2.0.0
   deprecated: 1.5.0
-  migration_guide: https://docs.rapidkit.top/modules/settings/migration
+  migration_guide: https://getrapidkit.com/modules/settings/migration
   python: '>=3.10,<4.0'
   frameworks:
   - fastapi
@@ -129,10 +129,10 @@ documentation:
 support:
   issues: https://github.com/rapidkitlabs/rapidkit-core/issues
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
-  documentation: https://docs.rapidkit.top/modules/settings
+  documentation: https://getrapidkit.com/modules/settings
 changelog:
-  - version: "0.1.43"
-    date: "2026-06-02"
+  - version: "0.1.44"
+    date: "2026-06-08"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

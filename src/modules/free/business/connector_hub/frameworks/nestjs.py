@@ -37,13 +37,13 @@ class NestJSPlugin(FrameworkPlugin):
 
     def get_output_paths(self) -> Dict[str, str]:
         return {
-            "service": "src/connector-hub/connector_hub.service.ts",
-            "controller": "src/connector-hub/connector_hub.controller.ts",
-            "module": "src/connector-hub/connector_hub.module.ts",
-            "health": "src/connector-hub/connector_hub.health.ts",
-            "validation": "src/connector-hub/connector_hub.validation.ts",
-            "index": "src/connector-hub/index.ts",
-            "configuration": "src/connector-hub/configuration.ts",
+            "service": "src/modules/free/business/connector_hub/connector_hub.service.ts",
+            "controller": "src/modules/free/business/connector_hub/connector_hub.controller.ts",
+            "module": "src/modules/free/business/connector_hub/connector_hub.module.ts",
+            "health": "src/health/connector_hub.health.ts",
+            "validation": "src/modules/free/business/connector_hub/connector_hub.validation.ts",
+            "index": "src/modules/free/business/connector_hub/index.ts",
+            "configuration": "src/modules/free/business/connector_hub/configuration.ts",
             "e2e": "tests/modules/e2e/business/connector_hub/connector_hub.e2e-spec.ts",
         }
 

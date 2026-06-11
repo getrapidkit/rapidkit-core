@@ -28,8 +28,7 @@ def test_media_pipeline_integration_audit_flow(tmp_path: Path) -> None:
         / "vendor"
         / config["name"]
         / config["version"]
-        / "src"
-        / "business"
+        / "src/modules/free/business/media_pipeline"
         / "media_pipeline.py",
     )
     pipeline = vendor.MediaPipeline()
