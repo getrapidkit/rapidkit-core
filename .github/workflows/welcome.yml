@@ -17,8 +17,8 @@ jobs:
       - name: First issue / PR welcome
         uses: actions/first-interaction@v3
         with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          issue-message: |
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          issue_message: |
             Hi @${{ github.actor }},
 
             Thanks for opening your first issue in RapidKit 🚀
@@ -28,7 +28,7 @@ jobs:
 
             Best regards,
             The RapidKit Team
-          pr-message: |
+          pr_message: |
             Hi @${{ github.actor }},
 
             Thank you for your first contribution to RapidKit 🎉
