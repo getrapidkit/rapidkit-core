@@ -6,7 +6,7 @@ helpers that ship with the module.
 
 ## Prerequisites
 
-- RapidKit CLI v1.11.0 or later
+- RapidKit Core CLI v1.11.0 or later
 - Python 3.10+ for FastAPI projects
 - Node.js 18+ for NestJS projects
 - Optional: Redis 6+ for distributed quota storage

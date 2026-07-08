@@ -1,96 +1,63 @@
 # Changelog
 
-<!-- auto:promote-changelog start -->
+## [Snapshot 0.5.5](https://github.com/rapidkitlabs/rapidkit-core/compare/v0.3.1...HEAD)
 
-## [Snapshot 0.5.4] - 2026-06-11
-
-> Auto-generated promote snapshot for this version.
-
-### Promoted source commits
-
-- feat(cli): add module identity util and harden module lifecycle commands (`83fedbfd4236`)
-
-## [Snapshot 0.5.3] - 2026-06-10
-
-> Auto-generated promote snapshot for this version.
-
-### Promoted source commits
-
-- fix: enforce module-owned generated paths (`1e1613e1c7f2`)
-- fix: align module test artifacts with owned paths (`0c4b3ac52ab3`)
-- fix: curate staging promotion into public core (`f0db77ae0186`)
-- chore: align module docs domain (`8245c11601b3`)
-- chore: sync module metadata after docs domain update (`bf5b2aad605f`)
-- chore: investigate free/ai/rag_pipeline stabilization (logs + tests) (`e18b04679f64`)
-- chore: investigate free/ai/rag_pipeline stabilization (logs + tests) (`23ecd477c406`)
-- chore: add generator contract tests and module metadata updates (`d8ec65030139`)
-- chore: add generator contract tests and module metadata updates (`16a23751d439`)
-- fix(release): persist promote manifest and harden stable tag (`bbe759dc1756`)
-- fix(release): anchor promote chain to staging tags and source.json (`56e6b195fdf7`)
-
-## [Snapshot 0.5.0]
-
-> Auto-generated promote snapshot for this version.
-> Includes both direct `main` updates and staging promote delta.
-
-### Main branch updates (already on `core/main`, absent in promote branch)
-
-#### Bug Fixes
-
-- **init:** improve init robustness and reduce lock-sync noise ([9623e97](https://github.com/rapidkitlabs/rapidkit-core/commit/9623e97cce8ebd2b021e6d2c581276d27c6aa839))
-- **docs:** polish public docs and add missing ddd kit license ([242b915](https://github.com/rapidkitlabs/rapidkit-core/commit/242b915955915fb04c6a73f064384466a0ad9975))
-
-#### Chores
-
-- **changelog:** refresh promote snapshot from core/main..HEAD ([6504311](https://github.com/rapidkitlabs/rapidkit-core/commit/65043114c43b5f9f2e39741d69bbbe9aed52f0ee))
-- **community:** add onboarding automation and channel templates ([32fdfea](https://github.com/rapidkitlabs/rapidkit-core/commit/32fdfea29841a0b49ac5b36a25f03d0f57509a72))
-- **release:** align tool.poetry version with v0.3.9 tag ([319125e](https://github.com/rapidkitlabs/rapidkit-core/commit/319125ec9e092ab43437108b648d1e663484e139))
-- **changelog:** add 0.3.9 release notes ([aed85fa](https://github.com/rapidkitlabs/rapidkit-core/commit/aed85fa3409acb7df8ffed309b7df7226c8313df))
-- **changelog:** refresh promote snapshot from core/main..HEAD ([6c838dc](https://github.com/rapidkitlabs/rapidkit-core/commit/6c838dc2c11dc2260ae7ff18d5f3b9e25c779926))
-- **changelog:** refresh promote snapshot from core/main..HEAD ([8348d88](https://github.com/rapidkitlabs/rapidkit-core/commit/8348d8879a2e1c26b9c7d26fb0f2ef82d0f66378))
-- **changelog:** refresh promote snapshot from core/main..HEAD ([feeccb8](https://github.com/rapidkitlabs/rapidkit-core/commit/feeccb8babce4927a7b954d7946588a27e7aa2c1))
-- **release:** set stable version 0.3.1 ([c4021e9](https://github.com/rapidkitlabs/rapidkit-core/commit/c4021e914e61f00a0136013e19b4b5fb412e7bb1))
-- optionally sign stable tags ([3404dc8](https://github.com/rapidkitlabs/rapidkit-core/commit/3404dc8abf0814ec014f4db38c5d1c8aaa5080de))
-- decouple release from publish ([6e55810](https://github.com/rapidkitlabs/rapidkit-core/commit/6e558105d59b85c67dcf6c891bad5e01f0b887d5))
-- **publish:** avoid non-distribution files in dist and tidy release ([411b5b0](https://github.com/rapidkitlabs/rapidkit-core/commit/411b5b079df3deb3a5cc1280a4c5dbac377def0b))
-- **tag:** auth git fetch when checking existing tags ([5553efb](https://github.com/rapidkitlabs/rapidkit-core/commit/5553efb39e1668ae8afd49c29072e98091b47f14))
-- **release:** tag stable from pyproject and auto-release on publish ([67a0d89](https://github.com/rapidkitlabs/rapidkit-core/commit/67a0d89d44ea05d60c8b4a99b569225fffa63a4b))
-- **workflows:** remove community-staging workflows from core ([62256e1](https://github.com/rapidkitlabs/rapidkit-core/commit/62256e19ef5b5701f8c4feda5336d804dd72d9a5))
-- **workflows:** make core publish tag-based ([386720f](https://github.com/rapidkitlabs/rapidkit-core/commit/386720fa79948deacd923c162f842792bb01ab2b))
-- **workflows:** rename core publish workflow ([b2f1779](https://github.com/rapidkitlabs/rapidkit-core/commit/b2f1779cb2535c78b7e1355e439b55f028513143))
-- **workflows:** add core publish workflow ([bd3b4cc](https://github.com/rapidkitlabs/rapidkit-core/commit/bd3b4cc6c7336b8dbb20963fa1550178bded9461))
-- **workflows:** remove staging-only workflows ([6a87d41](https://github.com/rapidkitlabs/rapidkit-core/commit/6a87d418edf6d973002272146ee04ccf7c9344b3))
-
-### Staging promote updates (present in promote branch, absent in `core/main`)
-
-#### Bug Fixes
-
-- align distribution workflows with rapidkitlabs org ([cf5cc3c](https://github.com/rapidkitlabs/rapidkit-core/commit/cf5cc3cd94d847672fdd84acb66b6602c7e0fe86))
-- patch vulnerable python dependency pins ([dfd299e](https://github.com/rapidkitlabs/rapidkit-core/commit/dfd299e362c68f37a90c01983b377ef99e179911))
-
-#### Chores
-
-- **release:** finalize version to 0.5.0 ([7806dda](https://github.com/rapidkitlabs/rapidkit-core/commit/7806dda2e1f4008941d841c8e832c8f7ae91b9f2))
-- **release:** bump version to 0.5.0rc2 ([b149fba](https://github.com/rapidkitlabs/rapidkit-core/commit/b149fbacc88fc50e43eabb65fe750141194c0447))
-- **release:** finalize version to 0.5.0 ([c2aaa12](https://github.com/rapidkitlabs/rapidkit-core/commit/c2aaa12de4b4add2e9dac0f40e6adff7e9db5958))
-- **release:** bump version to 0.5.0rc1 ([887e12b](https://github.com/rapidkitlabs/rapidkit-core/commit/887e12b0a4e5a38b7c0d706e599f7f0dcd88d8e4))
-
-<!-- auto:promote-changelog end -->
-
-## [0.3.9](https://github.com/rapidkitlabs/rapidkit-core/compare/v0.3.8...v0.3.9) - 2026-02-25
-
-### Bug Fixes
-
-- **init:** harden dependency bootstrap on Linux by improving Poetry/keyring behavior during initialization
-- **init:** reduce noisy lock-sync fallback output while preserving compatibility with older Poetry versions
-- **templates:** adjust NestJS standard module index template generation
-
-## [Snapshot 0.3.2](https://github.com/rapidkitlabs/rapidkit-core/compare/v0.3.1...HEAD)
-
-> This distribution is built from commit `9a2a3801` and is not a tagged release.
+> This distribution is built from commit `5089aee2` and is not a tagged release.
 
 ### Features
 
+- **cli:** add module identity util and harden module lifecycle commands
+  ([306d5b8b](https://github.com/rapidkitlabs/rapidkit-core/commit/306d5b8bccee82f33a988fb34bb5606e538592eb))
+- **cli:** add module identity util and harden module lifecycle commands
+  ([83fedbfd](https://github.com/rapidkitlabs/rapidkit-core/commit/83fedbfd4236f8ecf8407541b810dabd7ec04a4f))
+- **release:** redact engine repo and auto-snapshot changelog
+  ([fe17f029](https://github.com/rapidkitlabs/rapidkit-core/commit/fe17f029b51f4b1b97d41b3afcb6e021ee32b9e0))
+- add platform admin modules
+  ([7e80e085](https://github.com/rapidkitlabs/rapidkit-core/commit/7e80e085e45f235b863cba5cca8815523fb89335))
+- add approval and support modules
+  ([b5c3cda8](https://github.com/rapidkitlabs/rapidkit-core/commit/b5c3cda835c87950ca04593b22d61002ba83b94e))
+- **billing:** enterprise hardening for usage/stripe
+  ([6e7062ae](https://github.com/rapidkitlabs/rapidkit-core/commit/6e7062ae643bc12c82f5298777cdb85e794c118c))
+- harden vector store and rag pipeline
+  ([a1edfbe2](https://github.com/rapidkitlabs/rapidkit-core/commit/a1edfbe2e7e0e409594182b68cc01295d8eb0395))
+- harden webhook platform and connector hub
+  ([8975f602](https://github.com/rapidkitlabs/rapidkit-core/commit/8975f6027bd12bce6e908ea66eb121557181f75b))
+- harden agent runtime and workflow engine
+  ([58c2957d](https://github.com/rapidkitlabs/rapidkit-core/commit/58c2957d47b495c9b3fad7b3b6d0a5aeb7f7fd0b))
+- add workflow productivity modules
+  ([7102155f](https://github.com/rapidkitlabs/rapidkit-core/commit/7102155f6b3fc103aeea08995b9a8ac13ec2e707))
+- add document and event bus modules
+  ([60cf640b](https://github.com/rapidkitlabs/rapidkit-core/commit/60cf640bf8459d5e15f8718c6d080fd54f900002))
+- harden operational free modules
+  ([b556b3a3](https://github.com/rapidkitlabs/rapidkit-core/commit/b556b3a381686c2d9ca1bc6fe8333d580656c37a))
+- add AI product factory guardrail modules
+  ([b63bdfec](https://github.com/rapidkitlabs/rapidkit-core/commit/b63bdfec8230966f2c674a0b542285933ecd96bd))
+- harden connector hub runtime
+  ([59caa3f7](https://github.com/rapidkitlabs/rapidkit-core/commit/59caa3f7cc5bebdec7c6fd3896a260fbdde3ad52))
+- harden webhook platform runtime
+  ([a6143405](https://github.com/rapidkitlabs/rapidkit-core/commit/a6143405c3f12f8e65e59199515a860708db4363))
+- harden workflow engine runtime
+  ([71605011](https://github.com/rapidkitlabs/rapidkit-core/commit/716050111d6b8f5bd49eb185f6106e5c4333b98d))
+- harden usage billing runtime
+  ([914b8bc9](https://github.com/rapidkitlabs/rapidkit-core/commit/914b8bc916827290b635cd163419c988e44dd7fe))
+- harden audit policy runtime
+  ([f29ef075](https://github.com/rapidkitlabs/rapidkit-core/commit/f29ef07569db9b9a676e6376805ea398bbf2beb1))
+- harden feature flags runtime
+  ([8934b961](https://github.com/rapidkitlabs/rapidkit-core/commit/8934b961189de641d4aa9ba435d1042ffd1a9cf2))
+- harden multi tenancy runtime
+  ([85b6f0b5](https://github.com/rapidkitlabs/rapidkit-core/commit/85b6f0b500afcf2495a17c50923888d27029b671))
+- harden rag pipeline runtime
+  ([37095ba8](https://github.com/rapidkitlabs/rapidkit-core/commit/37095ba82f705d98d5f73038a2fdfaef36a68671))
+- harden vector store runtime
+  ([f4df6210](https://github.com/rapidkitlabs/rapidkit-core/commit/f4df62101c1cf7d6f70c3f9e3f75b701760d8dd6))
+- harden agent runtime lifecycle
+  ([b0f3bced](https://github.com/rapidkitlabs/rapidkit-core/commit/b0f3bced555f2c6fb369ec4c761832d4a16c941a))
+- harden llm gateway runtime
+  ([261653e2](https://github.com/rapidkitlabs/rapidkit-core/commit/261653e2a678a564c7ab0cae8c8f93ce4e9fbe89))
+- add free product factory modules
+  ([3ac63d27](https://github.com/rapidkitlabs/rapidkit-core/commit/3ac63d27fa774154fb5a13b4d89947c31e490975))
+- **modules:** add nestjs module registries and centralize health routes
+  ([dac36f7c](https://github.com/rapidkitlabs/rapidkit-core/commit/dac36f7cd74bced84680793bf80774267a072a8c))
 - **core:** stabilize ai_assistant generation and auto-bump control
   ([a9eaacc5](https://github.com/rapidkitlabs/rapidkit-core/commit/a9eaacc57bcc86bae3d5f8cdbce2b7b052d3d53d))
 - **core:** ship distribution system updates and CLI enhancements
@@ -234,6 +201,82 @@
 
 ### Bug Fixes
 
+- **test:** separate external tooling smoke gates
+  ([b7ada0b9](https://github.com/rapidkitlabs/rapidkit-core/commit/b7ada0b970433d009111393209453b0f8796fe89))
+- **release:** harden staging promotion artifacts
+  ([b9ff37ee](https://github.com/rapidkitlabs/rapidkit-core/commit/b9ff37ee4964076be96eb38dd4269e3d0528c38a))
+- raise webhook platform generator coverage
+  ([c7d56a65](https://github.com/rapidkitlabs/rapidkit-core/commit/c7d56a652ca9951ae77db821d950d494093b3cf2))
+- **release:** anchor promote chain to staging tags and source.json
+  ([56e6b195](https://github.com/rapidkitlabs/rapidkit-core/commit/56e6b195fdf7644e982749e9127891d0b07757eb))
+- **release:** persist promote manifest and harden stable tag
+  ([bbe759dc](https://github.com/rapidkitlabs/rapidkit-core/commit/bbe759dc17565ab39fd50be233a3564c5e639bc0))
+- curate staging promotion into public core
+  ([f0db77ae](https://github.com/rapidkitlabs/rapidkit-core/commit/f0db77ae0186a62c9431ec0f74b7be7a4e20173c))
+- align module test artifacts with owned paths
+  ([0c4b3ac5](https://github.com/rapidkitlabs/rapidkit-core/commit/0c4b3ac52ab3c1322aacc9ead1de261d5188e7e3))
+- enforce module-owned generated paths
+  ([1e1613e1](https://github.com/rapidkitlabs/rapidkit-core/commit/1e1613e1c7f29e4ad3c28965afa21106186746cf))
+- align distribution workflows with rapidkitlabs org
+  ([2529eeab](https://github.com/rapidkitlabs/rapidkit-core/commit/2529eeabd3aeff807c2148cc7d60f9f2d94f206c))
+- patch vulnerable python dependency pins
+  ([1e1fc669](https://github.com/rapidkitlabs/rapidkit-core/commit/1e1fc6694c71e81a83c69b55ac835532b34b78d9))
+- make module coverage gate ascii safe
+  ([c6bd8460](https://github.com/rapidkitlabs/rapidkit-core/commit/c6bd846033a791155d6847954178c8d9517785d7))
+- harden module coverage gate
+  ([eb5fe0c9](https://github.com/rapidkitlabs/rapidkit-core/commit/eb5fe0c93344e6a3d8efec30182d920a44c896d7))
+- keep free registry and database snippets release-ready
+  ([203acb30](https://github.com/rapidkitlabs/rapidkit-core/commit/203acb30b320fe5f7355380135b067042d5244de))
+- align module profiles with snippet gates
+  ([5fe017c3](https://github.com/rapidkitlabs/rapidkit-core/commit/5fe017c35b7b1e0e5bb4adcb3056b8293266668c))
+- stabilize business module contracts
+  ([d54dde9e](https://github.com/rapidkitlabs/rapidkit-core/commit/d54dde9e3e5abfe3a59fde8422d68e0fa0dee20a))
+- validate declared runtime outputs in stabilization
+  ([68d26bb9](https://github.com/rapidkitlabs/rapidkit-core/commit/68d26bb9ba27ce3c24cfd92387bc58d97faae7bf))
+- publish-grade module verification manifests
+  ([ab856571](https://github.com/rapidkitlabs/rapidkit-core/commit/ab856571e4bcb642144bfe9dda19f18246f460b0))
+- stabilize module gates and docs
+  ([01a3d818](https://github.com/rapidkitlabs/rapidkit-core/commit/01a3d8180817f9e63f10a92e0accbc607815aac6))
+- keep generated FastAPI projects lint clean
+  ([f7036851](https://github.com/rapidkitlabs/rapidkit-core/commit/f7036851d95a67362358219a8d27ae660164007d))
+- harden module stabilization temp and health shims
+  ([f04db3bd](https://github.com/rapidkitlabs/rapidkit-core/commit/f04db3bdda89a9048cc7e8d597a3ce05cfd48ceb))
+- **cli:** route npm-owned commands from core
+  ([79a0d1ab](https://github.com/rapidkitlabs/rapidkit-core/commit/79a0d1ab50c5b21a67bd5c779347818c69aac7c0))
+- stabilize free integration tests
+  ([035a1a74](https://github.com/rapidkitlabs/rapidkit-core/commit/035a1a7468c2576707d896a7af5a63a1485405f4))
+- harden dependency audit gate
+  ([02032186](https://github.com/rapidkitlabs/rapidkit-core/commit/02032186ae5a9295cf873cbf2913d213c84e95d0))
+- stabilize free module test runtime
+  ([eae2ccb0](https://github.com/rapidkitlabs/rapidkit-core/commit/eae2ccb0fcdae691e66bcb9641eaa9c04d8b2647))
+- harden kit stability checks
+  ([aec80afe](https://github.com/rapidkitlabs/rapidkit-core/commit/aec80afe6f84ba1f1933008c3447c459fc345c22))
+- **type:** avoid optional import mypy errors
+  ([b0f084ef](https://github.com/rapidkitlabs/rapidkit-core/commit/b0f084efe3471b582204809de2da6ca82aa57fd2))
+- **nestjs:** silence TS6 deprecation in smoke config
+  ([0ec2fde7](https://github.com/rapidkitlabs/rapidkit-core/commit/0ec2fde75e7472c9ce7b7a76b5054bdc2de151da))
+- **security:** pin poetry>=2.3.4 to fix CVE-2026-34591 CVE-2026-41140
+  ([dde37d70](https://github.com/rapidkitlabs/rapidkit-core/commit/dde37d70ffcd9f54f0f07d6a9bec1c3126dd4556))
+- **auth:** add ddd snippet profiles and correct pepper log format
+  ([9a11ba0c](https://github.com/rapidkitlabs/rapidkit-core/commit/9a11ba0c6f08dcecf0fb0da31c9b6b51b27e2c2e))
+- **modules:** prefer manifest fields in modules info
+  ([87a54459](https://github.com/rapidkitlabs/rapidkit-core/commit/87a54459b809ee57a3a5c1cc2f3941a263d87deb))
+- **release:** align community gates and pyproject
+  ([a2884ea9](https://github.com/rapidkitlabs/rapidkit-core/commit/a2884ea9122b1abb773f51f4c236856cdf5de287))
+- **distribution:** harden public docs/workflow and license mappings
+  ([e19ede45](https://github.com/rapidkitlabs/rapidkit-core/commit/e19ede454f711fa2ec0e3f7988f28d1a4f5c414a))
+- **modules:** make metadata sync idempotent with mdformat
+  ([1dd8069c](https://github.com/rapidkitlabs/rapidkit-core/commit/1dd8069c7e2ba1b065ce8be7d6b44887f018d715))
+- **modules:** stabilize drift check hashing order
+  ([b656671c](https://github.com/rapidkitlabs/rapidkit-core/commit/b656671c50bcd36a4218ee99219548ec959a4af3))
+- **modules:** run mdformat before metadata sync to prevent drift
+  ([bbf13a57](https://github.com/rapidkitlabs/rapidkit-core/commit/bbf13a575dd760e3bd276282fc499f6598cb6079))
+- **modules:** sync free module metadata for staging drift gate
+  ([ba69302f](https://github.com/rapidkitlabs/rapidkit-core/commit/ba69302fd580954c1276c28f7e5c0bce07a86b73))
+- **modules:** enforce staging fail-fast and add paid api docs
+  ([e367033e](https://github.com/rapidkitlabs/rapidkit-core/commit/e367033e66d600d86cc431b1ab7487cb5d131e8e))
+- standardize Python version to 3.10 for better compatibility
+  ([5f04e18c](https://github.com/rapidkitlabs/rapidkit-core/commit/5f04e18c7760e6356afbab84dfafc87d61984f5d))
 - **ai-assistant:** standardize health contract and shared shim fallback
   ([a76b8921](https://github.com/rapidkitlabs/rapidkit-core/commit/a76b8921da7b9412892ef827d307de401e2e731f))
 - **release:** snapshot heading version + stabilize pre-push pytest env
@@ -336,6 +379,8 @@
   ([bbca732c](https://github.com/rapidkitlabs/rapidkit-core/commit/bbca732cd85329482b3bfe1104a47c9aea5e2da7))
 - **ai/ai_assistant:** generate config file during fastapi generation
   ([e7d26136](https://github.com/rapidkitlabs/rapidkit-core/commit/e7d2613680e26d389f6998cc3e7c3bc80a36dca1))
+- **validation:** skip paid modules by default (+ --include-paid)
+  ([9cd83eda](https://github.com/rapidkitlabs/rapidkit-core/commit/9cd83eda26cd13bfa7bba87e234a5e7dd2043083))
 - **generate:** generate ai_assistant config for FastAPI
   ([f6713c41](https://github.com/rapidkitlabs/rapidkit-core/commit/f6713c41acb1681df13c9ffb7541baa1023b9026))
 - **module:** promote ai_assistant to stable + add variant outputs
@@ -577,6 +622,16 @@
 
 ### Documentation
 
+- clarify RapidKit Core kit copy
+  ([5089aee2](https://github.com/rapidkitlabs/rapidkit-core/commit/5089aee2276bd9c44be6bff3009a177f9b7bf8df))
+- **modules:** harden enterprise runbooks
+  ([df8f099c](https://github.com/rapidkitlabs/rapidkit-core/commit/df8f099c3c71da0f2d0ea62b24491d0270b6af0d))
+- sync community README template with ecosystem section
+  ([b51a5251](https://github.com/rapidkitlabs/rapidkit-core/commit/b51a52513a29d550d9e968f762a454d4199e2198))
+- **modules:** add missing free API reference pages
+  ([efd9094e](https://github.com/rapidkitlabs/rapidkit-core/commit/efd9094e6e58173b918990e829174f33a0802c40))
+- harden public README and distribution documentation
+  ([7fc19b9e](https://github.com/rapidkitlabs/rapidkit-core/commit/7fc19b9e88c8bbb3ba43813c9cf079765d8f3e5d))
 - **community:** fix links and sanitize docs
   ([99850c9c](https://github.com/rapidkitlabs/rapidkit-core/commit/99850c9c99c891ea27ba8b19b503c0e7ea1b38de))
 - **pypi:** improve readme templates and project urls
@@ -622,6 +677,8 @@
 
 ### Refactors
 
+- **core:** remove spring/java paths from init and doctor
+  ([afdfe211](https://github.com/rapidkitlabs/rapidkit-core/commit/afdfe211ec663df03403e07205df223a87086814))
 - sync settings vendor for kits
   ([7d7a7f4b](https://github.com/rapidkitlabs/rapidkit-core/commit/7d7a7f4bbf2319e108f86b22f1339c8cce824538))
 - **kits:** prefer project-local cli & remove fallback template
@@ -651,11 +708,33 @@
 
 ### Performance
 
+- add cache-aware module stabilization
+  ([d4a788b5](https://github.com/rapidkitlabs/rapidkit-core/commit/d4a788b527ce07734f56888b7e8f2b0b672d4046))
+- cache snippet runtime gate kit bases
+  ([0924268b](https://github.com/rapidkitlabs/rapidkit-core/commit/0924268bdec532b175ea0952db4872e324232a18))
 - optimize Docker build performance and prevent timeouts
   ([73da24e7](https://github.com/rapidkitlabs/rapidkit-core/commit/73da24e7c8dcbdd42e4ffe6dc9a1e7e32b3492ed))
 
 ### Tests
 
+- gate product factory flow
+  ([c7786a00](https://github.com/rapidkitlabs/rapidkit-core/commit/c7786a00f7ca65563147ee25dc7cbd4060ab0dbc))
+- **snippets:** enforce runtime release gate
+  ([655438f5](https://github.com/rapidkitlabs/rapidkit-core/commit/655438f5080fedc30b7889ae1363e8cbd9c66658))
+- remove free suite deprecation warnings
+  ([794154c3](https://github.com/rapidkitlabs/rapidkit-core/commit/794154c3297128d5d4734bb3632772b96e1ba783))
+- replace product factory integration placeholders
+  ([0a3aa38e](https://github.com/rapidkitlabs/rapidkit-core/commit/0a3aa38e7751237ae6e67553655de70e34f5da8e))
+- replace ai integration placeholders
+  ([11034b85](https://github.com/rapidkitlabs/rapidkit-core/commit/11034b85be4dce1fd77c74eb44fa2cfe4c0ffff1))
+- harden observability core coverage
+  ([720d4b82](https://github.com/rapidkitlabs/rapidkit-core/commit/720d4b82a4e4ef6a53f0361d870a949c87f894f2))
+- harden security headers coverage
+  ([1d30d644](https://github.com/rapidkitlabs/rapidkit-core/commit/1d30d6448da224e201cab11ab2c41d0b68711b45))
+- harden stripe payment runtime coverage
+  ([6edce89a](https://github.com/rapidkitlabs/rapidkit-core/commit/6edce89a3d655071c2893782346b6d0b38e5a01c))
+- harden api keys runtime coverage
+  ([1a6cdbd7](https://github.com/rapidkitlabs/rapidkit-core/commit/1a6cdbd73b3012170da6550957150548558517f9))
 - raise email module coverage
   ([00b8e3d0](https://github.com/rapidkitlabs/rapidkit-core/commit/00b8e3d09e6a9b728a0df9c7d0451121ec2e3c67))
 - sync email generator paths
@@ -711,6 +790,62 @@
 
 ### Chores
 
+- **deps:** update core dependency governance
+  ([073dc50d](https://github.com/rapidkitlabs/rapidkit-core/commit/073dc50dd8e7657453453d172649f381e60a829b))
+- add generator contract tests and module metadata updates
+  ([16a23751](https://github.com/rapidkitlabs/rapidkit-core/commit/16a23751d439bcdaef2409550185b4402d3292d0))
+- add generator contract tests and module metadata updates
+  ([d8ec6503](https://github.com/rapidkitlabs/rapidkit-core/commit/d8ec650301393c4c04c0c2cae90d94c3a5ed07c5))
+- investigate free/ai/rag_pipeline stabilization (logs + tests)
+  ([23ecd477](https://github.com/rapidkitlabs/rapidkit-core/commit/23ecd477c4062128de6878e4d5fa8c12924b3622))
+- investigate free/ai/rag_pipeline stabilization (logs + tests)
+  ([e18b0467](https://github.com/rapidkitlabs/rapidkit-core/commit/e18b04679f64a3bff79148de76b2642b91493cca))
+- sync module metadata after docs domain update
+  ([bf5b2aad](https://github.com/rapidkitlabs/rapidkit-core/commit/bf5b2aad605f380074a22b58353cb4ea4b228531))
+- align module docs domain
+  ([8245c116](https://github.com/rapidkitlabs/rapidkit-core/commit/8245c11601b35d5274f76f3711a65441fa150b4d))
+- sync module metadata before commit
+  ([53edbf06](https://github.com/rapidkitlabs/rapidkit-core/commit/53edbf069cfd0154db699154a4849475b546948d))
+- sync module metadata before staging publish
+  ([c6a23c06](https://github.com/rapidkitlabs/rapidkit-core/commit/c6a23c06aa03a13e32ace4a830fcb475b616608e))
+- sync module state hashes
+  ([45154cae](https://github.com/rapidkitlabs/rapidkit-core/commit/45154cae44b86f99261989e6f26faeedf9e6ffe4))
+- refresh core docs and stabilization tooling
+  ([ce4295ec](https://github.com/rapidkitlabs/rapidkit-core/commit/ce4295ecb1cb1371bebe9d640a17cffcf5728145))
+- prepare core 0.5.0 rc
+  ([1f2bce54](https://github.com/rapidkitlabs/rapidkit-core/commit/1f2bce548cd83b1797229945981ef8ad94e3264b))
+- harden free module source readiness
+  ([5a076c76](https://github.com/rapidkitlabs/rapidkit-core/commit/5a076c76cf1a0bb1f71fd8b9be8eeb4551086331))
+- migrate github org links to rapidkitlabs
+  ([857ead2b](https://github.com/rapidkitlabs/rapidkit-core/commit/857ead2bdd8b3b3782d3f11aff682f7f784f96b8))
+- align black pre-commit verification
+  ([29db36b4](https://github.com/rapidkitlabs/rapidkit-core/commit/29db36b41b5aab701dc009060cb1b916bf292dd6))
+- **settings:** sync module metadata
+  ([3aab8048](https://github.com/rapidkitlabs/rapidkit-core/commit/3aab8048b563ed22b83bbd0e0a1592f24d2d0429))
+- finalize stabilization updates and version alignment
+  ([c9009767](https://github.com/rapidkitlabs/rapidkit-core/commit/c9009767adb25d8079ac97965451c7d5da733301))
+- **security:** upgrade vulnerable deps and refresh constraints
+  ([475f964d](https://github.com/rapidkitlabs/rapidkit-core/commit/475f964d56515f0ac0009ac6cef6fc97ceef166c))
+- **core:** update licensing flow and framework registry
+  ([aeb6e55d](https://github.com/rapidkitlabs/rapidkit-core/commit/aeb6e55df1208d16615241d474daebbcb943ff42))
+- **modules:** sync metadata for staging push range
+  ([c5de871f](https://github.com/rapidkitlabs/rapidkit-core/commit/c5de871fea1e4a74935824ecc094619805144281))
+- **modules:** sync metadata for staging publish range
+  ([1f80922f](https://github.com/rapidkitlabs/rapidkit-core/commit/1f80922fa4f74b8778bb29bb0a4d53b0445eb554))
+- **release:** bump version to 0.3.7
+  ([62fe85c4](https://github.com/rapidkitlabs/rapidkit-core/commit/62fe85c45b65505a419aaceceb044fa4b1ba4315))
+- **modules:** sync auth metadata state and changelogs
+  ([30d63de9](https://github.com/rapidkitlabs/rapidkit-core/commit/30d63de97f0b1d6fdafdef736ec9935b7aab2a59))
+- **hooks:** auto-amend module metadata on post-commit
+  ([3fe6c9c8](https://github.com/rapidkitlabs/rapidkit-core/commit/3fe6c9c8fb8476569afee876aff8979f8d1cc485))
+- **gate:** enforce module metadata drift checks
+  ([c71e4308](https://github.com/rapidkitlabs/rapidkit-core/commit/c71e4308be8bb3087747aab76fb2dcc87e36e178))
+- **modules:** sync metadata and structure pipeline
+  ([a75422fd](https://github.com/rapidkitlabs/rapidkit-core/commit/a75422fdf814baf5d5284bea73a0df0493a7a3bf))
+- **distribution:** refine staging-to-stable and pyproject generation
+  ([2049e647](https://github.com/rapidkitlabs/rapidkit-core/commit/2049e6478ad6ac55676fe4ab1d62c608ef687b85))
+- **release:** bump version to 0.3.3
+  ([4879904e](https://github.com/rapidkitlabs/rapidkit-core/commit/4879904ee4bd695476ad0ce8b250ef2bc6949429))
 - **release:** update changelog
   ([9a2a3801](https://github.com/rapidkitlabs/rapidkit-core/commit/9a2a380168d1c3b883b9ec076ab766ce19e51324))
 - **release:** update changelog
@@ -811,6 +946,8 @@
   ([490b1870](https://github.com/rapidkitlabs/rapidkit-core/commit/490b18705c8192df36e6c62c0f3382243a57acbb))
 - **stabilization:** module stabilization sweep
   ([10b706c9](https://github.com/rapidkitlabs/rapidkit-core/commit/10b706c9832aa7a3128f27346ef40fb4960d0a72))
+- stabilize logging module slug flows
+  ([6ce1d57f](https://github.com/rapidkitlabs/rapidkit-core/commit/6ce1d57fab5ef4f1071eefcdd831ff682d70a920))
 - refresh kit deps
   ([d338a482](https://github.com/rapidkitlabs/rapidkit-core/commit/d338a482419b624a79e7005d111842045b16d351))
 - streamline kit reliability
@@ -861,8 +998,6 @@
   ([0e6f3018](https://github.com/rapidkitlabs/rapidkit-core/commit/0e6f301829a2ac1891acb6ff9eeac019e313a066))
 - **main:** release  3.0.1
   ([8a9d22aa](https://github.com/rapidkitlabs/rapidkit-core/commit/8a9d22aa28df723de9f2d048a9acf34243886c36))
-- stabilize community distribution tooling
-  ([f8d92597](https://github.com/rapidkitlabs/rapidkit-core/commit/f8d925976f7b0728f92167962f5e93b20caf1734))
 - skip staging publish and fix promotion artifacts
   ([2d420982](https://github.com/rapidkitlabs/rapidkit-core/commit/2d420982a1edf7a9f45d971b18cf37e025925004))
 - relax docker workflow permissions

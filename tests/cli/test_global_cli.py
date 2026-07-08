@@ -254,8 +254,10 @@ def test_npm_owned_commands_return_routing_notice(
 
     assert exc.value.code == 2
     captured = capsys.readouterr()
-    assert "belongs to the RapidKit npm workspace CLI" in captured.err
-    assert "npx --yes --package rapidkit rapidkit" in captured.err
+    assert "belongs to the Workspai npm workspace CLI" in captured.err
+    assert "npm install -g workspai" in captured.err
+    assert "npx --yes --package workspai workspai" in captured.err
+    assert "npx --yes --package rapidkit rapidkit" not in captured.err
 
 
 def test_project_detect_remains_core_owned(monkeypatch: MonkeyPatch) -> None:
@@ -294,7 +296,7 @@ def test_npm_owned_commands_can_opt_into_npx_passthrough(monkeypatch: MonkeyPatc
 
     assert exc.value.code == 9
     assert run_calls == [
-        ["npx", "--yes", "--package", "rapidkit", "rapidkit", "workspace", "run", "init"]
+        ["npx", "--yes", "--package", "workspai", "workspai", "workspace", "run", "init"]
     ]
 
 

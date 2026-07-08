@@ -68,8 +68,8 @@ _DEFAULT_PACKAGE_JSON: Dict[str, Any] = {
         "class-transformer": "^0.5.1",
     },
     "devDependencies": {
-        "@nestjs/cli": "^11.0.10",
-        "@nestjs/schematics": "^11.0.10",
+        "@nestjs/cli": "^11.0.14",
+        "@nestjs/schematics": "^11.0.14",
         "@nestjs/testing": "^11.1.6",
         "@types/express": "^4.17.17",
         "@types/node": "^20.0.0",

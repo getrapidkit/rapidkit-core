@@ -1,8 +1,8 @@
 # Kit Consumer Guide
 
 This guide distils the recommended workflow for teams that scaffold applications from the official
-RapidKit kits (for example `fastapi.standard`). It assumes the RapidKit CLI is installed inside your
-virtual environment.
+RapidKit kits (for example `fastapi.standard`). It assumes the RapidKit Core CLI is installed inside
+your virtual environment.
 
 ## 1. Scaffold the project
 

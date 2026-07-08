@@ -204,6 +204,8 @@ class StabilizationRunner:
         static_analysis_cmd: Optional[Sequence[str]] = None,
         user_scenarios: Optional[Path] = None,
         trivy_allowlist: Optional[Path] = None,
+        stabilization_fingerprint: str = "",
+        stabilization_fingerprint_payload: Optional[Path] = None,
     ) -> None:
         self.original_slug = module_slug
         self.modules_root = MODULES_ROOT.resolve()
@@ -245,6 +247,11 @@ class StabilizationRunner:
         self.kit_runs: List[KitRunResult] = []
         self.static_analysis_cmd: Optional[List[str]] = (
             list(static_analysis_cmd) if static_analysis_cmd else None
+        )
+        self.stabilization_fingerprint = stabilization_fingerprint.strip()
+        self.stabilization_fingerprint_payload_path = stabilization_fingerprint_payload
+        self.stabilization_fingerprint_payload = self._load_json_file(
+            stabilization_fingerprint_payload
         )
         self.user_scenarios_path = user_scenarios
         self.user_scenarios: List[dict[str, Any]] = self._load_user_scenarios(user_scenarios)
@@ -3865,6 +3872,13 @@ class StabilizationRunner:
             "parity": parity_payload,
             "product_score": product_payload,
         }
+        if self.stabilization_fingerprint:
+            summary["stabilization_cache"] = {
+                "schema_version": 1,
+                "status": self._overall_status(),
+                "fingerprint": self.stabilization_fingerprint,
+                "fingerprint_payload": self.stabilization_fingerprint_payload,
+            }
         shipped_tests = self._aggregate_all_shipped_tests()
         if shipped_tests:
             summary["shipped_tests"] = shipped_tests
@@ -3889,6 +3903,14 @@ class StabilizationRunner:
         try:
             return json.loads(raw)
         except json.JSONDecodeError:
+            return None
+
+    def _load_json_file(self, path: Path | None) -> object | None:
+        if path is None:
+            return None
+        try:
+            return json.loads(path.read_text(encoding="utf-8"))
+        except Exception:
             return None
 
     def _rel_path(self, path: Path) -> str:
@@ -4078,6 +4100,16 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
             "only non-allowlisted findings fail the --pro-gates container scan."
         ),
     )
+    parser.add_argument(
+        "--stabilization-fingerprint",
+        default="",
+        help="Cache fingerprint supplied by stabilize_all_modules.py for summary evidence.",
+    )
+    parser.add_argument(
+        "--stabilization-fingerprint-payload",
+        type=Path,
+        help="Path to the fingerprint payload JSON supplied by stabilize_all_modules.py.",
+    )
     return parser.parse_args(argv)
 
 
@@ -4108,6 +4140,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             static_analysis_cmd=static_cmd,
             user_scenarios=args.user_scenarios,
             trivy_allowlist=args.trivy_allowlist,
+            stabilization_fingerprint=args.stabilization_fingerprint,
+            stabilization_fingerprint_payload=args.stabilization_fingerprint_payload,
         )
     except ValueError as exc:
         print(f"error: {exc}")

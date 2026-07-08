@@ -6,7 +6,7 @@ This guide explains how to integrate the RapidKit deployment module into an exis
 
 - Python 3.10 or newer for FastAPI assets
 - Node.js 20.x for NestJS assets
-- RapidKit CLI installed in the project virtual environment
+- RapidKit Core CLI installed in the project virtual environment
 
 ## Installation
 

@@ -10,7 +10,7 @@ the npm wrapper and Workspai.
 
 - Public package: `rapidkit-core`
 - Python CLI entry points: `rapidkit`, `rkc`
-- npm wrapper: `rapidkit`
+- npm workspace CLI: `workspai`
 - Free module catalog: 52 stable modules under `src/modules/free`
 - Supported release kits: `fastapi.standard`, `fastapi.ddd`, `nestjs.standard`
 - Canonical audit evidence: `dev-engine/audit-history/`
@@ -35,7 +35,7 @@ the npm wrapper and Workspai.
 
 For public users:
 
-1. Install the npm CLI: `npm install -g rapidkit`
+1. Install the npm CLI: `npm install -g workspai`
 1. Use Workspai for a graphical workflow when needed.
 1. Use the Python package directly only when building or debugging the core.
 

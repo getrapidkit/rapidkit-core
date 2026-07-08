@@ -118,7 +118,7 @@ dev_dependencies:
   - name: pytest
     source: external
     tool: pip
-    version: ">=8.3.0,<9.0"
+    version: ">=9.0.3,<10.0"
   - name: pytest-asyncio
     source: external
     tool: pip
@@ -130,4 +130,4 @@ dev_dependencies:
   - name: black
     source: external
     tool: pip
-    version: ">=24.8.0,<25.0"
+    version: ">=26.3.1,<27.0"

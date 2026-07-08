@@ -53,7 +53,7 @@ _DEFAULT_PACKAGE_JSON: Dict[str, Any] = {
     "devDependencies": {
         "typescript": "^5.1.3",
         "ts-node": "^10.9.1",
-        "@nestjs/cli": "^11.0.10",
+        "@nestjs/cli": "^11.0.14",
     },
 }
 

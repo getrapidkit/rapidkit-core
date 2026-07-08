@@ -41,7 +41,7 @@ variables:
 
     description:
         type: string
-        default: "Domain-driven FastAPI service generated with RapidKit"
+        default: "Domain-driven FastAPI service generated for Workspai with RapidKit Core"
         description: "Project description"
 
     app_version:

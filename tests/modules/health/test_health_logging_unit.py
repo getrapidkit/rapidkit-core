@@ -56,7 +56,7 @@ def test_register_logging_health_mounts_router():
 
     logging_health.register_logging_health(app)
 
-    paths = {route.path for route in app.routes}
+    paths = set(app.openapi()["paths"])
     assert "/api/health/module/logging" in paths
 
 

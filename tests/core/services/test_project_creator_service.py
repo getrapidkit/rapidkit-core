@@ -97,6 +97,22 @@ def test_apply_kit_defaults_merges_only_missing(project_creator: ProjectCreatorS
     assert merged == {"size": "L", "color": "blue"}
 
 
+def test_kit_emits_post_generate_summary_detects_hook(
+    project_creator: ProjectCreatorService,
+) -> None:
+    kit = type("Kit", (), {"hooks": {"post_generate": "post_generate"}})
+
+    assert project_creator._kit_emits_post_generate_summary(kit) is True  # noqa: SLF001
+
+
+def test_kit_emits_post_generate_summary_handles_missing_hook(
+    project_creator: ProjectCreatorService,
+) -> None:
+    kit = type("Kit", (), {"hooks": {}})
+
+    assert project_creator._kit_emits_post_generate_summary(kit) is False  # noqa: SLF001
+
+
 def test_install_essential_modules_handles_errors(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
@@ -231,6 +247,98 @@ def test_create_project_skips_essential_when_false(
     assert all(
         p.as_posix().endswith("src/main.py") or p.as_posix().endswith("README.md") for p in created
     )
+
+
+def test_create_project_suppresses_generic_next_steps_when_post_hook_summarizes(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    pc = ProjectCreatorService()
+
+    monkeypatch.setattr(pc.registry, "list_kits_names", lambda: ["fastapi.standard"])
+
+    class _DummyKit:
+        variables: list[Any] = []
+        min_rapidkit_version = "0.0.1"
+        display_name = "Demo Kit"
+        description = "desc"
+        hooks = {"post_generate": "post_generate"}
+
+    monkeypatch.setattr(pc.registry, "get_kit", lambda *_a, **_k: _DummyKit())
+
+    class _DummyGenerator:
+        def generate(self, out: Path, *_args: Any, **_kwargs: Any) -> list[str]:
+            out.mkdir(parents=True, exist_ok=True)
+            return [str(out / "README.md")]
+
+    monkeypatch.setattr(pc.registry, "get_generator", lambda *_a, **_k: _DummyGenerator())
+    info_messages: list[str] = []
+    success_messages: list[str] = []
+
+    pc.create_project(
+        kit_name="fastapi.standard",
+        project_name="Proj",
+        output_dir=tmp_path,
+        variables={},
+        force=True,
+        interactive=False,
+        debug=False,
+        prompt_func=None,
+        print_funcs={
+            "info": info_messages.append,
+            "error": lambda *_a: None,
+            "success": success_messages.append,
+        },
+        install_essential_modules=False,
+    )
+
+    assert "Project created successfully!" in success_messages
+    assert "Next steps:" not in info_messages
+    assert not any(message.startswith("Location:") for message in info_messages)
+
+
+def test_create_project_emits_generic_next_steps_without_post_hook(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    pc = ProjectCreatorService()
+
+    monkeypatch.setattr(pc.registry, "list_kits_names", lambda: ["custom.standard"])
+
+    class _DummyKit:
+        variables: list[Any] = []
+        min_rapidkit_version = "0.0.1"
+        display_name = "Demo Kit"
+        description = "desc"
+        hooks: dict[str, str] = {}
+
+    monkeypatch.setattr(pc.registry, "get_kit", lambda *_a, **_k: _DummyKit())
+
+    class _DummyGenerator:
+        def generate(self, out: Path, *_args: Any, **_kwargs: Any) -> list[str]:
+            out.mkdir(parents=True, exist_ok=True)
+            return [str(out / "README.md")]
+
+    monkeypatch.setattr(pc.registry, "get_generator", lambda *_a, **_k: _DummyGenerator())
+    info_messages: list[str] = []
+
+    pc.create_project(
+        kit_name="custom.standard",
+        project_name="Proj",
+        output_dir=tmp_path,
+        variables={},
+        force=True,
+        interactive=False,
+        debug=False,
+        prompt_func=None,
+        print_funcs={
+            "info": info_messages.append,
+            "error": lambda *_a: None,
+            "success": lambda *_a: None,
+        },
+        install_essential_modules=False,
+    )
+
+    assert "Next steps:" in info_messages
+    assert any(message.startswith("Location:") for message in info_messages)
 
 
 def test_create_project_writes_required_rapidkit_metadata(

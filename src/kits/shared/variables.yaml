@@ -13,7 +13,7 @@ author:
 
 description:
   type: string
-  default: "Application generated with RapidKit"
+  default: "Application generated for Workspai with RapidKit Core"
   description: "Short project description"
 
 app_version:

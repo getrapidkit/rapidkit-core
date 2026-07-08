@@ -1,6 +1,6 @@
 name: auth_core
 description: Authentication core primitives (JWT, RBAC, dependencies) for RapidKit
-version: 0.1.13
+version: 0.1.14
 access: free
 status: stable
 tier: free
@@ -140,8 +140,8 @@ support:
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
   documentation: https://getrapidkit.com/modules/auth-core
 changelog:
-  - version: "0.1.13"
-    date: "2026-06-08"
+  - version: "0.1.14"
+    date: "2026-07-07"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

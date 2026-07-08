@@ -342,7 +342,7 @@ def test_logging_health_router_registration():
     app = FastAPI()
     register_logging_health(app)
 
-    paths = {route.path for route in app.routes}
+    paths = set(app.openapi()["paths"])
     assert "/api/health/module/logging" in paths
 
 

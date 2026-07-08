@@ -144,7 +144,7 @@ def test_fastapi_plugin_hooks(tmp_path: Path) -> None:
     config = plugin.get_example_configurations()["auth_core"]
     assert config["iterations"] == EXPECTED_FASTAPI_ITERATIONS
     assert "pydantic" in plugin.get_dependencies()[0]
-    assert plugin.get_dev_dependencies() == ["pytest>=8.3.0"]
+    assert plugin.get_dev_dependencies() == ["pytest>=9.0.3,<10.0"]
 
 
 def test_nestjs_plugin_creates_defaults(tmp_path: Path) -> None:

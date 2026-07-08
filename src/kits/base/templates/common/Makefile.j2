@@ -19,7 +19,7 @@ POETRY ?= poetry
 PYTHON ?= python3
 
 init:
-> @echo "Bootstrapping dependencies via RapidKit CLI"
+> @echo "Bootstrapping dependencies via RapidKit Core"
 > @if [ -x ".rapidkit/rapidkit" ]; then \
 >   RAPIDKIT_BIN="./.rapidkit/rapidkit"; \
 > elif command -v rapidkit >/dev/null 2>&1; then \
@@ -30,7 +30,7 @@ init:
 > fi; \
 > if [ -f ".rapidkit/activate" ]; then . ./.rapidkit/activate >/dev/null 2>&1 || true; fi; \
 > "$$RAPIDKIT_BIN" init
-> @echo "Tip: run 'source .rapidkit/activate' in new shells to load the project-local CLI"
+> @echo "Tip: run 'source .rapidkit/activate' in new shells to load RapidKit Core"
 
 install:
 > @echo "Installing dependencies"

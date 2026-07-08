@@ -11,7 +11,7 @@ are owned by the npm CLI, which may bridge into this engine when required.
 | ------------------------------------------- | --------------------------------------------- |
 | `rapidkit`                                  | Backward-compatible Python engine entrypoint. |
 | `rkc`                                       | Explicit RapidKit Core entrypoint.            |
-| `npx rapidkit` / global `rapidkit` from npm | Recommended workspace CLI.                    |
+| `npx workspai` / global `workspai` from npm | Recommended workspace CLI.                    |
 
 ## Engine Commands
 

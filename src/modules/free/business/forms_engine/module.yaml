@@ -1,7 +1,7 @@
 name: forms_engine
 display_name: "Forms Engine"
 description: "Schema-driven forms engine with validation, submissions, workflow hooks, and audit-ready exports"
-version: 0.1.8
+version: 0.1.9
 access: free
 status: stable
 tier: free
@@ -132,8 +132,8 @@ support:
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
   documentation: https://getrapidkit.com/modules/forms_engine
 changelog:
-  - version: "0.1.8"
-    date: "2026-06-09"
+  - version: "0.1.9"
+    date: "2026-07-07"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

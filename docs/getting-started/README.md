@@ -1,20 +1,20 @@
-# 🚀 RapidKit – Getting Started
+# RapidKit Core - Getting Started
 
-Welcome! This guide helps you install RapidKit, scaffold your first project, and explore the module
-ecosystem. Everything here applies to the single RapidKit Community edition.
+Welcome! This guide helps you install RapidKit Core, scaffold your first project, and explore the
+module ecosystem. Workspace-level workflows are handled by Workspai.
 
 ## 📋 Requirements
 
 - Python 3.10+
 - Git (for cloning repositories or managing generated projects)
 
-## 🎯 Install the CLI
+## Install the CLI
 
 For workspace users, install the npm CLI:
 
 ```bash
-npm install -g rapidkit
-rapidkit --version
+npm install -g workspai
+workspai --version
 ```
 
 For direct Python engine work, install the core package:
@@ -29,7 +29,7 @@ rkc --version
 > Prefer a local checkout? Clone `https://github.com/rapidkitlabs/rapidkit-core` and run
 > `poetry install` from the repository root.
 
-## 🛠️ Create Your First Project
+## Create Your First Project
 
 ```bash
 # Launch the interactive wizard (recommended)
@@ -47,14 +47,14 @@ cd MyProject
 # This creates the local project launcher and a reproducible environment
 rapidkit init
 
-# Run the development server via the project-aware CLI
+# Run the development server via RapidKit Core
 rapidkit dev
 ```
 
 ## Bootstrapping explained
 
-Use `rapidkit init` as the recommended, project-aware bootstrap step after generating a project. It
-automates the common first-run tasks so new users don't need to remember multiple commands.
+Use `rapidkit init` as the recommended RapidKit Core bootstrap step after generating a project. It
+automates the common first-run tasks so new users do not need to remember multiple commands.
 
 - Python / FastAPI projects: `rapidkit init` will create a `.venv` (if missing), ensure `poetry` is
   available, and run `poetry install` inside the project virtual environment.

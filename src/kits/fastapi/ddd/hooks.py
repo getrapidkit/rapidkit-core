@@ -7,12 +7,16 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional
 
+from kits.shared import attempt_lockfile_generation, should_generate_lockfile
+
 
 def pre_generate(variables: Dict[str, Any]) -> None:
     """Ensure common metadata defaults before generation."""
     variables.setdefault("author", getpass.getuser())
     variables.setdefault("app_version", "0.1.0")
-    variables.setdefault("description", "Domain-driven FastAPI service generated with RapidKit")
+    variables.setdefault(
+        "description", "Domain-driven FastAPI service generated for Workspai with RapidKit Core"
+    )
     variables.setdefault("year", str(datetime.now().year))
 
 
@@ -31,40 +35,22 @@ def post_generate(
     print("🎉 FastAPI DDD project scaffolded!")
     print("=" * 60)
 
-    # Generate a poetry.lock for reproducible installs unless the user opts out.
-    try:
-        import os
-        import subprocess  # nosec - safe use for lock generation
-
-        def _is_truthy(value: object) -> bool:
-            return str(value).lower() in {"1", "true", "yes", "on"}
-
-        env_toggle = os.environ.get("RAPIDKIT_GENERATE_LOCKS")
-        if env_toggle is not None:
-            should_lock = _is_truthy(env_toggle)
-        elif _is_truthy(os.environ.get("RAPIDKIT_SKIP_LOCKS", "0")):
-            should_lock = False
-        elif variables and "generate_lock" in variables:
-            should_lock = bool(variables.get("generate_lock", True))
-        else:
-            should_lock = True
-
-        if should_lock:
-            print("\nℹ️ Generating poetry.lock (automatic lockfiles enabled)")
-            subprocess.run(
-                ["poetry", "lock"], cwd=str(output_path), check=False
-            )  # nosec - safe, static tool invocation
-            print("ℹ️ poetry.lock generation attempted (check output above).")
-    except (subprocess.SubprocessError, FileNotFoundError, OSError):
-        print("WARN: Lockfile generation attempted and failed. Continuing without locking.")
+    if should_generate_lockfile(variables):
+        attempt_lockfile_generation(
+            output_path=output_path,
+            command=["poetry", "lock"],
+            label="poetry.lock",
+        )
     print(f"📁 Project: {project_name}")
     print(f"📂 Location: {output_path}")
     print("\nNext steps:")
     print(f"  1. cd {project_name}")
-    print("  2. source .rapidkit/activate")
-    print("  3. rapidkit init")
+    print("  2. source .rapidkit/activate  # loads the project-local RapidKit Core launcher")
+    print("  3. rapidkit init              # project bootstrap")
     print("  4. ./bootstrap.sh")
-    print("  5. rapidkit dev")
+    print("  5. rapidkit dev               # project runtime")
+    print("\nWorkspace intelligence:")
+    print("  • From the workspace root, run: npx workspai workspace model --json")
     print(
         "\nExplore the layered structure under src/app to connect domain, application,"
         " infrastructure, and presentation boundaries."

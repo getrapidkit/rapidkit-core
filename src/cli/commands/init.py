@@ -12,7 +12,9 @@ from __future__ import annotations
 
 import os
 import shutil
-import subprocess  # nosec - controlled use (non-shell, static arguments)
+
+# subprocess is used with static executables and argument lists.
+import subprocess  # nosec B404
 from pathlib import Path
 from typing import Optional
 
@@ -250,9 +252,8 @@ def init(project: Optional[Path] = None) -> None:
             typer.echo("❌ No python interpreter found to create virtualenv")
             raise typer.Exit(code=1)
         try:
-            subprocess.run(
-                [py, "-m", "venv", str(venv_dir)], check=True
-            )  # nosec - creating venv with known python
+            # Creating venv with a discovered Python executable and no shell.
+            subprocess.run([py, "-m", "venv", str(venv_dir)], check=True)
         except subprocess.CalledProcessError as e:
             typer.echo(f"❌ Failed to create virtualenv: {e}")
             raise typer.Exit(code=1) from e

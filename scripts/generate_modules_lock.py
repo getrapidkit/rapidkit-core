@@ -1,5 +1,8 @@
 #!/usr/bin/env python
-"""Generate modules.lock (name -> version) by scanning src/modules/*/module.yaml"""
+"""Generate modules.lock (module slug -> version) from src/modules/**/module.yaml."""
+
+from __future__ import annotations
+
 import json
 import sys
 from pathlib import Path
@@ -15,25 +18,28 @@ def main():
     if not modules_dir.exists():
         print("No modules directory", file=sys.stderr)
         return 1
-    mapping = {}
-    for d in sorted(modules_dir.iterdir()):
-        if not d.is_dir():
+    mapping: dict[str, str] = {}
+    for manifest in sorted(modules_dir.rglob("module.yaml")):
+        module_dir = manifest.parent
+        try:
+            slug = module_dir.relative_to(modules_dir).as_posix()
+        except ValueError:
             continue
-        manifest = d / "module.yaml"
-        if manifest.exists():
-            try:
-                data = yaml.safe_load(manifest.read_text()) or {}
-                name = data.get("name") or d.name
-                ver = data.get("version") or "0.0.0"
-                mapping[name] = ver
-            except (
-                OSError,
-                yaml.YAMLError,
-                json.JSONDecodeError,
-                UnicodeDecodeError,
-            ) as e:
-                # Skip malformed module manifest but keep going (avoid silent swallow)
-                print(f"Skipping {manifest}: {e}", file=sys.stderr)
+        try:
+            data = yaml.safe_load(manifest.read_text(encoding="utf-8")) or {}
+            if not isinstance(data, dict):
+                raise TypeError("manifest root must be a mapping")
+            ver = data.get("version") or "0.0.0"
+            mapping[slug] = str(ver)
+        except (
+            OSError,
+            TypeError,
+            yaml.YAMLError,
+            json.JSONDecodeError,
+            UnicodeDecodeError,
+        ) as e:
+            # Skip malformed module manifest but keep going (avoid silent swallow)
+            print(f"Skipping {manifest}: {e}", file=sys.stderr)
     lock_path.write_text(json.dumps(mapping, indent=2) + "\n", encoding="utf-8")
     print(f"Wrote {lock_path} ({len(mapping)} modules)")
     return 0

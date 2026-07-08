@@ -2,7 +2,7 @@ name: connector_hub
 display_name: Connector Hub
 description: Integration connector hub scaffolding for external apps, credentials, sync jobs, and provider
   adapters
-version: 0.1.10
+version: 0.1.11
 access: free
 status: stable
 tier: free
@@ -125,8 +125,8 @@ support:
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
   documentation: https://getrapidkit.com/modules/connector_hub
 changelog:
-  - version: "0.1.10"
-    date: "2026-06-09"
+  - version: "0.1.11"
+    date: "2026-07-07"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

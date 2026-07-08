@@ -26,7 +26,7 @@ def test_storage_fastapi_plugin_contract() -> None:
     assert plugin.get_template_mappings()["routes"].endswith("storage_routes.py.j2")
     assert plugin.get_output_paths()["health"] == "src/health/storage.py"
     assert "python-multipart>=0.0.5" in plugin.get_dependencies()
-    assert "pytest>=7.0.0" in plugin.get_dev_dependencies()
+    assert "pytest>=9.0.3,<10.0" in plugin.get_dev_dependencies()
     assert plugin.get_context_enrichments({})["route_prefix"] == "/api/v1/storage"
 
 

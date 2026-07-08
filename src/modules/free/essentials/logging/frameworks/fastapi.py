@@ -119,16 +119,16 @@ class FastAPIPlugin(FrameworkPlugin):
 
     def get_dependencies(self) -> List[str]:
         return [
-            "fastapi>=0.119.0",
-            "starlette>=0.37.2",
+            "fastapi>=0.139.0",
+            "starlette>=1.3.1",
             "python-json-logger>=2.0.0",
         ]
 
     def get_dev_dependencies(self) -> List[str]:
         return [
-            "pytest>=8.3.0",
+            "pytest>=9.0.3,<10.0",
             "httpx>=0.28.0",
-            "pytest-asyncio>=1.2.0",
+            "pytest-asyncio>=1.3.0,<2.0",
         ]
 
 

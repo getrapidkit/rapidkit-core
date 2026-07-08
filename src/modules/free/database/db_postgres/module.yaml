@@ -3,7 +3,7 @@ display_name: PostgreSQL
 description: Production-ready PostgreSQL integration with async/sync engines, connection
   pooling, transactions, health checks, and configuration scaffolding for FastAPI
   and NestJS applications
-version: 0.1.30
+version: 0.1.31
 access: free
 status: stable
 category: database
@@ -105,11 +105,11 @@ dev_dependencies:
 - name: pytest
   source: external
   tool: pip
-  version: '>=8.3.0,<9.0'
+  version: '>=9.0.3,<10.0'
 - name: pytest-asyncio
   source: external
   tool: pip
-  version: '>=0.25.0,<1.0'
+  version: '>=1.3.0,<2.0'
 compatibility:
   python: '>=3.10,<4.0'
   frameworks:
@@ -158,8 +158,8 @@ support:
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
   documentation: https://getrapidkit.com/modules/db_postgres
 changelog:
-  - version: "0.1.30"
-    date: "2026-06-08"
+  - version: "0.1.31"
+    date: "2026-07-07"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

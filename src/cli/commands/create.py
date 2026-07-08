@@ -19,6 +19,8 @@ from ..utils.module_scaffold import ModuleScaffolder
 from ..utils.prompts import prompt_variables
 from ..utils.validators import validate_project_name
 
+DEFAULT_CREATED_FILES_PRINT_LIMIT = 20
+
 
 def _detect_workspace_engine() -> str:
     """Detect the package manager used in the current workspace.
@@ -311,8 +313,12 @@ def create_project(
         )
         if created_files:
             print_info("\nFiles created:")
-            for f in created_files:
-                print_success(f"  + {f}")
+            if debug or len(created_files) <= DEFAULT_CREATED_FILES_PRINT_LIMIT:
+                for f in created_files:
+                    print_success(f"  + {f}")
+            else:
+                print_success(f"  + {len(created_files)} files generated")
+                print_info("  Use --debug to print every generated path.")
 
     except (ValueError, OSError, RuntimeError) as e:
         if debug:

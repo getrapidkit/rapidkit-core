@@ -2,7 +2,7 @@ name: feature_flags
 display_name: Feature Flags
 description: Feature flag scaffolding for staged rollout, entitlement-aware gates, experiments, and kill
   switches
-version: 0.1.9
+version: 0.1.10
 access: free
 status: stable
 tier: free
@@ -124,8 +124,8 @@ support:
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
   documentation: https://getrapidkit.com/modules/feature_flags
 changelog:
-  - version: "0.1.9"
-    date: "2026-06-09"
+  - version: "0.1.10"
+    date: "2026-07-07"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

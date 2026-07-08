@@ -209,7 +209,8 @@ class TemplateRenderer:
             loader = FileSystemLoader(str(self.template_root))
             self.jinja_env = JinjaEnvironment(
                 loader=loader,
-                autoescape=False,  # nosec B701 - templates render trusted code artifacts for generators
+                # Templates render trusted code artifacts for generators.
+                autoescape=False,  # nosec B701
                 keep_trailing_newline=True,
                 lstrip_blocks=False,
                 trim_blocks=False,
@@ -260,7 +261,7 @@ class TemplateRenderer:
                 logger.debug(f"Rendered {template_path} using Jinja2")
                 return result
             except (OSError, ValueError, TypeError, AttributeError) as e:
-                logger.warning(
+                logger.debug(
                     f"Jinja2 rendering failed for {template_path}, falling back to custom parser: {e}"
                 )
                 jinja_error = e

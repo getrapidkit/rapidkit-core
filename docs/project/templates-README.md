@@ -49,7 +49,7 @@ git commit -m "Update auth module"
 
 ### What it doesn't do:
 
-- ❌ **No code execution** beyond RapidKit CLI
+- ❌ **No code execution** beyond RapidKit Core CLI
 - ❌ **No file system access** outside project directory
 - ❌ **No database modifications**
 - ❌ **No external API calls**
@@ -157,7 +157,7 @@ From now on, every time you change modules, the lock file updates automatically.
 
 ## Requirements
 
-- **RapidKit CLI** must be installed in your repository
+- **RapidKit Core CLI** must be installed in your repository
 - **Python 3.10** for running the CLI
 - **Pre-commit** (if using the pre-commit template)
 - **GitHub Actions** (if using the GitHub Actions template)

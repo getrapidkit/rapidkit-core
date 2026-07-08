@@ -2,7 +2,7 @@
 
 This page is **CLI-first**.
 
-- The stable public contract is the RapidKit CLI (`rapidkit ...`).
+- The stable public contract is the RapidKit Core CLI (`rapidkit ...`).
 - Internal Python APIs change more frequently and are not considered a stable integration surface.
 
 If you are building automation, prefer shelling out to the CLI and consuming JSON outputs (where

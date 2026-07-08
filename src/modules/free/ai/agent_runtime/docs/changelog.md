@@ -1,5 +1,9 @@
 # Changelog — free/ai/agent_runtime
 
+## 0.1.15 — Automated patch release triggered by content hash change (2026-07-07)
+
+- chore: Automated patch release triggered by content hash change
+
 ## 0.1.14 — Automated patch release triggered by content hash change (2026-06-09)
 
 - chore: Automated patch release triggered by content hash change

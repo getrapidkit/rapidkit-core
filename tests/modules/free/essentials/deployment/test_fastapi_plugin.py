@@ -31,9 +31,9 @@ def test_fastapi_context_enrichments_include_defaults() -> None:
 def test_fastapi_dependencies_lists_expected_packages() -> None:
     plugin = FastAPIPlugin()
 
-    assert "fastapi>=0.119.0" in plugin.get_dependencies()
+    assert "fastapi>=0.139.0" in plugin.get_dependencies()
     dev_deps = plugin.get_dev_dependencies()
-    assert "pytest-asyncio>=0.23.0" in dev_deps
+    assert "pytest-asyncio>=1.3.0,<2.0" in dev_deps
     assert "httpx>=0.28.0" in dev_deps
 
 
@@ -69,7 +69,7 @@ def test_fastapi_validate_requirements_uses_metadata_when_needed(
 
     monkeypatch.setattr(
         "modules.free.essentials.deployment.frameworks.fastapi.importlib_metadata.version",
-        lambda _: "0.120.0",
+        lambda _: "0.139.0",
     )
 
     assert plugin.validate_requirements() == []

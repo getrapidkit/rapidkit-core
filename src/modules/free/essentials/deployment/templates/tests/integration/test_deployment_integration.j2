@@ -198,7 +198,7 @@ def test_deployment_health_router_registration():
     app = FastAPI()
     register_deployment_health(app)
 
-    paths = {route.path for route in app.routes}
+    paths = set(app.openapi()["paths"])
     assert "/api/health/module/deployment" in paths
 
 

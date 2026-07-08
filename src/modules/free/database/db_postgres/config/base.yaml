@@ -174,7 +174,7 @@ dev_dependencies:
   - name: black
     source: external
     tool: pip
-    version: ">=25.0.0,<26.0"
+    version: ">=26.3.1,<27.0"
   - name: isort
     source: external
     tool: pip
@@ -182,19 +182,19 @@ dev_dependencies:
   - name: mypy
     source: external
     tool: pip
-    version: ">=1.10.0,<2.0"
+    version: ">=1.18.2,<2.0"
   - name: ruff
     source: external
     tool: pip
-    version: ">=0.4.4,<1.0"
+    version: ">=0.14.0,<1.0"
   - name: pytest
     source: external
     tool: pip
-    version: ">=8.3.0,<9.0"
+    version: ">=9.0.3,<10.0"
   - name: pytest-asyncio
     source: external
     tool: pip
-    version: ">=0.25.0,<1.0"
+    version: ">=1.3.0,<2.0"
 
 features:
   db_postgres:

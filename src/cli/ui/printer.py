@@ -5,7 +5,6 @@ import sys
 from pathlib import Path
 from typing import Any, Tuple, cast
 
-import typer
 from rich.console import Console
 
 _CONSOLE_STATE: dict[str, object] = {"instance": None, "stream": None}
@@ -174,11 +173,7 @@ def _ensure_prefix(message: str, symbol: str) -> str:
 def _print(color: str, message: str) -> None:
     target = console
     sanitized = sanitize_console_text(message)
-    stream = getattr(target, "file", sys.stdout)
-    is_tty = bool(getattr(stream, "isatty", lambda: False)())
     target.print(sanitized, style=color)
-    if not is_tty:
-        typer.echo(sanitized)
 
 
 def print_banner() -> None:

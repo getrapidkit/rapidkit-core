@@ -34,8 +34,8 @@ function pick_node_pm() {
   fi
 }
 
-# Intercept npm-wrapper-only commands and delegate to npx rapidkit.
-# These commands are handled by the RapidKit npm package, not by the local
+# Intercept npm-wrapper-only commands and delegate to npx workspai.
+# These commands are handled by the Workspai npm package, not by the local
 # project toolchain (poetry / pnpm / yarn / npm run).
 # Without this, `rapidkit doctor workspace` would become
 # `poetry run doctor workspace` which fails because the Python CLI
@@ -48,7 +48,7 @@ for _cmd in $_NPM_ONLY_COMMANDS; do
       echo "❌ 'npx' is not available. Install Node.js / npm to use the '${_FIRST_CMD}' command." >&2
       exit 127
     fi
-    exec npx rapidkit "$@"
+    exec npx workspai "$@"
   fi
 done
 
@@ -59,7 +59,7 @@ case "$PKG_TYPE" in
       if [ "${1:-}" = "init" ]; then
         # Run poetry install (do not exec so we can print follow-up hints)
         "$VENV_POETRY" install || exit $?
-        echo "\n✅ Project bootstrapped (dependencies installed)."
+        printf '\n✅ Project bootstrapped (dependencies installed).\n'
         echo "💡 To activate in your current shell without opening a new terminal run:"
         echo '  eval "$(rapidkit shell activate)"'
         exit 0
@@ -73,7 +73,7 @@ case "$PKG_TYPE" in
       if [ "${1:-}" = "init" ]; then
         # Run system poetry install and then provide an activation hint
         poetry install || exit $?
-        echo "\n✅ Project bootstrapped (dependencies installed)."
+        printf '\n✅ Project bootstrapped (dependencies installed).\n'
         echo "💡 To activate in your current shell without opening a new terminal run:"
         echo '  eval "$(rapidkit shell activate)"'
         exit 0
@@ -91,7 +91,7 @@ case "$PKG_TYPE" in
         if [ "${1:-}" = "init" ]; then
           # Run poetry install inside venv and then give activation hint
           "$VENV_POETRY" install || exit $?
-          echo "\n✅ Project bootstrapped (dependencies installed)."
+          printf '\n✅ Project bootstrapped (dependencies installed).\n'
           echo "💡 To activate in your current shell without opening a new terminal run:"
           echo '  eval "$(rapidkit shell activate)"'
           exit 0
