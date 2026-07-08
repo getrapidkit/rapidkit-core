@@ -1,11 +1,11 @@
 # Migrating to Lean Spec v2
 
 Lean Spec v2 consolidates generator logic, shared overrides, and documentation so every module can
-be updated via the RapidKit CLI. Follow the checklist below to move existing projects.
+be updated via the RapidKit Core CLI. Follow the checklist below to move existing projects.
 
 ## Prerequisites
 
-- RapidKit CLI `>= 0.12.0`
+- RapidKit Core CLI `>= 0.12.0`
 - Access to the legacy module with `generator.py` and bespoke overrides
 - Green test suite for the existing settings implementation
 

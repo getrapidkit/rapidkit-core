@@ -11,6 +11,7 @@ import pytest
 from scripts import check_module_integrity
 
 
+@pytest.mark.external_tooling
 def test_check_module_integrity_smoke() -> None:
     repo_root = Path(__file__).resolve().parents[2]
     result = subprocess.run(

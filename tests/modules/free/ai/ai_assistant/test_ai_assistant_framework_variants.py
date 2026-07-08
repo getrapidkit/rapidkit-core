@@ -92,8 +92,8 @@ def test_fastapi_plugin_context_and_dependencies(tmp_path: Path) -> None:
     assert mappings["runtime"].endswith("ai_assistant.py.j2")
     assert outputs["health"].endswith("src/health/ai_assistant.py")
     assert enriched["framework_display_name"] == "FastAPI"
-    assert plugin.get_dependencies() == ["fastapi>=0.110.0"]
-    assert "pytest-asyncio>=0.23.0" in plugin.get_dev_dependencies()
+    assert plugin.get_dependencies() == ["fastapi>=0.139.0"]
+    assert "pytest-asyncio>=1.3.0,<2.0" in plugin.get_dev_dependencies()
 
     output_dir = tmp_path / "fastapi"
     plugin.pre_generation_hook(output_dir)

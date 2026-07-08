@@ -1,4 +1,4 @@
-# RapidKit CLI Contracts
+# RapidKit Core CLI Contracts
 
 This directory defines the **stable JSON contracts** emitted by RapidKit Core CLI commands. These
 contracts are used by the npm bridge and other tooling to ensure compatibility.

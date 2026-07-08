@@ -5,7 +5,11 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, Optional
 
-from kits.shared import ensure_settings_vendor_snapshot
+from kits.shared import (
+    attempt_lockfile_generation,
+    ensure_settings_vendor_snapshot,
+    should_generate_lockfile,
+)
 
 
 def pre_generate(variables: Dict[str, Any]) -> None:
@@ -76,13 +80,15 @@ def post_generate(
         }
         install_cmd, dev_cmd = commands.get(package_manager, commands["npm"])
 
-        # Prefer the rapidkit flow (creates local launcher and handles deps)
+        # Prefer the Workspai/RapidKit Core flow (creates local launcher and handles deps)
         print("\n📝 Next steps:")
         print(f"1. cd {project_name}")
-        print("2. source .rapidkit/activate")
-        print("3. rapidkit init")
+        print("2. source .rapidkit/activate  # loads the project-local RapidKit Core launcher")
+        print("3. rapidkit init              # project bootstrap")
         print("4. ./bootstrap.sh")
-        print("5. rapidkit dev")
+        print("5. rapidkit dev               # project runtime")
+        print("\nWorkspace intelligence:")
+        print("  • From the workspace root, run: npx workspai workspace model --json")
 
         # Also include the raw package-manager steps as an alternate path for users
         print("\nOr, if you prefer to manage deps directly using your package manager:")
@@ -117,39 +123,12 @@ def post_generate(
     print("\n📚 Documentation: docs/README.md")
     print("=" * 60)
 
-    # Optionally generate a package lock (package-lock.json / pnpm-lock.yaml / yarn.lock)
-    try:
-        import os
-        import subprocess  # nosec - safe use for lock generation
-
-        def _is_truthy(value: object) -> bool:
-            return str(value).lower() in {"1", "true", "yes", "on"}
-
-        env_toggle = os.environ.get("RAPIDKIT_GENERATE_LOCKS")
-        if env_toggle is not None:
-            should_lock = _is_truthy(env_toggle)
-        elif _is_truthy(os.environ.get("RAPIDKIT_SKIP_LOCKS", "0")):
-            should_lock = False
-        elif variables and "generate_lock" in variables:
-            should_lock = bool(variables.get("generate_lock", True))
-        else:
-            should_lock = True
-
-        if should_lock and output_path:
-            pm = variables.get("package_manager", "npm") if variables else "npm"
-            print(f"\nℹ️ Generating lockfile for package manager: {pm}")
-            if pm == "npm":
-                subprocess.run(
-                    ["npm", "install", "--package-lock-only"], cwd=str(output_path), check=False
-                )  # nosec - safe static invocation of npm
-            elif pm == "pnpm":
-                subprocess.run(
-                    ["pnpm", "install", "--lockfile-only"], cwd=str(output_path), check=False
-                )  # nosec - safe static invocation of pnpm
-            elif pm == "yarn":
-                subprocess.run(
-                    ["yarn", "install", "--mode=update-lockfile"], cwd=str(output_path), check=False
-                )  # nosec - safe static invocation of yarn
-            print("ℹ️ Lockfile generation attempted (check output above).")
-    except (subprocess.SubprocessError, FileNotFoundError, OSError):
-        print("WARN: Lockfile generation attempted and failed. Continuing without locking.")
+    if should_generate_lockfile(variables) and output_path:
+        pm = str(variables.get("package_manager", "npm") if variables else "npm")
+        lock_commands = {
+            "npm": (["npm", "install", "--package-lock-only"], "package-lock.json"),
+            "pnpm": (["pnpm", "install", "--lockfile-only"], "pnpm-lock.yaml"),
+            "yarn": (["yarn", "install", "--mode=update-lockfile"], "yarn.lock"),
+        }
+        command, label = lock_commands.get(pm, lock_commands["npm"])
+        attempt_lockfile_generation(output_path=output_path, command=command, label=label)

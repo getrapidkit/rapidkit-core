@@ -175,20 +175,20 @@ depends_on:
     - name: fastapi
       source: external
       tool: pip
-      version: ">=0.115.0,<1.0"
+      version: ">=0.139.0,<1.0"
     - name: starlette
       source: external
       tool: pip
-      version: ">=0.38.0,<1.0"
+      version: ">=1.3.1,<2.0"
   fastapi/ddd:
     - name: fastapi
       source: external
       tool: pip
-      version: ">=0.115.0,<1.0"
+      version: ">=0.139.0,<1.0"
     - name: starlette
       source: external
       tool: pip
-      version: ">=0.38.0,<1.0"
+      version: ">=1.3.1,<2.0"
   nestjs/standard:
     - name: "@nestjs/common"
       source: npm
@@ -207,12 +207,12 @@ dev_dependencies:
   - name: pytest
     source: external
     tool: pip
-    version: ">=8.3.0,<9.0"
+    version: ">=9.0.3,<10.0"
   - name: pytest-asyncio
     source: external
     tool: pip
-    version: ">=0.25.0,<1.0"
+    version: ">=1.3.0,<2.0"
   - name: ruff
     source: external
     tool: pip
-    version: ">=0.6.0,<1.0"
+    version: ">=0.14.0,<1.0"

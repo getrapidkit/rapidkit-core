@@ -1,7 +1,7 @@
 name: approval_engine
 display_name: "Approval Engine"
 description: "Approval workflow engine with policies, required reasons, reviewer decisions, escalation, and immutable audit trails"
-version: 0.1.8
+version: 0.1.9
 access: free
 status: stable
 tier: free
@@ -133,8 +133,8 @@ support:
   discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
   documentation: https://getrapidkit.com/modules/approval_engine
 changelog:
-  - version: "0.1.8"
-    date: "2026-06-10"
+  - version: "0.1.9"
+    date: "2026-07-07"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

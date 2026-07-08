@@ -33,7 +33,7 @@ def test_admin_console_fastapi_plugin_contract(tmp_path: Path) -> None:
     assert plugin.language == "python"
     assert plugin.display_name == "FastAPI"
     assert plugin.validate_requirements() == []
-    assert "fastapi>=0.110.0" in plugin.get_dependencies()
+    assert "fastapi>=0.139.0" in plugin.get_dependencies()
     assert "httpx>=0.27.0" in plugin.get_dev_dependencies()
     assert plugin.get_template_mappings()["runtime"].endswith("admin_console.py.j2")
     assert (

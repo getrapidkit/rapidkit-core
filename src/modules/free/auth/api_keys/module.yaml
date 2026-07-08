@@ -1,7 +1,7 @@
 name: api_keys
 display_name: API Keys
 description: Deterministic API key issuance, verification, and auditing
-version: 0.1.4
+version: 0.1.5
 access: free
 status: stable
 tier: free
@@ -131,8 +131,8 @@ support:
     discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
     documentation: https://getrapidkit.com/modules/auth/api_keys
 changelog:
-  - version: "0.1.4"
-    date: "2026-06-08"
+  - version: "0.1.5"
+    date: "2026-07-07"
     notes: "See docs/changelog.md"
 validation:
     pre_install:

@@ -124,7 +124,7 @@ def test_auth_core_health_router_registration(monkeypatch: pytest.MonkeyPatch) -
     app = FastAPI()
     register_auth_core_health(app)
 
-    paths = {route.path for route in app.routes}
+    paths = set(app.openapi()["paths"])
     assert "/api/health/module/auth-core" in paths
 
 

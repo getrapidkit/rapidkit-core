@@ -5,7 +5,9 @@ import contextlib
 import json
 import os
 import shlex
-import subprocess  # nosec # safe: controlled command execution for Poetry delegation
+
+# subprocess is used with static executables and argument lists for CLI delegation.
+import subprocess  # nosec B404
 import sys
 from importlib import import_module
 from json import JSONDecodeError
@@ -16,7 +18,8 @@ from core.config.version import get_version
 
 ENGINE_FLAG_MIN_ARGS = 2
 MIN_SCOPED_COMMAND_ARGS = 2
-NPM_CLI_PACKAGE = "rapidkit"
+NPM_CLI_PACKAGE = "workspai"
+NPM_CLI_BINARY = "workspai"
 
 NPM_OWNED_TOP_LEVEL_COMMANDS = {
     "analyze",
@@ -189,7 +192,8 @@ def _delegate_to_node_cli(argv: list[str]) -> None:
     """Invoke the Node-based rapidkit if present (local npx preferred)."""
 
     cmd = ["npx", "rapidkit", *argv]
-    result = subprocess.run(cmd, check=False)  # nosec B603 - controlled command invocation
+    # Controlled command invocation: static executable and argument list.
+    result = subprocess.run(cmd, check=False)  # nosec B603
     sys.exit(result.returncode)
 
 
@@ -210,17 +214,21 @@ def _handle_npm_owned_invocation(argv: list[str]) -> None:
     """Guide users when the Python/Core launcher receives an npm-owned command."""
 
     if os.environ.get("RAPIDKIT_CORE_PASS_THROUGH_NPM") == "1":
-        cmd = ["npx", "--yes", "--package", NPM_CLI_PACKAGE, "rapidkit", *argv]
-        result = subprocess.run(cmd, check=False)  # nosec B603 - controlled command invocation
+        cmd = ["npx", "--yes", "--package", NPM_CLI_PACKAGE, NPM_CLI_BINARY, *argv]
+        # Controlled command invocation: static executable and argument list.
+        result = subprocess.run(cmd, check=False)  # nosec B603
         sys.exit(result.returncode)
 
     rendered = " ".join(["rapidkit", *argv])
     print("RapidKit command routing notice", file=sys.stderr)
-    print(f"`{rendered}` belongs to the RapidKit npm workspace CLI.", file=sys.stderr)
+    print(f"`{rendered}` belongs to the Workspai npm workspace CLI.", file=sys.stderr)
     print("", file=sys.stderr)
     print("Run one of:", file=sys.stderr)
-    print("  npm install -g rapidkit", file=sys.stderr)
-    print(f"  npx --yes --package {NPM_CLI_PACKAGE} rapidkit {' '.join(argv)}", file=sys.stderr)
+    print("  npm install -g workspai", file=sys.stderr)
+    print(
+        f"  npx --yes --package {NPM_CLI_PACKAGE} {NPM_CLI_BINARY} {' '.join(argv)}",
+        file=sys.stderr,
+    )
     print("", file=sys.stderr)
     print(
         "If this happened on Windows, Python's rapidkit.exe is probably earlier in PATH "
@@ -355,7 +363,7 @@ class _RapidTUILike(Protocol):
 
 
 def _delegate_to_project_cli(command: str, args: list[str]) -> None:
-    """Delegate command to project's local CLI."""
+    """Delegate command to the project's local RapidKit Core wrapper."""
     project_root = _find_project_root()
 
     if not project_root:
@@ -387,13 +395,13 @@ def _delegate_to_project_cli(command: str, args: list[str]) -> None:
     else:
         python_for_module = sys.executable
 
-    # If a project-local CLI exists prefer invoking its callable function
+    # If a project-local RapidKit Core wrapper exists, prefer invoking its callable function.
     project_local_cli = project_root / ".rapidkit" / "cli.py"
     if project_local_cli.exists():
         try:
             argv = [command] + args
             # Build a small execution snippet that parses common flags and forwards
-            # them as keyword args to the callable in the project-local CLI if
+            # them as keyword args to the callable in the project-local wrapper if
             # possible. Falls back to calling the function without kwargs.
             one_liner = (
                 "import importlib.util, sys, argparse; sys.argv="
@@ -423,7 +431,8 @@ def _delegate_to_project_cli(command: str, args: list[str]) -> None:
                 "🚀", f"Running project-local .rapidkit/cli.py -> {project_local_cli}", "36"
             )
             _print_banner("📁", f"Project: {project_root.name}", "33")
-            result = subprocess.run(  # nosec - controlled python one-liner executed without shell
+            # Controlled Python one-liner executed without shell.
+            result = subprocess.run(  # nosec B603
                 [python_for_module, "-c", one_liner], cwd=project_root, env=env, check=False
             )
             # If this was an init and it succeeded, ensure .rapidkit/activate exists
@@ -457,7 +466,8 @@ def _delegate_to_project_cli(command: str, args: list[str]) -> None:
         _print_banner("📁", f"Project: {project_root.name}", "33")
 
         try:
-            result = subprocess.run(  # nosec B603 # safe: controlled CLI command execution
+            # Controlled command invocation for project-local Poetry scripts.
+            result = subprocess.run(  # nosec B603
                 poetry_command, cwd=project_root, env=env, check=False
             )
             # If init succeeded, create an activation helper

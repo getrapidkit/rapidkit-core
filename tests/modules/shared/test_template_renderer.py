@@ -1,3 +1,4 @@
+import logging
 import textwrap
 
 import pytest
@@ -63,3 +64,17 @@ def test_template_renderer_fallback_works_for_simple_expressions(tmp_path, monke
     rendered = renderer.render(template_path, {})
 
     assert rendered == "value='fallback'"
+
+
+def test_template_renderer_successful_jinja_fallback_does_not_warn(tmp_path, caplog) -> None:
+    template_path = tmp_path / "simple.j2"
+    template_path.write_text("value={{ name | default('fallback') }}", encoding="utf-8")
+
+    renderer = TemplateRenderer(tmp_path)
+    renderer.jinja_env = object()
+
+    caplog.set_level(logging.WARNING, logger="modules.shared.generator")
+    rendered = renderer.render(template_path, {})
+
+    assert rendered == "value='fallback'"
+    assert not [record for record in caplog.records if record.levelno >= logging.WARNING]

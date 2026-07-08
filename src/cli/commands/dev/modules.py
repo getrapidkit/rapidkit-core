@@ -4,7 +4,9 @@
 from __future__ import annotations
 
 import shutil
-import subprocess  # nosec - controlled command execution for module tooling
+
+# subprocess is used for controlled module tooling commands.
+import subprocess  # nosec B404
 import sys
 import tempfile
 from pathlib import Path
@@ -86,7 +88,8 @@ def modules_generate(
     ]
 
     try:
-        subprocess.run(  # nosec - command is constructed from trusted module metadata
+        # Command is constructed from trusted module metadata.
+        subprocess.run(  # nosec B603
             cmd,
             cwd=module_path,
             check=True,

@@ -1,7 +1,9 @@
 # src / core / services / project_creator.py
 import getpass
 import shutil
-import subprocess  # nosec - safe usage for controlled CLI commands
+
+# subprocess is used for controlled CLI commands with explicit argv.
+import subprocess  # nosec B404
 import sys
 from datetime import datetime
 from pathlib import Path
@@ -39,6 +41,10 @@ class ProjectCreatorService:
 
     def _has_missing_required_variables(self, kit_config: Any, variables: Dict[str, Any]) -> bool:
         return any(var.required and var.name not in variables for var in kit_config.variables)
+
+    def _kit_emits_post_generate_summary(self, kit_config: Any) -> bool:
+        hooks = getattr(kit_config, "hooks", {}) or {}
+        return bool(hooks.get("post_generate"))
 
     def _get_run_command_for_kit(
         self, kit_name: str, variables: Optional[Dict[str, Any]] = None
@@ -158,7 +164,8 @@ class ProjectCreatorService:
             ]
 
             try:
-                result = subprocess.run(  # nosec - safe controlled command execution
+                # Controlled command execution with explicit argv and no shell.
+                result = subprocess.run(  # nosec B603
                     cmd,
                     capture_output=True,
                     text=True,
@@ -328,10 +335,11 @@ class ProjectCreatorService:
             print_info_func("Skipping essential module installation by user choice.")
 
         print_success_func("Project created successfully!")
-        print_info_func(f"Location: {output_path}")
-        print_info_func("Next steps:")
-        print_info_func(f"  cd {project_name}")
-        for step in self._get_next_steps_for_kit(kit_name, vars_for_generate):
-            print_info_func(f"  {step}")
+        if not self._kit_emits_post_generate_summary(kit_config):
+            print_info_func(f"Location: {output_path}")
+            print_info_func("Next steps:")
+            print_info_func(f"  cd {project_name}")
+            for step in self._get_next_steps_for_kit(kit_name, vars_for_generate):
+                print_info_func(f"  {step}")
         # generator returns List[str] (file paths); convert to List[Path]
         return [Path(p) for p in created_files_list]

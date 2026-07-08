@@ -12,7 +12,7 @@ from modules.shared.frameworks import FrameworkPlugin
 class FastAPIPlugin(FrameworkPlugin):
     """Generate FastAPI bindings for the storage runtime."""
 
-    MIN_FASTAPI_VERSION = (0, 95)
+    MIN_FASTAPI_VERSION = (0, 139)
 
     @property
     def name(self) -> str:  # noqa: D401 - short alias
@@ -60,7 +60,7 @@ class FastAPIPlugin(FrameworkPlugin):
         try:
             fastapi_module = importlib.import_module("fastapi")
         except ImportError:
-            issues.append("fastapi>=0.95.0,<1.0.0 is required for the storage module")
+            issues.append("fastapi>=0.139.0,<1.0.0 is required for the storage module")
             return issues
 
         version_raw = getattr(fastapi_module, "__version__", None)
@@ -77,13 +77,13 @@ class FastAPIPlugin(FrameworkPlugin):
             return issues
 
         if (major, minor) < self.MIN_FASTAPI_VERSION:
-            issues.append("FastAPI 0.95.0 or newer is required")
+            issues.append("FastAPI 0.139.0 or newer is required")
 
         return issues
 
     def get_dependencies(self) -> list[str]:
         return [
-            "fastapi>=0.95.0,<1.0.0",
+            "fastapi>=0.139.0,<1.0.0",
             "python-multipart>=0.0.5",
             "aiofiles>=22.1.0",
             "pillow>=9.0.0",
@@ -91,8 +91,8 @@ class FastAPIPlugin(FrameworkPlugin):
 
     def get_dev_dependencies(self) -> list[str]:
         return [
-            "pytest>=7.0.0",
-            "pytest-asyncio>=0.20.0",
+            "pytest>=9.0.3,<10.0",
+            "pytest-asyncio>=1.3.0,<2.0",
             "httpx>=0.23.0",
             "faker>=15.0.0",
         ]

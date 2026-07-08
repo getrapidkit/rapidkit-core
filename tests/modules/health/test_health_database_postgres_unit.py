@@ -110,7 +110,7 @@ def test_register_postgres_health_mounts_router(postgres_health_module):
 
     postgres_health_module.register_postgres_health(app)
 
-    paths = {route.path for route in app.routes}
+    paths = set(app.openapi()["paths"])
     assert "/api/health/module/postgres" in paths
 
 

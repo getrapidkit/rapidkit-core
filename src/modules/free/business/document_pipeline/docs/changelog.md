@@ -1,5 +1,9 @@
 # Changelog — free/business/document_pipeline
 
+## 0.1.9 — Automated patch release triggered by content hash change (2026-07-07)
+
+- chore: Automated patch release triggered by content hash change
+
 ## 0.1.8 — Automated patch release triggered by content hash change (2026-06-09)
 
 - chore: Automated patch release triggered by content hash change

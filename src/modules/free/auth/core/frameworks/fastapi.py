@@ -115,5 +115,5 @@ class FastAPIPlugin(FrameworkPlugin):
 
     def get_dev_dependencies(self) -> List[str]:
         return [
-            "pytest>=8.3.0",  # consistent with core test tooling
+            "pytest>=9.0.3,<10.0",  # consistent with core test tooling
         ]

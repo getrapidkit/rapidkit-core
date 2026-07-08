@@ -22,7 +22,7 @@ This repository is the core engine layer of the broader **RapidKit Platform**:
 | Layer         | Repository                                                                                                                                                                    |
 | ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Ecosystem Hub | [rapidkitlabs/rapidkit](https://github.com/rapidkitlabs/rapidkit)                                                                                                             |
-| CLI           | [rapidkitlabs/rapidkit-npm](https://github.com/rapidkitlabs/rapidkit-npm) · [npm](https://www.npmjs.com/package/rapidkit)                                                     |
+| Workspai CLI  | [rapidkitlabs/workspai](https://github.com/rapidkitlabs/workspai/tree/main/packages/cli) · [npm](https://www.npmjs.com/package/workspai)                                      |
 | IDE           | [rapidkitlabs/rapidkit-vscode](https://github.com/rapidkitlabs/rapidkit-vscode) · [Marketplace](https://marketplace.visualstudio.com/items?itemName=rapidkit.rapidkit-vscode) |
 | Examples      | [rapidkitlabs/rapidkit-examples](https://github.com/rapidkitlabs/rapidkit-examples)                                                                                           |
 
@@ -66,8 +66,8 @@ rapidkit dev
 For most teams, the best developer experience is:
 
 1. Start from the npm CLI layer:
-   - CLI repo: `https://github.com/rapidkitlabs/rapidkit-npm`
-   - npm: https://www.npmjs.com/package/rapidkit
+   - CLI repo: `https://github.com/rapidkitlabs/workspai/tree/main/packages/cli`
+   - npm: https://www.npmjs.com/package/workspai
 1. Install/update the Python engine package (`rapidkit-core`) for module generation/runtime parity.
 1. Use the VS Code extension when you want the full graphical + AI workspace experience:
    - Extension repo: `https://github.com/rapidkitlabs/rapidkit-vscode`
