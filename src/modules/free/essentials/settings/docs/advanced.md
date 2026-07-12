@@ -76,8 +76,12 @@ the refresh loop.
 
 Add computed values to the Jinja context by editing `generate.py` and appending keys to
 `generator_context`. Example use cases include injecting feature flags into templates or enabling
-optional AWS integrations. Re-run the generator and keep the vendor snapshot up-to-date with
-`rapidkit modules lock`.
+optional AWS integrations. Re-run the generator, refresh `.rapidkit/modules.lock.yaml`, and verify
+clean-clone restores with:
+
+```bash
+rapidkit modules restore --locked --ci --plan
+```
 
 ## Cross-module snippet providers
 

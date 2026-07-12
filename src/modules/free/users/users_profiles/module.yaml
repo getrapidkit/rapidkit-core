@@ -1,7 +1,7 @@
 name: users_profiles
 display_name: Users Profiles
 description: Profile management services and HTTP adapters for RapidKit users
-version: 0.1.12
+version: 0.1.13
 access: free
 status: stable
 tier: free
@@ -177,8 +177,8 @@ support:
     discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
     documentation: https://getrapidkit.com/modules/users_profiles
 changelog:
-  - version: "0.1.12"
-    date: "2026-07-07"
+  - version: "0.1.13"
+    date: "2026-07-12"
     notes: "See docs/changelog.md"
 validation:
     pre_install:

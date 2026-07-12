@@ -7,12 +7,15 @@ on:
     push:
         branches: [main, develop]
         paths:
+            - "registry.json"
             - "src/modules/**"
             - ".rapidkit/modules.lock.yaml"
     pull_request:
         branches: [main, develop]
         paths:
+            - "registry.json"
             - "src/modules/**"
+            - ".rapidkit/modules.lock.yaml"
 
 jobs:
     update-lock:
@@ -31,6 +34,9 @@ jobs:
 
             - name: Generate updated lock file
               run: rapidkit modules lock --overwrite
+
+            - name: Verify clean clone module restore
+              run: rapidkit modules restore --locked --ci --plan
 
             - name: Check for changes
               id: verify-changed-files

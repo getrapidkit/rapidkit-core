@@ -41,7 +41,10 @@ def _vendor_base_dir() -> Path:
         return candidates[0]
     raise RuntimeError(
         "RapidKit vendor payload for '{module}' not found under {root}. "
-        "Re-run `rapidkit modules install {module}`.".format(module=_VENDOR_MODULE, root=root)
+        "Run `rapidkit modules restore --locked` for a clean clone, or "
+        "`rapidkit modules install {module}` after changing modules.".format(
+            module=_VENDOR_MODULE, root=root
+        )
     )
 
 

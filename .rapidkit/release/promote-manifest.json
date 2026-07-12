@@ -3564,40 +3564,20 @@
   "excluded_commits": [],
   "included_commits": [
     {
-      "sha": "073dc50dd8e7657453453d172649f381e60a829b",
-      "subject": "chore(deps): update core dependency governance"
+      "sha": "e5eafe241c385966ceda93e9cc4e0aa46e362503",
+      "subject": "feat: add deterministic module restore for clean clones"
     },
     {
-      "sha": "c7d56a652ca9951ae77db821d950d494093b3cf2",
-      "subject": "fix: raise webhook platform generator coverage"
-    },
-    {
-      "sha": "d4a788b527ce07734f56888b7e8f2b0b672d4046",
-      "subject": "perf: add cache-aware module stabilization"
-    },
-    {
-      "sha": "72e8fbe34cfb7f85ce7153a373c0ae2b2dc6febd",
-      "subject": "fix(release): promote curated staging tree to core"
-    },
-    {
-      "sha": "b9ff37ee4964076be96eb38dd4269e3d0528c38a",
-      "subject": "fix(release): harden staging promotion artifacts"
-    },
-    {
-      "sha": "b7ada0b970433d009111393209453b0f8796fe89",
-      "subject": "fix(test): separate external tooling smoke gates"
-    },
-    {
-      "sha": "5089aee2276bd9c44be6bff3009a177f9b7bf8df",
-      "subject": "docs: clarify RapidKit Core kit copy"
+      "sha": "fd7d8a2f864121a5b59272a9ab86fdf802720f33",
+      "subject": "chore: add cached pre-push validation gate"
     }
   ],
-  "promote_branch": "promote-v0.5.5",
-  "promoted_at": "2026-07-08T21:45:44.152138Z",
+  "promote_branch": "promote-v0.5.6",
+  "promoted_at": "2026-07-12T23:29:51.487865Z",
   "schema_version": 1,
-  "source_base_sha": "306d5b8bccee82f33a988fb34bb5606e538592eb",
-  "source_head_sha": "5089aee2276bd9c44be6bff3009a177f9b7bf8df",
+  "source_base_sha": "5089aee2276bd9c44be6bff3009a177f9b7bf8df",
+  "source_head_sha": "fd7d8a2f864121a5b59272a9ab86fdf802720f33",
   "target_branch": "main",
   "target_repo": "https://github.com/rapidkitlabs/rapidkit-core.git",
-  "version": "0.5.5"
+  "version": "0.5.6"
 }

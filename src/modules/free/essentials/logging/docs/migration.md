@@ -14,10 +14,13 @@ This guide helps teams upgrade from legacy logging scaffolds to the unified Rapi
 ```bash
 rapidkit add module logging --profile fastapi.standard
 rapidkit modules lock --overwrite
+rapidkit modules restore --locked --ci --plan
 ```
 
-Repeat for the NestJS profile when applicable. Commit the new vendor snapshot under
-`.rapidkit/vendor/logging/<version>`.
+Repeat for the NestJS profile when applicable. Commit `registry.json`,
+`.rapidkit/modules.lock.yaml`, and the generated application files. Do not require
+`.rapidkit/vendor/**` in cloneable repositories; rebuild it locally with
+`rapidkit modules restore --locked --ci`.
 
 ## 3. Replace Imports
 

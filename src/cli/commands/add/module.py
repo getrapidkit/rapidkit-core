@@ -998,6 +998,11 @@ def add_module(
         "--reconcile/--no-reconcile",
         help="After install, reconcile pending snippet injections related to this module (producer/owner).",
     ),
+    non_interactive: bool = typer.Option(
+        False,
+        "--non-interactive",
+        help="Use defaults for module variables without prompting.",
+    ),
 ) -> None:
     """
     Add a module to the project with the specified profile.
@@ -1066,6 +1071,11 @@ def add_module(
     if isinstance(reconcile_obj, OptionInfo):
         default = reconcile_obj.default if reconcile_obj.default is not ... else True
         reconcile = cast(bool, default)
+
+    non_interactive_obj: object = non_interactive
+    if isinstance(non_interactive_obj, OptionInfo):
+        default = non_interactive_obj.default if non_interactive_obj.default is not ... else False
+        non_interactive = cast(bool, default)
 
     project_root = find_project_root(project)
     if not project_root:
@@ -1230,6 +1240,7 @@ def add_module(
                                     plan=False,
                                     with_deps=True,
                                     no_deps=False,
+                                    non_interactive=non_interactive,
                                 )
                         else:
                             print_warning(
@@ -1260,7 +1271,13 @@ def add_module(
     if not plan:
         # Install dependencies (handles prod/dev + requirements/poetry correctly)
         install_module_dependencies(config, profile, project, final)
-        variables = prompt_for_variables(variables_config)
+        if non_interactive:
+            variables = {
+                k: (v.get("default") if isinstance(v, dict) else None)
+                for k, v in variables_config.items()
+            }
+        else:
+            variables = prompt_for_variables(variables_config)
     else:
         variables = {
             k: (v.get("default") if isinstance(v, dict) else None)

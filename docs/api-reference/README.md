@@ -34,7 +34,15 @@ rkc modules info free/essentials/settings
 rkc add module free/essentials/settings
 rkc add module free/auth/session --plan
 rkc modules lock --overwrite
+rkc modules restore --locked --ci
+rkc modules restore --locked --plan --json
+rkc modules install free/essentials/settings
 ```
+
+Use `modules restore --locked --ci` after cloning a project that tracks `registry.json` and
+`.rapidkit/modules.lock.yaml` but does not commit `.rapidkit/vendor` or `.rapidkit/snapshot`
+payloads. Use `modules install` when you intentionally add or refresh module payloads during
+development.
 
 ## Project Commands
 

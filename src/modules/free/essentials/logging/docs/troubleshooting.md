@@ -7,10 +7,12 @@ resolve them.
 
 **Symptoms:** Runtime errors indicating that the vendor logging file is missing.
 
-**Resolution:** Ensure `rapidkit modules install logging` (or `rapidkit add module logging`) ran
-successfully. The wrapper expects
+**Resolution:** For a clean clone, run `rapidkit modules restore --locked --ci` from the project
+root. For an intentional module refresh, run `rapidkit modules install logging` (or
+`rapidkit add module logging`). The wrapper expects
 `.rapidkit/vendor/logging/<version>/src/modules/free/essentials/logging/logging.py` to exist.
-Regenerate the artefacts and commit the vendor snapshot.
+Regenerate the artefacts locally; cloneable projects should commit `registry.json` and
+`.rapidkit/modules.lock.yaml`, not the vendor snapshot.
 
 ## Queue Listener Not Starting
 

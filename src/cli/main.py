@@ -181,7 +181,7 @@ Global commands:
   rapidkit optimize      Optimize project
   rapidkit snapshot      Snapshot utilities
   rapidkit frameworks    Detect or scaffold frameworks
-  rapidkit modules       List/install/manage modules
+  rapidkit modules       Restore/lock/list/manage modules
   rapidkit merge         Merge changes
   rapidkit --tui         Launch interactive TUI
   rapidkit --version     Show version information
@@ -205,6 +205,8 @@ Common tasks:
     rapidkit dev
     rapidkit add module auth
     rapidkit modules list
+    rapidkit modules lock --overwrite
+    rapidkit modules restore --locked --ci
 
 Quick start:
     rapidkit create project fastapi.standard my-api && cd my-api && rapidkit init && rapidkit dev

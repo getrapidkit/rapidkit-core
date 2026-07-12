@@ -118,6 +118,14 @@ Free modules follow the same core contract: declarative manifests, generated tem
 registries, and idempotent installers. Product workspaces may add separate delivery/licensing terms,
 but foundational modules remain free-first.
 
+For cloneable examples or team projects, commit `registry.json` and `.rapidkit/modules.lock.yaml`,
+then let each machine rebuild generated module payloads locally:
+
+```bash
+rapidkit modules lock --overwrite
+rapidkit modules restore --locked --ci
+```
+
 ## 🐳 Docker & Local Ops
 
 Generated projects include Docker support by default:
