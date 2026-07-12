@@ -39,6 +39,19 @@ rapidkit add module free/ai/llm_gateway --plan
 The CLI resolves dependencies from manifests, renders templates, applies snippets, updates RapidKit
 metadata, and records drift information for future updates.
 
+## Restore Clean Clones
+
+Cloneable projects should track `registry.json` and `.rapidkit/modules.lock.yaml`, not generated
+`.rapidkit/vendor/**` or `.rapidkit/snapshot/**` payloads. After cloning, restore the exact locked
+module payloads with:
+
+```bash
+rapidkit modules restore --locked --ci
+```
+
+Use `rapidkit modules restore --locked --plan --json` in CI or release checks to verify the restore
+contract without writing payload files.
+
 ## Standard Module Shape
 
 ```text

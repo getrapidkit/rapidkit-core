@@ -102,7 +102,7 @@ def yaml_dump(data: Any) -> str:
     return _json.dumps(data, indent=2, sort_keys=False)
 
 
-modules_app = typer.Typer(help="Module utilities: summary, validation, signing")
+modules_app = typer.Typer(help="Module utilities: restore, lock, summary, validation, signing")
 
 # Module-level default values to avoid B008
 DEFAULT_SKIP_UNCHANGED = True
@@ -115,6 +115,20 @@ SHORT_DESCRIPTION_LIMIT = 50
 MAX_MODULE_SUGGESTIONS = 10
 TRUNCATION_SUFFIX = "..."
 SKIPPED_MODULES_DISPLAY_LIMIT = 5
+MODULES_INSTALL_ARGUMENT = typer.Argument(
+    None,
+    help=(
+        "Module slugs to install or hydrate. If omitted, installed modules are read "
+        "from registry.json."
+    ),
+)
+MODULES_RESTORE_ARGUMENT = typer.Argument(
+    None,
+    help=(
+        "Module slugs to restore from registry.json/modules.lock. If omitted, all "
+        "registered modules are restored."
+    ),
+)
 
 
 def truncate_text(text: str, limit: int) -> str:
@@ -259,6 +273,271 @@ def _registry_lookup_by_slug(registry: Any, slug: str) -> Optional[Dict[str, Any
         if templates_path in (candidate, candidate_no_tier):
             return cast(Dict[str, Any], module)
     return None
+
+
+def _load_project_registry_module_entries(project_root: Path) -> List[Dict[str, Any]]:
+    """Return installed module records from a project registry."""
+
+    registry_path = project_root / "registry.json"
+    if not registry_path.exists():
+        raise RuntimeError(f"registry.json not found at {registry_path}")
+
+    try:
+        payload = json.loads(registry_path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise RuntimeError(f"Failed to read {registry_path}: {exc}") from exc
+
+    installed = payload.get("installed_modules") if isinstance(payload, dict) else None
+    if not isinstance(installed, list):
+        raise RuntimeError(f"{registry_path} must contain an installed_modules list")
+
+    entries: List[Dict[str, Any]] = []
+    seen: Set[str] = set()
+    for entry in installed:
+        slug: Optional[str] = None
+        record: Dict[str, Any] = {}
+        if isinstance(entry, str):
+            slug = entry
+        elif isinstance(entry, dict):
+            raw = entry.get("slug") or entry.get("module") or entry.get("name")
+            if isinstance(raw, str):
+                slug = raw
+                record = dict(entry)
+        if not slug:
+            continue
+        normalized = slug.strip().strip("/")
+        if normalized and normalized not in seen:
+            seen.add(normalized)
+            record["slug"] = normalized
+            entries.append(record)
+
+    if not entries:
+        raise RuntimeError(f"No installed modules recorded in {registry_path}")
+
+    return entries
+
+
+def _load_project_registry_module_slugs(project_root: Path) -> List[str]:
+    """Return installed module slugs recorded in a project registry."""
+
+    return [entry["slug"] for entry in _load_project_registry_module_entries(project_root)]
+
+
+def _load_module_manifest_for_slug(slug: str) -> Dict[str, Any]:
+    manifest_path = MODULES_PATH / slug / "module.yaml"
+    if not manifest_path.exists():
+        return {}
+    try:
+        payload = yaml.safe_load(manifest_path.read_text(encoding="utf-8")) if yaml else {}
+    except (OSError, AttributeError, TypeError, ValueError, yaml_error_type):
+        return {}
+    return payload if isinstance(payload, dict) else {}
+
+
+def _collect_project_lock_modules(project_root: Path) -> Dict[str, Dict[str, Any]]:
+    """Build a modules.lock payload from installed project module records."""
+
+    entries = _load_project_registry_module_entries(project_root)
+    modules: Dict[str, Dict[str, Any]] = {}
+    for entry in entries:
+        slug = str(entry["slug"])
+        manifest = _load_module_manifest_for_slug(slug)
+        version = entry.get("version") or manifest.get("version")
+        if not isinstance(version, str) or not version.strip():
+            raise RuntimeError(f"Version not available for installed module {slug}")
+        tags = entry.get("tags") or manifest.get("tags") or []
+        modules[slug] = {
+            "version": version,
+            "tags": [str(tag) for tag in tags] if isinstance(tags, list) else [],
+        }
+    return modules
+
+
+def _load_project_modules_lock(project_root: Path) -> Dict[str, Dict[str, Any]]:
+    lock_file = _lock_path(project_root)
+    if not lock_file.exists():
+        raise RuntimeError(f"modules lock not found at {lock_file}")
+    try:
+        payload = yaml.safe_load(lock_file.read_text(encoding="utf-8")) if yaml else {}
+    except (OSError, AttributeError, TypeError, ValueError, yaml_error_type) as exc:
+        raise RuntimeError(f"Failed to read {lock_file}: {exc}") from exc
+    modules = payload.get("modules") if isinstance(payload, dict) else None
+    if not isinstance(modules, dict) or not modules:
+        raise RuntimeError(f"{lock_file} must contain a non-empty modules mapping")
+    normalized: Dict[str, Dict[str, Any]] = {}
+    for slug, entry in modules.items():
+        if not isinstance(slug, str) or not slug.strip():
+            continue
+        if not isinstance(entry, dict):
+            raise RuntimeError(f"Invalid lock entry for {slug!r}")
+        normalized[slug.strip().strip("/")] = dict(entry)
+    if not normalized:
+        raise RuntimeError(f"{lock_file} does not contain usable module entries")
+    return normalized
+
+
+def _lookup_locked_module(
+    locked_modules: Dict[str, Dict[str, Any]], slug: str
+) -> Optional[Dict[str, Any]]:
+    for locked_slug, entry in locked_modules.items():
+        if module_identity_matches(locked_slug, slug):
+            return entry
+    return None
+
+
+def _module_manifest_version(slug: str) -> Optional[str]:
+    version = _load_module_manifest_for_slug(slug).get("version")
+    return version.strip() if isinstance(version, str) and version.strip() else None
+
+
+def _module_vendor_name(slug: str) -> str:
+    manifest = _load_module_manifest_for_slug(slug)
+    name = manifest.get("name")
+    return name.strip().strip("/") if isinstance(name, str) and name.strip() else slug
+
+
+def _module_requires_vendor(slug: str) -> bool:
+    generation = _load_module_manifest_for_slug(slug).get("generation")
+    if not isinstance(generation, dict):
+        return False
+    vendor = generation.get("vendor")
+    return isinstance(vendor, dict) and bool(vendor.get("files"))
+
+
+def _vendor_payload_exists(project_root: Path, slug: str, version: str) -> bool:
+    vendor_name = _module_vendor_name(slug)
+    vendor_root = project_root / ".rapidkit" / "vendor"
+    vendor_dir = vendor_root.joinpath(*[part for part in vendor_name.split("/") if part], version)
+    if not vendor_dir.exists() or not vendor_dir.is_dir():
+        return False
+    return any(path.is_file() for path in vendor_dir.rglob("*"))
+
+
+def _select_registry_module_slugs(
+    project_root: Path, requested_modules: Optional[List[str]]
+) -> List[str]:
+    available = _load_project_registry_module_slugs(project_root)
+    if not requested_modules:
+        return available
+    selected: List[str] = []
+    missing: List[str] = []
+    for requested in requested_modules:
+        match = next(
+            (slug for slug in available if module_identity_matches(slug, requested)),
+            None,
+        )
+        if match is None:
+            missing.append(requested)
+        elif match not in selected:
+            selected.append(match)
+    if missing:
+        raise RuntimeError(
+            "Requested module(s) are not recorded in registry.json: " + ", ".join(missing)
+        )
+    return selected
+
+
+def _validate_locked_restore_modules(
+    selected_modules: List[str], locked_modules: Dict[str, Dict[str, Any]]
+) -> Dict[str, str]:
+    locked_versions: Dict[str, str] = {}
+    for slug in selected_modules:
+        locked = _lookup_locked_module(locked_modules, slug)
+        if locked is None:
+            raise RuntimeError(f"{slug} is missing from .rapidkit/modules.lock.yaml")
+        version = locked.get("version")
+        if not isinstance(version, str) or not version.strip():
+            raise RuntimeError(f"{slug} lock entry must include a version")
+        available_version = _module_manifest_version(slug)
+        if available_version is None:
+            raise RuntimeError(f"{slug} is not available in the installed RapidKit Core package")
+        if version.strip() != available_version:
+            raise RuntimeError(
+                f"{slug} is locked to {version.strip()}, but installed RapidKit Core "
+                f"only provides {available_version}. Install a matching core release."
+            )
+        locked_versions[slug] = version.strip()
+    return locked_versions
+
+
+def _restore_module_payloads(
+    project_root: Path,
+    selected_modules: List[str],
+    *,
+    locked_versions: Optional[Dict[str, str]],
+    profile: Optional[str],
+    update: bool,
+    with_deps: bool,
+    reconcile: bool,
+    force: bool,
+    plan: bool,
+    ci: bool,
+) -> List[Dict[str, Any]]:
+    from .add.module import add_module
+
+    results: List[Dict[str, Any]] = []
+    previous_cwd = Path.cwd()
+    try:
+        os.chdir(project_root)
+        for slug in selected_modules:
+            locked_version = locked_versions.get(slug) if locked_versions else None
+            if plan:
+                results.append(
+                    {
+                        "module": slug,
+                        "version": locked_version,
+                        "status": "planned",
+                        "vendor": "planned" if _module_requires_vendor(slug) else "not-required",
+                    }
+                )
+                continue
+            try:
+                add_module(
+                    slug,
+                    profile=profile,
+                    project="",
+                    final=False,
+                    force=force,
+                    update=update,
+                    plan=False,
+                    with_deps=with_deps,
+                    no_deps=False,
+                    reconcile=reconcile,
+                    non_interactive=ci,
+                )
+            except typer.Exit as exc:
+                results.append(
+                    {
+                        "module": slug,
+                        "version": locked_version,
+                        "status": "failed",
+                        "exit_code": exc.exit_code,
+                    }
+                )
+                raise
+
+            vendor_status = "not-required"
+            if locked_version and _module_requires_vendor(slug):
+                vendor_status = (
+                    "restored"
+                    if _vendor_payload_exists(project_root, slug, locked_version)
+                    else "missing"
+                )
+                if vendor_status == "missing":
+                    raise RuntimeError(
+                        f"{slug} restored but vendor payload for {locked_version} is missing"
+                    )
+            results.append(
+                {
+                    "module": slug,
+                    "version": locked_version,
+                    "status": "restored",
+                    "vendor": vendor_status,
+                }
+            )
+    finally:
+        os.chdir(previous_cwd)
+    return results
 
 
 def _manifest_lookup_by_identifier(identifier: str) -> Optional[Dict[str, Any]]:
@@ -2096,7 +2375,7 @@ def summary(
             data={
                 "schema_version": "modules-summary-v1",
                 "core_version": CURRENT_VERSION,
-                "generated_at": datetime.utcnow().isoformat() + "Z",
+                "generated_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
                 "modules": rows,
             }
         )
@@ -2371,19 +2650,38 @@ def lock(
     ),
 ) -> None:
     """Generate (or update) modules lock file capturing current module versions."""
+    path_obj: object = path
+    if isinstance(path_obj, typer.models.OptionInfo):
+        default = path_obj.default if path_obj.default is not ... else None
+        path = cast(Optional[Path], default)
+
+    overwrite_obj: object = overwrite
+    if isinstance(overwrite_obj, typer.models.OptionInfo):
+        default = overwrite_obj.default if overwrite_obj.default is not ... else False
+        overwrite = cast(bool, default)
+
     if not MODULES_PATH.exists():
         print_error("Modules root not found")
         raise typer.Exit(1)
-    rows = _collect_module_rows(verbose=True)
+    project_root = path or Path.cwd()
     lock_file = _lock_path(path)
     lock_file.parent.mkdir(parents=True, exist_ok=True)
     if lock_file.exists() and not overwrite:
         print_warning("Lock file exists. Use --overwrite to replace.")
         raise typer.Exit(1)
+    try:
+        locked_modules = _collect_project_lock_modules(project_root)
+    except RuntimeError as exc:
+        registry_path = project_root / "registry.json"
+        if registry_path.exists():
+            print_error(f"Failed to create project module lock: {exc}")
+            raise typer.Exit(1) from exc
+        rows = _collect_module_rows(verbose=True)
+        locked_modules = {r["module"]: {"version": r["version"], "tags": r["tags"]} for r in rows}
     data = {
         "core_version": CURRENT_VERSION,
-        "generated_at": datetime.utcnow().isoformat() + "Z",
-        "modules": {r["module"]: {"version": r["version"], "tags": r["tags"]} for r in rows},
+        "generated_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
+        "modules": locked_modules,
     }
     lock_file.write_text(yaml_dump(data), encoding="utf-8")
     print_success(f"Wrote lock file: {lock_file}")
@@ -2453,7 +2751,7 @@ def outdated(
             data={
                 "schema_version": "modules-outdated-v1",
                 "core_version": CURRENT_VERSION,
-                "generated_at": datetime.utcnow().isoformat() + "Z",
+                "generated_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
                 "results": results,
             }
         )
@@ -2531,7 +2829,7 @@ def migration_template(
                 "from": from_version,
                 "to": to_version,
                 "output_file": str(out_path),
-                "generated_at": datetime.utcnow().isoformat() + "Z",
+                "generated_at": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
             }
         )
     else:
@@ -2623,6 +2921,212 @@ def modules_search(
 
     console.print(table)
     console.print(f"\n📊 Found: {len(matching_modules)} module(s)")
+
+
+@modules_app.command("install")
+def modules_install(
+    modules: Optional[List[str]] = MODULES_INSTALL_ARGUMENT,
+    project: Optional[str] = typer.Option(None, help="Project name inside boilerplates"),
+    profile: Optional[str] = typer.Option(
+        None,
+        "--profile",
+        "-p",
+        help="Target profile (defaults to project metadata or fastapi/standard).",
+        show_default=False,
+    ),
+    update: bool = typer.Option(
+        True,
+        "--update/--no-update",
+        help="Regenerate vendor/module payloads without overwriting locally modified files.",
+    ),
+    with_deps: bool = typer.Option(
+        True,
+        "--with-deps/--no-with-deps",
+        help="Install missing module dependencies from module manifests.",
+    ),
+    reconcile: bool = typer.Option(
+        False,
+        "--reconcile/--no-reconcile",
+        help="Reconcile pending snippets after each module install.",
+    ),
+    force: bool = typer.Option(
+        False,
+        "--force",
+        help="Force overwrite generated files even when local changes are detected.",
+    ),
+    plan: bool = typer.Option(
+        False,
+        "--plan",
+        help="Show what would be installed without writing files.",
+    ),
+) -> None:
+    """
+    Restore or update module payloads for a cloned project.
+
+    Running without module arguments uses registry.json as the source of truth.
+    This is the stable clone/CI path for projects that do not commit
+    .rapidkit/vendor payloads.
+    """
+
+    from ..utils.filesystem import find_project_root
+    from .add.module import add_module
+
+    project_root = find_project_root(project)
+    if project_root is None:
+        print_error("❌ Not a valid RapidKit project.")
+        raise typer.Exit(code=1)
+
+    selected_modules = list(modules or [])
+    if not selected_modules:
+        try:
+            selected_modules = _load_project_registry_module_slugs(project_root)
+        except RuntimeError as exc:
+            print_error(f"❌ {exc}")
+            raise typer.Exit(code=1) from exc
+
+    print_info(
+        f"📦 Restoring {len(selected_modules)} module(s) for [bold cyan]{project_root.name}[/bold cyan]"
+    )
+
+    for module_slug in selected_modules:
+        print_info(f"\n[bold blue]Module:[/bold blue] {module_slug}")
+        add_module(
+            module_slug,
+            profile=profile,
+            project=project or "",
+            final=False,
+            force=force,
+            update=update,
+            plan=plan,
+            with_deps=with_deps,
+            no_deps=False,
+            reconcile=reconcile,
+        )
+
+    print_success("✅ Module payloads restored.")
+
+
+@modules_app.command("restore")
+def modules_restore(
+    modules: Optional[List[str]] = MODULES_RESTORE_ARGUMENT,
+    path: Optional[Path] = typer.Option(  # noqa: B008
+        None,
+        "--path",
+        help="Target project root (defaults to the current project).",
+    ),
+    profile: Optional[str] = typer.Option(
+        None,
+        "--profile",
+        "-p",
+        help="Target profile (defaults to project metadata or fastapi/standard).",
+        show_default=False,
+    ),
+    locked: bool = typer.Option(
+        True,
+        "--locked/--no-locked",
+        help="Restore exact module versions from .rapidkit/modules.lock.yaml.",
+    ),
+    ci: bool = typer.Option(
+        False,
+        "--ci",
+        help="Run in non-interactive CI mode and fail clearly on drift.",
+    ),
+    update: bool = typer.Option(
+        True,
+        "--update/--no-update",
+        help="Regenerate payloads without overwriting locally modified files.",
+    ),
+    with_deps: bool = typer.Option(
+        True,
+        "--with-deps/--no-with-deps",
+        help="Restore missing module dependencies from module manifests.",
+    ),
+    reconcile: bool = typer.Option(
+        False,
+        "--reconcile/--no-reconcile",
+        help="Reconcile pending snippets after each module restore.",
+    ),
+    force: bool = typer.Option(
+        False,
+        "--force",
+        help="Force overwrite generated files even when local changes are detected.",
+    ),
+    plan: bool = typer.Option(
+        False,
+        "--plan",
+        help="Validate and show what would be restored without writing files.",
+    ),
+    json_out: bool = typer.Option(False, "--json", help="Emit structured restore summary."),
+) -> None:
+    """
+    Restore module payloads for a clean clone from registry.json and modules.lock.
+
+    This is the stable clone/CI path for projects that do not commit
+    .rapidkit/vendor or .rapidkit/snapshot artifacts.
+    """
+
+    from ..utils.filesystem import find_project_root
+
+    path_obj: object = path
+    if isinstance(path_obj, typer.models.OptionInfo):
+        default = path_obj.default if path_obj.default is not ... else None
+        path = cast(Optional[Path], default)
+
+    if ci:
+        locked = True
+
+    project_root = path.resolve() if path else find_project_root(None)
+    if project_root is None:
+        print_error("❌ Not a valid RapidKit project.")
+        raise typer.Exit(code=1)
+
+    try:
+        selected_modules = _select_registry_module_slugs(project_root, modules)
+        locked_versions: Optional[Dict[str, str]] = None
+        if locked:
+            locked_modules = _load_project_modules_lock(project_root)
+            locked_versions = _validate_locked_restore_modules(selected_modules, locked_modules)
+        results = _restore_module_payloads(
+            project_root,
+            selected_modules,
+            locked_versions=locked_versions,
+            profile=profile,
+            update=update,
+            with_deps=with_deps,
+            reconcile=reconcile,
+            force=force,
+            plan=plan,
+            ci=ci,
+        )
+    except RuntimeError as exc:
+        if json_out:
+            console.print_json(
+                data={
+                    "schema_version": "modules-restore-v1",
+                    "status": "failed",
+                    "project_root": str(project_root),
+                    "locked": locked,
+                    "error": str(exc),
+                }
+            )
+        else:
+            print_error(f"❌ {exc}")
+        raise typer.Exit(code=1) from exc
+    except typer.Exit:
+        raise
+
+    payload = {
+        "schema_version": "modules-restore-v1",
+        "status": "planned" if plan else "restored",
+        "project_root": str(project_root),
+        "locked": locked,
+        "modules": results,
+    }
+    if json_out:
+        console.print_json(data=payload)
+    else:
+        action = "planned" if plan else "restored"
+        print_success(f"✅ Module payload restore {action}: {len(results)} module(s).")
 
 
 @modules_app.command("install-interactive")

@@ -1,5 +1,5 @@
 name: deployment
-version: 0.1.13
+version: 0.1.14
 tier: free
 access: free
 status: stable
@@ -218,8 +218,8 @@ support:
     discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
     documentation: https://getrapidkit.com/modules/deployment
 changelog:
-  - version: "0.1.13"
-    date: "2026-07-07"
+  - version: "0.1.14"
+    date: "2026-07-12"
     notes: "See docs/changelog.md"
 validation:
     pre_install:

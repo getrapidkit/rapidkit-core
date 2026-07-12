@@ -10,6 +10,18 @@ rapidkit modules lock --overwrite
 Runtime helpers are rendered into `src/modules/free/auth/session/session.py` and vendor code under
 `.rapidkit/vendor/session/<version>`.
 
+FastAPI projects also expose an async dependency provider:
+
+```python
+from src.modules.free.auth.session.session import get_runtime
+
+session_runtime = await get_runtime()
+```
+
+When FastAPI injects the dependency with `Depends(get_runtime)`, the framework awaits it for you.
+When you call it from your own route composition or service helper, await it before using methods
+such as `issue_session()`.
+
 ## 2. Issue Sessions
 
 ```python

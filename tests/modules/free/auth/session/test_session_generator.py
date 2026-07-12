@@ -118,7 +118,7 @@ def test_generate_vendor_and_variant_outputs(tmp_path: Path) -> None:
     fastapi_runtime_src = fastapi_runtime.read_text(encoding="utf-8")
     for token in (
         "class SessionRuntime",
-        "def get_runtime",
+        "async def get_runtime",
         "def create_router",
         "def _apply_cookie",
         "__all__",

@@ -16,8 +16,9 @@ poetry run python -m src.modules.free.users.users_profiles.generate fastapi .
 poetry run python -m src.modules.free.users.users_profiles.generate nestjs ./examples/users_profiles-nest
 ```
 
-If you already run `rapidkit modules lock`, re-run it after generation so vendor snapshots stay in
-sync.
+If you already run `rapidkit modules lock`, re-run it after generation so the project lock stays in
+sync. Clean clones can rebuild generated module payloads with
+`rapidkit modules restore --locked --ci`.
 
 ## FastAPI integration
 

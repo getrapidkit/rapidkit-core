@@ -1057,7 +1057,7 @@ modules:
   session:
     name: session
     display_name: Session
-    version: 0.1.14
+    version: 0.1.15
     access: free
     tier: free
     status: stable
@@ -1108,8 +1108,8 @@ modules:
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/session
     changelog:
-    - version: 0.1.14
-      date: '2026-06-09'
+    - version: 0.1.15
+      date: '2026-07-12'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -3205,7 +3205,7 @@ modules:
   deployment:
     name: deployment
     display_name: Deployment
-    version: 0.1.13
+    version: 0.1.14
     access: free
     tier: free
     status: stable
@@ -3268,8 +3268,8 @@ modules:
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/deployment
     changelog:
-    - version: 0.1.13
-      date: '2026-07-07'
+    - version: 0.1.14
+      date: '2026-07-12'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -3290,7 +3290,7 @@ modules:
   logging:
     name: logging
     display_name: Logging
-    version: 0.1.13
+    version: 0.1.15
     access: free
     tier: free
     status: stable
@@ -3350,8 +3350,8 @@ modules:
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/logging
     changelog:
-    - version: 0.1.13
-      date: '2026-07-07'
+    - version: 0.1.15
+      date: '2026-07-12'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -3455,7 +3455,7 @@ modules:
   settings:
     name: settings
     display_name: Settings
-    version: 0.1.45
+    version: 0.1.46
     access: free
     tier: free
     status: stable
@@ -3512,8 +3512,8 @@ modules:
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/settings
     changelog:
-    - version: 0.1.45
-      date: '2026-07-07'
+    - version: 0.1.46
+      date: '2026-07-12'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -4480,7 +4480,7 @@ modules:
   users_profiles:
     name: users_profiles
     display_name: Users Profiles
-    version: 0.1.12
+    version: 0.1.13
     access: free
     tier: free
     status: stable
@@ -4538,8 +4538,8 @@ modules:
       discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/users_profiles
     changelog:
-    - version: 0.1.12
-      date: '2026-07-07'
+    - version: 0.1.13
+      date: '2026-07-12'
       notes: See docs/changelog.md
     validation:
       pre_install:

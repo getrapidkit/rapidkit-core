@@ -311,6 +311,7 @@ def test_logger_levels():
 
     logger = get_logger("test_levels")
     logger.setLevel(logging.WARNING)
+    logger.filters.clear()
 
     # Create a handler to capture logs
     from io import StringIO

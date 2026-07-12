@@ -31,10 +31,19 @@ From the new project directory run:
 ```bash
 rapidkit modules status
 rapidkit modules lock --overwrite
+rapidkit modules restore --locked --plan
 ```
 
-The status command reports files that deviate from the vendor snapshot. The lock command refreshes
-`.rapidkit/vendor/**` so the whole team reproduces identical artefacts.
+The status command reports files that deviate from generated module state. The lock command records
+the installed module versions from `registry.json` in `.rapidkit/modules.lock.yaml`. The restore
+plan confirms a clean clone can rebuild the missing module payloads from that locked state.
+
+Commit the application files, `registry.json`, and `.rapidkit/modules.lock.yaml`. Do not require
+teams to commit `.rapidkit/vendor/**` or `.rapidkit/snapshot/**`; those payloads are rebuilt with:
+
+```bash
+rapidkit modules restore --locked --ci
+```
 
 To lint the generated structure against the canonical specification execute:
 
@@ -70,5 +79,5 @@ After every change re-run the generator:
 poetry run python -m src.modules.free.essentials.deployment.generate fastapi .
 ```
 
-Finally, commit both project artefacts and the `.rapidkit/vendor/**` snapshot to keep downstream
-pipelines deterministic.
+Finally, re-run `rapidkit modules lock --overwrite` after module changes and verify
+`rapidkit modules restore --locked --plan` before publishing cloneable examples or templates.

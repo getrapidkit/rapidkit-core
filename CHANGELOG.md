@@ -1,11 +1,13 @@
 # Changelog
 
-## [Snapshot 0.5.5](https://github.com/rapidkitlabs/rapidkit-core/compare/v0.3.1...HEAD)
+## [Snapshot 0.5.6](https://github.com/rapidkitlabs/rapidkit-core/compare/v0.3.1...HEAD)
 
-> This distribution is built from commit `5089aee2` and is not a tagged release.
+> This distribution is built from commit `fd7d8a2f` and is not a tagged release.
 
 ### Features
 
+- add deterministic module restore for clean clones
+  ([e5eafe24](https://github.com/rapidkitlabs/rapidkit-core/commit/e5eafe241c385966ceda93e9cc4e0aa46e362503))
 - **cli:** add module identity util and harden module lifecycle commands
   ([306d5b8b](https://github.com/rapidkitlabs/rapidkit-core/commit/306d5b8bccee82f33a988fb34bb5606e538592eb))
 - **cli:** add module identity util and harden module lifecycle commands
@@ -790,6 +792,8 @@
 
 ### Chores
 
+- add cached pre-push validation gate
+  ([fd7d8a2f](https://github.com/rapidkitlabs/rapidkit-core/commit/fd7d8a2f864121a5b59272a9ab86fdf802720f33))
 - **deps:** update core dependency governance
   ([073dc50d](https://github.com/rapidkitlabs/rapidkit-core/commit/073dc50dd8e7657453453d172649f381e60a829b))
 - add generator contract tests and module metadata updates

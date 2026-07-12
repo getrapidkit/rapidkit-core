@@ -20,6 +20,7 @@ git commit -m "Update auth module"
 # Later, CI fails because lock file is outdated
 # Developer has to manually fix it
 rapidkit modules lock --overwrite
+rapidkit modules restore --locked --ci
 ```
 
 ### After (Automated Process)
@@ -33,6 +34,7 @@ git add .
 git commit -m "Update auth module"
 
 # CI passes because lock file is always current ✅
+# CI also verifies clean clones can rebuild module payloads ✅
 ```
 
 ## 🔒 Security & Safety
@@ -42,7 +44,8 @@ git commit -m "Update auth module"
 ### What it does:
 
 - ✅ **Only reads** module configuration files
-- ✅ **Only writes** to `.rapidkit/modules.lock.yaml`
+- ✅ **Writes** only governed module artefacts such as `.rapidkit/modules.lock.yaml` or locally
+  restored `.rapidkit/vendor/**` payloads during restore checks
 - ✅ **No network access** or external communications
 - ✅ **No privilege escalation**
 - ✅ **No sensitive data exposure**
@@ -57,7 +60,8 @@ git commit -m "Update auth module"
 
 ### Risk Assessment: **ZERO RISK** 🛡️
 
-This is equivalent to running `rapidkit modules lock --overwrite` manually - just automated!
+This is equivalent to running `rapidkit modules lock --overwrite` and
+`rapidkit modules restore --locked --ci` manually - just automated!
 
 ## 💡 Practical Benefits
 

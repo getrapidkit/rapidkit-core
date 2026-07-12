@@ -133,7 +133,9 @@ _VENDOR_HEALTH_WRAPPER_TEMPLATE = Template(dedent('''
             if candidates:
                 return candidates[0]
             raise RuntimeError(
-                "RapidKit vendor payload for '{module}' not found under {root}. Re-run `rapidkit modules install {module}`.".format(
+                "RapidKit vendor payload for '{module}' not found under {root}. "
+                "Run `rapidkit modules restore --locked` for a clean clone, or "
+                "`rapidkit modules install {module}` after changing modules.".format(
                     module=_VENDOR_MODULE,
                     root=root,
                 )
@@ -155,7 +157,9 @@ _VENDOR_HEALTH_WRAPPER_TEMPLATE = Template(dedent('''
             vendor_path = _vendor_file()
             if not vendor_path.exists():
                 raise RuntimeError(
-                    "RapidKit vendor health runtime missing at {path}. Re-run `rapidkit modules install {module}`.".format(
+                    "RapidKit vendor health runtime missing at {path}. "
+                    "Run `rapidkit modules restore --locked` for a clean clone, or "
+                    "`rapidkit modules install {module}` after changing modules.".format(
                         path=vendor_path,
                         module=_VENDOR_MODULE,
                     )

@@ -15,8 +15,15 @@ rapidkit add module deployment
 rapidkit modules lock --overwrite
 ```
 
-The first command adds the module to the active project. The lock command refreshes vendor snapshots
-so other environments receive identical artefacts.
+The first command adds the module to the active project. The lock command records the installed
+module version in `.rapidkit/modules.lock.yaml`.
+
+Cloneable projects should commit `registry.json` and `.rapidkit/modules.lock.yaml`, then rebuild
+generated vendor payloads locally:
+
+```bash
+rapidkit modules restore --locked --ci
+```
 
 ## Generating Assets
 
@@ -61,4 +68,6 @@ assets at runtime:
   profile).
 - Bring up a production-like stack with `make docker-up-prod` (uses `base.yml` + `production.yml` in
   detached mode). Provide secrets via `docker compose --env-file` or CI secrets injection.
-- Commit the updated `.rapidkit/vendor` directory alongside project artefacts.
+- Commit the application artefacts, `registry.json`, and `.rapidkit/modules.lock.yaml`. Do not
+  require `.rapidkit/vendor/**` in cloneable repositories; rebuild it with
+  `rapidkit modules restore --locked --ci`.
