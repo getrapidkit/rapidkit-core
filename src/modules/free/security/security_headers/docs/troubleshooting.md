@@ -30,5 +30,4 @@ misconfigured.
 ## Support Channels
 
 If issues persist, collect the health payload, application logs, and the generated configuration
-YAML, then open a ticket via <https://github.com/rapidkitlabs/rapidkit-core/issues> with the
-details.
+YAML, then open a ticket via <https://github.com/chistiq/rapidkit-core/issues> with the details.

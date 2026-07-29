@@ -1,5 +1,5 @@
 name: middleware
-version: 0.1.24
+version: 0.1.26
 tier: free
 access: free
 status: stable
@@ -135,12 +135,12 @@ documentation:
   api_docs: docs/api-reference.md
   examples: []
 support:
-  issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-  discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+  issues: https://github.com/chistiq/rapidkit-core/issues
+  discussions: https://github.com/chistiq/rapidkit-core/discussions
   documentation: https://getrapidkit.com/modules/middleware
 changelog:
-  - version: "0.1.24"
-    date: "2026-06-08"
+  - version: "0.1.26"
+    date: "2026-07-27"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

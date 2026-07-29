@@ -5,7 +5,7 @@ description: Production-ready NestJS starter kit for Workspai workspaces with Ra
 version: 0.1.0
 min_rapidkit_version: 0.1.0
 tier: standard
-repo_url: https://github.com/rapidkitlabs/rapidkit-core.git
+repo_url: https://github.com/chistiq/rapidkit-core.git
 repo_branch: main
 tags: [nestjs, javascript, typescript, standard, modular, scalable]
 support: standard
@@ -57,7 +57,7 @@ variables:
 
     node_version:
         type: string
-        default: "20.19.0"
+        default: "24.18.0"
         description: "Node.js version used for Docker images and CI"
 
     database_type:

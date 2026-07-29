@@ -1,7 +1,7 @@
 name: multi_tenancy
 display_name: Multi Tenancy
 description: Organization, team, tenant isolation, membership, and tenant-aware request context scaffolding
-version: 0.1.11
+version: 0.1.12
 access: free
 status: stable
 tier: free
@@ -120,12 +120,12 @@ documentation:
   api_docs: docs/api-reference.md
   examples: []
 support:
-  issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-  discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+  issues: https://github.com/chistiq/rapidkit-core/issues
+  discussions: https://github.com/chistiq/rapidkit-core/discussions
   documentation: https://getrapidkit.com/modules/multi_tenancy
 changelog:
-  - version: "0.1.11"
-    date: "2026-07-07"
+  - version: "0.1.12"
+    date: "2026-07-27"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

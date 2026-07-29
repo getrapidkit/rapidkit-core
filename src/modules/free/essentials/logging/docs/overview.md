@@ -189,8 +189,7 @@ Access health status at `/api/health/module/logging`.
 - **Troubleshooting**: Performance issues and debugging
 - **Migration Guide**: Upgrading from Python logging
 
-For issues and questions, visit our
-[GitHub repository](https://github.com/rapidkitlabs/rapidkit-core).
+For issues and questions, visit our [GitHub repository](https://github.com/chistiq/rapidkit-core).
 
 ## Security considerations
 

@@ -18,7 +18,7 @@ kits, and distribution automation.
 ## Setup
 
 ```bash
-git clone https://github.com/rapidkitlabs/rapidkit-core.git rapidkit-core
+git clone https://github.com/chistiq/rapidkit-core.git rapidkit-core
 cd rapidkit-core
 poetry install
 poetry run pre-commit install

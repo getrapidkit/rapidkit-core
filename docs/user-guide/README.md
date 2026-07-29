@@ -70,8 +70,8 @@ The CLI detects project metadata under `.rapidkit/` and delegates to the correct
 
 If you are building multi-project workspaces, use the npm CLI or Workspai:
 
-- npm CLI: `https://github.com/rapidkitlabs/workspai/tree/main/packages/cli`
-- VS Code extension: `https://github.com/rapidkitlabs/rapidkit-vscode`
+- npm CLI: `https://github.com/chistiq/workspai/tree/main/packages/cli`
+- VS Code extension: `https://github.com/chistiq/rapidkit-vscode`
 
 The Python core remains the engine behind module and kit generation.
 

@@ -1,5 +1,13 @@
 # Changelog — free/communication/email
 
+## 0.1.26 — Automated patch release triggered by content hash change (2026-07-27)
+
+- chore: Automated patch release triggered by content hash change
+
+## 0.1.25 — Automated patch release triggered by content hash change (2026-07-27)
+
+- chore: Automated patch release triggered by content hash change
+
 ## 0.1.24 — Automated patch release triggered by content hash change (2026-07-07)
 
 - chore: Automated patch release triggered by content hash change

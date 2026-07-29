@@ -120,11 +120,11 @@ cp rapidkit-github-actions-template.yml .github/workflows/auto-update-modules-lo
 
 ```bash
 # Copy pre-commit template
-curl -s https://raw.githubusercontent.com/rapidkitlabs/rapidkit-core/main/docs/project/rapidkit-pre-commit-template.yml >> .pre-commit-config.yaml
+curl -s https://raw.githubusercontent.com/chistiq/rapidkit-core/main/docs/project/rapidkit-pre-commit-template.yml >> .pre-commit-config.yaml
 
 # Copy GitHub Actions template
 mkdir -p .github/workflows
-curl -s https://raw.githubusercontent.com/rapidkitlabs/rapidkit-core/main/docs/project/rapidkit-github-actions-template.yml > .github/workflows/auto-update-modules-lock.yml
+curl -s https://raw.githubusercontent.com/chistiq/rapidkit-core/main/docs/project/rapidkit-github-actions-template.yml > .github/workflows/auto-update-modules-lock.yml
 ```
 
 ### Step 2: Install Pre-commit (1 minute)

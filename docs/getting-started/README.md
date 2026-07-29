@@ -26,8 +26,8 @@ pip install rapidkit-core
 rkc --version
 ```
 
-> Prefer a local checkout? Clone `https://github.com/rapidkitlabs/rapidkit-core` and run
-> `poetry install` from the repository root.
+> Prefer a local checkout? Clone `https://github.com/chistiq/rapidkit-core` and run `poetry install`
+> from the repository root.
 
 ## Create Your First Project
 
@@ -176,9 +176,9 @@ you prefer a Makefile-driven workflow.
 ## 🤝 Need Help?
 
 - Join the conversation in
-  [GitHub Discussions](https://github.com/rapidkitlabs/rapidkit-core/discussions)
+  [GitHub Discussions](https://github.com/chistiq/rapidkit-core/discussions)
 - Report bugs or request features via
-  [GitHub Issues](https://github.com/rapidkitlabs/rapidkit-core/issues)
+  [GitHub Issues](https://github.com/chistiq/rapidkit-core/issues)
 - Improve the docs by opening a pull request in this repository
 
 ______________________________________________________________________

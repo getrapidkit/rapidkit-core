@@ -375,5 +375,4 @@ except EmailDeliveryError as e:
 - **Troubleshooting**: Delivery issues and debugging
 - **Migration Guide**: Upgrading from previous versions
 
-For issues and questions, visit our
-[GitHub repository](https://github.com/rapidkitlabs/rapidkit-core).
+For issues and questions, visit our [GitHub repository](https://github.com/chistiq/rapidkit-core).

@@ -10,8 +10,8 @@ from the core repository.
 - PyPI distribution: `rapidkit-core`
 - Python entry points: `rapidkit`, `rkc`
 - npm wrapper package: `rapidkit`
-- Stable public repository: `https://github.com/rapidkitlabs/rapidkit-core`
-- Staging repository: `https://github.com/rapidkitlabs/community-staging`
+- Stable public repository: `https://github.com/chistiq/rapidkit-core`
+- Staging repository: `https://github.com/chistiq/community-staging`
 
 The npm wrapper is the recommended public onboarding path. The Python package is the engine used by
 the wrapper and by maintainers.

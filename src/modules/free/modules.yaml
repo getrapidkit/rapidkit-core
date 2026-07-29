@@ -6,7 +6,7 @@ modules:
   agent_runtime:
     name: agent_runtime
     display_name: Agent Runtime
-    version: 0.1.15
+    version: 0.1.16
     access: free
     tier: free
     status: stable
@@ -76,12 +76,12 @@ modules:
       api_docs: docs/api-reference.md
       examples: []
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/agent_runtime
     changelog:
-    - version: 0.1.15
-      date: '2026-07-07'
+    - version: 0.1.16
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -100,7 +100,7 @@ modules:
   ai_assistant:
     name: ai_assistant
     display_name: Ai Assistant
-    version: 0.1.20
+    version: 0.1.22
     access: free
     tier: free
     status: stable
@@ -159,12 +159,12 @@ modules:
       api_docs: docs/api-reference.md
       examples: []
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/ai_assistant
     changelog:
-    - version: 0.1.20
-      date: '2026-07-07'
+    - version: 0.1.22
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -183,7 +183,7 @@ modules:
   ai_guardrails:
     name: ai_guardrails
     display_name: Ai Guardrails
-    version: 0.1.9
+    version: 0.1.10
     access: free
     tier: free
     status: stable
@@ -252,12 +252,12 @@ modules:
       api_docs: docs/api-reference.md
       examples: []
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/ai_guardrails
     changelog:
-    - version: 0.1.9
-      date: '2026-07-07'
+    - version: 0.1.10
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -276,7 +276,7 @@ modules:
   llm_gateway:
     name: llm_gateway
     display_name: LLM Gateway
-    version: 0.1.18
+    version: 0.1.19
     access: free
     tier: free
     status: stable
@@ -345,12 +345,12 @@ modules:
       api_docs: docs/api-reference.md
       examples: []
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/llm_gateway
     changelog:
-    - version: 0.1.18
-      date: '2026-07-07'
+    - version: 0.1.19
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -369,7 +369,7 @@ modules:
   prompt_ops:
     name: prompt_ops
     display_name: Prompt Ops
-    version: 0.1.9
+    version: 0.1.10
     access: free
     tier: free
     status: stable
@@ -437,12 +437,12 @@ modules:
       api_docs: docs/api-reference.md
       examples: []
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/prompt_ops
     changelog:
-    - version: 0.1.9
-      date: '2026-07-07'
+    - version: 0.1.10
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -461,7 +461,7 @@ modules:
   rag_pipeline:
     name: rag_pipeline
     display_name: RAG Pipeline
-    version: 0.1.11
+    version: 0.1.12
     access: free
     tier: free
     status: stable
@@ -531,12 +531,12 @@ modules:
       api_docs: docs/api-reference.md
       examples: []
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/rag_pipeline
     changelog:
-    - version: 0.1.11
-      date: '2026-07-07'
+    - version: 0.1.12
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -555,7 +555,7 @@ modules:
   tool_registry:
     name: tool_registry
     display_name: Tool Registry
-    version: 0.1.9
+    version: 0.1.10
     access: free
     tier: free
     status: stable
@@ -621,12 +621,12 @@ modules:
       api_docs: docs/api-reference.md
       examples: []
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/tool_registry
     changelog:
-    - version: 0.1.9
-      date: '2026-07-07'
+    - version: 0.1.10
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -645,7 +645,7 @@ modules:
   vector_store:
     name: vector_store
     display_name: Vector Store
-    version: 0.1.11
+    version: 0.1.12
     access: free
     tier: free
     status: stable
@@ -712,12 +712,12 @@ modules:
       api_docs: docs/api-reference.md
       examples: []
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/vector_store
     changelog:
-    - version: 0.1.11
-      date: '2026-07-07'
+    - version: 0.1.12
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -736,7 +736,7 @@ modules:
   api_keys:
     name: api_keys
     display_name: API Keys
-    version: 0.1.5
+    version: 0.1.7
     access: free
     tier: free
     status: stable
@@ -802,12 +802,12 @@ modules:
       examples:
       - templates/snippets/api_keys.snippet.j2
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/auth/api_keys
     changelog:
-    - version: 0.1.5
-      date: '2026-07-07'
+    - version: 0.1.7
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -828,7 +828,7 @@ modules:
   auth_core:
     name: auth_core
     display_name: Auth Core
-    version: 0.1.14
+    version: 0.1.16
     access: free
     tier: free
     status: stable
@@ -885,12 +885,12 @@ modules:
       api_docs: docs/api-reference.md
       examples: []
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/auth-core
     changelog:
-    - version: 0.1.14
-      date: '2026-07-07'
+    - version: 0.1.16
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -910,7 +910,7 @@ modules:
   oauth:
     name: oauth
     display_name: Oauth
-    version: 0.1.16
+    version: 0.1.18
     access: free
     tier: free
     status: stable
@@ -960,12 +960,12 @@ modules:
       api_docs: docs/api-reference.md
       examples: []
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/oauth
     changelog:
-    - version: 0.1.16
-      date: '2026-06-09'
+    - version: 0.1.18
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -984,7 +984,7 @@ modules:
   passwordless:
     name: passwordless
     display_name: Passwordless
-    version: 0.1.13
+    version: 0.1.15
     access: free
     tier: free
     status: stable
@@ -1033,12 +1033,12 @@ modules:
       api_docs: docs/api-reference.md
       examples: []
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/passwordless
     changelog:
-    - version: 0.1.13
-      date: '2026-06-09'
+    - version: 0.1.15
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -1057,7 +1057,7 @@ modules:
   session:
     name: session
     display_name: Session
-    version: 0.1.15
+    version: 0.1.17
     access: free
     tier: free
     status: stable
@@ -1104,12 +1104,12 @@ modules:
       api_docs: docs/api-reference.md
       examples: []
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/session
     changelog:
-    - version: 0.1.15
-      date: '2026-07-12'
+    - version: 0.1.17
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -1128,7 +1128,7 @@ modules:
   cart:
     name: cart
     display_name: Cart
-    version: 0.1.18
+    version: 0.1.20
     access: free
     tier: free
     status: stable
@@ -1192,12 +1192,12 @@ modules:
       api_docs: docs/api-reference.md
       examples: []
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/billing/cart
     changelog:
-    - version: 0.1.18
-      date: '2026-07-07'
+    - version: 0.1.20
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -1216,7 +1216,7 @@ modules:
   inventory:
     name: inventory
     display_name: Inventory
-    version: 0.1.11
+    version: 0.1.13
     access: free
     tier: free
     status: stable
@@ -1276,12 +1276,12 @@ modules:
       api_docs: docs/api-reference.md
       examples: []
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/billing/inventory
     changelog:
-    - version: 0.1.11
-      date: '2026-07-07'
+    - version: 0.1.13
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -1300,7 +1300,7 @@ modules:
   stripe_payment:
     name: stripe_payment
     display_name: Stripe Payment
-    version: 0.1.6
+    version: 0.1.8
     access: free
     tier: free
     status: stable
@@ -1360,12 +1360,12 @@ modules:
       api_docs: docs/api-reference.md
       examples: []
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/billing/stripe_payment
     changelog:
-    - version: 0.1.6
-      date: '2026-07-07'
+    - version: 0.1.8
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -1384,7 +1384,7 @@ modules:
   usage_billing:
     name: usage_billing
     display_name: Usage Billing
-    version: 0.1.11
+    version: 0.1.12
     access: free
     tier: free
     status: stable
@@ -1451,12 +1451,12 @@ modules:
       api_docs: docs/api-reference.md
       examples: []
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/usage_billing
     changelog:
-    - version: 0.1.11
-      date: '2026-07-07'
+    - version: 0.1.12
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -1475,7 +1475,7 @@ modules:
   admin_console:
     name: admin_console
     display_name: Admin Console
-    version: 0.1.8
+    version: 0.1.9
     access: free
     tier: free
     status: stable
@@ -1543,12 +1543,12 @@ modules:
       api_docs: docs/api-reference.md
       examples: []
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/admin_console
     changelog:
-    - version: 0.1.8
-      date: '2026-07-07'
+    - version: 0.1.9
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -1567,7 +1567,7 @@ modules:
   approval_engine:
     name: approval_engine
     display_name: Approval Engine
-    version: 0.1.9
+    version: 0.1.10
     access: free
     tier: free
     status: stable
@@ -1638,12 +1638,12 @@ modules:
       api_docs: docs/api-reference.md
       examples: []
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/approval_engine
     changelog:
-    - version: 0.1.9
-      date: '2026-07-07'
+    - version: 0.1.10
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -1662,7 +1662,7 @@ modules:
   connector_hub:
     name: connector_hub
     display_name: Connector Hub
-    version: 0.1.11
+    version: 0.1.12
     access: free
     tier: free
     status: stable
@@ -1730,12 +1730,12 @@ modules:
       api_docs: docs/api-reference.md
       examples: []
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/connector_hub
     changelog:
-    - version: 0.1.11
-      date: '2026-07-07'
+    - version: 0.1.12
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -1754,7 +1754,7 @@ modules:
   connector_pack_library:
     name: connector_pack_library
     display_name: Connector Pack Library
-    version: 0.1.8
+    version: 0.1.9
     access: free
     tier: free
     status: stable
@@ -1822,12 +1822,12 @@ modules:
       api_docs: docs/api-reference.md
       examples: []
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/connector_pack_library
     changelog:
-    - version: 0.1.8
-      date: '2026-07-07'
+    - version: 0.1.9
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -1846,7 +1846,7 @@ modules:
   document_pipeline:
     name: document_pipeline
     display_name: Document Pipeline
-    version: 0.1.9
+    version: 0.1.10
     access: free
     tier: free
     status: stable
@@ -1916,12 +1916,12 @@ modules:
       api_docs: docs/api-reference.md
       examples: []
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/document_pipeline
     changelog:
-    - version: 0.1.9
-      date: '2026-07-07'
+    - version: 0.1.10
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -1940,7 +1940,7 @@ modules:
   feature_flags:
     name: feature_flags
     display_name: Feature Flags
-    version: 0.1.10
+    version: 0.1.11
     access: free
     tier: free
     status: stable
@@ -2006,12 +2006,12 @@ modules:
       api_docs: docs/api-reference.md
       examples: []
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/feature_flags
     changelog:
-    - version: 0.1.10
-      date: '2026-07-07'
+    - version: 0.1.11
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -2030,7 +2030,7 @@ modules:
   forms_engine:
     name: forms_engine
     display_name: Forms Engine
-    version: 0.1.9
+    version: 0.1.10
     access: free
     tier: free
     status: stable
@@ -2099,12 +2099,12 @@ modules:
       api_docs: docs/api-reference.md
       examples: []
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/forms_engine
     changelog:
-    - version: 0.1.9
-      date: '2026-07-07'
+    - version: 0.1.10
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -2123,7 +2123,7 @@ modules:
   media_pipeline:
     name: media_pipeline
     display_name: Media Pipeline
-    version: 0.1.9
+    version: 0.1.10
     access: free
     tier: free
     status: stable
@@ -2192,12 +2192,12 @@ modules:
       api_docs: docs/api-reference.md
       examples: []
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/media_pipeline
     changelog:
-    - version: 0.1.9
-      date: '2026-07-07'
+    - version: 0.1.10
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -2216,7 +2216,7 @@ modules:
   multi_tenancy:
     name: multi_tenancy
     display_name: Multi Tenancy
-    version: 0.1.11
+    version: 0.1.12
     access: free
     tier: free
     status: stable
@@ -2283,12 +2283,12 @@ modules:
       api_docs: docs/api-reference.md
       examples: []
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/multi_tenancy
     changelog:
-    - version: 0.1.11
-      date: '2026-07-07'
+    - version: 0.1.12
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -2307,7 +2307,7 @@ modules:
   org_admin_console:
     name: org_admin_console
     display_name: Org Admin Console
-    version: 0.1.8
+    version: 0.1.9
     access: free
     tier: free
     status: stable
@@ -2375,12 +2375,12 @@ modules:
       api_docs: docs/api-reference.md
       examples: []
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/org_admin_console
     changelog:
-    - version: 0.1.8
-      date: '2026-07-07'
+    - version: 0.1.9
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -2399,7 +2399,7 @@ modules:
   storage:
     name: storage
     display_name: Storage
-    version: 0.1.14
+    version: 0.1.16
     access: free
     tier: free
     status: stable
@@ -2473,12 +2473,12 @@ modules:
       api_docs: docs/api-reference.md
       examples: []
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/business/storage
     changelog:
-    - version: 0.1.14
-      date: '2026-07-07'
+    - version: 0.1.16
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -2499,7 +2499,7 @@ modules:
   support_center:
     name: support_center
     display_name: Support Center
-    version: 0.1.8
+    version: 0.1.9
     access: free
     tier: free
     status: stable
@@ -2570,12 +2570,12 @@ modules:
       api_docs: docs/api-reference.md
       examples: []
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/support_center
     changelog:
-    - version: 0.1.8
-      date: '2026-07-07'
+    - version: 0.1.9
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -2594,7 +2594,7 @@ modules:
   redis:
     name: redis
     display_name: Redis
-    version: 0.1.23
+    version: 0.1.25
     access: free
     tier: free
     status: stable
@@ -2642,12 +2642,12 @@ modules:
       api_docs: docs/api-reference.md
       examples: []
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/redis
     changelog:
-    - version: 0.1.23
-      date: '2026-07-07'
+    - version: 0.1.25
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -2668,7 +2668,7 @@ modules:
   email:
     name: email
     display_name: Email
-    version: 0.1.24
+    version: 0.1.26
     access: free
     tier: free
     status: stable
@@ -2726,12 +2726,12 @@ modules:
       api_docs: docs/api-reference.md
       examples: []
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/email
     changelog:
-    - version: 0.1.24
-      date: '2026-07-07'
+    - version: 0.1.26
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -2753,7 +2753,7 @@ modules:
   notifications:
     name: notifications
     display_name: Notifications
-    version: 0.1.31
+    version: 0.1.33
     access: free
     tier: free
     status: stable
@@ -2809,12 +2809,12 @@ modules:
       api_docs: docs/api-reference.md
       examples: []
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/notifications
     changelog:
-    - version: 0.1.31
-      date: '2026-07-07'
+    - version: 0.1.33
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -2835,7 +2835,7 @@ modules:
   webhook_platform:
     name: webhook_platform
     display_name: Webhook Platform
-    version: 0.1.11
+    version: 0.1.12
     access: free
     tier: free
     status: stable
@@ -2903,12 +2903,12 @@ modules:
       api_docs: docs/api-reference.md
       examples: []
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/webhook_platform
     changelog:
-    - version: 0.1.11
-      date: '2026-07-07'
+    - version: 0.1.12
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -2927,7 +2927,7 @@ modules:
   db_mongo:
     name: db_mongo
     display_name: Db Mongo
-    version: 0.1.10
+    version: 0.1.12
     access: free
     tier: free
     status: stable
@@ -2993,12 +2993,12 @@ modules:
       api_docs: docs/api-reference.md
       examples: []
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/database/db_mongo
     changelog:
-    - version: 0.1.10
-      date: '2026-07-07'
+    - version: 0.1.12
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -3017,7 +3017,7 @@ modules:
   db_postgres:
     name: db_postgres
     display_name: PostgreSQL
-    version: 0.1.31
+    version: 0.1.33
     access: free
     tier: free
     status: stable
@@ -3088,12 +3088,12 @@ modules:
       - docs/examples/connection_pooling.md
       - docs/examples/transactions.md
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/db_postgres
     changelog:
-    - version: 0.1.31
-      date: '2026-07-07'
+    - version: 0.1.33
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -3119,7 +3119,7 @@ modules:
   db_sqlite:
     name: db_sqlite
     display_name: Db Sqlite
-    version: 0.1.12
+    version: 0.1.14
     access: free
     tier: free
     status: stable
@@ -3181,12 +3181,12 @@ modules:
       api_docs: docs/api-reference.md
       examples: []
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/database/db_sqlite
     changelog:
-    - version: 0.1.12
-      date: '2026-07-07'
+    - version: 0.1.14
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -3205,7 +3205,7 @@ modules:
   deployment:
     name: deployment
     display_name: Deployment
-    version: 0.1.14
+    version: 0.1.16
     access: free
     tier: free
     status: stable
@@ -3264,12 +3264,12 @@ modules:
       api_docs: docs/api-reference.md
       examples: []
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/deployment
     changelog:
-    - version: 0.1.14
-      date: '2026-07-12'
+    - version: 0.1.16
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -3290,7 +3290,7 @@ modules:
   logging:
     name: logging
     display_name: Logging
-    version: 0.1.15
+    version: 0.1.17
     access: free
     tier: free
     status: stable
@@ -3346,12 +3346,12 @@ modules:
       api_docs: docs/api-reference.md
       examples: []
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/logging
     changelog:
-    - version: 0.1.15
-      date: '2026-07-12'
+    - version: 0.1.17
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -3372,7 +3372,7 @@ modules:
   middleware:
     name: middleware
     display_name: Middleware
-    version: 0.1.24
+    version: 0.1.26
     access: free
     tier: free
     status: stable
@@ -3429,12 +3429,12 @@ modules:
       api_docs: docs/api-reference.md
       examples: []
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/middleware
     changelog:
-    - version: 0.1.24
-      date: '2026-06-08'
+    - version: 0.1.26
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -3455,7 +3455,7 @@ modules:
   settings:
     name: settings
     display_name: Settings
-    version: 0.1.46
+    version: 0.1.48
     access: free
     tier: free
     status: stable
@@ -3508,12 +3508,12 @@ modules:
       api_docs: docs/api-reference.md
       examples: []
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/settings
     changelog:
-    - version: 0.1.46
-      date: '2026-07-12'
+    - version: 0.1.48
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -3537,7 +3537,7 @@ modules:
   analytics_dashboard:
     name: analytics_dashboard
     display_name: Analytics Dashboard
-    version: 0.1.8
+    version: 0.1.9
     access: free
     tier: free
     status: stable
@@ -3604,12 +3604,12 @@ modules:
       api_docs: docs/api-reference.md
       examples: []
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/analytics_dashboard
     changelog:
-    - version: 0.1.8
-      date: '2026-07-07'
+    - version: 0.1.9
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -3628,7 +3628,7 @@ modules:
   observability_core:
     name: observability_core
     display_name: Observability Core
-    version: 0.1.15
+    version: 0.1.17
     access: free
     tier: free
     status: stable
@@ -3700,12 +3700,12 @@ modules:
       examples:
       - templates/snippets/observability_core.snippet.j2
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/observability/observability_core
     changelog:
-    - version: 0.1.15
-      date: '2026-07-07'
+    - version: 0.1.17
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -3726,7 +3726,7 @@ modules:
   audit_policy:
     name: audit_policy
     display_name: Audit Policy
-    version: 0.1.10
+    version: 0.1.11
     access: free
     tier: free
     status: stable
@@ -3793,12 +3793,12 @@ modules:
       api_docs: docs/api-reference.md
       examples: []
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/audit_policy
     changelog:
-    - version: 0.1.10
-      date: '2026-07-07'
+    - version: 0.1.11
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -3817,7 +3817,7 @@ modules:
   cors:
     name: cors
     display_name: Cors
-    version: 0.1.16
+    version: 0.1.18
     access: free
     tier: free
     status: stable
@@ -3859,12 +3859,12 @@ modules:
       api_docs: docs/api-reference.md
       examples: []
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/cors
     changelog:
-    - version: 0.1.16
-      date: '2026-07-07'
+    - version: 0.1.18
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -3883,7 +3883,7 @@ modules:
   rate_limiting:
     name: rate_limiting
     display_name: Rate Limiting
-    version: 0.1.15
+    version: 0.1.16
     access: free
     tier: free
     status: stable
@@ -3932,12 +3932,12 @@ modules:
       api_docs: docs/api-reference.md
       examples: []
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/rate_limiting
     changelog:
-    - version: 0.1.15
-      date: '2026-07-07'
+    - version: 0.1.16
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -3958,7 +3958,7 @@ modules:
   security_headers:
     name: security_headers
     display_name: Security Headers
-    version: 0.1.7
+    version: 0.1.9
     access: free
     tier: free
     status: stable
@@ -4019,12 +4019,12 @@ modules:
       api_docs: docs/api-reference.md
       examples: []
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/security/security_headers
     changelog:
-    - version: 0.1.7
-      date: '2026-07-07'
+    - version: 0.1.9
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -4043,7 +4043,7 @@ modules:
   celery:
     name: celery
     display_name: Celery
-    version: 0.1.13
+    version: 0.1.15
     access: free
     tier: free
     status: stable
@@ -4096,12 +4096,12 @@ modules:
       api_docs: docs/api-reference.md
       examples: []
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/celery
     changelog:
-    - version: 0.1.13
-      date: '2026-06-08'
+    - version: 0.1.15
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -4122,7 +4122,7 @@ modules:
   event_bus:
     name: event_bus
     display_name: Event Bus
-    version: 0.1.9
+    version: 0.1.10
     access: free
     tier: free
     status: stable
@@ -4190,12 +4190,12 @@ modules:
       api_docs: docs/api-reference.md
       examples: []
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/event_bus
     changelog:
-    - version: 0.1.9
-      date: '2026-07-07'
+    - version: 0.1.10
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -4214,7 +4214,7 @@ modules:
   queue_platform:
     name: queue_platform
     display_name: Queue Platform
-    version: 0.1.10
+    version: 0.1.11
     access: free
     tier: free
     status: stable
@@ -4282,12 +4282,12 @@ modules:
       api_docs: docs/api-reference.md
       examples: []
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/queue_platform
     changelog:
-    - version: 0.1.10
-      date: '2026-07-07'
+    - version: 0.1.11
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -4306,7 +4306,7 @@ modules:
   workflow_engine:
     name: workflow_engine
     display_name: Workflow Engine
-    version: 0.1.13
+    version: 0.1.14
     access: free
     tier: free
     status: stable
@@ -4375,12 +4375,12 @@ modules:
       api_docs: docs/api-reference.md
       examples: []
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/workflow_engine
     changelog:
-    - version: 0.1.13
-      date: '2026-07-07'
+    - version: 0.1.14
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -4399,7 +4399,7 @@ modules:
   users_core:
     name: users_core
     display_name: Users Core
-    version: 0.1.13
+    version: 0.1.15
     access: free
     tier: free
     status: stable
@@ -4455,12 +4455,12 @@ modules:
       api_docs: docs/api-reference.md
       examples: []
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/users-core
     changelog:
-    - version: 0.1.13
-      date: '2026-07-07'
+    - version: 0.1.15
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -4480,7 +4480,7 @@ modules:
   users_profiles:
     name: users_profiles
     display_name: Users Profiles
-    version: 0.1.13
+    version: 0.1.15
     access: free
     tier: free
     status: stable
@@ -4534,12 +4534,12 @@ modules:
       api_docs: docs/api-reference.md
       examples: []
     support:
-      issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-      discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+      issues: https://github.com/chistiq/rapidkit-core/issues
+      discussions: https://github.com/chistiq/rapidkit-core/discussions
       documentation: https://getrapidkit.com/modules/users_profiles
     changelog:
-    - version: 0.1.13
-      date: '2026-07-12'
+    - version: 0.1.15
+      date: '2026-07-27'
       notes: See docs/changelog.md
     validation:
       pre_install:
@@ -4661,7 +4661,7 @@ global_config:
   version: 2.0.0
   last_updated: '2026-05-31'
   maintainer: RapidKit Team
-  repository: https://github.com/rapidkitlabs/rapidkit-core
+  repository: https://github.com/chistiq/rapidkit-core
   documentation: https://getrapidkit.com
   source_of_truth: src/modules/free/**/module.yaml
   compatibility:
@@ -4671,7 +4671,7 @@ global_config:
     - '3.11'
     - '3.12'
     node_versions:
-    - '>=18'
+    - '>=22'
     frameworks:
     - fastapi
     - nestjs

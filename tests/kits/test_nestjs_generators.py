@@ -9,6 +9,15 @@ from kits.nestjs.standard.generator import NestJSStandardGenerator
 from kits.shared import get_settings_vendor_metadata
 
 EXPECTED_MINIMAL_FILES = 2
+NESTJS_PACKAGE_TEMPLATE = (
+    Path(__file__).resolve().parents[2]
+    / "src"
+    / "kits"
+    / "nestjs"
+    / "standard"
+    / "templates"
+    / "package.json.j2"
+)
 
 
 @pytest.fixture()
@@ -60,6 +69,14 @@ def minimal_kit_dir(tmp_path: Path) -> Path:
 
 
 class TestNestJSStandardGenerator:
+    def test_package_template_pins_safe_yaml_for_supported_package_managers(self) -> None:
+        template = NESTJS_PACKAGE_TEMPLATE.read_text(encoding="utf-8")
+
+        assert '"overrides"' in template
+        assert '"resolutions"' in template
+        assert '"pnpm"' in template
+        assert template.count('"js-yaml": "5.2.2"') == 3
+
     def test_validate_variables_success(
         self, minimal_kit_dir: Path, minimal_nestjs_config: KitConfig
     ) -> None:
@@ -135,7 +152,7 @@ class TestNestJSStandardGenerator:
         generator = NestJSStandardGenerator(minimal_kit_dir, minimal_nestjs_config)
         context = generator.extra_context()
 
-        assert context["node_version"] == "20.19.0"
+        assert context["node_version"] == "24.18.0"
 
     def test_extra_context_preserves_package_manager(
         self, minimal_kit_dir: Path, minimal_nestjs_config: KitConfig, tmp_path: Path

@@ -1,5 +1,5 @@
 name: deployment
-version: 0.1.14
+version: 0.1.16
 tier: free
 access: free
 status: stable
@@ -214,12 +214,12 @@ documentation:
     api_docs: docs/api-reference.md
     examples: []
 support:
-    issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-    discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+    issues: https://github.com/chistiq/rapidkit-core/issues
+    discussions: https://github.com/chistiq/rapidkit-core/discussions
     documentation: https://getrapidkit.com/modules/deployment
 changelog:
-  - version: "0.1.14"
-    date: "2026-07-12"
+  - version: "0.1.16"
+    date: "2026-07-27"
     notes: "See docs/changelog.md"
 validation:
     pre_install:

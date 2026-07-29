@@ -42,7 +42,7 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: {{ node_version | default('20.19.0') }}
+          node-version: {{ node_version | default('24.18.0') }}
       - name: Install dependencies
         run: |
           if [ -f package-lock.json ]; then
