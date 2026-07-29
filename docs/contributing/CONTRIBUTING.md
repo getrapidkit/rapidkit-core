@@ -10,8 +10,8 @@ platform. This guide will help you get started with contributing effectively.
 1. **📚 Read the docs**: Start with the [Developer Guide](../developer-guide/) and
    [Getting Started](../getting-started/).
 1. **🔧 Set up your environment**: Follow the [Getting Started guide](../getting-started/).
-1. **💡 Find an issue**: Check [GitHub Issues](https://github.com/rapidkitlabs/rapidkit-core/issues)
-   for “good first issue”.
+1. **💡 Find an issue**: Check [GitHub Issues](https://github.com/chistiq/rapidkit-core/issues) for
+   “good first issue”.
 1. **🚀 Make changes**: Follow the development workflow below.
 
 ______________________________________________________________________
@@ -183,7 +183,7 @@ For changes to the core engine (`community`):
 
 ```bash
 # For pro features
-git clone https://github.com/rapidkitlabs/rapidkit-core.git
+git clone https://github.com/chistiq/rapidkit-core.git
 cd pro
 git checkout -b feature/commercial-feature
 ```
@@ -192,7 +192,7 @@ git checkout -b feature/commercial-feature
 
 ```bash
 # RapidKit ships from the rapidkit-core repository.
-git clone https://github.com/rapidkitlabs/rapidkit-core.git
+git clone https://github.com/chistiq/rapidkit-core.git
 cd rapidkit-core
 git checkout -b feature/engine-enhancement
 ```
@@ -295,9 +295,8 @@ ______________________________________________________________________
 
 ### Communication Channels
 
-- **🐛 Bug Reports**: [GitHub Issues](https://github.com/rapidkitlabs/rapidkit-core/issues)
-- **💡 Feature Requests**:
-  [GitHub Discussions](https://github.com/rapidkitlabs/rapidkit-core/discussions)
+- **🐛 Bug Reports**: [GitHub Issues](https://github.com/chistiq/rapidkit-core/issues)
+- **💡 Feature Requests**: [GitHub Discussions](https://github.com/chistiq/rapidkit-core/discussions)
 - **💬 General Discussion**: [Discord Community](https://discord.gg/rapidkit)
 
 ### Documentation Resources

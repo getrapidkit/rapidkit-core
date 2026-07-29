@@ -139,7 +139,7 @@ except Exception:
           if [ -n "$REQ_MAJOR" ] && [ -n "$CUR_MAJOR" ]; then
             if [ "$CUR_MAJOR" -lt "$REQ_MAJOR" ]; then
               echo "❌ Node engine mismatch: package.json requires node ${NODE_ENGINE} but system node is v${CUR_V}."
-              echo "💡 Use nvm/asdf to install a compatible Node version, or run via Docker (Dockerfile targets NODE_VERSION=${NODE_VERSION:-20.19.0})."
+              echo "💡 Use nvm/asdf to install a compatible Node version, or run via Docker (Dockerfile targets NODE_VERSION=${NODE_VERSION:-24.18.0})."
               echo "👉 You can bypass this check with IGNORE_ENGINES=1 ./rapidkit init (not recommended)."
               exit 127
             fi

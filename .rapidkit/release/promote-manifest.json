@@ -3561,23 +3561,38 @@
     "tests/utils/test_translation_utils.py",
     "tests/utils/test_utilities_comprehensive_end_user.py"
   ],
-  "excluded_commits": [],
-  "included_commits": [
+  "excluded_commits": [
     {
-      "sha": "e5eafe241c385966ceda93e9cc4e0aa46e362503",
-      "subject": "feat: add deterministic module restore for clean clones"
+      "reason": "subject matches ^chore\\(release\\):",
+      "sha": "d63aa9ae4e3d8250046b4ae8ee8ac259e9401102",
+      "subject": "chore(release): prepare RapidKit Core 0.6.0"
     },
     {
-      "sha": "fd7d8a2f864121a5b59272a9ab86fdf802720f33",
-      "subject": "chore: add cached pre-push validation gate"
+      "reason": "subject matches ^chore\\(release\\):",
+      "sha": "6cc347671340ba64f298746264091a132bd7de6a",
+      "subject": "chore(release): prepare RapidKit Core 0.6.0"
     }
   ],
-  "promote_branch": "promote-v0.5.6",
-  "promoted_at": "2026-07-12T23:29:51.487865Z",
+  "included_commits": [
+    {
+      "sha": "dc2d7ba55a2bd6f2b5b96d7599d8dfeff642581a",
+      "subject": "release(core): stabilize Python engine and module suite for v0.6.0"
+    },
+    {
+      "sha": "e81472c93f25ffb99b3af3554fe8794d59af2b3c",
+      "subject": "fix(kits): keep generated documentation product-neutral"
+    },
+    {
+      "sha": "5f5abe3f0f9d99a3f6acc183fee477ea52c81a99",
+      "subject": "fix(security): govern distribution toolchain dependencies"
+    }
+  ],
+  "promote_branch": "promote/v0.6.0",
+  "promoted_at": "2026-07-29T02:45:09.621847Z",
   "schema_version": 1,
-  "source_base_sha": "5089aee2276bd9c44be6bff3009a177f9b7bf8df",
-  "source_head_sha": "fd7d8a2f864121a5b59272a9ab86fdf802720f33",
+  "source_base_sha": "fd7d8a2f864121a5b59272a9ab86fdf802720f33",
+  "source_head_sha": "5f5abe3f0f9d99a3f6acc183fee477ea52c81a99",
   "target_branch": "main",
-  "target_repo": "https://github.com/rapidkitlabs/rapidkit-core.git",
-  "version": "0.5.6"
+  "target_repo": "https://github.com/chistiq/rapidkit-core.git",
+  "version": "0.6.0"
 }

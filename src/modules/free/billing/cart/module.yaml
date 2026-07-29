@@ -1,7 +1,7 @@
 name: cart
 display_name: Cart
 description: Shopping cart service for checkout flows
-version: 0.1.18
+version: 0.1.20
 access: free
 status: stable
 tier: free
@@ -129,12 +129,12 @@ documentation:
     api_docs: docs/api-reference.md
     examples: []
 support:
-    issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-    discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+    issues: https://github.com/chistiq/rapidkit-core/issues
+    discussions: https://github.com/chistiq/rapidkit-core/discussions
     documentation: https://getrapidkit.com/modules/billing/cart
 changelog:
-  - version: "0.1.18"
-    date: "2026-07-07"
+  - version: "0.1.20"
+    date: "2026-07-27"
     notes: "See docs/changelog.md"
 validation:
     pre_install:

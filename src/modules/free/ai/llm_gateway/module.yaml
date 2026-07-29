@@ -2,7 +2,7 @@ name: llm_gateway
 display_name: LLM Gateway
 description: Provider-neutral LLM gateway with routing, fallback, budgets, and usage telemetry for AI
   products
-version: 0.1.18
+version: 0.1.19
 access: free
 status: stable
 tier: free
@@ -121,12 +121,12 @@ documentation:
   api_docs: docs/api-reference.md
   examples: []
 support:
-  issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-  discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+  issues: https://github.com/chistiq/rapidkit-core/issues
+  discussions: https://github.com/chistiq/rapidkit-core/discussions
   documentation: https://getrapidkit.com/modules/llm_gateway
 changelog:
-  - version: "0.1.18"
-    date: "2026-07-07"
+  - version: "0.1.19"
+    date: "2026-07-27"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

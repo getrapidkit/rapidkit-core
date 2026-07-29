@@ -1,7 +1,7 @@
 name: connector_pack_library
 display_name: "Connector Pack Library"
 description: "Connector pack registry for provider catalogs, scopes, install state, health, and credential rotation workflows"
-version: 0.1.8
+version: 0.1.9
 access: free
 status: stable
 tier: free
@@ -127,12 +127,12 @@ documentation:
   api_docs: "docs/api-reference.md"
   examples: []
 support:
-  issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-  discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+  issues: https://github.com/chistiq/rapidkit-core/issues
+  discussions: https://github.com/chistiq/rapidkit-core/discussions
   documentation: https://getrapidkit.com/modules/connector_pack_library
 changelog:
-  - version: "0.1.8"
-    date: "2026-07-07"
+  - version: "0.1.9"
+    date: "2026-07-27"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

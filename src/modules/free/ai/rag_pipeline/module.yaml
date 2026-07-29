@@ -2,7 +2,7 @@ name: rag_pipeline
 display_name: RAG Pipeline
 description: RAG pipeline scaffolding for ingestion, embeddings, retrieval, citations, and evaluation-ready
   AI search
-version: 0.1.11
+version: 0.1.12
 access: free
 status: stable
 tier: free
@@ -121,12 +121,12 @@ documentation:
   api_docs: docs/api-reference.md
   examples: []
 support:
-  issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-  discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+  issues: https://github.com/chistiq/rapidkit-core/issues
+  discussions: https://github.com/chistiq/rapidkit-core/discussions
   documentation: https://getrapidkit.com/modules/rag_pipeline
 changelog:
-  - version: "0.1.11"
-    date: "2026-07-07"
+  - version: "0.1.12"
+    date: "2026-07-27"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

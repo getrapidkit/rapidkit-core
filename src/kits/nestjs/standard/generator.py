@@ -113,7 +113,7 @@ class NestJSStandardGenerator(BaseKitGenerator):
             "auth_oauth2": auth_type == "oauth2",
             "selected_modules": self.selected_modules,
             "runtime": "node",
-            "node_version": str(variables.get("node_version", "20.19.0")),
+            "node_version": str(variables.get("node_version", "24.18.0")),
         }
         vendor_meta = get_settings_vendor_metadata()
         context.update(

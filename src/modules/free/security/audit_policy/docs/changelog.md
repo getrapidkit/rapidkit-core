@@ -1,5 +1,9 @@
 # Changelog — free/security/audit_policy
 
+## 0.1.11 — Automated patch release triggered by content hash change (2026-07-27)
+
+- chore: Automated patch release triggered by content hash change
+
 ## 0.1.10 — Automated patch release triggered by content hash change (2026-07-07)
 
 - chore: Automated patch release triggered by content hash change

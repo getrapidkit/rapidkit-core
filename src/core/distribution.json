@@ -2,6 +2,6 @@
   "schema_version": 1,
   "tier": "community",
   "name": "rapidkit-core",
-  "repo": "https://github.com/rapidkitlabs/rapidkit-core",
+  "repo": "https://github.com/chistiq/rapidkit-core",
   "license": "MIT"
 }

@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import hashlib
 import json
 import os
 import re
@@ -31,6 +32,7 @@ from pathlib import Path
 from typing import Any, Iterable, List, Mapping, Optional, Sequence, Tuple
 
 import yaml
+from packaging.version import InvalidVersion, Version
 
 SRC_ROOT = Path(__file__).resolve().parents[1] / "src"
 if str(SRC_ROOT) not in sys.path:
@@ -56,6 +58,7 @@ AUDIT_HISTORY_ROOT = REPO_ROOT / "dev-engine" / "audit-history"
 DEFAULT_KIT_ROOT = AUDIT_HISTORY_ROOT / "_kit-runs"
 IN_PROGRESS_MARKER = ".in_progress"
 IN_PROGRESS_STALE_S = 6 * 60 * 60
+KIT_CACHE_SCHEMA_VERSION = 1
 PY310_REQ_PATTERN = re.compile(r"python\s*=\s*['\"](?:\^|>=)?3\.10")
 DEFAULT_PRODUCT_SCORE_THRESHOLD = 70.0
 DEFAULT_CORE_TEST_TIMEOUT_S = int(os.environ.get("RAPIDKIT_CORE_TEST_TIMEOUT_S", "120"))
@@ -68,7 +71,7 @@ MAX_SNIPPET_REGISTRY_KEYS_SHOWN = 50
 
 # Release-grade expectations (override via environment variables).
 EXPECTED_PYTHON_VERSION = os.environ.get("RAPIDKIT_EXPECT_PYTHON_VERSION", "3.10.19")
-EXPECTED_NODE_VERSION = os.environ.get("RAPIDKIT_EXPECT_NODE_VERSION", "20.20.0")
+EXPECTED_NODE_VERSION = os.environ.get("RAPIDKIT_EXPECT_NODE_VERSION", "24.18.0")
 
 # Optional explicit tool overrides (useful when shells don't load nvm/rbenv/etc).
 NODE_BIN_OVERRIDE = os.environ.get("RAPIDKIT_NODE_BIN")
@@ -979,12 +982,17 @@ class StabilizationRunner:
                     version = raw.lstrip("v")
                     if proc.returncode != 0 or not version:
                         errors.append(f"Unable to determine node version (exit {proc.returncode})")
-                    elif version != expected_node:
-                        errors.append(
-                            f"Node mismatch: running {version} but expected {expected_node}. "
-                            f"If you use nvm, run 'nvm use {expected_node}' before running make, "
-                            "or set RAPIDKIT_NODE_BIN to an absolute node path."
-                        )
+                    else:
+                        try:
+                            node_is_supported = Version(version) >= Version(expected_node)
+                        except InvalidVersion:
+                            node_is_supported = False
+                        if not node_is_supported:
+                            errors.append(
+                                f"Node mismatch: running {version} but requires >= {expected_node}. "
+                                f"If you use nvm, run 'nvm use {expected_node}' before running make, "
+                                "or set RAPIDKIT_NODE_BIN to an absolute node path."
+                            )
 
         rendered = "\n".join(lines + (["Errors:"] if errors else []) + [f"- {e}" for e in errors])
         log_path.write_text(rendered + "\n", encoding="utf-8")
@@ -1742,12 +1750,64 @@ class StabilizationRunner:
     def _kit_cache_project_dir(self, kit: str) -> Path:
         return self.kit_cache_root / kit.replace(".", "-") / "base-project"
 
-    def _kit_cache_ready(self, project_dir: Path) -> bool:
+    def _kit_cache_source_hash(self, kit: str) -> str:
+        kit_dir = SRC_ROOT / "kits" / Path(*kit.split("."))
+        source_roots = (
+            SRC_ROOT / "core" / "config",
+            SRC_ROOT / "core" / "engine",
+            SRC_ROOT / "core" / "services" / "project_creator.py",
+            SRC_ROOT / "kits" / "base",
+            SRC_ROOT / "kits" / "shared",
+            kit_dir,
+        )
+        digest = hashlib.sha256()
+        source_files: list[Path] = []
+        for source_root in source_roots:
+            if source_root.is_file():
+                source_files.append(source_root)
+            elif source_root.is_dir():
+                source_files.extend(path for path in source_root.rglob("*") if path.is_file())
+        for source_path in sorted(set(source_files)):
+            if "__pycache__" in source_path.parts or source_path.suffix in {".pyc", ".pyo"}:
+                continue
+            relative_path = source_path.relative_to(SRC_ROOT).as_posix()
+            digest.update(relative_path.encode("utf-8"))
+            digest.update(b"\0")
+            digest.update(source_path.read_bytes())
+            digest.update(b"\0")
+        return digest.hexdigest()
+
+    def _kit_cache_metadata_path(self, project_dir: Path) -> Path:
+        return project_dir.parent / "cache-metadata.json"
+
+    def _write_kit_cache_metadata(self, project_dir: Path, kit: str) -> None:
+        metadata_path = self._kit_cache_metadata_path(project_dir)
+        payload = {
+            "schemaVersion": KIT_CACHE_SCHEMA_VERSION,
+            "kit": kit,
+            "sourceHash": self._kit_cache_source_hash(kit),
+        }
+        temporary_path = metadata_path.with_name(f".{metadata_path.name}.{uuid.uuid4().hex}.tmp")
+        temporary_path.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+        temporary_path.replace(metadata_path)
+
+    def _kit_cache_ready(self, project_dir: Path, kit: str) -> bool:
         if not project_dir.exists():
             return False
         if not (project_dir / ".rapidkit").exists():
             return False
-        return (project_dir / "pyproject.toml").exists() or (project_dir / "package.json").exists()
+        if not (
+            (project_dir / "pyproject.toml").exists() or (project_dir / "package.json").exists()
+        ):
+            return False
+        metadata = self._load_json_file(self._kit_cache_metadata_path(project_dir))
+        if not isinstance(metadata, dict):
+            return False
+        return bool(
+            metadata.get("schemaVersion") == KIT_CACHE_SCHEMA_VERSION
+            and metadata.get("kit") == kit
+            and metadata.get("sourceHash") == self._kit_cache_source_hash(kit)
+        )
 
     def _hydrate_kit_project_from_cache(
         self,
@@ -1764,7 +1824,7 @@ class StabilizationRunner:
         if self.rebuild_kit_cache and cache_parent.exists():
             shutil.rmtree(cache_parent)
 
-        if not self._kit_cache_ready(cache_project_dir):
+        if not self._kit_cache_ready(cache_project_dir, kit):
             cache_parent.mkdir(parents=True, exist_ok=True)
             if cache_project_dir.exists():
                 shutil.rmtree(cache_project_dir)
@@ -1789,6 +1849,7 @@ class StabilizationRunner:
             )
             if cache_result.status != "pass":
                 return cache_result
+            self._write_kit_cache_metadata(cache_project_dir, kit)
 
         if project_dir.exists():
             shutil.rmtree(project_dir)

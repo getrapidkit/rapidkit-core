@@ -1,5 +1,9 @@
 # Changelog — free/ai/llm_gateway
 
+## 0.1.19 — Automated patch release triggered by content hash change (2026-07-27)
+
+- chore: Automated patch release triggered by content hash change
+
 ## 0.1.18 — Automated patch release triggered by content hash change (2026-07-07)
 
 - chore: Automated patch release triggered by content hash change

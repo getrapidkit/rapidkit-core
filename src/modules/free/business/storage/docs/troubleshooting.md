@@ -59,6 +59,6 @@ if not result.success:
 
 ## Getting Help
 
-- [GitHub Issues](https://github.com/rapidkitlabs/rapidkit-core/issues)
-- [Discussions](https://github.com/rapidkitlabs/rapidkit-core/discussions)
+- [GitHub Issues](https://github.com/chistiq/rapidkit-core/issues)
+- [Discussions](https://github.com/chistiq/rapidkit-core/discussions)
 - [Documentation](https://getrapidkit.com)

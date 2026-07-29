@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python](https://img.shields.io/badge/Python-3.10%2B-blue.svg)](https://www.python.org/)
-[![Part of RapidKit Platform](https://img.shields.io/badge/Part%20of-RapidKit%20Workspace%20Platform-0f172a?logo=github)](https://github.com/rapidkitlabs/rapidkit)
+[![Part of RapidKit Platform](https://img.shields.io/badge/Part%20of-RapidKit%20Workspace%20Platform-0f172a?logo=github)](https://github.com/chistiq/rapidkit)
 
 RapidKit Core is the open-source RapidKit engine and CLI for scaffolding, operating, and evolving
 production-ready backend projects.
@@ -11,20 +11,20 @@ production-ready backend projects.
 - CLI: `rapidkit` (Core aliases: `rapidkit-core`, `rkc`)
 - Website: https://www.getrapidkit.com/
 - Docs: https://www.getrapidkit.com/docs
-- Repository: https://github.com/rapidkitlabs/rapidkit-core
-- Issues: https://github.com/rapidkitlabs/rapidkit-core/issues
-- Discussions: https://github.com/rapidkitlabs/rapidkit-core/discussions
+- Repository: https://github.com/chistiq/rapidkit-core
+- Issues: https://github.com/chistiq/rapidkit-core/issues
+- Discussions: https://github.com/chistiq/rapidkit-core/discussions
 
 ## Part of the RapidKit Ecosystem
 
 This repository is the core engine layer of the broader **RapidKit Platform**:
 
-| Layer         | Repository                                                                                                                                                                    |
-| ------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Ecosystem Hub | [rapidkitlabs/rapidkit](https://github.com/rapidkitlabs/rapidkit)                                                                                                             |
-| Workspai CLI  | [rapidkitlabs/workspai](https://github.com/rapidkitlabs/workspai/tree/main/packages/cli) · [npm](https://www.npmjs.com/package/workspai)                                      |
-| IDE           | [rapidkitlabs/rapidkit-vscode](https://github.com/rapidkitlabs/rapidkit-vscode) · [Marketplace](https://marketplace.visualstudio.com/items?itemName=rapidkit.rapidkit-vscode) |
-| Examples      | [rapidkitlabs/rapidkit-examples](https://github.com/rapidkitlabs/rapidkit-examples)                                                                                           |
+| Layer         | Repository                                                                                                                                                          |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Ecosystem Hub | [chistiq/rapidkit](https://github.com/chistiq/rapidkit)                                                                                                             |
+| Workspai CLI  | [chistiq/workspai](https://github.com/chistiq/workspai/tree/main/packages/cli) · [npm](https://www.npmjs.com/package/workspai)                                      |
+| IDE           | [chistiq/rapidkit-vscode](https://github.com/chistiq/rapidkit-vscode) · [Marketplace](https://marketplace.visualstudio.com/items?itemName=rapidkit.rapidkit-vscode) |
+| Examples      | [chistiq/rapidkit-examples](https://github.com/chistiq/rapidkit-examples)                                                                                           |
 
 ## What you get
 
@@ -66,11 +66,11 @@ rapidkit dev
 For most teams, the best developer experience is:
 
 1. Start from the npm CLI layer:
-   - CLI repo: `https://github.com/rapidkitlabs/workspai/tree/main/packages/cli`
+   - CLI repo: `https://github.com/chistiq/workspai/tree/main/packages/cli`
    - npm: https://www.npmjs.com/package/workspai
 1. Install/update the Python engine package (`rapidkit-core`) for module generation/runtime parity.
 1. Use the VS Code extension when you want the full graphical + AI workspace experience:
-   - Extension repo: `https://github.com/rapidkitlabs/rapidkit-vscode`
+   - Extension repo: `https://github.com/chistiq/rapidkit-vscode`
    - Marketplace: https://marketplace.visualstudio.com/items?itemName=rapidkit.rapidkit-vscode
 
 The VS Code extension positioning: "The AI workspace for backend teams. Build backend systems with
@@ -159,7 +159,7 @@ rapidkit modules list
 
 Pre-releases are published as Python pre-releases and may be marked as pre-releases on GitHub.
 
-- Releases: https://github.com/rapidkitlabs/rapidkit-core/releases
+- Releases: https://github.com/chistiq/rapidkit-core/releases
 
 ```bash
 pipx install --pip-args="--pre" rapidkit-core
@@ -178,9 +178,9 @@ python -m pip install --pre -U rapidkit-core
 
 ## Contributing
 
-- Start here: https://github.com/rapidkitlabs/rapidkit-core/tree/main/docs/contributing
-- Bug reports: https://github.com/rapidkitlabs/rapidkit-core/issues
-- Ideas and Q&A: https://github.com/rapidkitlabs/rapidkit-core/discussions
+- Start here: https://github.com/chistiq/rapidkit-core/tree/main/docs/contributing
+- Bug reports: https://github.com/chistiq/rapidkit-core/issues
+- Ideas and Q&A: https://github.com/chistiq/rapidkit-core/discussions
 
 For local source development in this repository:
 
@@ -191,4 +191,4 @@ make test
 
 ## License
 
-MIT — see https://github.com/rapidkitlabs/rapidkit-core/blob/main/LICENSE
+MIT — see https://github.com/chistiq/rapidkit-core/blob/main/LICENSE

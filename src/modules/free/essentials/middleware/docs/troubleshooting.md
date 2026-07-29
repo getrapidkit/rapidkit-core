@@ -266,7 +266,7 @@ If issues persist:
 
 1. Check [Usage Guide](usage.md) for correct setup
 1. Review [Advanced Guide](advanced.md) for complex scenarios
-1. Open an issue: https://github.com/rapidkitlabs/rapidkit-core/issues
+1. Open an issue: https://github.com/chistiq/rapidkit-core/issues
 1. Check logs: `poetry run python -m src.main`
 
 Include in bug reports:
