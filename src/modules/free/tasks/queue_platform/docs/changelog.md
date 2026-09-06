@@ -1,5 +1,9 @@
 # Changelog — free/tasks/queue_platform
 
+## 0.1.12 — Automated patch release triggered by content hash change (2026-09-02)
+
+- chore: Automated patch release triggered by content hash change
+
 ## 0.1.11 — Automated patch release triggered by content hash change (2026-07-27)
 
 - chore: Automated patch release triggered by content hash change

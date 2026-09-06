@@ -3,7 +3,7 @@ display_name: PostgreSQL
 description: Production-ready PostgreSQL integration with async/sync engines, connection
   pooling, transactions, health checks, and configuration scaffolding for FastAPI
   and NestJS applications
-version: 0.1.33
+version: 0.1.34
 access: free
 status: stable
 category: database
@@ -158,8 +158,8 @@ support:
   discussions: https://github.com/chistiq/rapidkit-core/discussions
   documentation: https://getrapidkit.com/modules/db_postgres
 changelog:
-  - version: "0.1.33"
-    date: "2026-07-27"
+  - version: "0.1.34"
+    date: "2026-09-02"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

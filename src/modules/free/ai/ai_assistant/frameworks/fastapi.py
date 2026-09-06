@@ -62,7 +62,7 @@ class FastAPIPlugin(FrameworkPlugin):
         return []
 
     def get_dependencies(self) -> List[str]:
-        return ["fastapi>=0.139.0"]
+        return ["fastapi>=0.139.0,<1.0.0"]
 
     def get_dev_dependencies(self) -> List[str]:
         return ["pytest-asyncio>=1.3.0,<2.0", "httpx>=0.27.0"]

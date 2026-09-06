@@ -1,5 +1,9 @@
 # Changelog — free/database/db_postgres
 
+## 0.1.34 — Automated patch release triggered by content hash change (2026-09-02)
+
+- chore: Automated patch release triggered by content hash change
+
 ## 0.1.33 — Automated patch release triggered by content hash change (2026-07-27)
 
 - chore: Automated patch release triggered by content hash change

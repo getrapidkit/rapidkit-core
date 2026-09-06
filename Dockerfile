@@ -1,5 +1,5 @@
-# Use Python 3.10 slim image as base
-FROM python:3.10-slim
+# Use the repository's release-grade Python patch as the base.
+FROM python:3.10.21-slim
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \

@@ -1,8 +1,8 @@
 # Changelog
 
-## [Snapshot 0.6.0](https://github.com/chistiq/rapidkit-core/compare/v0.3.1...HEAD)
+## [Snapshot 0.6.1](https://github.com/chistiq/rapidkit-core/compare/v0.3.1...HEAD)
 
-> This distribution is built from commit `5f5abe3f` and is not a tagged release.
+> This distribution is built from commit `c1ef60e1` and is not a tagged release.
 
 ### Features
 
@@ -1205,6 +1205,8 @@
 
 ### Other
 
+- **core:** prepare v0.6.1 security maintenance
+  ([c1ef60e1](https://github.com/chistiq/rapidkit-core/commit/c1ef60e1b863547ab9633b5e57170f015195a984))
 - **core:** stabilize Python engine and module suite for v0.6.0
   ([dc2d7ba5](https://github.com/chistiq/rapidkit-core/commit/dc2d7ba55a2bd6f2b5b96d7599d8dfeff642581a))
 - set base version to 0.2.0

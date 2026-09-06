@@ -1,7 +1,7 @@
 name: media_pipeline
 display_name: "Media Pipeline"
 description: "Media ingestion and transformation pipeline with checksum, variant generation, and moderation hooks"
-version: 0.1.10
+version: 0.1.11
 access: free
 status: stable
 tier: free
@@ -132,8 +132,8 @@ support:
   discussions: https://github.com/chistiq/rapidkit-core/discussions
   documentation: https://getrapidkit.com/modules/media_pipeline
 changelog:
-  - version: "0.1.10"
-    date: "2026-07-27"
+  - version: "0.1.11"
+    date: "2026-09-02"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

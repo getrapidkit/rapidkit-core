@@ -1,5 +1,5 @@
 name: logging
-version: 0.1.17
+version: 0.1.18
 access: free
 status: stable
 category: essentials
@@ -135,8 +135,8 @@ support:
   discussions: https://github.com/chistiq/rapidkit-core/discussions
   documentation: https://getrapidkit.com/modules/logging
 changelog:
-  - version: "0.1.17"
-    date: "2026-07-27"
+  - version: "0.1.18"
+    date: "2026-09-02"
     notes: "See docs/changelog.md"
 validation:
   pre_install:
