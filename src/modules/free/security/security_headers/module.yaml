@@ -1,7 +1,7 @@
 name: security_headers
 display_name: Security Headers
 description: Harden HTTP responses with industry-standard security headers
-version: 0.1.9
+version: 0.1.10
 access: free
 status: stable
 tier: free
@@ -132,8 +132,8 @@ support:
     discussions: https://github.com/chistiq/rapidkit-core/discussions
     documentation: https://getrapidkit.com/modules/security/security_headers
 changelog:
-  - version: "0.1.9"
-    date: "2026-07-27"
+  - version: "0.1.10"
+    date: "2026-09-02"
     notes: "See docs/changelog.md"
 validation:
     pre_install:

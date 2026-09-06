@@ -2,7 +2,7 @@ name: workflow_engine
 display_name: Workflow Engine
 description: Workflow engine scaffolding for triggers, actions, conditions, approvals, schedules, and
   durable runs
-version: 0.1.14
+version: 0.1.15
 access: free
 status: stable
 tier: free
@@ -125,8 +125,8 @@ support:
   discussions: https://github.com/chistiq/rapidkit-core/discussions
   documentation: https://getrapidkit.com/modules/workflow_engine
 changelog:
-  - version: "0.1.14"
-    date: "2026-07-27"
+  - version: "0.1.15"
+    date: "2026-09-02"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

@@ -1,5 +1,9 @@
 # Changelog — free/ai/vector_store
 
+## 0.1.13 — Automated patch release triggered by content hash change (2026-09-02)
+
+- chore: Automated patch release triggered by content hash change
+
 ## 0.1.12 — Automated patch release triggered by content hash change (2026-07-27)
 
 - chore: Automated patch release triggered by content hash change

@@ -1,7 +1,7 @@
 name: db_sqlite
 display_name: Db Sqlite
 description: SQLite database integration for development
-version: 0.1.14
+version: 0.1.15
 access: free
 status: stable
 tier: free
@@ -128,8 +128,8 @@ support:
     discussions: https://github.com/chistiq/rapidkit-core/discussions
     documentation: https://getrapidkit.com/modules/database/db_sqlite
 changelog:
-  - version: "0.1.14"
-    date: "2026-07-27"
+  - version: "0.1.15"
+    date: "2026-09-02"
     notes: "See docs/changelog.md"
 validation:
     pre_install:

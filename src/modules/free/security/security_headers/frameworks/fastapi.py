@@ -59,7 +59,7 @@ class FastAPIPlugin(FrameworkPlugin):
         return []
 
     def get_dependencies(self) -> list[str]:
-        return ["fastapi>=0.139.0", "starlette>=1.3.1"]
+        return ["fastapi>=0.139.0,<1.0.0", "starlette>=1.3.1,<2.0.0"]
 
     def pre_generation_hook(self, output_dir: Path) -> None:
         base_root = output_dir / "src" / "modules" / "free" / "security" / "security_headers"

@@ -1,7 +1,7 @@
 name: event_bus
 display_name: "Event Bus"
 description: "In-process event bus with subscriptions, durable-style event records, replay, and dead-letter semantics"
-version: 0.1.10
+version: 0.1.11
 access: free
 status: stable
 tier: free
@@ -131,8 +131,8 @@ support:
   discussions: https://github.com/chistiq/rapidkit-core/discussions
   documentation: https://getrapidkit.com/modules/event_bus
 changelog:
-  - version: "0.1.10"
-    date: "2026-07-27"
+  - version: "0.1.11"
+    date: "2026-09-02"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

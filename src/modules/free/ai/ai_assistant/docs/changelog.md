@@ -1,5 +1,9 @@
 # Changelog — free/ai/ai_assistant
 
+## 0.1.23 — Automated patch release triggered by content hash change (2026-09-02)
+
+- chore: Automated patch release triggered by content hash change
+
 ## 0.1.22 — Automated patch release triggered by content hash change (2026-07-27)
 
 - chore: Automated patch release triggered by content hash change

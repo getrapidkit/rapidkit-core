@@ -81,7 +81,7 @@ class FastAPIPlugin(FrameworkPlugin):
 
     def get_dependencies(self) -> list[str]:
         return [
-            "fastapi>=0.139.0",
+            "fastapi>=0.139.0,<1.0.0",
             "motor>=3.4.0",
         ]
 

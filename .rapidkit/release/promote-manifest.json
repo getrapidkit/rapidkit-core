@@ -3561,38 +3561,19 @@
     "tests/utils/test_translation_utils.py",
     "tests/utils/test_utilities_comprehensive_end_user.py"
   ],
-  "excluded_commits": [
-    {
-      "reason": "subject matches ^chore\\(release\\):",
-      "sha": "d63aa9ae4e3d8250046b4ae8ee8ac259e9401102",
-      "subject": "chore(release): prepare RapidKit Core 0.6.0"
-    },
-    {
-      "reason": "subject matches ^chore\\(release\\):",
-      "sha": "6cc347671340ba64f298746264091a132bd7de6a",
-      "subject": "chore(release): prepare RapidKit Core 0.6.0"
-    }
-  ],
+  "excluded_commits": [],
   "included_commits": [
     {
-      "sha": "dc2d7ba55a2bd6f2b5b96d7599d8dfeff642581a",
-      "subject": "release(core): stabilize Python engine and module suite for v0.6.0"
-    },
-    {
-      "sha": "e81472c93f25ffb99b3af3554fe8794d59af2b3c",
-      "subject": "fix(kits): keep generated documentation product-neutral"
-    },
-    {
-      "sha": "5f5abe3f0f9d99a3f6acc183fee477ea52c81a99",
-      "subject": "fix(security): govern distribution toolchain dependencies"
+      "sha": "c1ef60e1b863547ab9633b5e57170f015195a984",
+      "subject": "release(core): prepare v0.6.1 security maintenance"
     }
   ],
-  "promote_branch": "promote/v0.6.0",
-  "promoted_at": "2026-07-29T02:45:09.621847Z",
+  "promote_branch": "promote/v0.6.1",
+  "promoted_at": "2026-09-06T09:54:13.340720Z",
   "schema_version": 1,
-  "source_base_sha": "fd7d8a2f864121a5b59272a9ab86fdf802720f33",
-  "source_head_sha": "5f5abe3f0f9d99a3f6acc183fee477ea52c81a99",
+  "source_base_sha": "5f5abe3f0f9d99a3f6acc183fee477ea52c81a99",
+  "source_head_sha": "c1ef60e1b863547ab9633b5e57170f015195a984",
   "target_branch": "main",
   "target_repo": "https://github.com/chistiq/rapidkit-core.git",
-  "version": "0.6.0"
+  "version": "0.6.1"
 }

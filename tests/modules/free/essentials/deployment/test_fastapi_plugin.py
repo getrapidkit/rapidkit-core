@@ -31,7 +31,7 @@ def test_fastapi_context_enrichments_include_defaults() -> None:
 def test_fastapi_dependencies_lists_expected_packages() -> None:
     plugin = FastAPIPlugin()
 
-    assert "fastapi>=0.139.0" in plugin.get_dependencies()
+    assert "fastapi>=0.139.0,<1.0.0" in plugin.get_dependencies()
     dev_deps = plugin.get_dev_dependencies()
     assert "pytest-asyncio>=1.3.0,<2.0" in dev_deps
     assert "httpx>=0.28.0" in dev_deps

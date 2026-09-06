@@ -1,7 +1,7 @@
 name: db_mongo
 display_name: Db Mongo
 description: MongoDB integration with async driver support, health diagnostics, configuration scaffolding, and multi-framework adapters
-version: 0.1.12
+version: 0.1.13
 access: free
 status: stable
 tier: free
@@ -139,8 +139,8 @@ support:
     discussions: https://github.com/chistiq/rapidkit-core/discussions
     documentation: https://getrapidkit.com/modules/database/db_mongo
 changelog:
-  - version: "0.1.12"
-    date: "2026-07-27"
+  - version: "0.1.13"
+    date: "2026-09-02"
     notes: "See docs/changelog.md"
 validation:
     pre_install:

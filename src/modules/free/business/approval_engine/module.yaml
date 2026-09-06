@@ -1,7 +1,7 @@
 name: approval_engine
 display_name: "Approval Engine"
 description: "Approval workflow engine with policies, required reasons, reviewer decisions, escalation, and immutable audit trails"
-version: 0.1.10
+version: 0.1.11
 access: free
 status: stable
 tier: free
@@ -133,8 +133,8 @@ support:
   discussions: https://github.com/chistiq/rapidkit-core/discussions
   documentation: https://getrapidkit.com/modules/approval_engine
 changelog:
-  - version: "0.1.10"
-    date: "2026-07-27"
+  - version: "0.1.11"
+    date: "2026-09-02"
     notes: "See docs/changelog.md"
 validation:
   pre_install:

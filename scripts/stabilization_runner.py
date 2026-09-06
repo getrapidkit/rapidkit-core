@@ -27,7 +27,7 @@ import urllib.request
 import uuid
 import zlib
 from dataclasses import asdict, dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Iterable, List, Mapping, Optional, Sequence, Tuple
 
@@ -69,8 +69,12 @@ TWO_PART_MODULE_SLUG_LENGTH = 2
 MIN_OWNER_SLUG_PARTS = 3
 MAX_SNIPPET_REGISTRY_KEYS_SHOWN = 50
 
-# Release-grade expectations (override via environment variables).
-EXPECTED_PYTHON_VERSION = os.environ.get("RAPIDKIT_EXPECT_PYTHON_VERSION", "3.10.19")
+# Release-grade expectations. The repository pin is authoritative; an explicit
+# environment override remains available to controlled CI/release callers.
+REPOSITORY_PYTHON_VERSION = (REPO_ROOT / ".python-version").read_text(encoding="utf-8").strip()
+EXPECTED_PYTHON_VERSION = os.environ.get(
+    "RAPIDKIT_EXPECT_PYTHON_VERSION", REPOSITORY_PYTHON_VERSION
+)
 EXPECTED_NODE_VERSION = os.environ.get("RAPIDKIT_EXPECT_NODE_VERSION", "24.18.0")
 
 # Optional explicit tool overrides (useful when shells don't load nvm/rbenv/etc).
@@ -78,10 +82,10 @@ NODE_BIN_OVERRIDE = os.environ.get("RAPIDKIT_NODE_BIN")
 NPM_BIN_OVERRIDE = os.environ.get("RAPIDKIT_NPM_BIN")
 
 # Tool pins used by stabilization (avoid non-deterministic @latest fetches).
-PINNED_ESLINT_VERSION = os.environ.get("RAPIDKIT_PIN_ESLINT_VERSION", "8.57.0")
 PINNED_ESLINT_SECURITY_PLUGIN_VERSION = os.environ.get(
-    "RAPIDKIT_PIN_ESLINT_SECURITY_PLUGIN_VERSION", "1.4.0"
+    "RAPIDKIT_PIN_ESLINT_SECURITY_PLUGIN_VERSION", "4.0.1"
 )
+PINNED_SAFE_REGEX_VERSION = os.environ.get("RAPIDKIT_PIN_SAFE_REGEX_VERSION", "2.1.1")
 PINNED_PIP_AUDIT_VERSION = os.environ.get("RAPIDKIT_PIN_PIP_AUDIT_VERSION", "2.10.0")
 
 # Production-readiness tuning knobs (used by --pro-gates)
@@ -236,7 +240,7 @@ class StabilizationRunner:
         self.use_kit_cache = bool(use_kit_cache)
         self.rebuild_kit_cache = bool(rebuild_kit_cache)
         self.kit_cache_root = self.kit_root / "_kit-cache"
-        self.timestamp = datetime.utcnow().strftime("%Y%m%d-%H%M%SZ")
+        self.timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%SZ")
         self.safe_slug = self.module_slug.replace("/", "-")
         slug_tail = self.module_slug.split("/")[-1]
         self.health_slug = slug_tail.replace("_", "-")
@@ -1221,7 +1225,10 @@ class StabilizationRunner:
         return sanitized or fallback
 
     def _format_timestamp(self, value: datetime) -> str:
-        return value.replace(microsecond=0).isoformat() + "Z"
+        normalized = value.replace(microsecond=0)
+        if normalized.tzinfo is None:
+            normalized = normalized.replace(tzinfo=timezone.utc)
+        return normalized.isoformat().replace("+00:00", "Z")
 
     def _log_kit(self, kit: str, message: str) -> None:
         self._log(f"[kit:{kit}] {message}")
@@ -1541,7 +1548,7 @@ class StabilizationRunner:
         started_at: datetime,
         started_monotonic: float,
     ) -> KitRunResult:
-        ended_at = datetime.utcnow()
+        ended_at = datetime.now(timezone.utc)
         duration = time.time() - started_monotonic
         shipped_tests = self._aggregate_shipped_tests(steps)
         return KitRunResult(
@@ -1565,7 +1572,7 @@ class StabilizationRunner:
         if kit_dir.exists() and not self.keep_workdirs:
             shutil.rmtree(kit_dir)
         kit_dir.mkdir(parents=True, exist_ok=True)
-        kit_started_at = datetime.utcnow()
+        kit_started_at = datetime.now(timezone.utc)
         kit_start_monotonic = time.time()
         steps: List[StepResult] = []
 
@@ -1913,7 +1920,7 @@ class StabilizationRunner:
         marker.write_text(
             json.dumps(
                 {
-                    "hydratedAt": self._format_timestamp(datetime.utcnow()),
+                    "hydratedAt": self._format_timestamp(datetime.now(timezone.utc)),
                     "runId": uuid.uuid4().hex,
                     "module": self.module_slug,
                     "projectName": project_name,
@@ -3262,72 +3269,166 @@ class StabilizationRunner:
         )
 
     def _run_security_lint_node(self, *, kit: str, project_dir: Path) -> StepResult:
-        """Run eslint with eslint-plugin-security on NestJS/Node kits."""
+        """Run security-only ESLint rules without mutating the generated project."""
 
-        config = self._node_eslint_config(project_dir)
         targets = [path for path in ("src", "apps", "libs") if (project_dir / path).exists()] or [
             "src"
         ]
-        install_cmd = [
-            "npm",
-            "install",
-            "--no-save",
-            "--no-package-lock",
-            f"eslint@{PINNED_ESLINT_VERSION}",
-            f"eslint-plugin-security@{PINNED_ESLINT_SECURITY_PLUGIN_VERSION}",
-        ]
-        install_log = project_dir / "eslint-security-install.log"
-        install_step = self._run_kit_step(
-            kit,
-            step_name="install eslint-plugin-security",
-            cmd=install_cmd,
-            log_path=install_log,
-            cwd=project_dir,
+        tool_root = (
+            self.kit_root
+            / "_tool-cache"
+            / (
+                f"eslint-plugin-security-{PINNED_ESLINT_SECURITY_PLUGIN_VERSION}"
+                f"-safe-regex-{PINNED_SAFE_REGEX_VERSION}"
+            )
         )
-        install_step = self._enforce_engine_policy(install_step)
-        if install_step.status != "pass":
-            return install_step
-        cmd = [
-            "npx",
-            "--yes",
-            "--package",
-            f"eslint@{PINNED_ESLINT_VERSION}",
-            "--package",
-            f"eslint-plugin-security@{PINNED_ESLINT_SECURITY_PLUGIN_VERSION}",
-            "eslint",
-            "--no-error-on-unmatched-pattern",
-            "--plugin",
-            "security",
-            "--rule",
-            "security/detect-object-injection:error",
-            "--rule",
-            "security/detect-non-literal-fs-filename:error",
-        ]
-        if config:
-            cmd.extend(["--config", config])
-        else:
-            cmd.append("--no-eslintrc")
-        cmd.extend(targets)
-        log_path = project_dir / "eslint-security.log"
-        return self._run_kit_step(
-            kit,
-            step_name="security lint (eslint)",
-            cmd=cmd,
-            log_path=log_path,
-            cwd=project_dir,
-        )
+        plugin_package = tool_root / "node_modules" / "eslint-plugin-security" / "package.json"
+        plugin_entry = tool_root / "node_modules" / "eslint-plugin-security" / "index.js"
+        safe_regex_package = tool_root / "node_modules" / "safe-regex" / "package.json"
+        plugin_ready = False
+        if plugin_package.is_file() and plugin_entry.is_file() and safe_regex_package.is_file():
+            plugin_metadata = self._load_json_file(plugin_package)
+            safe_regex_metadata = self._load_json_file(safe_regex_package)
+            plugin_ready = (
+                isinstance(plugin_metadata, dict)
+                and plugin_metadata.get("version") == PINNED_ESLINT_SECURITY_PLUGIN_VERSION
+                and isinstance(safe_regex_metadata, dict)
+                and safe_regex_metadata.get("version") == PINNED_SAFE_REGEX_VERSION
+            )
 
-    def _node_eslint_config(self, project_dir: Path) -> str | None:
-        for candidate in (
-            project_dir / "eslint.config.js",
-            project_dir / ".eslintrc.js",
-            project_dir / ".eslintrc.cjs",
-            project_dir / ".eslintrc.json",
-            project_dir / ".eslintrc",
-        ):
-            if candidate.exists():
-                return str(candidate)
-        return None
+        if not plugin_ready:
+            tool_root.mkdir(parents=True, exist_ok=True)
+            tool_manifest = {
+                "name": "rapidkit-eslint-security-tool",
+                "private": True,
+                "version": "0.0.0",
+                "dependencies": {
+                    "eslint-plugin-security": PINNED_ESLINT_SECURITY_PLUGIN_VERSION,
+                    "safe-regex": PINNED_SAFE_REGEX_VERSION,
+                },
+            }
+            (tool_root / "package.json").write_text(
+                json.dumps(tool_manifest, indent=2) + "\n", encoding="utf-8"
+            )
+            install_cmd = [
+                "npm",
+                "install",
+                "--ignore-scripts",
+                "--no-audit",
+                "--no-fund",
+                "--package-lock=false",
+            ]
+            install_step = self._run_kit_step(
+                kit,
+                step_name="prepare isolated eslint security tool",
+                cmd=install_cmd,
+                log_path=self.audit_dir / "eslint-security-tool-install.log",
+                cwd=tool_root,
+            )
+            install_step = self._enforce_engine_policy(install_step)
+            if install_step.status != "pass":
+                return install_step
+            plugin_metadata = self._load_json_file(plugin_package)
+            safe_regex_metadata = self._load_json_file(safe_regex_package)
+            if (
+                not plugin_entry.is_file()
+                or not isinstance(plugin_metadata, dict)
+                or plugin_metadata.get("version") != PINNED_ESLINT_SECURITY_PLUGIN_VERSION
+                or not isinstance(safe_regex_metadata, dict)
+                or safe_regex_metadata.get("version") != PINNED_SAFE_REGEX_VERSION
+            ):
+                return StepResult(
+                    name="prepare isolated eslint security tool",
+                    command=install_cmd,
+                    status="fail",
+                    duration_s=install_step.duration_s,
+                    log_path=install_step.log_path,
+                    summary="Pinned eslint-plugin-security was not materialized in the isolated tool cache",
+                )
+
+        eslint_entry = project_dir / "node_modules" / "eslint" / "bin" / "eslint.js"
+        node_bin = shutil.which("node", path=self.base_env.get("PATH"))
+        if not node_bin or not eslint_entry.is_file():
+            return StepResult(
+                name="security lint (eslint)",
+                command=[],
+                status="fail",
+                duration_s=0.0,
+                log_path=self._rel_path(project_dir / "eslint-security.log"),
+                summary="Project-local ESLint is unavailable after dependency installation",
+            )
+
+        parser_entry = (
+            project_dir / "node_modules" / "@typescript-eslint" / "parser" / "dist" / "index.js"
+        )
+        typescript_plugin_entry = (
+            project_dir
+            / "node_modules"
+            / "@typescript-eslint"
+            / "eslint-plugin"
+            / "dist"
+            / "index.js"
+        )
+        config_path = project_dir / ".rapidkit-eslint-security.config.cjs"
+        parser_declaration = (
+            f"const typescriptParser = require({json.dumps(str(parser_entry))});\n"
+            if parser_entry.is_file()
+            else "const typescriptParser = undefined;\n"
+        )
+        typescript_plugin_declaration = (
+            "const typescriptPlugin = require(" + json.dumps(str(typescript_plugin_entry)) + ");\n"
+            if typescript_plugin_entry.is_file()
+            else "const typescriptPlugin = undefined;\n"
+        )
+        config_path.write_text(
+            "const security = require("
+            + json.dumps(str(plugin_entry.parent))
+            + ");\n"
+            + parser_declaration
+            + typescript_plugin_declaration
+            + "module.exports = [{\n"
+            + "  files: ['**/*.{js,cjs,mjs,ts,cts,mts}'],\n"
+            + "  languageOptions: {\n"
+            + "    ...(typescriptParser ? { parser: typescriptParser } : {}),\n"
+            + "    parserOptions: { ecmaVersion: 'latest', sourceType: 'module' },\n"
+            + "  },\n"
+            + "  plugins: {\n"
+            + "    security,\n"
+            + "    ...(typescriptPlugin ? { '@typescript-eslint': typescriptPlugin } : {}),\n"
+            + "  },\n"
+            + "  rules: {\n"
+            + "    ...security.configs.recommended.rules,\n"
+            + "    'security/detect-bidi-characters': 'error',\n"
+            + "    'security/detect-buffer-noassert': 'error',\n"
+            + "    'security/detect-child-process': 'error',\n"
+            + "    'security/detect-disable-mustache-escape': 'error',\n"
+            + "    'security/detect-eval-with-expression': 'error',\n"
+            + "    'security/detect-new-buffer': 'error',\n"
+            + "    'security/detect-no-csrf-before-method-override': 'error',\n"
+            + "    'security/detect-pseudoRandomBytes': 'error',\n"
+            + "  },\n"
+            + "}];\n",
+            encoding="utf-8",
+        )
+        cmd = [
+            node_bin,
+            str(eslint_entry),
+            "--no-error-on-unmatched-pattern",
+            "--config",
+            str(config_path),
+            *targets,
+        ]
+        log_path = project_dir / "eslint-security.log"
+        try:
+            return self._run_kit_step(
+                kit,
+                step_name="security lint (eslint)",
+                cmd=cmd,
+                log_path=log_path,
+                cwd=project_dir,
+            )
+        finally:
+            config_path.unlink(missing_ok=True)
 
     def _run_fastapi_health_probe(
         self,

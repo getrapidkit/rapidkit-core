@@ -119,8 +119,8 @@ class FastAPIPlugin(FrameworkPlugin):
 
     def get_dependencies(self) -> List[str]:
         return [
-            "fastapi>=0.139.0",
-            "starlette>=1.3.1",
+            "fastapi>=0.139.0,<1.0.0",
+            "starlette>=1.3.1,<2.0.0",
             "python-json-logger>=2.0.0",
         ]
 

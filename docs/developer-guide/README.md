@@ -1,6 +1,6 @@
 # RapidKit Core Developer Guide
 
-Last updated: 2026-06-04
+Last updated: 2026-09-02
 
 This guide is for contributors working on the RapidKit core engine, free module catalog, release
 kits, and distribution automation.
@@ -9,7 +9,7 @@ kits, and distribution automation.
 
 | Tool    | Recommended                           |
 | ------- | ------------------------------------- |
-| Python  | 3.10.x                                |
+| Python  | 3.10.21 for release and stabilization |
 | Poetry  | Latest stable                         |
 | Node.js | 20.x for NestJS gates                 |
 | npm     | Latest stable compatible with Node 20 |
